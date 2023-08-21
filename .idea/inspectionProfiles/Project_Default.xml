@@ -1,0 +1,204 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="DuplicatedCode" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <Languages>
+        <language minSize="73" name="Python" />
+      </Languages>
+    </inspection_tool>
+    <inspection_tool class="HttpUrlsUsage" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredUrls">
+        <list>
+          <option value="http://localhost" />
+          <option value="http://127.0.0.1" />
+          <option value="http://0.0.0.0" />
+          <option value="http://www.w3.org/" />
+          <option value="http://json-schema.org/draft" />
+          <option value="http://java.sun.com/" />
+          <option value="http://xmlns.jcp.org/" />
+          <option value="http://javafx.com/javafx/" />
+          <option value="http://javafx.com/fxml" />
+          <option value="http://maven.apache.org/xsd/" />
+          <option value="http://maven.apache.org/POM/" />
+          <option value="http://www.springframework.org/schema/" />
+          <option value="http://www.springframework.org/tags" />
+          <option value="http://www.springframework.org/security/tags" />
+          <option value="http://www.thymeleaf.org" />
+          <option value="http://www.jboss.org/j2ee/schema/" />
+          <option value="http://www.jboss.com/xml/ns/" />
+          <option value="http://www.ibm.com/webservices/xsd" />
+          <option value="http://activemq.apache.org/schema/" />
+          <option value="http://schema.cloudfoundry.org/spring/" />
+          <option value="http://schemas.xmlsoap.org/" />
+          <option value="http://cxf.apache.org/schemas/" />
+          <option value="http://primefaces.org/ui" />
+          <option value="http://tiles.apache.org/" />
+          <option value="http://" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="138">
+            <item index="0" class="java.lang.String" itemvalue="httpx" />
+            <item index="1" class="java.lang.String" itemvalue="bs4" />
+            <item index="2" class="java.lang.String" itemvalue="tweepy" />
+            <item index="3" class="java.lang.String" itemvalue="greenlet" />
+            <item index="4" class="java.lang.String" itemvalue="multitasking" />
+            <item index="5" class="java.lang.String" itemvalue="pymemcache" />
+            <item index="6" class="java.lang.String" itemvalue="PyYAML" />
+            <item index="7" class="java.lang.String" itemvalue="sgmllib3k" />
+            <item index="8" class="java.lang.String" itemvalue="marshmallow" />
+            <item index="9" class="java.lang.String" itemvalue="pycparser" />
+            <item index="10" class="java.lang.String" itemvalue="rfc3986" />
+            <item index="11" class="java.lang.String" itemvalue="apispec-webframeworks" />
+            <item index="12" class="java.lang.String" itemvalue="marshmallow-dataclass" />
+            <item index="13" class="java.lang.String" itemvalue="redis" />
+            <item index="14" class="java.lang.String" itemvalue="pyasn1-modules" />
+            <item index="15" class="java.lang.String" itemvalue="tinysegmenter" />
+            <item index="16" class="java.lang.String" itemvalue="lxml" />
+            <item index="17" class="java.lang.String" itemvalue="soupsieve" />
+            <item index="18" class="java.lang.String" itemvalue="uvicorn" />
+            <item index="19" class="java.lang.String" itemvalue="jsonschema" />
+            <item index="20" class="java.lang.String" itemvalue="libcst" />
+            <item index="21" class="java.lang.String" itemvalue="pyinline" />
+            <item index="22" class="java.lang.String" itemvalue="pydantic" />
+            <item index="23" class="java.lang.String" itemvalue="transformers" />
+            <item index="24" class="java.lang.String" itemvalue="jieba3k" />
+            <item index="25" class="java.lang.String" itemvalue="Werkzeug" />
+            <item index="26" class="java.lang.String" itemvalue="openapi" />
+            <item index="27" class="java.lang.String" itemvalue="aniso8601" />
+            <item index="28" class="java.lang.String" itemvalue="gunicorn" />
+            <item index="29" class="java.lang.String" itemvalue="loguru" />
+            <item index="30" class="java.lang.String" itemvalue="click" />
+            <item index="31" class="java.lang.String" itemvalue="pandas-datareader" />
+            <item index="32" class="java.lang.String" itemvalue="attrs" />
+            <item index="33" class="java.lang.String" itemvalue="openai" />
+            <item index="34" class="java.lang.String" itemvalue="regex" />
+            <item index="35" class="java.lang.String" itemvalue="platformdirs" />
+            <item index="36" class="java.lang.String" itemvalue="snscrape" />
+            <item index="37" class="java.lang.String" itemvalue="stocksymbol" />
+            <item index="38" class="java.lang.String" itemvalue="PyMySQL" />
+            <item index="39" class="java.lang.String" itemvalue="newspaper3k" />
+            <item index="40" class="java.lang.String" itemvalue="httpcore" />
+            <item index="41" class="java.lang.String" itemvalue="idna" />
+            <item index="42" class="java.lang.String" itemvalue="shellescape" />
+            <item index="43" class="java.lang.String" itemvalue="ratelimit" />
+            <item index="44" class="java.lang.String" itemvalue="rsa" />
+            <item index="45" class="java.lang.String" itemvalue="pluggy" />
+            <item index="46" class="java.lang.String" itemvalue="cffi" />
+            <item index="47" class="java.lang.String" itemvalue="numpy" />
+            <item index="48" class="java.lang.String" itemvalue="pyasn1" />
+            <item index="49" class="java.lang.String" itemvalue="requests" />
+            <item index="50" class="java.lang.String" itemvalue="sniffio" />
+            <item index="51" class="java.lang.String" itemvalue="pyrsistent" />
+            <item index="52" class="java.lang.String" itemvalue="win32-setctime" />
+            <item index="53" class="java.lang.String" itemvalue="url-normalize" />
+            <item index="54" class="java.lang.String" itemvalue="tldextract" />
+            <item index="55" class="java.lang.String" itemvalue="itsdangerous" />
+            <item index="56" class="java.lang.String" itemvalue="feedfinder2" />
+            <item index="57" class="java.lang.String" itemvalue="websockets" />
+            <item index="58" class="java.lang.String" itemvalue="flask-redoc" />
+            <item index="59" class="java.lang.String" itemvalue="scipy" />
+            <item index="60" class="java.lang.String" itemvalue="watchfiles" />
+            <item index="61" class="java.lang.String" itemvalue="cattrs" />
+            <item index="62" class="java.lang.String" itemvalue="Flask-Cors" />
+            <item index="63" class="java.lang.String" itemvalue="jsonmerge" />
+            <item index="64" class="java.lang.String" itemvalue="phonenumbers" />
+            <item index="65" class="java.lang.String" itemvalue="asyncstdlib" />
+            <item index="66" class="java.lang.String" itemvalue="pytest-asyncio" />
+            <item index="67" class="java.lang.String" itemvalue="pandas" />
+            <item index="68" class="java.lang.String" itemvalue="typing_extensions" />
+            <item index="69" class="java.lang.String" itemvalue="cachetools" />
+            <item index="70" class="java.lang.String" itemvalue="multidict" />
+            <item index="71" class="java.lang.String" itemvalue="yarl" />
+            <item index="72" class="java.lang.String" itemvalue="pytz" />
+            <item index="73" class="java.lang.String" itemvalue="webencodings" />
+            <item index="74" class="java.lang.String" itemvalue="inflection" />
+            <item index="75" class="java.lang.String" itemvalue="Pillow" />
+            <item index="76" class="java.lang.String" itemvalue="ujson" />
+            <item index="77" class="java.lang.String" itemvalue="protobuf" />
+            <item index="78" class="java.lang.String" itemvalue="html5lib" />
+            <item index="79" class="java.lang.String" itemvalue="joblib" />
+            <item index="80" class="java.lang.String" itemvalue="huggingface-hub" />
+            <item index="81" class="java.lang.String" itemvalue="nltk" />
+            <item index="82" class="java.lang.String" itemvalue="python-dateutil" />
+            <item index="83" class="java.lang.String" itemvalue="python-dotenv" />
+            <item index="84" class="java.lang.String" itemvalue="h11" />
+            <item index="85" class="java.lang.String" itemvalue="MarkupSafe" />
+            <item index="86" class="java.lang.String" itemvalue="apispec" />
+            <item index="87" class="java.lang.String" itemvalue="feedparser" />
+            <item index="88" class="java.lang.String" itemvalue="httptools" />
+            <item index="89" class="java.lang.String" itemvalue="frozenlist" />
+            <item index="90" class="java.lang.String" itemvalue="appdirs" />
+            <item index="91" class="java.lang.String" itemvalue="filelock" />
+            <item index="92" class="java.lang.String" itemvalue="certifi" />
+            <item index="93" class="java.lang.String" itemvalue="oauthlib" />
+            <item index="94" class="java.lang.String" itemvalue="anyio" />
+            <item index="95" class="java.lang.String" itemvalue="pyparsing" />
+            <item index="96" class="java.lang.String" itemvalue="beautifulsoup4" />
+            <item index="97" class="java.lang.String" itemvalue="Flask-Caching" />
+            <item index="98" class="java.lang.String" itemvalue="tokenizers" />
+            <item index="99" class="java.lang.String" itemvalue="dnspython" />
+            <item index="100" class="java.lang.String" itemvalue="iniconfig" />
+            <item index="101" class="java.lang.String" itemvalue="cryptography" />
+            <item index="102" class="java.lang.String" itemvalue="bcrypt" />
+            <item index="103" class="java.lang.String" itemvalue="crypto" />
+            <item index="104" class="java.lang.String" itemvalue="flask-apispec" />
+            <item index="105" class="java.lang.String" itemvalue="PySocks" />
+            <item index="106" class="java.lang.String" itemvalue="cssselect" />
+            <item index="107" class="java.lang.String" itemvalue="requests-file" />
+            <item index="108" class="java.lang.String" itemvalue="charset-normalizer" />
+            <item index="109" class="java.lang.String" itemvalue="oauth2client" />
+            <item index="110" class="java.lang.String" itemvalue="webargs" />
+            <item index="111" class="java.lang.String" itemvalue="async-timeout" />
+            <item index="112" class="java.lang.String" itemvalue="requests-cache" />
+            <item index="113" class="java.lang.String" itemvalue="SQLAlchemy" />
+            <item index="114" class="java.lang.String" itemvalue="mypy-extensions" />
+            <item index="115" class="java.lang.String" itemvalue="httplib2" />
+            <item index="116" class="java.lang.String" itemvalue="Jinja2" />
+            <item index="117" class="java.lang.String" itemvalue="mysql-connector-python" />
+            <item index="118" class="java.lang.String" itemvalue="requests-oauthlib" />
+            <item index="119" class="java.lang.String" itemvalue="yfinance" />
+            <item index="120" class="java.lang.String" itemvalue="Flask-Bcrypt" />
+            <item index="121" class="java.lang.String" itemvalue="urllib3" />
+            <item index="122" class="java.lang.String" itemvalue="Flask" />
+            <item index="123" class="java.lang.String" itemvalue="six" />
+            <item index="124" class="java.lang.String" itemvalue="pytest" />
+            <item index="125" class="java.lang.String" itemvalue="cachelib" />
+            <item index="126" class="java.lang.String" itemvalue="packaging" />
+            <item index="127" class="java.lang.String" itemvalue="Naked" />
+            <item index="128" class="java.lang.String" itemvalue="chardet" />
+            <item index="129" class="java.lang.String" itemvalue="tqdm" />
+            <item index="130" class="java.lang.String" itemvalue="typing-inspect" />
+            <item index="131" class="java.lang.String" itemvalue="colorama" />
+            <item index="132" class="java.lang.String" itemvalue="proto-plus" />
+            <item index="133" class="java.lang.String" itemvalue="aiohttp" />
+            <item index="134" class="java.lang.String" itemvalue="frozendict" />
+            <item index="135" class="java.lang.String" itemvalue="aiosignal" />
+            <item index="136" class="java.lang.String" itemvalue="chronological" />
+            <item index="137" class="java.lang.String" itemvalue="Flask-RESTful" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPep8Inspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="E501" />
+          <option value="W605" />
+          <option value="E712" />
+          <option value="E402" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="str.in_" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
