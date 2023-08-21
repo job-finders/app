@@ -5,11 +5,12 @@ from src.utils import template_folder, static_folder
 
 junction_scrapper = JunctionScrapper()
 
+
 def title_to_display(title: str):
     if not title:
-        return ""
-
+        return "-"
     return title.replace("-", " ").title()
+
 
 def create_app(config):
     """
