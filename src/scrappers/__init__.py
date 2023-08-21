@@ -8,18 +8,18 @@ from requests_cache import CachedSession
 from src.database.models.jobs import Job
 
 default_jobs = ['information-technology',
-                 'office-admin',
-                 'agriculture',
-                 'engineering',
-                 'building-construction',
-                 'business-management',
-                 'cleaning-maintenance',
-                 'business-management',
-                 'community-social-welfare',
-                 'education',
-                 'nursing',
-                 'finance',
-                 'programming']
+                'office-admin',
+                'agriculture',
+                'engineering',
+                'building-construction',
+                'business-management',
+                'cleaning-maintenance',
+                'business-management',
+                'community-social-welfare',
+                'education',
+                'nursing',
+                'finance',
+                'programming']
 
 request_session = CachedSession('jobs.cache', use_cache_dir=False,
                                 cache_control=False,
@@ -44,7 +44,7 @@ class JunctionScrapper:
 
         self._jobs_base_url: str = "https://www.careerjunction.co.za/jobs/"
         self._junction_base_url: str = "https://www.careerjunction.co.za/"
-        self.jobs: dict[str, Job] = []
+        self.jobs: dict[str, Job] = {}
         self.headers: dict[str, str] = {
             'user-agent': "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727; .NET CLR 3.0.04506.30)",
             'Accept-Language': 'en-US,en;q=0.9',
@@ -86,7 +86,6 @@ class JunctionScrapper:
         """
         jobs = []
         for page in range(page_limit + 1):
-
             if page == 0:
                 continue
 
@@ -112,8 +111,8 @@ class JunctionScrapper:
         jobs_results = await asyncio.gather(*jobs)
         try:
             print(type(jobs_results))
-            self.jobs = [Job(**job) for job in jobs_results if job]
-            return self.jobs
+            self.jobs = {await format_reference(ref=job.get('job_ref')): Job(**job) for job in jobs_results if job}
+            return list(self.jobs.values())
         except ValidationError as e:
             print(str(e))
             return []
@@ -150,3 +149,19 @@ class JunctionScrapper:
             return job_dict
         except AttributeError as e:
             return
+
+    async def job_search(self, job_reference: str):
+        """
+            :param job_reference:
+            :return:
+        """
+        ref = await format_reference(ref=job_reference)
+        return self.jobs[ref]
+
+
+async def format_reference(ref: str) -> str:
+    """
+    :param ref:
+    :return:
+    """
+    return ref.replace(" ", "").lower()

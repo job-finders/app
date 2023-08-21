@@ -25,5 +25,6 @@ async def job_search(search_term: str):
 @home_route.get('/job/<string:reference>')
 async def job_detail(reference: str):
     job = await junction_scrapper.job_search(job_reference=reference)
+    print(job)
     context = dict(job=job)
     return render_template('job.html', **context)
