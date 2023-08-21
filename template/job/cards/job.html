@@ -1,0 +1,20 @@
+
+    {% for job in job_list %}
+        <div class="card">
+            <div class="card-header">
+                <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
+                <h2><a href="{{ job.job_link }}">{{ job.title }}</a></h2>
+            </div>
+            <div class="card-footer">
+                <p>{{ job.company_name }} - {{ job.location }}</p>
+                <ul class="list-inline">
+                    <li class="list-inline"> Salary: {{ job.salary }}</li>
+                    <li class="list-inline">Position: {{ job.position }}</li>
+                    <li class="list-inline">Updated: {{ job.updated_time }}</li>
+                    <li class="list-inline">Expires: {{ job.expires }}</li>
+                </ul>
+                <button class="btn btn-default">Details</button>
+            </div>
+        </div>
+    {% endfor %}
+

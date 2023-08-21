@@ -22,4 +22,6 @@ def scrape_indeed_jobs():
         print("------------------------------------")
 
 
-scrape_indeed_jobs()
+
+if __name__ == "__main__":
+    scrape_indeed_jobs()
