@@ -6,14 +6,17 @@
                 <h2><a href="{{ job.job_link }}">{{ job.title }}</a></h2>
             </div>
             <div class="card-footer">
-                <p>{{ job.company_name }} - {{ job.location }}</p>
+                <span class="card-title text-info font-weight-bold">{{ job.company_name }} - {{ job.location }}</span>
                 <ul class="list-inline">
                     <li class="list-inline"> Salary: {{ job.salary }}</li>
                     <li class="list-inline">Position: {{ job.position }}</li>
                     <li class="list-inline">Updated: {{ job.updated_time }}</li>
                     <li class="list-inline">Expires: {{ job.expires }}</li>
+                    <li class="list-inline">Reference: {{ job.job_ref }}</li>
                 </ul>
-                <button class="btn btn-default">Details</button>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('home.job_detail', reference=job.job_ref) }}" class="btn btn-lg btn-info"><i class="ti-info"></i> Job Details ...</a>
             </div>
         </div>
     {% endfor %}

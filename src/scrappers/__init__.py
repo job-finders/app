@@ -1,12 +1,13 @@
 import asyncio
 import aiohttp
+from datetime import datetime, timedelta, time
 from bs4 import BeautifulSoup
 from flask import Flask
 from pydantic import ValidationError
-
+from requests_cache import CachedSession
 from src.database.models.jobs import Job
 
-_default_jobs = ['information-technology',
+default_jobs = ['information-technology',
                  'office-admin',
                  'agriculture',
                  'engineering',
@@ -20,6 +21,19 @@ _default_jobs = ['information-technology',
                  'finance',
                  'programming']
 
+request_session = CachedSession('jobs.cache', use_cache_dir=False,
+                                cache_control=False,
+                                # Use Cache-Control response headers for expiration, if available
+                                expire_after=timedelta(hours=12),
+                                # Otherwise expire responses after one day
+                                allowable_codes=[200, 400],
+                                # Cache 400 responses as a solemn reminder of your failures
+                                allowable_methods=['GET', 'POST'],
+                                match_headers=['Accept-Language'],
+                                # Cache a different response per language
+                                stale_if_error=True  # In case of request errors, use stale cache data if possible
+                                )
+
 
 class JunctionScrapper:
     """
@@ -30,7 +44,7 @@ class JunctionScrapper:
 
         self._jobs_base_url: str = "https://www.careerjunction.co.za/jobs/"
         self._junction_base_url: str = "https://www.careerjunction.co.za/"
-
+        self.jobs: dict[str, Job] = []
         self.headers: dict[str, str] = {
             'user-agent': "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727; .NET CLR 3.0.04506.30)",
             'Accept-Language': 'en-US,en;q=0.9',
@@ -42,16 +56,23 @@ class JunctionScrapper:
         }
         pass
 
+    def manage_jobs(self, jobs: list[Job]):
+        for job in jobs:
+            self.jobs[job.job_ref] = job
+
     def init_app(self, app: Flask):
         pass
 
     async def fetch_url(self, url: str, timeout: int = 5) -> str | None:
         try:
             # return requests.get(url).content
-            async with aiohttp.ClientSession(headers=self.headers) as session:
-                async with session.get(url=url, timeout=timeout) as response:
-                    response.raise_for_status()
-                    return await response.text()
+            response = request_session.get(url=url)
+            # async with aiohttp.ClientSession(headers=self.headers) as session:
+            #     async with session.get(url=url, timeout=timeout) as response:
+            #         response.raise_for_status()
+            #         return await response.text()
+            return response.content
+
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             print(f"Error raised : {str(e)}")
             return None
@@ -91,7 +112,8 @@ class JunctionScrapper:
         jobs_results = await asyncio.gather(*jobs)
         try:
             print(type(jobs_results))
-            return [Job(**job) for job in jobs_results if job]
+            self.jobs = [Job(**job) for job in jobs_results if job]
+            return self.jobs
         except ValidationError as e:
             print(str(e))
             return []

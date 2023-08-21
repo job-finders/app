@@ -1,0 +1,12 @@
+.job-header {
+    display: flex;
+    align-items: center;
+}
+
+.job-header img {
+    margin-right: 10px; /* Adjust the margin as needed */
+}
+
+.inline-title {
+    margin: 0;
+}

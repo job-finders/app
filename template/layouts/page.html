@@ -31,6 +31,7 @@
     <link href="{{ url_for('static', filename='css/lib/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/lib/helper.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/jobfinder.css') }}" rel="stylesheet">
 {% endblock %}
 {% block custom_css %}
 
@@ -42,7 +43,7 @@
 {% endblock %}
 </head>
 <body>
-{% include "layouts/sidebar.html" %}
+{#{% include "layouts/sidebar.html" %}#}
 {% include "layouts/header.html" %}
     <div class="content-wrap">
         <div class="main">
@@ -50,17 +51,15 @@
                 <div class="row">
                     <div class="col-lg-8 p-r-0 title-margin-right">
                         <div class="page-header">
-                            <div class="page-title">
-                            {% if user %}
-                                <h1>Hello, <span class="text text-info">Welcome {% if user.full_name %}{{ user.full_name }}{% else %}{{ user.username }}{% endif %}</span></h1>
-                            {% else %}
-                                <h1>Hello, <span>Welcome Here</span></h1>
-                            {% endif %}
-
-                            </div>
+                            <h1 class="page-title">
+                                {{ term|title }} Jobs
+                            </h1>
                         {#{% include "layouts/verification_notice.html" %}#}
                             <!-- place flash messages here -->
                         {% include "layouts/flash.html" %}
+                        <span class="card-content">
+                            We find Jobs, so you can get employed
+                        </span>
                         </div>
                     </div>
                     <!-- /# column -->
@@ -68,7 +67,7 @@
                         <div class="page-header">
                             <div class="page-title">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item active">
+                                    <li class="breadcrumb-item active font-weight-bold text-info">
                                         <a href="{{ url_for('home.get_home') }}">
                                             Home
                                         </a>

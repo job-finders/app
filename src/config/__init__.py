@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     HOST_ADDRESSES: str = Field(..., env='HOST_ADDRESSES')
 
     class Config:
-        env_file = '.env.development'
+        env_file = '.env.developer'
         env_file_encoding = 'utf-8'
 
 

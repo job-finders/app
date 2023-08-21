@@ -1,26 +1,34 @@
 
 {% extends "layouts/page.html" %}
 {% block content %}
-    <section class="container">
         <div class="row">
                 <div class="col-lg-3">
                     <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title">Job Finder</h3>
+                                <h1 class="card-title font-weight-bold">Job Finder</h1>
                             </div>
+                        <div class="card-footer">
+                            {% include 'job/cards/search_terms.html' %}
+                        </div>
                     </div>
                 </div>
-                <div class="col-lg-9">
+                <div class="col-lg-6">
                     <div class="card">
                             <div class="card-header  d-flex justify-content-between align-items-center">
-                                <h3 class="card-title">{{ term }}</h3>
+                                <h2 class="card-title font-weight-bold">Latest {{ term|title }}</h2>
                                 <div>
-                                    <button class="btn btn-success">Search</button>
+{#                                    <button class="btn btn-success">Search</button>#}
                                 </div>
                             </div>
                     </div>
                     {% include "job/cards/job.html" %}
                 </div>
+                <div class="col-lg-3">
+{#                    <div class="card">#}
+{#                            <div class="card-header">#}
+{#                                <h1 class="card-title font-weight-bold">Job Finder</h1>#}
+{#                            </div>#}
+{#                    </div>#}
+                </div>
         </div>
-    </section>
 {% endblock %}
