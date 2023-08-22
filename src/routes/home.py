@@ -27,6 +27,10 @@ async def create_context(search_term):
 
 @home_route.get('/')
 async def get_home():
+    """
+        home directory will start with information tech jobs
+    :return:
+    """
     search_term = "information-technology"
     return await create_context(search_term)
 
