@@ -2,8 +2,7 @@
 <ul class="list-group">
     {% for term in search_terms %}
         <li class="list-group-item font-weight-bold text-info">
-        <a href="{{ url_for('home.job_search', search_term=term) }}">
-            <i class="ti-link"> </i>
+        <a href="{{ url_for('home.job_search', search_term=term) }}" class="font-weight-bold text-info">
             {{ term|title }}
         </a>
         </li>

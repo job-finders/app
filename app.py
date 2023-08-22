@@ -1,5 +1,4 @@
 from src.config import config_instance
-
 from src.main import create_app
 
 

@@ -15,9 +15,21 @@
                 <div class="col-lg-6">
                     <div class="card">
                             <div class="card-header  d-flex justify-content-between align-items-center">
-                                <h2 class="card-title font-weight-bold">Latest {{ term|title }}</h2>
+                                <h2 class="card-title font-weight-bold">{{ term|title }}</h2>
                                 <div>
-{#                                    <button class="btn btn-success">Search</button>#}
+
+                                    <a class="btn btn-default btn-outline-danger"
+                                       href="{{ url_for('home.job_search', search_term=previous_term) }}">
+                                        <i class="ti-arrow-left"> </i>
+                                        Back
+                                    </a>
+
+                                    <a class="btn btn-default btn-outline-success"
+                                            href="{{ url_for('home.job_search', search_term=next_term) }}">
+                                        <i class="ti-arrow-right"> </i>
+                                        Next
+                                    </a>
+
                                 </div>
                             </div>
                     </div>

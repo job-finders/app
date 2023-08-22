@@ -3,7 +3,7 @@
         <div class="card">
             <div class="card-header">
                 <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
-                <h2><a href="{{ job.job_link }}">{{ job.title }}</a></h2>
+                <h2><a href="{{ url_for('home.job_detail', reference=job.job_ref) }}">{{ job.title }}</a></h2>
             </div>
             <div class="card-footer">
                 <span class="card-title text-info font-weight-bold">{{ job.company_name }} - {{ job.location }}</span>

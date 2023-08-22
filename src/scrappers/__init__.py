@@ -14,7 +14,6 @@ default_jobs = ['information-technology',
                 'building-construction',
                 'business-management',
                 'cleaning-maintenance',
-                'business-management',
                 'community-social-welfare',
                 'education',
                 'nursing',
@@ -41,7 +40,18 @@ class JunctionScrapper:
     """
 
     def __init__(self):
-
+        self.default_jobs = ['information-technology',
+                'office-admin',
+                'agriculture',
+                'engineering',
+                'building-construction',
+                'business-management',
+                'cleaning-maintenance',
+                'community-social-welfare',
+                'education',
+                'nursing',
+                'finance',
+                'programming']
         self._jobs_base_url: str = "https://www.careerjunction.co.za/jobs/"
         self._junction_base_url: str = "https://www.careerjunction.co.za/"
         self.jobs: dict[str, Job] = {}
@@ -56,25 +66,23 @@ class JunctionScrapper:
         }
         pass
 
-    def manage_jobs(self, jobs: list[Job]):
+    async def manage_jobs(self, jobs: list[Job]):
         for job in jobs:
-            self.jobs[job.job_ref] = job
+            ref = await format_reference(ref=job.job_ref)
+            self.jobs[ref] = job
+
+    async def init_loader(self):
+        for search_term in self.default_jobs:
+            await self.scrape(term=search_term)
 
     def init_app(self, app: Flask):
-        pass
+        asyncio.run(self.init_loader())
 
-    async def fetch_url(self, url: str, timeout: int = 5) -> str | None:
+    @staticmethod
+    async def fetch_url(url: str) -> bytes | None:
         try:
-            # return requests.get(url).content
-            response = request_session.get(url=url)
-            # async with aiohttp.ClientSession(headers=self.headers) as session:
-            #     async with session.get(url=url, timeout=timeout) as response:
-            #         response.raise_for_status()
-            #         return await response.text()
-            return response.content
-
-        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            print(f"Error raised : {str(e)}")
+            return request_session.get(url=url).content
+        except Exception as e:
             return None
 
     async def scrape(self, term: str, page_limit: int = 1) -> list[Job]:
@@ -90,8 +98,7 @@ class JunctionScrapper:
                 continue
 
             url = f"{self._jobs_base_url}{term}?page={page}"
-            response: str = await self.fetch_url(url=url)
-            print(f"Response : OK")
+            response: bytes | None = await self.fetch_url(url=url)
             if not response:
                 continue
 
@@ -104,17 +111,16 @@ class JunctionScrapper:
                 job_details = await self.fetch_url(link)
                 if job_details is None:
                     continue
-                print(f"job details OK")
                 job_soup = BeautifulSoup(job_details, "html.parser")
                 jobs.append(self.more_details(job_soup=job_soup, job_link=link))
 
         jobs_results = await asyncio.gather(*jobs)
         try:
-            print(type(jobs_results))
-            self.jobs = {await format_reference(ref=job.get('job_ref')): Job(**job) for job in jobs_results if job}
+            jobs = [Job(**job) for job in jobs_results if job]
+            await self.manage_jobs(jobs=jobs)
+            # self.jobs = {await format_reference(ref=job.get('job_ref')): Job(**job) for job in jobs_results if job}
             return list(self.jobs.values())
         except ValidationError as e:
-            print(str(e))
             return []
 
     @staticmethod
