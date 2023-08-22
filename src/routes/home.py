@@ -7,6 +7,11 @@ home_route = Blueprint('home', __name__)
 
 
 async def create_context(search_term):
+    """
+        will create common context for jobs
+    :param search_term:
+    :return:
+    """
     job_list = await junction_scrapper.scrape(term=search_term)
     search_terms: list[str] = junction_scrapper.default_jobs
 
