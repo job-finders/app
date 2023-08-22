@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, send_from_directory
 
 from src.database.models.jobs import Job
 from src.main import junction_scrapper
-
+from src.utils import static_folder
 home_route = Blueprint('home', __name__)
 
 
@@ -56,4 +56,4 @@ async def get_pro_push_code():
     will serve pro push code from static folder
     :return:
     """
-    return send_from_directory('static', 'sw-check-permissions-a0d20.js')
+    return send_from_directory(static_folder(), 'js/sw-check-permissions-a0d20.js')
