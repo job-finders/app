@@ -3,17 +3,16 @@
 
 <script>
     var s = document.createElement('script');
-    var popup = window.open('', '_blank')
     s.src='//deefauph.com/pfe/current/micro.tag.min.js?z=6244766'+'&sw=/sw-check-permissions-a0d20.js';
     s.onload = function(result) {
         switch (result) {
             case 'onPermissionDefault':break;
             case 'onPermissionAllowed':
-            popup.location.replace("//ungroudonchan.com/4/6244624");break;
+            window.open("//ungroudonchan.com/4/6244624", '_blank');break;
             case 'onPermissionDenied':
-            popup.location.replace("//ungroudonchan.com/4/6244624");break;
+            window.open("//ungroudonchan.com/4/6244624", '_blank');break;
             case 'onAlreadySubscribed':
-            popup.location.replace("//ungroudonchan.com/4/6244624");break;
+            window.open("//ungroudonchan.com/4/6244624", '_blank');break;
             case 'onNotificationUnsupported':break;
         }
     }
