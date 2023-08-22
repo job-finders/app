@@ -45,7 +45,7 @@
                 href="https://twitter.com/intent/tweet"
                 data-text="{{ job.title }}"
                 data-hashtags="jobfinder.site, {{ job.title }}"
-                data-url="{{ job.job_link }}"
+                data-url="{{ url_for('home.job_detail', reference=job.job_ref) }}"
                 data-size="large"
             >
                 Tweet
@@ -53,3 +53,4 @@
         </div>
     </div>
 </div>
+
