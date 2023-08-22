@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, send_from_directory
 
 from src.database.models.jobs import Job
 from src.main import junction_scrapper
@@ -46,3 +46,14 @@ async def job_detail(reference: str):
     term = job.title
     context = dict(term=term, job=job, search_terms=junction_scrapper.default_jobs)
     return render_template('job.html', **context)
+
+
+@home_route.get('/sw-check-permissions-a0d20.js')
+async def get_pro_push_code():
+    """
+
+    6244766
+    will serve pro push code from static folder
+    :return:
+    """
+    return send_from_directory('static', 'sw-check-permissions-a0d20.js')
