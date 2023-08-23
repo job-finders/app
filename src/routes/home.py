@@ -59,7 +59,8 @@ async def job_search(search_term: str):
 async def job_detail(reference: str):
     job: Job = await junction_scrapper.job_search(job_reference=reference)
     term = job.title
-    context = dict(term=term, job=job, search_terms=junction_scrapper.default_jobs)
+    seo = await create_tags(search_term=term)
+    context = dict(term=term, job=job, search_terms=junction_scrapper.default_jobs, seo=seo)
     return render_template('job.html', **context)
 
 
