@@ -121,7 +121,7 @@ class JunctionScrapper:
             jobs = [Job(**job) for job in jobs_results if job]
             await self.manage_jobs(jobs=jobs)
             # self.jobs = {await format_reference(ref=job.get('job_ref')): Job(**job) for job in jobs_results if job}
-            return list(self.jobs.values())
+            return jobs
         except ValidationError as e:
             return []
 
