@@ -26,11 +26,11 @@
     <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
     <!-- Styles -->
 {% block css %}
-    <link href="{{ url_for('static', filename='css/lib/calendar2/pignose.calendar.min.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/lib/chartist/chartist.min.css') }}" rel="stylesheet">
+{#    <link href="{{ url_for('static', filename='css/lib/calendar2/pignose.calendar.min.css') }}" rel="stylesheet">#}
+{#    <link href="{{ url_for('static', filename='css/lib/chartist/chartist.min.css') }}" rel="stylesheet">#}
     <link href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/lib/owl.carousel.min.css') }}" rel="stylesheet" />
+{#    <link href="{{ url_for('static', filename='css/lib/owl.carousel.min.css') }}" rel="stylesheet" />#}
     <link href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}" rel="stylesheet" />
     <link href="{{ url_for('static', filename='css/lib/weather-icons.css') }}" rel="stylesheet" />
     <link href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}" rel="stylesheet">
@@ -57,13 +57,13 @@
                 <div class="row">
                     <div class="col-lg-8 p-r-0 title-margin-right">
                         <div class="page-header">
-                            <h1 class="page-title">
+                            <h1 class="page-title font-weight-bold text-info">
                                 {{ term|title }}
                             </h1>
                         {#{% include "layouts/verification_notice.html" %}#}
                             <!-- place flash messages here -->
                         {% include "layouts/flash.html" %}
-                        <span class="card-content">
+                        <span class="card-content font-weight-bold">
                             We find Jobs, so you can get employed
                         </span>
                         </div>
@@ -74,7 +74,8 @@
                             <div class="page-title">
                                 <ol class="breadcrumb">
                                     <li class="breadcrumb-item active font-weight-bold text-info">
-                                        <a href="{{ url_for('home.get_home') }}">
+                                        <a href="{{ url_for('home.get_home') }}"
+                                           class="btn-sm btn-outline-success font-weight-bold text-info">
                                             Home
                                         </a>
                                     </li>
@@ -89,6 +90,7 @@
                     {#   MAIN Content Section #}
                 {% endblock %}
             </div>
+            {% include "layouts/footer.html" %}
         </div>
     </div>
 

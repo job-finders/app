@@ -1,10 +1,11 @@
 import asyncio
-import aiohttp
-from datetime import datetime, timedelta, time
+from datetime import timedelta
+
 from bs4 import BeautifulSoup
 from flask import Flask
 from pydantic import ValidationError
 from requests_cache import CachedSession
+
 from src.database.models.jobs import Job
 
 default_jobs = ['information-technology',
@@ -21,7 +22,7 @@ default_jobs = ['information-technology',
                 'programming']
 
 request_session = CachedSession('jobs.cache', use_cache_dir=False,
-                                cache_control=False,
+                                cache_control=True,
                                 # Use Cache-Control response headers for expiration, if available
                                 expire_after=timedelta(hours=12),
                                 # Otherwise expire responses after one day
@@ -53,10 +54,6 @@ class JunctionScrapper:
             'nursing',
             'finance',
             'programming']
-
-        self._jobs_base_url: str = "https://www.careerjunction.co.za/jobs/"
-        self._junction_base_url: str = "https://www.careerjunction.co.za/"
-        self.jobs: dict[str, Job] = {}
         self.headers: dict[str, str] = {
             'user-agent': "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727; .NET CLR 3.0.04506.30)",
             'Accept-Language': 'en-US,en;q=0.9',
@@ -66,7 +63,10 @@ class JunctionScrapper:
             'Cache-Control': 'max-age=0',
             'Accept': '*/*'
         }
-        pass
+
+        self._jobs_base_url: str = "https://www.careerjunction.co.za/jobs/"
+        self._junction_base_url: str = "https://www.careerjunction.co.za/"
+        self.jobs: dict[str, Job] = {}
 
     async def manage_jobs(self, jobs: list[Job]):
         for job in jobs:
@@ -80,6 +80,7 @@ class JunctionScrapper:
     def init_app(self, app: Flask):
         asyncio.run(self.init_loader())
 
+    # noinspection PyBroadException
     @staticmethod
     async def fetch_url(url: str) -> bytes | None:
         try:

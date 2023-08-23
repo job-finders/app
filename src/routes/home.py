@@ -71,3 +71,57 @@ async def get_pro_push_code():
     :return:
     """
     return send_from_directory(static_folder(), 'js/sw-check-permissions-a0d20.js')
+
+
+@home_route.get('/about')
+async def about():
+    """
+
+    :return:
+    """
+    seo = await create_tags(search_term="about")
+    context = dict(seo=seo, term="about")
+    return render_template('about.html', **context)
+
+
+@home_route.get('/contact')
+async def contact():
+    """
+
+    :return:
+    """
+    seo = await create_tags(search_term="contact")
+    context = dict(seo=seo, term="contact")
+    return render_template('contact.html', **context)
+
+@home_route.get('/terms')
+async def terms():
+    """
+
+    :return:
+    """
+    seo = await create_tags(search_term="terms")
+    context = dict(seo=seo, term="terms")
+    return render_template('terms.html', **context)
+
+
+@home_route.get('/sister-sites')
+async def sister_sites():
+    """
+
+    :return:
+    """
+    seo = await create_tags(search_term="sister-sites")
+    context = dict(seo=seo, term="sister-sites")
+    return render_template('sisters.html', **context)
+
+
+@home_route.get('/faq')
+async def faq():
+    """
+
+    :return:
+    """
+    seo = await create_tags(search_term="FAQ")
+    context = dict(seo=seo, term="FAQ")
+    return render_template('faq.html', **context)

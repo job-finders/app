@@ -12,17 +12,17 @@
                     <div class="float-left job-header">
                         <a href="{{ url_for('home.get_home') }}" class="float-left job-header">
                         <img src="{{ url_for('static', filename="images/jobfinder.jpg") }}" width="45" height="45" alt="Job Finder Logo">
-                        <h2 class="inline-title">Job Finder</h2>
+                        <h2 class="inline-title font-weight-bold text-info">Job Finders</h2>
                         </a>
                     </div>
-                    <div class="float-left">
+                    <div class="float-right">
                         <div class="dropdown dib">
+                        <div>
+                            <a href="{{ url_for("home.contact") }}" class="btn-sm font-weight-bold btn-outline-success text-info">Contact</a> |
+                            <a href="{{ url_for("home.about") }}" class="btn-sm font-weight-bold btn-outline-success text-info">About</a>
+                        </div>
+
                             <div class="header-icon" data-toggle="dropdown">
-                                {% if user %}
-                                    <span class="user-avatar">{% if user.full_name %}{{ user.full_name }}{% else %}{{ user.username }}{% endif %}
-                                        <i class="ti-angle-down f-s-10"></i>
-                                    </span>
-                                {% endif %}
                             </div>
                         </div>
                     </div>
