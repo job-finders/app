@@ -40,18 +40,20 @@ class JunctionScrapper:
     """
 
     def __init__(self):
-        self.default_jobs = ['information-technology',
-                'office-admin',
-                'agriculture',
-                'engineering',
-                'building-construction',
-                'business-management',
-                'cleaning-maintenance',
-                'community-social-welfare',
-                'education',
-                'nursing',
-                'finance',
-                'programming']
+        self.default_jobs = [
+            'information-technology',
+            'office-admin',
+            'agriculture',
+            'engineering',
+            'building-construction',
+            'business-management',
+            'cleaning-maintenance',
+            'community-social-welfare',
+            'education',
+            'nursing',
+            'finance',
+            'programming']
+
         self._jobs_base_url: str = "https://www.careerjunction.co.za/jobs/"
         self._junction_base_url: str = "https://www.careerjunction.co.za/"
         self.jobs: dict[str, Job] = {}

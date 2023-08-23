@@ -1,15 +1,8 @@
-
 from flask import Flask
 from src.scrappers import JunctionScrapper
-from src.utils import template_folder, static_folder
+from src.utils import template_folder, static_folder, format_title
 
 junction_scrapper = JunctionScrapper()
-
-
-def title_to_display(title: str):
-    if not title:
-        return "-"
-    return title.replace("-", " ").title()
 
 
 def create_app(config):
@@ -27,6 +20,9 @@ def create_app(config):
     with app.app_context():
         junction_scrapper.init_app(app=app)
         from src.routes.home import home_route
+        from src.routes.seo import seo_route
         app.register_blueprint(home_route)
-        app.jinja_env.filters['title'] = title_to_display
+        app.register_blueprint(seo_route)
+
+        app.jinja_env.filters['title'] = format_title
     return app

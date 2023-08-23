@@ -1,24 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <title>Job Finder - {{ seo.title|title  }}</title>
+
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="pushsdk" content="3ddb63e3980f5d1b7353c158ed3267d1">
     <!-- theme meta -->
     <meta name="theme-name" content="focus" />
-    <title>Job Finder</title>
     <!-- ================= Favicon ================== -->
+    <meta name="description" content="{{ seo.description|title }}">
+    <meta name="keywords" content="{{ seo.keywords }}">
+    <!-- Add more SEO meta tags as needed -->
+
     <!-- Standard -->
-    <link rel="shortcut icon" href="{{ url_for('static', filename='images/custom/jobfinder.jpg') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
     <!-- Retina iPad Touch Icon-->
-    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='images/custom/logo.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
     <!-- Retina iPhone Touch Icon-->
-    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='images/custom/logo.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
     <!-- Standard iPad Touch Icon-->
-    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='images/custom/logo.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
     <!-- Standard iPhone Touch Icon-->
-    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/custom/logo.png') }}">
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
     <!-- Styles -->
 {% block css %}
     <link href="{{ url_for('static', filename='css/lib/calendar2/pignose.calendar.min.css') }}" rel="stylesheet">
