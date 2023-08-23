@@ -6,63 +6,83 @@
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>https://jobfinders.site/jobs/information-technology</loc>
+        <loc>https://jobfinders.site/about</loc>
         <changefreq>monthly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>https://jobfinders.site/contact</loc>
+        <changefreq>monthly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>https://jobfinders.site/terms</loc>
+        <changefreq>monthly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>https://jobfinders.site/sister-sites</loc>
+        <changefreq>monthly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>https://jobfinders.site/jobs/information-technology</loc>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/office-admin</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/agriculture</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/engineering</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/building-construction</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/business-management</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/cleaning-maintenance</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/community-social-welfare</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/education</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/nursing</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/finance</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://jobfinders.site/jobs/programming</loc>
-        <changefreq>monthly</changefreq>
+        <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
 </urlset>

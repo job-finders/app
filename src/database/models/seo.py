@@ -5,3 +5,4 @@ class SEO(BaseModel):
     title: str
     description: str
     keywords: str
+

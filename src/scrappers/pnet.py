@@ -1,11 +1,21 @@
 import requests
 from bs4 import BeautifulSoup
+headers: dict[str, str] = {
+    'user-agent': "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727; .NET CLR 3.0.04506.30)",
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Referer': 'https://www.google.com',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'max-age=0',
+    'Accept': '*/*'
+}
 
 def scrape_pnet_jobs():
-    url = "https://www.pnet.co.za/5/job-search-detailed.html?ke=&li=100&of=0&suid=cef3a793-10e4-41be-8d84-dc43a00c4b11&an=facets"
-    response = requests.get(url)
+    url = "https://www.pnet.co.za/jobs/information-technology"
+    response = requests.get(url=url, headers=headers)
+    print(response)
     soup = BeautifulSoup(response.content, "html.parser")
-
+    print(soup)
     job_elements = soup.find_all("li", class_="result")
 
     for job_element in job_elements:
@@ -20,4 +30,8 @@ def scrape_pnet_jobs():
         print("Salary:", salary)
         print("------------------------------------")
 
-scrape_pnet_jobs()
+
+
+
+if __name__ == "__main__":
+    scrape_pnet_jobs()
