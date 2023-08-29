@@ -215,6 +215,9 @@ class CareerScrapper:
                 if job_details_response:
                     company_name, description, job_ref, salary = await self.extract_job_details(
                         company_name=company_name, job_details_response=job_details_response)
+                    if salary is None and job_ref is None:
+                        continue
+
                     jobs.append(Job(**dict(search_term=search_term,
                                            title=title,
                                            logo_link=logo_link,
@@ -247,22 +250,26 @@ class CareerScrapper:
 
     @staticmethod
     async def extract_job_details(company_name, job_details_response):
-        job_details_soup = BeautifulSoup(job_details_response, 'html.parser')
-        vacancy_details = job_details_soup.find("div", class_="c24-vacancy-deatils-container")
-        salary_tag = vacancy_details.find("li", string="Salary:")
-        salary = vacancy_details.find("li", class_="elipses").text.strip().split(":")[1]
+        try:
+            job_details_soup = BeautifulSoup(job_details_response, 'html.parser')
+            vacancy_details = job_details_soup.find("div", class_="c24-vacancy-deatils-container")
 
-        sectors_tag = vacancy_details.find("li", class_="c24-sectr")
-        sectors = [sector.text.strip() for sector in sectors_tag.find_all("a")] if sectors_tag else []
-        reference_tags = vacancy_details.find("ul", class_="small-text").find_all("li")
-        job_ref = reference_tags[-1].text.strip()
-        description = vacancy_details.find("div", class_="v-descrip").text.strip()
-        if not company_name:
-            try:
-                company_name = vacancy_details.find("p", class_="mb-15").text.strip()
-            except AttributeError:
-                company_name = "N/A"
-        return company_name, description, job_ref, salary
+            salary_tag = vacancy_details.find("li", string="Salary:")
+            salary = vacancy_details.find("li", class_="elipses").text.strip().split(":")[1]
+
+            sectors_tag = vacancy_details.find("li", class_="c24-sectr")
+            sectors = [sector.text.strip() for sector in sectors_tag.find_all("a")] if sectors_tag else []
+            reference_tags = vacancy_details.find("ul", class_="small-text").find_all("li")
+            job_ref = reference_tags[-1].text.strip()
+            description = vacancy_details.find("div", class_="v-descrip").text.strip()
+            if not company_name:
+                try:
+                    company_name = vacancy_details.find("p", class_="mb-15").text.strip()
+                except AttributeError:
+                    company_name = "N/A"
+            return company_name, description, job_ref, salary
+        except AttributeError:
+            return None, None, None, None
 
     @staticmethod
     async def parse_posted_date(date_line: str):
