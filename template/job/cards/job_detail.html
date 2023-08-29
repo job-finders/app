@@ -1,16 +1,31 @@
-
+{% block css  %}
+    <style>
+        /* Default styles for larger screens */
+        .heading-with-logo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .heading-with-logo img {
+            max-width: 100px; /* You can adjust the max width of the logo */
+            height: auto;
+        }
+        /* Media query for small screens */
+        @media (max-width: 767px) {
+            .heading-with-logo img {
+                display: none; /* Hide the image on small screens */
+            }
+        }
+    </style>
+{% endblock %}
 
 <div class="card">
         <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
-            <h2 class="card-title"><a href="{{ job.job_link }}" rel="nofollow noreferrer" target="_blank">{{ job.title }}</a></h2>
-        <div>
-            <button class="btn btn-danger btn-sm" onclick="window.history.back()">
-                <i class="ti-back-left"> </i>
-                Back
-            </button>
-        </div>
+            <div class="heading-with-logo">
+                <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
+                <h2 class="card-title"><a href="{{ url_for('home.job_detail', reference=job.job_ref) }}">{{ job.title }}</a></h2>
+            </div>
+          </div>
         </div>
         <div class="card-footer">
             <span class="card-title text-info font-weight-bold">{{ job.company_name }} - {{ job.location }}</span>
