@@ -21,7 +21,7 @@ def create_app(config):
 
     with app.app_context():
         junction_scrapper.init_app(app=app)
-        # career_scrapper.init_app(app=app)
+        career_scrapper.init_app(app=app)
         from src.routes.home import home_route
         from src.routes.seo import seo_route
         app.register_blueprint(home_route)

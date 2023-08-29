@@ -1,4 +1,6 @@
+import re
 import asyncio
+import uuid
 from datetime import timedelta
 
 from bs4 import BeautifulSoup
@@ -52,10 +54,12 @@ class Scrapper:
     @staticmethod
     async def format_reference(ref: str) -> str:
         """
-        :param ref:
-        :return:
+        :param ref: The input reference string.
+        :return: The formatted reference string with special characters removed.
         """
-        return ref.replace(" ", "").lower()
+        special_chars = r'[!@#$%^&*()+=\[\]{}|;:",<>/`~]'
+        ref_without_special = re.sub(special_chars, '', ref.replace(" ", "").lower())
+        return ref_without_special
 
     async def manage_jobs(self, jobs: list[Job]):
         for job in jobs:
@@ -261,6 +265,8 @@ class CareerScrapper:
             sectors = [sector.text.strip() for sector in sectors_tag.find_all("a")] if sectors_tag else []
             reference_tags = vacancy_details.find("ul", class_="small-text").find_all("li")
             job_ref = reference_tags[-1].text.strip()
+            if not job_ref:
+                job_ref = str(uuid.uuid4())
             description = vacancy_details.find("div", class_="v-descrip").text.strip()
             if not company_name:
                 try:
