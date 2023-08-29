@@ -231,8 +231,7 @@ class CareerScrapper:
                                            updated_time=updated_time,
                                            expires=expires, job_ref=job_ref, description=description)))
                     print(f"Job Created")
-            for _job in jobs:
-                print(_job)
+
             await self.scrapper.manage_jobs(jobs=jobs)
             return jobs
         else:
@@ -267,6 +266,9 @@ class CareerScrapper:
             job_ref = reference_tags[-1].text.strip()
             if not job_ref:
                 job_ref = str(uuid.uuid4())
+            if "/" in job_ref:
+                job_ref = job_ref.split("/")[0]
+
             description = vacancy_details.find("div", class_="v-descrip").text.strip()
             if not company_name:
                 try:
