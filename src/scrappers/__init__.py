@@ -79,7 +79,11 @@ class Scrapper:
             :return:
         """
         ref = await self.format_reference(ref=job_reference)
-        return self.jobs[ref]
+        try:
+            return self.jobs[ref]
+        except KeyError as e:
+            # In case of error return the last job
+            return self.jobs[list(self.jobs.keys())[-1]]
 
 
 class JunctionScrapper:
