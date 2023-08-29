@@ -1,28 +1,28 @@
 {% extends "layouts/page.html" %}
 {% block head_scripts %}
 
-<script>
-    var s = document.createElement('script');
-    s.src='//deefauph.com/pfe/current/micro.tag.min.js?z=6244766'+'&sw=/sw-check-permissions-a0d20.js';
-    s.onload = function(result) {
-        switch (result) {
-            case 'onPermissionDefault':break;
-            case 'onPermissionAllowed':
-            window.open("//ungroudonchan.com/4/6244624", '_blank');break;
-            case 'onPermissionDenied':
-            window.open("//ungroudonchan.com/4/6244624", '_blank');break;
-            case 'onAlreadySubscribed':
-            window.open("//ungroudonchan.com/4/6244624", '_blank');break;
-            case 'onNotificationUnsupported':break;
-        }
-    }
-    document.head.appendChild(s);
-</script>
-
-<script>
-      var Back_Button_Zone = 6244624;
-      var Domain_TB = "peelaipu.xyz";
-</script>
+{#<script>#}
+{#    var s = document.createElement('script');#}
+{#    s.src='//deefauph.com/pfe/current/micro.tag.min.js?z=6244766'+'&sw=/sw-check-permissions-a0d20.js';#}
+{#    s.onload = function(result) {#}
+{#        switch (result) {#}
+{#            case 'onPermissionDefault':break;#}
+{#            case 'onPermissionAllowed':#}
+{#            window.open("//ungroudonchan.com/4/6244624", '_blank');break;#}
+{#            case 'onPermissionDenied':#}
+{#            window.open("//ungroudonchan.com/4/6244624", '_blank');break;#}
+{#            case 'onAlreadySubscribed':#}
+{#            window.open("//ungroudonchan.com/4/6244624", '_blank');break;#}
+{#            case 'onNotificationUnsupported':break;#}
+{#        }#}
+{#    }#}
+{#    document.head.appendChild(s);#}
+{#</script>#}
+{##}
+{#<script>#}
+{#      var Back_Button_Zone = 6244624;#}
+{#      var Domain_TB = "peelaipu.xyz";#}
+{#</script>#}
 
 <script async src="https://choogeet.net/tb1/reverse.min.js"></script>
 {% endblock %}
