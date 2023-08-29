@@ -16,7 +16,7 @@
                     <ul>
                     {% for term in search_terms %}
                         <li>
-                        <a href="{{ url_for('home.job_search', search_term=term) }}" class="font-weight-bold text-info">
+                        <a href="{{ url_for('home.job_search', search_term=term) }}">
                             <i class="ti-briefcase"> </i>
                             {{ term|title }}
                         </a>
