@@ -11,7 +11,7 @@ async def get_site_job_links() -> list[str]:
     :return:
     """
     links = []
-    for job in scrapper.jobs:
+    for job in scrapper.jobs.values():
         links.append(url_for('home.job_detail', _external=True, reference=job.job_ref))
     return links
 
