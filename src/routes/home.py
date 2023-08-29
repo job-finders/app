@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template, send_from_directory
 
+from src.logger import init_logger
 from src.database.models import Job, SEO
-from src.main import junction_scrapper
+from src.main import junction_scrapper, scrapper
 from src.utils import static_folder, format_title
 
 home_route = Blueprint('home', __name__)
+home_logger = init_logger()
 
 
 async def create_tags(search_term: str) -> SEO:
@@ -27,8 +29,14 @@ async def create_context(search_term: str):
     :param search_term:
     :return:
     """
-    job_list = await junction_scrapper.scrape(term=search_term)
-    search_terms: list[str] = junction_scrapper.default_jobs
+    if search_term not in scrapper.search_terms:
+        # TODO - return an error here preferably with an error page
+        return None
+
+    job_list = [job for job in scrapper.jobs.values() if job.search_term.casefold() == search_term.casefold()]
+
+    search_terms: list[str] = scrapper.search_terms
+
     seo = await create_tags(search_term=search_term)
     current_index: int = search_terms.index(search_term)
     previous_term: str = search_terms[current_index - 1] if current_index > 0 else search_terms[len(search_terms) - 1]
@@ -57,10 +65,10 @@ async def job_search(search_term: str):
 
 @home_route.get('/job/<string:reference>')
 async def job_detail(reference: str):
-    job: Job = await junction_scrapper.job_search(job_reference=reference)
+    job: Job = await scrapper.job_search(job_reference=reference)
     term = job.title
     seo = await create_tags(search_term=term)
-    context = dict(term=term, job=job, search_terms=junction_scrapper.default_jobs, seo=seo)
+    context = dict(term=term, job=job, search_terms=scrapper.search_terms, seo=seo)
     return render_template('job.html', **context)
 
 
@@ -76,7 +84,6 @@ async def get_pro_push_code():
 @home_route.get('/about')
 async def about():
     """
-
     :return:
     """
     seo = await create_tags(search_term="about")
@@ -87,17 +94,16 @@ async def about():
 @home_route.get('/contact')
 async def contact():
     """
-
     :return:
     """
     seo = await create_tags(search_term="contact")
     context = dict(seo=seo, term="contact")
     return render_template('contact.html', **context)
 
+
 @home_route.get('/terms')
 async def terms():
     """
-
     :return:
     """
     seo = await create_tags(search_term="terms")
@@ -108,7 +114,6 @@ async def terms():
 @home_route.get('/sister-sites')
 async def sister_sites():
     """
-
     :return:
     """
     seo = await create_tags(search_term="sister-sites")
@@ -119,7 +124,6 @@ async def sister_sites():
 @home_route.get('/faq')
 async def faq():
     """
-
     :return:
     """
     seo = await create_tags(search_term="FAQ")

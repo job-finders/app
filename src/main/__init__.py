@@ -1,9 +1,10 @@
 from flask import Flask
-from src.scrappers import JunctionScrapper, CareerScrapper
+from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
 from src.utils import template_folder, static_folder, format_title
 
-junction_scrapper = JunctionScrapper()
-career_scrapper = CareerScrapper()
+scrapper = Scrapper()
+junction_scrapper = JunctionScrapper(scrapper=scrapper)
+career_scrapper = CareerScrapper(scrapper=scrapper)
 
 
 def create_app(config):

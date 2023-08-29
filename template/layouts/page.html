@@ -49,7 +49,7 @@
 {% endblock %}
 </head>
 <body>
-{#{% include "layouts/sidebar.html" %}#}
+{% include "layouts/sidebar.html" %}
 {% include "layouts/header.html" %}
     <div class="content-wrap">
         <div class="main">
@@ -68,21 +68,7 @@
                         </span>
                         </div>
                     </div>
-                    <!-- /# column -->
-                    <div class="col-lg-4 p-l-0 title-margin-left">
-                        <div class="page-header">
-                            <div class="page-title">
-                                <ol class="breadcrumb">
-                                    <li class="breadcrumb-item active font-weight-bold text-info">
-                                        <a href="{{ url_for('home.get_home') }}"
-                                           class="btn-sm btn-outline-success font-weight-bold text-info">
-                                            Home
-                                        </a>
-                                    </li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
+
                     <!-- /# column -->
                 </div>
                 <!-- /# row -->
@@ -91,7 +77,7 @@
                 {% endblock %}
             </div>
             {% include "layouts/footer.html" %}
-        </div>
+
     </div>
 
     <script src="{{ url_for('static', filename='js/lib/jquery.min.js') }}"></script>

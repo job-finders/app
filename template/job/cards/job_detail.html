@@ -28,10 +28,11 @@
             <h2 class="card-title font-weight-bold">Required Skills</h2>
         </div>
             <ul class="list-group">
-
+                {% if job and job.desured_skills %}
                 {% for skill in job.desired_skills %}
                     <li class="list-group-item"><h4 class="card-title">{{ skill|safe }}</h4></li>
                 {% endfor %}
+                {% endif %}
             </ul>
         </div>
 {#        <div class="card-content">#}

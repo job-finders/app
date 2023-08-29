@@ -2,55 +2,49 @@
 {% extends "layouts/page.html" %}
 {% block content %}
         <div class="row">
-                <div class="col-lg-3">
-                    <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h1 class="card-title font-weight-bold">Job Finder</h1>
-                                <div>
-                                    <a class="twitter-share-button"
-                                       href="https://twitter.com/intent/tweet"
-                                       data-text="Lets Help you find a Job!"
-                                       data-url="https://jobfinders.site"
-                                       data-size="large"
-                                    >
-                                      Tweet
-                                    </a>
-                                </div>
-                            </div>
-                        <div class="card-footer">
-                            {% include 'job/cards/search_terms.html' %}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
+{#                <div class="col-lg-3 col-md-3 col-sm-12">#}
+{#                    <div class="card">#}
+{#                            <div class="card-header d-flex justify-content-between align-items-center">#}
+{#                                <h1 class="card-title font-weight-bold">Job Finder</h1>#}
+{#                                <div>#}
+{#                                    <a class="twitter-share-button"#}
+{#                                       href="https://twitter.com/intent/tweet"#}
+{#                                       data-text="Lets Help you find a Job!"#}
+{#                                       data-url="https://jobfinders.site"#}
+{#                                       data-size="large"#}
+{#                                    >#}
+{#                                      Tweet#}
+{#                                    </a>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        <div class="card-footer">#}
+{#                            {% include 'job/cards/search_terms.html' %}#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+                <div class="col-lg-12 col-md-12 col-sm-12">
                     <div class="card">
                             <div class="card-header  d-flex justify-content-between align-items-center">
                                 <h2 class="card-title font-weight-bold">{{ term|title }}</h2>
                                 <div>
 
-                                    <a class="btn btn-default btn-outline-danger"
-                                       href="{{ url_for('home.job_search', search_term=previous_term) }}">
-                                        <i class="ti-arrow-left"> </i>
-                                        Back
-                                    </a>
-
-                                    <a class="btn btn-default btn-outline-success"
-                                            href="{{ url_for('home.job_search', search_term=next_term) }}">
-                                        <i class="ti-arrow-right"> </i>
-                                        Next
-                                    </a>
+{#                                    <a class="btn btn-default btn-outline-danger"#}
+{#                                       href="{{ url_for('home.job_search', search_term=previous_term) }}">#}
+{#                                        <i class="ti-arrow-left"> </i>#}
+{#                                        Back#}
+{#                                    </a>#}
+{##}
+{#                                    <a class="btn btn-default btn-outline-success"#}
+{#                                            href="{{ url_for('home.job_search', search_term=next_term) }}">#}
+{#                                        <i class="ti-arrow-right"> </i>#}
+{#                                        Next#}
+{#                                    </a>#}
 
                                 </div>
                             </div>
                     </div>
                     {% include "job/cards/job.html" %}
                 </div>
-                <div class="col-lg-3">
-{#                    <div class="card">#}
-{#                            <div class="card-header">#}
-{#                                <h1 class="card-title font-weight-bold">Job Finder</h1>#}
-{#                            </div>#}
-{#                    </div>#}
-                </div>
+
         </div>
 {% endblock %}

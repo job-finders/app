@@ -2,6 +2,7 @@ from pydantic import BaseModel, validator
 
 
 class Job(BaseModel):
+    search_term: str
     logo_link: str | None
     job_link: str
     title: str

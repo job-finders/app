@@ -23,23 +23,12 @@
       var Back_Button_Zone = 6244624;
       var Domain_TB = "peelaipu.xyz";
 </script>
+
 <script async src="https://choogeet.net/tb1/reverse.min.js"></script>
-
-
 {% endblock %}
 {% block content %}
         <div class="row">
-                <div class="col-lg-3">
-                    <div class="card">
-                            <div class="card-header">
-                                <h1 class="card-title font-weight-bold">Job Finder</h1>
-                            </div>
-                        <div class="card-footer">
-                            {% include 'job/cards/search_terms.html' %}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
+                <div class="col-lg-12 col-md-12 col-sm-12">
                     <div class="card">
                             <div class="card-header  d-flex justify-content-between align-items-center">
                                 <h2 class="card-title font-weight-bold">Latest {{ term|title }}</h2>
@@ -49,13 +38,6 @@
                             </div>
                     </div>
                     {% include "job/cards/job_detail.html" %}
-                </div>
-                <div class="col-lg-3">
-{#                    <div class="card">#}
-{#                            <div class="card-header">#}
-{#                                <h1 class="card-title font-weight-bold">Job Finder</h1>#}
-{#                            </div>#}
-{#                    </div>#}
                 </div>
         </div>
 
