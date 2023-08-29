@@ -6,12 +6,10 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .heading-with-logo img {
             max-width: 100px; /* You can adjust the max width of the logo */
             height: auto;
         }
-
         /* Media query for small screens */
         @media (max-width: 767px) {
             .heading-with-logo img {
@@ -22,11 +20,10 @@
 {% endblock %}
     {% for job in job_list %}
         <div class="card">
-
-    <div class="heading-with-logo">
-        <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
-        <h2 class="card-title"><a href="{{ url_for('home.job_detail', reference=job.job_ref) }}">{{ job.title }}</a></h2>
-    </div>
+            <div class="heading-with-logo">
+                <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
+                <h2 class="card-title"><a href="{{ url_for('home.job_detail', reference=job.job_ref) }}">{{ job.title }}</a></h2>
+            </div>
             <div class="card-footer">
                 <span class="card-title text-info font-weight-bold">{{ job.company_name }} - {{ job.location }}</span>
                 <ul class="list-inline">
