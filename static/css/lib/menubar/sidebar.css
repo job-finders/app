@@ -53,9 +53,9 @@
 }
 
 .sidebar .nano-content>ul li.label {
-    font-size: 14px;
+    font-size: 12px;
     /* height: 30px; */
-    line-height: 40px;
+    line-height: 30px;
     color: rgba(160, 180, 200, 0.55);
     text-transform: capitalize;
     font-weight: normal;
