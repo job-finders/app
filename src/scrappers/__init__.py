@@ -118,7 +118,7 @@ class JunctionScrapper:
 
             for job_element in job_elements:
                 show_more_link: str = job_element.find("a", class_="show-more")["href"]
-                link = f"{self._junction_base_url}{show_more_link}"
+                link = f"{self._junction_base_url}{show_more_link.replace('/', '')}"
                 job_details = await self.scrapper.fetch_url(link)
                 if job_details is None:
                     continue

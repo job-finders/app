@@ -37,6 +37,19 @@
         .fb-share-button {
             border-radius: 10%; /* Make the button inside rounded */
         }
+        .dotted-list {
+            list-style-type: none;
+            padding-left: 1em;
+        }
+
+        .dotted-list li:before {
+            content: "\2022"; /* Unicode character for bullet point */
+            color: #999; /* Color of the bullet point */
+            font-size: 1.2em; /* Size of the bullet point */
+            display: inline-block;
+            width: 1em; /* Adjust as needed */
+            margin-left: -1em;
+        }
 
     </style>
 {% endblock %}
@@ -50,55 +63,57 @@
 
         <div class="card-footer">
             <span class="card-title text-info font-weight-bold">{{ job.company_name }} - {{ job.location }}</span>
-            <ul class="list-inline">
-                <li class="list-inline">
-                    <h3 class="card-title">
+            <ul class="dotted-list">
+                <li>
+                    <span class="card-title">
                     <span class="font-italic"> Salary:</span> <span class="font-weight-bold text-info"> {{ job.salary }}</span>
-                    </h3>
+                    </span>
                 </li>
-                <li class="list-inline">
-                    <h3 class="card-title">
+                <li>
+                    <span class="card-title">
                         <span class="font-italic">Position: </span> <span class="font-weight-bold text-info"> {{ job.position }}</span>
-                    </h3>
+                    </span>
                 </li>
-                <li class="list-inline">
-                    <h3 class="card-title">
+                <li>
+                    <span class="card-title">
                         <span class="font-italic"> Updated: </span> <span class="font-weight-bold text-info"> {{ job.updated_time }}</span>
-                    </h3>
+                    </span>
                 </li>
-                <li class="list-inline">
-                    <h3 class="card-title">
+                <li>
+                    <span class="card-title">
                         <span class="font-italic">Expires:</span>  <span class="font-weight-bold text-info">  {{ job.expires }}</span>
-                    </h3>
+                    </span>
                 </li>
-                <li class="list-inline">
-                    <h3 class="card-title">
+                <li>
+                    <span class="card-title">
                         <span class="font-italic"> Reference: </span> <span class="font-weight-bold text-info">  {{ job.job_ref }}</span>
-                    </h3>
+                    </span>
                 </li>
             </ul>
         </div>
 
-        <div class="card-content">
-        {% if job and job.desired_skills %}
-            <div class="card-header">
-                <h2 class="card-title font-weight-bold">Required Skills</h2>
-            </div>
+        <div class="card-footer">
+            {% if job and job.desired_skills %}
+                <div class="card-header">
+                    <h2 class="card-title font-weight-bold">Required Skills</h2>
+                </div>
 
-            <ol>
+                <ul class="dotted-list">
                     {% for skill in job.desired_skills %}
-                        <li><h4 class="card-title">{{ skill|safe }}</h4></li>
+                        <li><span class="card-title">{{ skill|safe }}</span></li>
                     {% endfor %}
-            </ol>
-            
-        {% elif job and job.description %}
-            <div class="card-header">
-                <h2 class="card-title font-weight-bold">Job Description</h2>
-            </div>
-            <span class="card-text">
-                {{ job.description|safe }}
-            </span>
-        {% endif %}
+                </ul>
+            {% endif %}
+
+            {% if job and job.description %}
+                <div class="card-header">
+                    <h2 class="card-title font-weight-bold">Job Description</h2>
+                </div>
+                <span class="card-text">
+                    {{ job.description|description }}
+                </span>
+            {% endif %}
+
         </div>
 
 

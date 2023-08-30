@@ -16,6 +16,51 @@ def format_title(title: str):
     return title.replace("-", " ").title()
 
 
+def format_description(description: str):
+    """
+    Parse the input description and create paragraphs using HTML based on headings.
+
+    :param description: The input job description text.
+    :return: Formatted HTML representation of the description.
+    """
+    headings = [
+        "ABOUT THE POSITION",
+        "Job brief",
+        "Responsibilities",
+        "Requirements",
+        "Desired Work Experience",
+        "Desired Qualification Level"
+    ]
+
+    paragraphs = []
+    current_heading = None
+
+    for line in description.splitlines():
+        line = line.strip()
+
+        # Check if the line matches any of the headings
+        if line in headings:
+            current_heading = line
+        elif current_heading:
+            # If there's a current heading, treat the line as content
+            if line:
+                paragraphs.append((current_heading, line))
+        else:
+            # If there's no current heading, treat the line as a regular paragraph
+            if line:
+                paragraphs.append(("paragraph", line))
+
+    # Generate HTML paragraphs based on the parsed content
+    html = ""
+    for heading, content in paragraphs:
+        if heading == "paragraph":
+            html += f"<p>{content}</p>\n"
+        else:
+            html += f"<h2>{heading}</h2>\n<p>{content}</p>\n"
+
+    return html
+
+
 def format_reference(ref: str) -> str:
     """
     :param ref: The input reference string.

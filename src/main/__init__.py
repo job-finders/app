@@ -1,6 +1,6 @@
 from flask import Flask
 from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
-from src.utils import template_folder, static_folder, format_title
+from src.utils import template_folder, static_folder, format_title, format_description
 
 scrapper = Scrapper()
 junction_scrapper = JunctionScrapper(scrapper=scrapper)
@@ -28,4 +28,5 @@ def create_app(config):
         app.register_blueprint(seo_route)
 
         app.jinja_env.filters['title'] = format_title
+        app.jinja_env.filters['description'] = format_description
     return app
