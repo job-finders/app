@@ -1,6 +1,7 @@
-from functools import lru_cache
+
 from flask import Blueprint, render_template, send_from_directory, url_for
-from src.main import junction_scrapper, scrapper
+
+from src.main import scrapper
 from src.utils import static_folder
 
 seo_route = Blueprint('seo', __name__)

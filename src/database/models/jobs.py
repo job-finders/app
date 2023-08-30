@@ -23,3 +23,8 @@ class Job(BaseModel):
     def format_job_ref(cls, value):
         # Remove spaces and convert to lowercase
         return format_reference(ref=value)
+
+    @property
+    def dynamic_expires(self):
+        pass
+
