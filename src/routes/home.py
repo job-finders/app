@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, send_from_directory
 
-from src.logger import init_logger
 from src.database.models import Job, SEO
-from src.main import junction_scrapper, scrapper
+from src.logger import init_logger
+from src.main import scrapper
 from src.utils import static_folder, format_title
 
 home_route = Blueprint('home', __name__)

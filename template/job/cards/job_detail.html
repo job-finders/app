@@ -1,3 +1,11 @@
+{% block meta %}
+    <meta property="og:url" content="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="jobfinders.site Job | {{ job.title }}" />
+    <meta property="og:description" content="{{ job.description|default('No description available')|truncate(255, True, '') }}" />
+    <meta property="og:image" content="{{ job.logo_link }}" />
+{% endblock %}
+
 {% block css  %}
     <style>
         /* Default styles for larger screens */
@@ -93,6 +101,15 @@
             >
                 Tweet
             </a>
+
+            <div id="facebook-share-button-container">
+                <div class="fb-share-button"
+                    data-href="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}"
+                    data-layout="button_count"
+                >
+                </div>
+            </div>
+
         </div>
     </div>
 </div>

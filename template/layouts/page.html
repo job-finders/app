@@ -13,7 +13,9 @@
     <meta name="description" content="{{ seo.description|title }}">
     <meta name="keywords" content="{{ seo.keywords }}">
     <!-- Add more SEO meta tags as needed -->
+{% block meta %}
 
+{% endblock %}
     <!-- Standard -->
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
     <!-- Retina iPad Touch Icon-->
@@ -95,13 +97,14 @@
     <!-- bootstrap -->
     <script src="{{ url_for('static', filename='js/interface/interface.js') }}"></script>
 
-
 {#<script type="text/javascript">#}
 {#    var infolinks_pid = 2870836;#}
 {#    var infolinks_wsid = 0;#}
 {#</script>#}
 
-<script type="text/javascript" src="http://resources.infolinks.com/js/infolinks_main.js"></script>
+{#<script type="text/javascript" src="http://resources.infolinks.com/js/infolinks_main.js"></script>#}
 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v13.0" nonce="YOUR_NONCE_VALUE"></script>
+
 </body>
 </html>

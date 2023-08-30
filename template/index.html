@@ -1,3 +1,11 @@
+{% block meta %}
+    <meta property="og:url" content="{{ url_for('home.home', _external=True) }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="jobfinders.site Job | {{ term|title }}" />
+    <meta property="og:description" content="{{ term|title }}" />
+    <meta property="og:image" content="https://jobfinders.site/static/images/jobfinder.jpg" />
+
+{% endblock %}
 
 {% extends "layouts/page.html" %}
 {% block content %}

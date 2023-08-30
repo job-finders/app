@@ -11,8 +11,10 @@
                 </div>
                 <li class="label">Main</li>
                 <li><a href="{{ url_for('home.get_home') }}"><i class="ti-home"></i> Home</a></li>
-                <li><a class="sidebar-sub-toggle">
-                     <i class="ti-folder"></i> Jobs <span class="sidebar-collapse-icon ti-angle-down"></span></a>
+                <li>
+                    <a class="sidebar-sub-toggle">
+                     <i class="ti-folder"></i> Jobs <span class="sidebar-collapse-icon ti-angle-down"></span>
+                    </a>
                     <ul>
                     {% for term in search_terms %}
                         <li>
@@ -26,11 +28,18 @@
                 </li>
                     <li> <a href="{{ url_for("home.contact") }}">
                         <i class="ti-envelope"> </i>
-                        Contact</a></li>
+                        Contact</a>
+                    </li>
                     <li> <a href="{{ url_for("home.about") }}">
                         <i class="ti-info"> </i>
-                        About</a></li>
-
+                        About</a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for("home.sister_sites") }}">
+                            <i class="ti-link"> </i>
+                            Sister Sites
+                        </a>
+                    </li>
                 </ul>
             </div>
     </div>
