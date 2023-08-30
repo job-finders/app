@@ -59,35 +59,28 @@
             <div class="heading-with-logo">
                 <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
                 <h2 class="card-title"><a href="{{ url_for('home.job_detail', reference=job.job_ref) }}">{{ job.title }}</a></h2>
+
+
+
             </div>
 
         <div class="card-footer">
             <span class="card-title text-info font-weight-bold">{{ job.company_name }} - {{ job.location }}</span>
             <ul class="dotted-list">
                 <li>
-                    <span class="card-title">
                     <span class="font-italic"> Salary:</span> <span class="font-weight-bold text-info"> {{ job.salary }}</span>
-                    </span>
                 </li>
                 <li>
-                    <span class="card-title">
-                        <span class="font-italic">Position: </span> <span class="font-weight-bold text-info"> {{ job.position }}</span>
-                    </span>
+                    <span class="font-italic">Position: </span> <span class="font-weight-bold text-info"> {{ job.position }}</span>
                 </li>
                 <li>
-                    <span class="card-title">
-                        <span class="font-italic"> Updated: </span> <span class="font-weight-bold text-info"> {{ job.updated_time }}</span>
-                    </span>
+                    <span class="font-italic"> Updated: </span> <span class="font-weight-bold text-info"> {{ job.updated_time }}</span>
                 </li>
                 <li>
-                    <span class="card-title">
-                        <span class="font-italic">Expires:</span>  <span class="font-weight-bold text-info">  {{ job.expires }}</span>
-                    </span>
+                    <span class="font-italic">Expires:</span>  <span class="font-weight-bold text-info">  {{ job.expires }}</span>
                 </li>
                 <li>
-                    <span class="card-title">
-                        <span class="font-italic"> Reference: </span> <span class="font-weight-bold text-info">  {{ job.job_ref }}</span>
-                    </span>
+                    <span class="font-italic"> Reference: </span> <span class="font-weight-bold text-info">  {{ job.job_ref }}</span>
                 </li>
             </ul>
         </div>
@@ -105,14 +98,14 @@
                 </ul>
             {% endif %}
 
-            {% if job and job.description %}
-                <div class="card-header">
-                    <h2 class="card-title font-weight-bold">Job Description</h2>
-                </div>
-                <span class="card-text">
-                    {{ job.description|description|safe }}
-                </span>
-            {% endif %}
+{#            {% if job and job.description %}#}
+{#                <div class="card-header">#}
+{#                    <h2 class="card-title font-weight-bold">Job Description</h2>#}
+{#                </div>#}
+{#                <span class="card-text">#}
+{#                    {{ job.description|description|safe }}#}
+{#                </span>#}
+{#            {% endif %}#}
 
         </div>
 
@@ -120,6 +113,16 @@
         <div class="card-footer d-flex justify-content-between align-items-center">
             <a href="{{ job.job_link }}" rel="nofollow noreferrer" target="_blank"  class="btn btn-sm btn-info"><i class="ti-file"></i> Apply</a>
             <!-- tweet button -->
+
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <div id="facebook-share-button-container" >
+                <div class="fb-share-button"
+                    data-href="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}"
+                    data-layout="button_count"
+                >
+                </div>
+            </div>
             <a class="twitter-share-button"
                 href="https://twitter.com/intent/tweet"
                 data-text="{{ job.title }}"
@@ -129,14 +132,6 @@
             >
                 Tweet
             </a>
-
-            <div id="facebook-share-button-container">
-                <div class="fb-share-button"
-                    data-href="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}"
-                    data-layout="button_count"
-                >
-                </div>
-            </div>
 
         </div>
     </div>

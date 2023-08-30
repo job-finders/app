@@ -1,6 +1,6 @@
 import re
 from os import path
-
+from bs4 import BeautifulSoup
 
 def static_folder() -> str:
     return path.join(path.dirname(path.abspath(__file__)), '../../static')
@@ -26,6 +26,9 @@ def format_description(description: str):
     headings = [
         "ABOUT THE POSITION",
         "Job brief",
+        "Job responsibilities",
+        "Standards",
+        "Performance Qualification",
         "Responsibilities",
         "Client Details",
         "Role Responsibilities",
@@ -74,6 +77,48 @@ def format_description(description: str):
             html += f"<h2 class='card-title font-weight-bold'>{heading}</h2>\n<p>{content}</p>\n"
 
     return html
+
+
+
+def _format_description(description: str):
+    soup = BeautifulSoup(description, 'html.parser')
+    headings = [
+        "ABOUT THE POSITION",
+        "Job brief",
+        "Responsibilities",
+        "Client Details",
+        "Role Responsibilities",
+        "Relevant Qualifications",
+        "Experience",
+        "Your Expertise",
+        "Required Qualifications",
+        "Personal Attributes",
+        "Why work for us",
+        "Responsibilities and work outputs",
+        "Minimum requirements",
+        "Skills",
+        "Desired Skills",
+        "Requirements",
+        "Qualifications",
+        "Knowledge and Experience",
+        "About The Employer",
+        "Desired Work Experience",
+        "Desired Qualification Level"
+    ]
+    paragraphs = soup.find_all(['p', 'h2'])
+    formatted_paragraphs = []
+
+    for elem in paragraphs:
+        if elem.name == 'h2':
+            heading = elem.get_text(strip=True)
+            if heading in headings:
+                formatted_paragraphs.append(f"<h2 class='card-title font-weight-bold'>{heading}</h2>")
+        elif elem.name == 'p':
+            content = elem.get_text(strip=True)
+            formatted_paragraphs.append(f"<p>{content}</p>")
+
+    formatted_html = '\n'.join(formatted_paragraphs)
+    return formatted_html
 
 
 def format_reference(ref: str) -> str:
