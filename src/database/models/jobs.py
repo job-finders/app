@@ -6,6 +6,7 @@ from src.utils import format_reference
 
 # noinspection PyMethodParameters
 class Job(BaseModel):
+    job_id: str | None
     search_term: str
     logo_link: str | None
     job_link: str
@@ -61,6 +62,7 @@ class Job(BaseModel):
 
         # Create the dictionary and return
         return {
+            "job_id": self.job_id,
             "search_term": self.search_term,
             "logo_link": self.logo_link,
             "job_link": self.job_link,
