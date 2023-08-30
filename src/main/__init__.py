@@ -1,7 +1,9 @@
 from flask import Flask
 from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
 from src.utils import template_folder, static_folder, format_title, format_description
+from src.controllers import StorageController
 
+storage_controller = StorageController()
 scrapper = Scrapper()
 junction_scrapper = JunctionScrapper(scrapper=scrapper)
 career_scrapper = CareerScrapper(scrapper=scrapper)
@@ -20,6 +22,7 @@ def create_app(config):
     app.config['BASE_URL'] = "https://rental-manager.site"
 
     with app.app_context():
+        storage_controller.init_app(app=app)
         junction_scrapper.init_app(app=app)
         career_scrapper.init_app(app=app)
         from src.routes.home import home_route

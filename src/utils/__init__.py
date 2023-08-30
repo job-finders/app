@@ -1,5 +1,6 @@
-import re
 from os import path
+import re
+from datetime import date
 from bs4 import BeautifulSoup
 
 def static_folder() -> str:
@@ -130,3 +131,13 @@ def format_reference(ref: str) -> str:
 
     ref_without_special = re.sub(special_chars, '', ref.replace(" ", "").lower())
     return ref_without_special
+
+
+def number_days_to_expiry(updated_time: str, date_expires: date):
+    """
+
+    :param updated_time:
+    :param date_expires:
+    :return:
+    """
+    pass

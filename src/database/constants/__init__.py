@@ -1,0 +1,5 @@
+
+
+ID_LEN: int = 32
+NAME_LEN: int = 255
+SHORT_DESCRIPTION_lEN: int = 128
