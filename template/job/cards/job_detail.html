@@ -29,13 +29,13 @@
         }
 
         #facebook-share-button-container {
-            border-radius: 50%; /* Make the container rounded */
+            border-radius: 10%; /* Make the container rounded */
             display: inline-block;
             overflow: hidden; /* Clip the rounded corners */
         }
 
         .fb-share-button {
-            border-radius: 50%; /* Make the button inside rounded */
+            border-radius: 10%; /* Make the button inside rounded */
         }
 
     </style>
@@ -84,11 +84,13 @@
             <div class="card-header">
                 <h2 class="card-title font-weight-bold">Required Skills</h2>
             </div>
-            <ul class="list-group">
+
+            <ol>
                     {% for skill in job.desired_skills %}
-                        <li class="list-group-item"><h4 class="card-title">{{ skill|safe }}</h4></li>
+                        <li><h4 class="card-title">{{ skill|safe }}</h4></li>
                     {% endfor %}
-            </ul>
+            </ol>
+            
         {% elif job and job.description %}
             <div class="card-header">
                 <h2 class="card-title font-weight-bold">Job Description</h2>
