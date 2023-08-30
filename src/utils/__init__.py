@@ -27,7 +27,22 @@ def format_description(description: str):
         "ABOUT THE POSITION",
         "Job brief",
         "Responsibilities",
+        "Client Details",
+        "Role Responsibilities",
+        "Relevant Qualifications",
+        "Experience",
+        "Your Expertise",
+        "Required Qualifications",
+        "Personal Attributes",
+        "Why work for us",
+        "Responsibilities and work outputs",
+        "Minimum requirements",
+        "Skills",
+        "Desired Skills",
         "Requirements",
+        "Qualifications",
+        "Knowledge and Experience",
+        "About The Employer",
         "Desired Work Experience",
         "Desired Qualification Level"
     ]
@@ -39,7 +54,7 @@ def format_description(description: str):
         line = line.strip()
 
         # Check if the line matches any of the headings
-        if line in headings:
+        if line.casefold() in headings:
             current_heading = line
         elif current_heading:
             # If there's a current heading, treat the line as content
@@ -56,7 +71,7 @@ def format_description(description: str):
         if heading == "paragraph":
             html += f"<p>{content}</p>\n"
         else:
-            html += f"<h2>{heading}</h2>\n<p>{content}</p>\n"
+            html += f"<h2 class='card-title font-weight-bold'>{heading}</h2>\n<p>{content}</p>\n"
 
     return html
 

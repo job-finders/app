@@ -110,7 +110,7 @@
                     <h2 class="card-title font-weight-bold">Job Description</h2>
                 </div>
                 <span class="card-text">
-                    {{ job.description|description }}
+                    {{ job.description|description|safe }}
                 </span>
             {% endif %}
 
