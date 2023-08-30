@@ -189,48 +189,47 @@ class CareerScrapper:
     async def scrape(self, search_term: str):
         base_url = f"https://www.careers24.com/jobs/kw-{search_term}/"
         response = await self.scrapper.fetch_url(url=base_url)
-        if response:
-            soup = BeautifulSoup(response, 'html.parser')
-            job_listings = soup.find_all("div", class_="job-card")
-            jobs = []
-            for job in job_listings:
-                title = job.find("h2").text.strip()
-                image_tag = job.find("img")
+        if response is None:
+            return None
 
-                if image_tag:
-                    company_name = job.find("img")["alt"]
-                    logo_link = job.find("img")["src"]
-                else:
-                    company_name = None
-                    logo_link = None
+        soup = BeautifulSoup(response, 'html.parser')
+        job_listings = soup.find_all("div", class_="job-card")
+        jobs = []
+        for job in job_listings:
+            title = job.find("h2").text.strip()
+            image_tag = job.find("img")
 
-                extra_data = job.find_all("li")
-                expires, job_type, location, updated_time = await self.extra_data_(extra_data)
+            if image_tag:
+                company_name = job.find("img")["alt"]
+                logo_link = job.find("img")["src"]
+            else:
+                company_name = None
+                logo_link = None
 
-                job_link = job.find("i")["data-url"]
+            extra_data = job.find_all("li")
+            expires, job_type, location, updated_time = await self.extra_data_(extra_data)
 
-                # Now, let's navigate to the apply_link and extract more details about the job
-                job_details_response = await self.scrapper.fetch_url(job_link)
-                if job_details_response:
-                    company_name, description, job_ref, salary = await self.extract_job_details(
-                        company_name=company_name, job_details_response=job_details_response)
-                    if salary is None and job_ref is None:
-                        continue
+            job_link = job.find("i")["data-url"]
 
-                    jobs.append(Job(**dict(search_term=search_term,
-                                           title=title,
-                                           logo_link=logo_link,
-                                           job_link=job_link,
-                                           company_name=company_name,
-                                           salary=salary, position=job_type, location=location,
-                                           updated_time=updated_time,
-                                           expires=expires, job_ref=job_ref, description=description)))
-                    print(f"Job Created")
+            # Now, let's navigate to the apply_link and extract more details about the job
+            job_details_response = await self.scrapper.fetch_url(job_link)
+            if job_details_response:
+                company_name, description, job_ref, salary = await self.extract_job_details(
+                    company_name=company_name, job_details_response=job_details_response)
+                if salary is None and job_ref is None:
+                    continue
 
-            await self.scrapper.manage_jobs(jobs=jobs)
-            return jobs
-        else:
-            print("Failed to retrieve data from Careers24.")
+                jobs.append(Job(**dict(search_term=search_term,
+                                       title=title,
+                                       logo_link=logo_link,
+                                       job_link=job_link,
+                                       company_name=company_name,
+                                       salary=salary, position=job_type, location=location,
+                                       updated_time=updated_time,
+                                       expires=expires, job_ref=job_ref, description=description)))
+
+        await self.scrapper.manage_jobs(jobs=jobs)
+        return jobs
 
     async def extra_data_(self, extra_data):
         if len(extra_data) >= 3:

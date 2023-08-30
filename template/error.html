@@ -1,0 +1,15 @@
+{% extends "layouts/page.html" %}
+
+{% block content %}
+    <section class="container-fluid">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title text-danger">{{ error.title }}</h2>
+            </div>
+            <div class="card-body">
+                <span class="card-content"> {{ error.message }} </span>
+            </div>
+        </div>
+    </section>
+
+{% endblock %}

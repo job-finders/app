@@ -48,6 +48,13 @@ async def create_context(search_term: str):
     return render_template('index.html', **context)
 
 
+async def not_found(search_term: str):
+    error_message = f"Unable to retrieve job listings for :  {search_term}"
+    status = "404 Not Found"
+    error = dict(message=error_message, title=status)
+    return render_template('error.html', error=error), 404
+
+
 @home_route.get('/')
 async def get_home():
     """
@@ -55,17 +62,26 @@ async def get_home():
     :return:
     """
     search_term = "information-technology"
-    return await create_context(search_term)
+    response = await create_context(search_term)
+    if response is None:
+        return await not_found(search_term=search_term)
+
+    return response
 
 
 @home_route.get('/jobs/<string:search_term>')
 async def job_search(search_term: str):
-    return await create_context(search_term)
+    response = await create_context(search_term)
+    if response is None:
+        return await not_found(search_term=search_term)
+
+    return response
 
 
 @home_route.get('/job/<string:reference>')
 async def job_detail(reference: str):
     job: Job = await scrapper.job_search(job_reference=reference)
+
     term = job.title
     seo = await create_tags(search_term=term)
     context = dict(term=term, job=job, search_terms=scrapper.search_terms, seo=seo)
