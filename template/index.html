@@ -1,13 +1,12 @@
+
+{% extends "layouts/page.html" %}
 {% block meta %}
     <meta property="og:url" content="{{ url_for('home.get_home', _external=True) }}" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="jobfinders.site Job | {{ term|title }}" />
     <meta property="og:description" content="{{ term|title }}" />
     <meta property="og:image" content="https://jobfinders.site/static/images/jobfinder.jpg" />
-
 {% endblock %}
-
-{% extends "layouts/page.html" %}
 {% block content %}
         <div class="row">
 {#                <div class="col-lg-3 col-md-3 col-sm-12">#}
