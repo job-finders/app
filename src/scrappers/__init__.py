@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from requests_cache import CachedSession
 
 from src.database.models.jobs import Job
+from src.utils import format_reference
 
 
 class Scrapper:
@@ -51,19 +52,9 @@ class Scrapper:
 
         self.jobs: dict[str, Job] = {}
 
-    @staticmethod
-    async def format_reference(ref: str) -> str:
-        """
-        :param ref: The input reference string.
-        :return: The formatted reference string with special characters removed.
-        """
-        special_chars = r'[!@#$%^&*()+=\[\]{}|;:",<>/`~]'
-        ref_without_special = re.sub(special_chars, '', ref.replace(" ", "").lower())
-        return ref_without_special
-
     async def manage_jobs(self, jobs: list[Job]):
         for job in jobs:
-            ref = await self.format_reference(ref=job.job_ref)
+            ref = format_reference(ref=job.job_ref)
             self.jobs[ref] = job
 
     # noinspection PyBroadException
@@ -78,7 +69,7 @@ class Scrapper:
             :param job_reference:
             :return:
         """
-        ref = await self.format_reference(ref=job_reference)
+        ref = format_reference(ref=job_reference)
         try:
             return self.jobs[ref]
         except KeyError as e:
@@ -261,38 +252,38 @@ class CareerScrapper:
             job_details_soup = BeautifulSoup(job_details_response, 'html.parser')
             vacancy_details = job_details_soup.find("div", class_="c24-vacancy-deatils-container")
 
+            def find_text_or_default(element, default="N/A"):
+                return element.text.strip() if element else default
+
             salary_tag = vacancy_details.find("li", string="Salary:")
-            salary = vacancy_details.find("li", class_="elipses").text.strip().split(":")[1]
+            salary = find_text_or_default(salary_tag.find_next("li", class_="elipses")).split(":")[1]
 
             sectors_tag = vacancy_details.find("li", class_="c24-sectr")
             sectors = [sector.text.strip() for sector in sectors_tag.find_all("a")] if sectors_tag else []
+
             reference_tags = vacancy_details.find("ul", class_="small-text").find_all("li")
-            job_ref = reference_tags[-1].text.strip()
+            job_ref = find_text_or_default(reference_tags[-1])
             if not job_ref:
                 job_ref = str(uuid.uuid4())
             if "/" in job_ref:
                 job_ref = job_ref.split("/")[0]
 
-            description = vacancy_details.find("div", class_="v-descrip").text.strip()
+            description = find_text_or_default(vacancy_details.find("div", class_="v-descrip"))
             if not company_name:
-                try:
-                    company_name = vacancy_details.find("p", class_="mb-15").text.strip()
-                except AttributeError:
-                    company_name = "N/A"
+                company_name = find_text_or_default(vacancy_details.find("p", class_="mb-15"), default="N/A")
+
             return company_name, description, job_ref, salary
         except AttributeError:
             return None, None, None, None
 
     @staticmethod
     async def parse_posted_date(date_line: str):
+        separators = ["\n61", "<br\>", "<br>"]
 
-        if "\n61" in date_line:
-            parts = date_line.split("\n61")
-        elif "<br\>" in date_line:
-            parts = date_line.split("\n61")
-        else:
-            parts = []
+        for separator in separators:
+            if separator in date_line:
+                parts = date_line.split(separator)
+                if len(parts) == 2:
+                    return parts[0].strip(), parts[1].strip()
 
-        if len(parts) == 2:
-            return parts[0].strip(), parts[1].strip()
         return "N/A", "N/A"

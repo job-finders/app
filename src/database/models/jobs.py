@@ -1,4 +1,7 @@
+import re
 from pydantic import BaseModel, validator
+
+from src.utils import format_reference
 
 
 class Job(BaseModel):
@@ -19,4 +22,4 @@ class Job(BaseModel):
     @validator('job_ref', pre=True)
     def format_job_ref(cls, value):
         # Remove spaces and convert to lowercase
-        return value.replace(' ', '').lower()
+        return format_reference(ref=value)
