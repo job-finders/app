@@ -28,7 +28,7 @@ def create_app(config):
         # initialization
         # storage_controller.init_app(app=app)
         junction_scrapper.init_app(app=app)
-        # career_scrapper.init_app(app=app)
+        career_scrapper.init_app(app=app)
 
         # importing routes
         from src.routes.home import home_route
