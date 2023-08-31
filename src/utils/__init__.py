@@ -3,7 +3,6 @@ import re
 from datetime import date
 from bs4 import BeautifulSoup
 
-
 def static_folder() -> str:
     return path.join(path.dirname(path.abspath(__file__)), '../../static')
 
@@ -81,6 +80,7 @@ def format_description(description: str):
     return html
 
 
+
 def _format_description(description: str):
     soup = BeautifulSoup(description, 'html.parser')
     headings = [
@@ -147,18 +147,3 @@ def bootstrap_database():
     from src.database.sql.jobs import JobsORM
 
     JobsORM.create_if_not_table()
-
-
-def sanitize_cache_key(cache_key):
-    # Remove or replace characters that are not suitable for filenames
-    charset = "<>=(){}[\/:*?'<>|],. "
-    for char in charset:
-        cache_key = cache_key.replace(char, "")
-    return cache_key.lower().strip()
-
-
-def generate_cache_key(f, *args, **kwargs):
-    # Construct the cache key using function name, args, and kwargs
-    function_name = f.__name__
-    cache_key = f"{function_name}{kwargs}"
-    return sanitize_cache_key(cache_key)
