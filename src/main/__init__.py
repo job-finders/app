@@ -1,7 +1,9 @@
 from flask import Flask
 from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
-from src.utils import template_folder, static_folder, format_title, format_description
+from src.utils import template_folder, static_folder, format_title, format_description, bootstrap_database
 from src.controllers import StorageController
+
+bootstrap_database()
 
 # initializing models and controllers
 storage_controller = StorageController()

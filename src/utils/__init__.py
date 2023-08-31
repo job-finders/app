@@ -141,3 +141,9 @@ def number_days_to_expiry(updated_time: str, date_expires: date):
     :return:
     """
     pass
+
+
+def bootstrap_database():
+    from src.database.sql.jobs import JobsORM
+
+    JobsORM.create_if_not_table()

@@ -12,6 +12,10 @@ class StorageController(Controllers):
         self.jobs: list[Job] = []
 
     def load_jobs_from_database(self) -> list[Job]:
+        """
+            will load all the jobs from database then return them
+        :return:
+        """
         with self.get_session() as session:
             # TODO in future maybe load only jobs which are not expired
             jobs_list = session.query(JobsORM).filter().all()

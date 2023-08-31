@@ -208,8 +208,10 @@ class CareerScrapper:
 
             extra_data = job.find_all("li")
             expires, job_type, location, updated_time = await self.extra_data_(extra_data)
-
-            job_link = job.find("i")["data-url"]
+            try:
+                job_link = job.find("i")["data-url"]
+            except KeyError:
+                continue
 
             # Now, let's navigate to the apply_link and extract more details about the job
             job_details_response = await self.scrapper.fetch_url(job_link)

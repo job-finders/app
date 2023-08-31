@@ -7,7 +7,7 @@ class MySQLSettings(BaseSettings):
     DEVELOPMENT_DB: str = Field(..., env="dev_sql_db")
 
     class Config:
-        env_file = '.env.development'
+        env_file = '.env.developer'
         env_file_encoding = 'utf-8'
 
 

@@ -40,3 +40,8 @@ async def get_jobs_sitemap():
 @seo_route.get('/robots.txt')
 async def robots():
     return send_from_directory(static_folder(), 'robots.txt')
+
+
+@seo_route.get("/ads.txt")
+async def adstxt():
+    return send_from_directory(static_folder(), 'ads.txt')
