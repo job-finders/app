@@ -5,7 +5,7 @@ from src.utils import template_folder, static_folder, format_title, format_descr
 scrapper = Scrapper()
 junction_scrapper = JunctionScrapper(scrapper=scrapper)
 career_scrapper = CareerScrapper(scrapper=scrapper)
-
+# working state
 
 def create_app(config):
     """
