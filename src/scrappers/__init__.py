@@ -8,6 +8,7 @@ from flask import Flask
 from pydantic import ValidationError
 from requests_cache import CachedSession
 
+from src.cache import cached
 from src.logger import init_logger
 from src.database.models.jobs import Job
 from src.utils import format_reference
@@ -93,13 +94,14 @@ class JunctionScrapper:
         # searches = []
         for search_term in self.scrapper.search_terms:
             self.logger.info(f"Searching for : {search_term}")
-            await  self.scrape(term=search_term)
-        # await asyncio.gather(*searches)
+            jobs_list = await self.junction_scrape(term=search_term)
+            await self.scrapper.manage_jobs(jobs=jobs_list)
 
     def init_app(self, app: Flask):
         asyncio.run(self.init_loader())
 
-    async def scrape(self, term: str, page_limit: int = 1) -> list[Job]:
+    @cached
+    async def junction_scrape(self, term: str, page_limit: int = 1) -> list[Job]:
         """
             given one search term scrape jobs
         :param term:
@@ -130,12 +132,11 @@ class JunctionScrapper:
                     continue
                 job_soup = BeautifulSoup(job_details, "html.parser")
                 jobs.append(self.more_details(job_soup=job_soup, job_link=link, search_term=term))
-        self.logger.info(f"Gathered a total of {len(jobs)} jobs")
+
         jobs_results = await asyncio.gather(*jobs)
         try:
             jobs = [Job(**job) for job in jobs_results if job]
-            await self.scrapper.manage_jobs(jobs=jobs)
-            # self.jobs = {await format_reference(ref=job.get('job_ref')): Job(**job) for job in jobs_results if job}
+            self.logger.info(f"Gathered a total of {len(jobs)} jobs using {str(self.__class__.__name__)} using search term: {term}")
             return jobs
         except ValidationError as e:
             self.logger.info(f"Error creating Job Model: {str(e)}")
@@ -181,23 +182,24 @@ class CareerScrapper:
     def __init__(self, scrapper: Scrapper):
         super().__init__()
         self.scrapper = scrapper
+        self.logger = init_logger(self.__class__.__name__)
 
     async def init_loader(self):
         searches = []
         for search_term in self.scrapper.search_terms:
-            searches.append(self.scrape(search_term=search_term))
-        await asyncio.gather(*searches)
+            jobs_list = await self.career_scrape(search_term=search_term)
+            await self.scrapper.manage_jobs(jobs=jobs_list)
 
     def init_app(self, app: Flask):
         asyncio.run(self.init_loader())
 
     # noinspection PyBroadException
-
-    async def scrape(self, search_term: str):
+    @cached
+    async def career_scrape(self, search_term: str) -> list[Job]:
         base_url = f"https://www.careers24.com/jobs/kw-{search_term}/"
         response = await self.scrapper.fetch_url(url=base_url)
         if response is None:
-            return None
+            return []
 
         soup = BeautifulSoup(response, 'html.parser')
         job_listings = soup.find_all("div", class_="job-card")
@@ -236,8 +238,7 @@ class CareerScrapper:
                                        salary=salary, position=job_type, location=location,
                                        updated_time=updated_time,
                                        expires=expires, job_ref=job_ref, description=description)))
-
-        await self.scrapper.manage_jobs(jobs=jobs)
+        self.logger.info(f"Found {len(jobs)} Jobs with {str(self.__class__.__name__)} using search term : {search_term}")
         return jobs
 
     async def extra_data_(self, extra_data):
