@@ -96,7 +96,7 @@ route_cache = Cache()
 def cached(f):
     @functools.wraps(f)
     async def decorated_function(*args, **kwargs):
-        cache_key = generate_cache_key(f, args, kwargs)
+        cache_key = generate_cache_key(f, *args, **kwargs)
         print(f" cache key : {cache_key}")
         cached_result = route_cache.get(cache_key)
         if cached_result:
