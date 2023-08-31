@@ -138,6 +138,7 @@ class JunctionScrapper:
             # self.jobs = {await format_reference(ref=job.get('job_ref')): Job(**job) for job in jobs_results if job}
             return jobs
         except ValidationError as e:
+            self.logger.info(f"Error creating Job Model: {str(e)}")
             return []
 
     @staticmethod

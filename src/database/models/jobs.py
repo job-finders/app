@@ -15,8 +15,8 @@ class Job(BaseModel):
     salary: str
     position: str
     location: str
-    posted_date: date
     updated_time: str
+
     expires: str
     job_ref: str
     description: str | None
@@ -27,8 +27,8 @@ class Job(BaseModel):
         # Remove spaces and convert to lowercase
         return format_reference(ref=value)
 
-    @validator('posted_date', pre=True)
-    def validate_posted_date(cls, value):
+    @property
+    def posted_date(self) -> date:
         """
         Validate and convert the posted_date string to a date object.
 
@@ -37,7 +37,7 @@ class Job(BaseModel):
         """
         # Assume the format is "Posted {day} {month abbreviation} {year} by {author}"
         try:
-            posted_date_str = value.split("by")[0].strip()[len("Posted "):]
+            posted_date_str = self.updated_time.split("by")[0].strip()[len("Posted "):]
             posted_date = datetime.strptime(posted_date_str, "%d %b %Y").date()
             return posted_date
         except ValueError:
