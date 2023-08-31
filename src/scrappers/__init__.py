@@ -8,6 +8,7 @@ from flask import Flask
 from pydantic import ValidationError
 from requests_cache import CachedSession
 
+from src.logger import init_logger
 from src.database.models.jobs import Job
 from src.utils import format_reference
 
@@ -86,12 +87,14 @@ class JunctionScrapper:
         self._jobs_base_url: str = "https://www.careerjunction.co.za/jobs/"
         self._junction_base_url: str = "https://www.careerjunction.co.za/"
         self.scrapper = scrapper
+        self.logger = init_logger(self.__class__.__name__)
 
     async def init_loader(self):
-        searches = []
+        # searches = []
         for search_term in self.scrapper.search_terms:
-            searches.append(self.scrape(term=search_term))
-        await asyncio.gather(*searches)
+            self.logger.info(f"Searching for : {search_term}")
+            await  self.scrape(term=search_term)
+        # await asyncio.gather(*searches)
 
     def init_app(self, app: Flask):
         asyncio.run(self.init_loader())
@@ -110,7 +113,9 @@ class JunctionScrapper:
 
             url = f"{self._jobs_base_url}{term}?page={page}"
             response: bytes | None = await self.scrapper.fetch_url(url=url)
+
             if not response:
+                self.logger.info(f"response : not OK")
                 continue
 
             soup = BeautifulSoup(response, "html.parser")
@@ -121,10 +126,11 @@ class JunctionScrapper:
                 link = f"{self._junction_base_url}{show_more_link.replace('/', '')}"
                 job_details: bytes | None = await self.scrapper.fetch_url(link)
                 if job_details is None:
+                    self.logger.info("Job details not being fetched")
                     continue
                 job_soup = BeautifulSoup(job_details, "html.parser")
                 jobs.append(self.more_details(job_soup=job_soup, job_link=link, search_term=term))
-
+        self.logger.info(f"Gathered a total of {len(jobs)} jobs")
         jobs_results = await asyncio.gather(*jobs)
         try:
             jobs = [Job(**job) for job in jobs_results if job]
