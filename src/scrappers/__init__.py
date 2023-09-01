@@ -53,6 +53,7 @@ class Scrapper:
                                               )
 
         self.jobs: dict[str, Job] = {}
+        self.logger = init_logger(self.__class__.__name__)
 
     async def manage_jobs(self, jobs: list[Job]):
         for job in jobs:
@@ -77,6 +78,31 @@ class Scrapper:
         except KeyError as e:
             # In case of error return the last job
             return self.jobs[list(self.jobs.keys())[-1]]
+
+    async def similar_jobs(self, search_term: str, title: str) -> list[Job]:
+        """
+        Find similar jobs based on common keywords in the title of the job from self.jobs.
+        Return a list of similar jobs, not more than 8.
+
+        :param search_term:
+        :param title: The title of the job to find similar jobs for.
+        :return: A list of similar Job instances.
+        """
+        similar_jobs = []
+        title_lower = title.lower().split()  # Convert and split the provided title to lowercase for comparison
+        self.logger.info(f"similarity search: search_term: {search_term} title: {title_lower}")
+        for job in [job for job in self.jobs.values() if job.search_term.casefold() == search_term.casefold()]:
+            self.logger.info(f"finding similarity in job : {job.title}")
+            job_title_lower = job.title.lower().split()  # Convert and split the job's title
+
+            # Calculate the intersection (common keywords) between the provided title and the job title
+            common_keywords = set(title_lower).intersection(job_title_lower)
+
+            # If there are common keywords and the list of similar_jobs has fewer than 8 entries
+            if common_keywords and len(similar_jobs) < 8:
+                similar_jobs.append(job)
+
+        return similar_jobs
 
 
 class JunctionScrapper:
@@ -136,7 +162,8 @@ class JunctionScrapper:
         jobs_results = await asyncio.gather(*jobs)
         try:
             jobs = [Job(**job) for job in jobs_results if job]
-            self.logger.info(f"Gathered a total of {len(jobs)} jobs using {str(self.__class__.__name__)} using search term: {term}")
+            self.logger.info(
+                f"Gathered a total of {len(jobs)} jobs using {str(self.__class__.__name__)} using search term: {term}")
             return jobs
         except ValidationError as e:
             self.logger.info(f"Error creating Job Model: {str(e)}")
@@ -238,7 +265,9 @@ class CareerScrapper:
                                        salary=salary, position=job_type, location=location,
                                        updated_time=updated_time,
                                        expires=expires, job_ref=job_ref, description=description)))
-        self.logger.info(f"Found {len(jobs)} Jobs with {str(self.__class__.__name__)} using search term : {search_term}")
+
+        self.logger.info(
+            f"Found {len(jobs)} Jobs with {str(self.__class__.__name__)} using search term : {search_term}")
         return jobs
 
     async def extra_data_(self, extra_data):

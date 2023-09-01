@@ -6,7 +6,7 @@ from src.main import scrapper
 from src.utils import static_folder, format_title
 
 home_route = Blueprint('home', __name__)
-home_logger = init_logger()
+home_logger = init_logger("home_logger")
 
 
 async def create_tags(search_term: str) -> SEO:
@@ -84,7 +84,9 @@ async def job_detail(reference: str):
 
     term = job.title
     seo = await create_tags(search_term=term)
-    context = dict(term=term, job=job, search_terms=scrapper.search_terms, seo=seo)
+    similar_jobs = await scrapper.similar_jobs(search_term=job.search_term, title=job.title)
+    home_logger.info(f"Similar Jobs : {similar_jobs}")
+    context = dict(term=term, job=job, search_terms=scrapper.search_terms, similar_jobs=similar_jobs, seo=seo)
     return render_template('job.html', **context)
 
 

@@ -6,7 +6,8 @@ from src.utils import generate_cache_key
 
 
 class Cache:
-    def __init__(self, directory="./cache", max_size=1023, default_ttl=60 * 60):
+    """increased cache time to 12 hours"""
+    def __init__(self, directory="./cache", max_size=1023, default_ttl=60 * 60 * 12):
         self.directory = directory
         self.max_size = max_size
         self.default_ttl = default_ttl

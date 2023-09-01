@@ -1,0 +1,33 @@
+
+
+<div class="card">
+    <div class="card-header bg-dark">
+        <h2 class="card-title text-white font-weight-bold">Similar Jobs - selected for you</h2>
+    </div>
+    <div class="row">
+        {% for job in similar_jobs %}
+            <div class="col-lg-3">
+                <div class="card bg-dark">
+                    <div class="heading-with-logo">
+                        <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
+                    </div>
+                    <div class="card-header">
+                        <a href="{{ url_for('home.job_detail', reference=job.job_ref) }}">
+                            <h3 class="card-title text-white">{{ job.title|title }}</h3>
+                        </a>
+                    </div>
+                    <span class="content-wrap">
+                        <ul class="dotted-list">
+                            <li>
+                                <span class="font-italic"> Salary:</span> <span class="font-weight-bold text-info"> {{ job.salary }}</span>
+                            </li>
+                            <li>
+                                <span class="font-italic">Expires:</span>  <span class="font-weight-bold text-info">  {{ job.expires }}</span>
+                            </li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
