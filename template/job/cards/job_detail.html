@@ -54,83 +54,82 @@
     </style>
 {% endblock %}
 
-<div class="card">
-        <div class="card">
+<div class="row">
+
+        <div class="card col-lg-9 col-md-9 col-sm-12">
             <div class="heading-with-logo">
                 <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
                 <h2 class="card-title"><a href="{{ url_for('home.job_detail', reference=job.job_ref) }}">{{ job.title }}</a></h2>
             </div>
 
-        <div class="card-footer">
-            <span class="card-title text-info font-weight-bold">{{ job.company_name }} - {{ job.location }}</span>
-            <ul class="dotted-list">
-                <li>
-                    <span class="font-italic"> Salary:</span> <span class="font-weight-bold text-info"> {{ job.salary }}</span>
-                </li>
-                <li>
-                    <span class="font-italic">Position: </span> <span class="font-weight-bold text-info"> {{ job.position }}</span>
-                </li>
-                <li>
-                    <span class="font-italic"> Updated: </span> <span class="font-weight-bold text-info"> {{ job.updated_time }}</span>
-                </li>
-                <li>
-                    <span class="font-italic">Expires:</span>  <span class="font-weight-bold text-info">  {{ job.expires }}</span>
-                </li>
-                <li>
-                    <span class="font-italic"> Reference: </span> <span class="font-weight-bold text-info">  {{ job.job_ref }}</span>
-                </li>
-            </ul>
-        </div>
-
-        <div class="card-footer">
-            {% if job and job.desired_skills %}
-                <div class="card-header">
-                    <h2 class="card-title font-weight-bold">Required Skills</h2>
-                </div>
-
+            <div class="card-footer">
+                <span class="card-title text-info font-weight-bold">{{ job.company_name }} - {{ job.location }}</span>
                 <ul class="dotted-list">
-                    {% for skill in job.desired_skills %}
-                        <li><span class="card-title">{{ skill|safe }}</span></li>
-                    {% endfor %}
+                    <li>
+                        <span class="font-italic"> Salary:</span> <span class="font-weight-bold text-info"> {{ job.salary }}</span>
+                    </li>
+                    <li>
+                        <span class="font-italic">Position: </span> <span class="font-weight-bold text-info"> {{ job.position }}</span>
+                    </li>
+                    <li>
+                        <span class="font-italic"> Updated: </span> <span class="font-weight-bold text-info"> {{ job.updated_time }}</span>
+                    </li>
+                    <li>
+                        <span class="font-italic">Expires:</span>  <span class="font-weight-bold text-info">  {{ job.expires }}</span>
+                    </li>
+                    <li>
+                        <span class="font-italic"> Reference: </span> <span class="font-weight-bold text-info">  {{ job.job_ref }}</span>
+                    </li>
                 </ul>
-            {% endif %}
-
-{#            {% if job and job.description %}#}
-{#                <div class="card-header">#}
-{#                    <h2 class="card-title font-weight-bold">Job Description</h2>#}
-{#                </div>#}
-{#                <span class="card-text">#}
-{#                    {{ job.description|description|safe }}#}
-{#                </span>#}
-{#            {% endif %}#}
-
-        </div>
-
-
-        <div class="card-footer d-flex justify-content-between align-items-center">
-            <a href="{{ job.job_link }}" rel="nofollow noreferrer" target="_blank"  class="btn btn-sm btn-info"><i class="ti-file"></i> Apply</a>
-            <!-- tweet button -->
-
-        </div>
-        <div class="card-footer d-flex justify-content-between align-items-center">
-            <div id="facebook-share-button-container" >
-                <div class="fb-share-button"
-                    data-href="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}"
-                    data-layout="button_count"
-                >
-                </div>
             </div>
-            <a class="twitter-share-button"
-                href="https://twitter.com/intent/tweet"
-                data-text="{{ job.title }}"
-                data-url="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}"
-                data-hashtags="jobfinder,sajobs"
-                data-size="large"
-            >
-                Tweet
-            </a>
 
+            <div class="card-footer">
+                {% if job and job.desired_skills %}
+                    <div class="card-header">
+                        <h2 class="card-title font-weight-bold">Required Skills</h2>
+                    </div>
+
+                    <ul class="dotted-list">
+                        {% for skill in job.desired_skills %}
+                            <li><span class="card-title">{{ skill|safe }}</span></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <a href="{{ job.job_link }}" rel="nofollow noreferrer" target="_blank"  class="btn btn-lg btn-info"><i class="ti-file"></i> Apply</a>
+                <!-- tweet button -->
+            </div>
+
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <div id="facebook-share-button-container" >
+                    <div class="fb-share-button"
+                        data-href="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}"
+                        data-layout="button_count"
+                    >
+                    </div>
+                </div>
+                <a class="twitter-share-button"
+                    href="https://twitter.com/intent/tweet"
+                    data-text="{{ job.title }}"
+                    data-url="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}"
+                    data-hashtags="jobfinder,sajobs"
+                    data-size="large"
+                >
+                    Tweet
+                </a>
+
+            </div>
+
+    </div>
+
+    <div class="card col-lg-3 col-md-3 col-sm-12 bg-dark">
+        <div class="card-header">
+            <h3 class="card-title text-white font-weight-bold"><i class="ti-link"> </i> Links </h3>
         </div>
+        {% include "job/cards/search_terms.html" %}
     </div>
 </div>
 
