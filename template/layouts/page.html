@@ -56,6 +56,52 @@
 
 
 {% endblock %}
+<style>
+<style>
+    /* Add this CSS to your stylesheet or in a <style> tag in your HTML */
+
+    /* Hide the desktop buttons by default */
+    .desktop-buttons {
+        display: none;
+    }
+
+    /* Show the desktop buttons when the screen width is greater than or equal to 768px (adjust as needed) */
+    @media (min-width: 768px) {
+        .desktop-buttons {
+            display: block;
+        }
+    }
+    /* CSS for styling the pagination bar */
+    .pagination {
+        display: flex;
+        list-style: none;
+        padding: 0;
+    }
+
+    .page-item {
+        margin: 0 5px;
+    }
+
+    .page-link {
+        text-decoration: none;
+        background-color: #e9e9e9;
+        color: #333;
+        padding: 5px 10px;
+        border: 1px solid #ccc;
+    }
+
+    .page-link:hover {
+        background-color: #333;
+        color: #fff;
+    }
+
+    .page-link[aria-label="Previous"],
+    .page-link[aria-label="Next"] {
+        font-weight: bold;
+    }
+
+</style>
+</style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269"
      crossorigin="anonymous"></script>
 </head>
