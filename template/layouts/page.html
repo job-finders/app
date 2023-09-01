@@ -28,11 +28,8 @@
     <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
     <!-- Styles -->
 {% block css %}
-{#    <link href="{{ url_for('static', filename='css/lib/calendar2/pignose.calendar.min.css') }}" rel="stylesheet">#}
-{#    <link href="{{ url_for('static', filename='css/lib/chartist/chartist.min.css') }}" rel="stylesheet">#}
     <link href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" rel="stylesheet">
-{#    <link href="{{ url_for('static', filename='css/lib/owl.carousel.min.css') }}" rel="stylesheet" />#}
     <link href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}" rel="stylesheet" />
     <link href="{{ url_for('static', filename='css/lib/weather-icons.css') }}" rel="stylesheet" />
     <link href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}" rel="stylesheet">
@@ -64,8 +61,6 @@
                             <h1 class="page-title font-weight-bold text-info">
                                 {{ term|title }}
                             </h1>
-                        {#{% include "layouts/verification_notice.html" %}#}
-                            <!-- place flash messages here -->
                         {% include "layouts/flash.html" %}
                         <span class="card-content font-weight-bold">
                             We find Jobs, so you can get employed
@@ -99,12 +94,6 @@
     <!-- bootstrap -->
     <script src="{{ url_for('static', filename='js/interface/interface.js') }}"></script>
 
-{#<script type="text/javascript">#}
-{#    var infolinks_pid = 2870836;#}
-{#    var infolinks_wsid = 0;#}
-{#</script>#}
-
-{#<script type="text/javascript" src="http://resources.infolinks.com/js/infolinks_main.js"></script>#}
 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v13.0" nonce="YOUR_NONCE_VALUE"></script>
 

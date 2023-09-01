@@ -100,7 +100,8 @@ class Scrapper:
 
             # If there are common keywords and the list of similar_jobs has fewer than 8 entries
             if common_keywords and len(similar_jobs) < 8:
-                similar_jobs.append(job)
+                if title.casefold() != job.title.casefold():
+                    similar_jobs.append(job)
 
         return similar_jobs
 
