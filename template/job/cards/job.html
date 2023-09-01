@@ -19,7 +19,7 @@
     </style>
 {% endblock %}
 
-    {% set counter = 1 %}
+
     {% for job in job_list %}
         {% if loop.index % 4 == 0 %}
            <div class="card">
@@ -60,9 +60,6 @@
                     <a href="{{ url_for('home.job_detail', reference=job.job_ref) }}" class="btn btn-sm btn-success btn-outline-success"><i class="ti-info"></i> Job Details ...</a>
                 </div>
             </div>
-
         {% endif %}
-
-        {% set counter = counter + 1 %}
     {% endfor %}
 
