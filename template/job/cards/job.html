@@ -21,7 +21,8 @@
 
     {% set counter = 1 %}
     {% for job in job_list %}
-        {% if (counter % 4) == 0 %}
+        {% if loop.index % 4 == 0 %}
+           <div class="card">
             <!-- Ad code here -->
             <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269"
                  crossorigin="anonymous"></script>
@@ -34,10 +35,10 @@
             <script>
                  (adsbygoogle = window.adsbygoogle || []).push({});
             </script>
-
+            </div>
         {% else %}
-            {% if (counter % 2) == 0 %}
-            <div class="card bg-dark">
+            {% if loop.index % 2 == 0 %}
+            <div class="card-footer">
             {% else %}
             <div class="card">
             {% endif %}
