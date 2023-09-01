@@ -30,6 +30,7 @@ async def sitemap():
 async def get_jobs_sitemap():
     """
 
+
     :return:
     """
     sitemap_urls = await get_site_job_links()
