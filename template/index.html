@@ -99,7 +99,26 @@
                     </div>
                     {% include "job/cards/job.html" %}
                 </div>
+
                 <div class="col-lg-3 col-md-3 col-sm-12">
+                    <div class="card bg-dark">
+                        <div class="card-header">
+                            <h3 class="card-title text-white font-weight-bold"><i class="ti-email"></i> Job Notifications</h3>
+                        </div>
+                        <span class="card-content text-info">Email me jobs on {{ term|title }}</span>
+                        <form method="POST" action="{{ url_for('home.email_me', search_term=term) }}">
+                            <input type="hidden" value="{{ term }}"/>
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" name="email" id="email" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Send Me this Jobs </button>
+                        </form>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Sponsored</h3>
+                        </div>
                     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269"
                          crossorigin="anonymous"></script>
                     <!-- desktop_vertical advert -->
@@ -112,7 +131,10 @@
                     <script>
                          (adsbygoogle = window.adsbygoogle || []).push({});
                     </script>
+                    </div>
+
                 </div>
+
                 <div class="col-lg-12 col-md-12 col-sm-12">
 
                     <div class="card bg-dark">

@@ -19,3 +19,5 @@ async def similar_jobs(search_term: str, title: str):
     """
     jobs_list: list[Job] = await scrapper.similar_jobs(search_term=search_term, title=title)
     return jobs_list
+
+

@@ -1,6 +1,6 @@
 import math
 
-from flask import Blueprint, render_template, send_from_directory, request
+from flask import Blueprint, render_template, send_from_directory, request, flash
 
 from src.database.models import Job, SEO
 from src.logger import init_logger
@@ -93,6 +93,25 @@ async def get_home():
 @home_route.get('/jobs/<string:search_term>')
 async def job_search(search_term: str):
     page = int(request.args.get('page', 1))
+    response = await create_context(search_term=search_term, page=page)
+    if response is None:
+        return await not_found(search_term=search_term)
+
+    return response
+
+
+@home_route.post('/job-notifications/<string:search_term>')
+async def email_me(search_term: str):
+    page = int(request.args.get('page', 1))
+    email = request.form.get('email')
+    if not email:
+        flash("please supply email address")
+        response = await create_context(search_term=search_term, page=page)
+        return response
+
+    flash(f"Please check your email address for our verification email, "
+          f"verify your email so we can send you jobs about {format_title(search_term)}", category="success")
+
     response = await create_context(search_term=search_term, page=page)
     if response is None:
         return await not_found(search_term=search_term)
