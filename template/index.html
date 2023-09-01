@@ -7,6 +7,52 @@
     <meta property="og:description" content="{{ term|title }}" />
     <meta property="og:image" content="https://jobfinders.site/static/images/jobfinder.jpg" />
 {% endblock %}
+{% block custom_css %}
+<style>
+    /* Add this CSS to your stylesheet or in a <style> tag in your HTML */
+
+    /* Hide the desktop buttons by default */
+    .desktop-buttons {
+        display: none;
+    }
+
+    /* Show the desktop buttons when the screen width is greater than or equal to 768px (adjust as needed) */
+    @media (min-width: 768px) {
+        .desktop-buttons {
+            display: block;
+        }
+    }
+    /* CSS for styling the pagination bar */
+    .pagination {
+        display: flex;
+        list-style: none;
+        padding: 0;
+    }
+
+    .page-item {
+        margin: 0 5px;
+    }
+
+    .page-link {
+        text-decoration: none;
+        background-color: #e9e9e9;
+        color: #333;
+        padding: 5px 10px;
+        border: 1px solid #ccc;
+    }
+
+    .page-link:hover {
+        background-color: #333;
+        color: #fff;
+    }
+
+    .page-link[aria-label="Previous"],
+    .page-link[aria-label="Next"] {
+        font-weight: bold;
+    }
+
+</style>
+{% endblock %}
 {% block content %}
         <div class="row">
 {#                <div class="col-lg-3 col-md-3 col-sm-12">#}
@@ -34,20 +80,21 @@
                             <div class="card-header  d-flex justify-content-between align-items-center">
                                 <h2 class="card-title font-weight-bold">{{ term|title }}</h2>
                                 <div>
+                                <div class="desktop-buttons">
+                                    <a class="btn btn-default btn-outline-danger"
+                                       href="{{ url_for('home.job_search', search_term=previous_term) }}">
+                                        <i class="ti-arrow-left"> </i>
+                                        Back
+                                    </a>
 
-{#                                    <a class="btn btn-default btn-outline-danger"#}
-{#                                       href="{{ url_for('home.job_search', search_term=previous_term) }}">#}
-{#                                        <i class="ti-arrow-left"> </i>#}
-{#                                        Back#}
-{#                                    </a>#}
-{##}
-{#                                    <a class="btn btn-default btn-outline-success"#}
-{#                                            href="{{ url_for('home.job_search', search_term=next_term) }}">#}
-{#                                        <i class="ti-arrow-right"> </i>#}
-{#                                        Next#}
-{#                                    </a>#}
+                                    <a class="btn btn-default btn-outline-success"
+                                            href="{{ url_for('home.job_search', search_term=next_term) }}">
+                                        <i class="ti-arrow-right"> </i>
+                                        Next
+                                    </a>
 
                                 </div>
+                            </div>
                             </div>
                     </div>
                     {% include "job/cards/job.html" %}
@@ -65,6 +112,35 @@
                     <script>
                          (adsbygoogle = window.adsbygoogle || []).push({});
                     </script>
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12">
+
+                    <div class="card bg-dark">
+                        <ul class="pagination">
+                            {% if current_page > 1 %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('home.job_search', search_term=term, page=current_page-1) }}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for page_num in range(1, total_pages+1) %}
+                                <li class="page-item{% if page_num == current_page %} active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('home.job_search', search_term=term, page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                            {% endfor %}
+
+                            {% if current_page < total_pages %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('home.job_search', search_term=term, page=current_page+1) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
                 </div>
         </div>
 {% endblock %}
