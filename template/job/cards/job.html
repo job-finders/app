@@ -18,6 +18,7 @@
         }
     </style>
 {% endblock %}
+    {% set counter = 0 %}
     {% for job in job_list %}
         <div class="card">
             <div class="heading-with-logo">
@@ -38,5 +39,23 @@
                 <a href="{{ url_for('home.job_detail', reference=job.job_ref) }}" class="btn btn-sm btn-success btn-outline-success"><i class="ti-info"></i> Job Details ...</a>
             </div>
         </div>
+        {#    Every 4th line insert this ad    #}
+        {% if (counter + 1) % 4 == 0 %}
+            <!-- Ad code here -->
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269"
+                 crossorigin="anonymous"></script>
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-format="fluid"
+                 data-ad-layout-key="-fh-27+15-eo+vq"
+                 data-ad-client="ca-pub-7134185943809269"
+                 data-ad-slot="6615484667"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+
+        {% endif %}
+        {% set counter = counter + 1 %}
+
     {% endfor %}
 

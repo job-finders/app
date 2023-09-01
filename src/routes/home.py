@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, send_from_directory
+import math
+
+from flask import Blueprint, render_template, send_from_directory, request
 
 from src.database.models import Job, SEO
 from src.logger import init_logger
@@ -23,17 +25,28 @@ async def create_tags(search_term: str) -> SEO:
     return SEO(**seo_dict)
 
 
-async def create_context(search_term: str):
+async def create_context(search_term: str, page: int = 1, per_page: int = 10):
     """
-        will create common context for jobs
-    :param search_term:
-    :return:
+    Create common context for jobs with paged results.
+
+    :param search_term: The search term for job listings.
+    :param page: The page number of results to display (default is 1).
+    :param per_page: The number of job listings per page (default is 10).
+    :return: The context for rendering the template.
     """
     if search_term not in scrapper.search_terms:
         # TODO - return an error here preferably with an error page
         return None
 
+    # Filter jobs based on the search term
     job_list = [job for job in scrapper.jobs.values() if job.search_term.casefold() == search_term.casefold()]
+
+    # Calculate the start and end indices for the current page
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+
+    # Slice the job list to get the jobs for the current page
+    job_list_page = job_list[start_idx:end_idx]
 
     search_terms: list[str] = scrapper.search_terms
 
@@ -42,8 +55,16 @@ async def create_context(search_term: str):
     previous_term: str = search_terms[current_index - 1] if current_index > 0 else search_terms[len(search_terms) - 1]
     next_term: str = search_terms[current_index + 1] if current_index < len(search_terms) - 1 else search_terms[0]
 
-    context = dict(term=search_term, previous_term=previous_term, next_term=next_term,
-                   job_list=job_list, search_terms=search_terms, seo=seo)
+    context = dict(
+        term=search_term,
+        previous_term=previous_term,
+        next_term=next_term,
+        job_list=job_list_page,  # Use the sliced job list for the current page
+        search_terms=search_terms,
+        seo=seo,
+        current_page=page,  # Include the current page number in the context
+        total_pages=math.ceil(len(job_list) / per_page)  # Calculate the total number of pages
+    )
 
     return render_template('index.html', **context)
 
@@ -71,7 +92,8 @@ async def get_home():
 
 @home_route.get('/jobs/<string:search_term>')
 async def job_search(search_term: str):
-    response = await create_context(search_term)
+    page = int(request.args.get('page', 1))
+    response = await create_context(search_term=search_term, page=page)
     if response is None:
         return await not_found(search_term=search_term)
 
