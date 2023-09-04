@@ -188,3 +188,13 @@ async def faq():
     seo = await create_tags(search_term="FAQ")
     context = dict(seo=seo, term="FAQ")
     return render_template('faq.html', **context)
+
+
+@home_route.get('/linkedin-learning')
+async def linkedin_learning():
+    """
+    :return:
+    """
+    seo = await create_tags(search_term="LinkedIn Learning")
+    context = dict(seo=seo, term="LinkedIn Learning")
+    return render_template('linkedin.html', **context)

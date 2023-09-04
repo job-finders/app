@@ -1,5 +1,6 @@
 import re
 import asyncio
+import time
 import uuid
 from datetime import timedelta
 
@@ -244,17 +245,26 @@ class CareerScrapper:
                 logo_link = None
 
             extra_data = job.find_all("li")
+            # self.logger.info(f"Extra Data: {extra_data}")
+
             expires, job_type, location, updated_time = await self.extra_data_(extra_data)
-            try:
-                job_link = job.find("i")["data-url"]
-            except KeyError:
-                continue
+
+            # /self.logger.info(f"JOB PRINTER: {job}")
+            job_link_data = job.find("i")
+            job_link = job_link_data.get('data-url')
 
             # Now, let's navigate to the apply_link and extract more details about the job
             job_details_response = await self.scrapper.fetch_url(job_link)
+
             if job_details_response:
                 company_name, description, job_ref, salary = await self.extract_job_details(
                     company_name=company_name, job_details_response=job_details_response)
+                self.logger.info(f""" 
+                Company Name : {company_name} 
+                description: {description} 
+                salary : {salary}
+                """)
+
                 if salary is None and job_ref is None:
                     continue
 
@@ -285,35 +295,40 @@ class CareerScrapper:
             expires = "N/A"
         return expires, job_type, location, updated_time
 
-    @staticmethod
-    async def extract_job_details(company_name, job_details_response):
-        try:
-            job_details_soup = BeautifulSoup(job_details_response, 'html.parser')
-            vacancy_details = job_details_soup.find("div", class_="c24-vacancy-deatils-container")
+    async def extract_job_details(self, company_name, job_details_response):
+        job_details_soup = BeautifulSoup(job_details_response, 'html.parser')
+        vacancy_details = job_details_soup.find("div", class_="c24-vacancy-deatils-container")
 
-            def find_text_or_default(element, default="N/A"):
-                return element.text.strip() if element else default
+        async def find_text_or_default_async(element, default="N/A"):
+            return element.text.strip() if element else default
 
-            salary_tag = vacancy_details.find("li", string="Salary:")
-            salary = find_text_or_default(salary_tag.find_next("li", class_="elipses")).split(":")[1]
-
+        async def extract_sectors_async(vacancy_details):
             sectors_tag = vacancy_details.find("li", class_="c24-sectr")
             sectors = [sector.text.strip() for sector in sectors_tag.find_all("a")] if sectors_tag else []
+            return sectors
 
-            reference_tags = vacancy_details.find("ul", class_="small-text").find_all("li")
-            job_ref = find_text_or_default(reference_tags[-1])
-            if not job_ref:
-                job_ref = str(uuid.uuid4())
-            if "/" in job_ref:
-                job_ref = job_ref.split("/")[0]
+        salary_tag = vacancy_details.find("li", string="Salary:")
+        self.logger.info(f"SALARY : {salary_tag}")
+        if salary_tag:
+            salary = (await find_text_or_default_async(salary_tag.find_next("li", class_="elipses"))).split(":")[1]
+        else:
+            salary = "Undisclosed"
 
-            description = find_text_or_default(vacancy_details.find("div", class_="v-descrip"))
-            if not company_name:
-                company_name = find_text_or_default(vacancy_details.find("p", class_="mb-15"), default="N/A")
+        sectors = await extract_sectors_async(vacancy_details)
 
-            return company_name, description, job_ref, salary
-        except AttributeError:
-            return None, None, None, None
+        reference_tags = vacancy_details.find("ul", class_="small-text").find_all("li")
+        job_ref = (await find_text_or_default_async(reference_tags[-1]))
+        if not job_ref:
+            job_ref = str(uuid.uuid4())
+        if "/" in job_ref:
+            job_ref = job_ref.split("/")[0]
+
+        description = (await find_text_or_default_async(vacancy_details.find("div", class_="v-descrip")))
+        if not company_name:
+            company_name = (
+                await find_text_or_default_async(vacancy_details.find("p", class_="mb-15"), default="N/A"))
+
+        return company_name, description, job_ref, salary
 
     @staticmethod
     async def parse_posted_date(date_line: str):
