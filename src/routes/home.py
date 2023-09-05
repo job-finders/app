@@ -99,6 +99,9 @@ async def job_search(search_term: str):
 
     return response
 
+@home_route.get('/job-search/<string:search_term>')
+async def search_bar(search_term: str):
+    pass
 
 @home_route.post('/job-notifications/<string:search_term>')
 async def email_me(search_term: str):

@@ -124,12 +124,24 @@
             </div>
 
     </div>
-
     <div class="card col-lg-3 col-md-3 col-sm-12 bg-dark">
+    <div class="card bg-dark">
+        <div class="card-header">
+            <h3 class="card-title text-white">
+                <i class="ti-linkedin"> </i>
+                LinkedIn Learning
+            </h3>
+        </div>
+        <div class="card-body text-white font-weight-bold">
+            <a href="{{ url_for("home.linkedin_learning") }}">Improve your CV & Portfolio with LinkedIn Learning</a>
+        </div>
+    </div>
+
         <div class="card-header">
             <h3 class="card-title text-white font-weight-bold"><i class="ti-link"> </i> Links </h3>
         </div>
         {% include "job/cards/search_terms.html" %}
     </div>
+
 </div>
 
