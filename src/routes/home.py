@@ -99,9 +99,18 @@ async def job_search(search_term: str):
 
     return response
 
+
 @home_route.get('/job-search/<string:search_term>')
 async def search_bar(search_term: str):
+    """
+        allows the front page to display a search bar
+        which enables our clients to search for jobs using any term
+        the results will search on any field
+    :param search_term:
+    :return:
+    """
     pass
+
 
 @home_route.post('/job-notifications/<string:search_term>')
 async def email_me(search_term: str):
