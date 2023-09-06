@@ -200,6 +200,7 @@ async def email_me(search_term: str):
     page = int(request.args.get('page', 1))
     try:
         notifications = CreateNotifications(**request.form)
+        notifications.topic = search_term
         created_notification = await notifications_controller.create_notification_email(notification=notifications)
         email_sent = await notifications_controller.send_notification_verification_email(notification=created_notification)
     except ValidationError as e:

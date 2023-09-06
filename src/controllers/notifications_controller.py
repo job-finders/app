@@ -34,4 +34,8 @@ class NotificationsController(Controllers):
         with self.get_session() as session:
             notification_orm: NotificationsORM = session.query(NotificationsORM).filter(
                 NotificationsORM.email == email).first()
+            if notification_orm.verification_id == verification_id:
+                notification_orm.is_verified = True
+                session.merge(notification_orm)
+                session.commit()
             return notification_orm.verification_id == verification_id
