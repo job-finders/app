@@ -202,9 +202,16 @@ async def email_me(search_term: str):
         notifications = CreateNotifications(**request.form)
         notifications.topic = search_term
         created_notification = await notifications_controller.create_notification_email(notification=notifications)
+
+        if not created_notification:
+            flash(message="There was a problem adding you to the email list you may already be added please verify your email", category="danger")
+            return redirect(url_for('home.get_home'), code=302)
+
         email_sent = await notifications_controller.send_notification_verification_email(notification=created_notification)
+
     except ValidationError as e:
-        pass
+        flash(message="There was a problem creating your email alert please try again later", category="danger")
+        return redirect(url_for('home.get_home'), code=302)
 
     flash(f"Please check your email address for our verification email, "
           f"verify your email so we can send you jobs about {format_title(search_term)}", category="success")

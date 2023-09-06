@@ -14,7 +14,11 @@ class NotificationsController(Controllers):
 
     async def create_notification_email(self, notification: Notifications):
         with self.get_session() as session:
+            notification_orm_ = session.query(NotificationsORM).filter(NotificationsORM.email.casefold() == notification.email.casefold()).first()
+            if notification_orm_:
+                return None
             notification_orm = NotificationsORM(**notification.dict())
+
             session.add(notification_orm)
             session.commit()
 
