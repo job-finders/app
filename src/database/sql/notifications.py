@@ -11,3 +11,8 @@ class NotificationsORM(Base):
     email: str = Column(String(255), primary_key=True, index=True)
     verification_id: str = Column(String(36))
     is_verified: bool = Column(Boolean, default=False)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)

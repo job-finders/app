@@ -145,8 +145,10 @@ def number_days_to_expiry(updated_time: str, date_expires: date):
 
 def bootstrap_database():
     from src.database.sql.jobs import JobsORM
+    from src.database.sql.notifications import NotificationsORM
 
     JobsORM.create_if_not_table()
+    NotificationsORM.create_if_not_table()
 
 
 def sanitize_filename(filename):
