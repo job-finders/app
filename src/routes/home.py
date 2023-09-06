@@ -1,10 +1,12 @@
 import math
 
-from flask import Blueprint, render_template, send_from_directory, request, flash
+from flask import Blueprint, render_template, send_from_directory, request, flash, redirect, url_for
+from pydantic import ValidationError
 
+from src.database.models.notifications import Notifications, CreateNotifications
 from src.database.models import Job, SEO
 from src.logger import init_logger
-from src.main import scrapper
+from src.main import scrapper, notifications_controller
 from src.utils import static_folder, format_title
 
 home_route = Blueprint('home', __name__)
@@ -112,25 +114,6 @@ async def search_bar(search_term: str):
     pass
 
 
-@home_route.post('/job-notifications/<string:search_term>')
-async def email_me(search_term: str):
-    page = int(request.args.get('page', 1))
-    email = request.form.get('email')
-    if not email:
-        flash("please supply email address")
-        response = await create_context(search_term=search_term, page=page)
-        return response
-
-    flash(f"Please check your email address for our verification email, "
-          f"verify your email so we can send you jobs about {format_title(search_term)}", category="success")
-
-    response = await create_context(search_term=search_term, page=page)
-    if response is None:
-        return await not_found(search_term=search_term)
-
-    return response
-
-
 @home_route.get('/job/<string:reference>')
 async def job_detail(reference: str):
     job: Job = await scrapper.job_search(job_reference=reference)
@@ -143,13 +126,13 @@ async def job_detail(reference: str):
     return render_template('job.html', **context)
 
 
-@home_route.get('/sw-check-permissions-a0d20.js')
-async def get_pro_push_code():
-    """
-        will serve pro push code from static folder
-    :return:
-    """
-    return send_from_directory(static_folder(), 'js/sw-check-permissions-a0d20.js')
+# @home_route.get('/sw-check-permissions-a0d20.js')
+# async def get_pro_push_code():
+#     """
+#         will serve pro push code from static folder
+#     :return:
+#     """
+#     return send_from_directory(static_folder(), 'js/sw-check-permissions-a0d20.js')
 
 
 @home_route.get('/about')
@@ -210,3 +193,45 @@ async def linkedin_learning():
     seo = await create_tags(search_term="LinkedIn Learning")
     context = dict(seo=seo, term="LinkedIn Learning")
     return render_template('linkedin.html', **context)
+
+
+@home_route.post('/job-notifications/<string:search_term>')
+async def email_me(search_term: str):
+    page = int(request.args.get('page', 1))
+    try:
+        notifications = CreateNotifications(**request.form)
+        created_notification = await notifications_controller.create_notification_email(notifications=notifications)
+        email_sent = await notifications_controller.send_notification_verification_email(notification=created_notification)
+    except ValidationError as e:
+        pass
+
+    flash(f"Please check your email address for our verification email, "
+          f"verify your email so we can send you jobs about {format_title(search_term)}", category="success")
+
+    response = await create_context(search_term=search_term, page=page)
+    if response is None:
+        return await not_found(search_term=search_term)
+
+    return response
+
+
+@home_route.get('/email-verification/<string:verification_id>')
+async def verify_email(verification_id: str):
+    """
+
+    :param verification_id:
+    :return:
+    """
+    email = request.args.get("email")
+    if not email:
+        flash(message="Unable to verify Email Address", category="danger")
+        return redirect(url_for('home.get_home'), code=302)
+
+    is_verified = await notifications_controller.check_verification(verification_id=verification_id, email=email)
+    if is_verified:
+        flash(message="You have successfully been added into our job alerts services", category="success")
+        return redirect(url_for('home.get_home'), code=302)
+
+    flash(message="Unfortunately we could not verify your email address please try again", category="danger")
+    return redirect(url_for('home.get_home'), code=302)
+

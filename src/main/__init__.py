@@ -1,11 +1,17 @@
 from flask import Flask
+from src.emailer import SendMail
 from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
 from src.utils import template_folder, static_folder, format_title, format_description, bootstrap_database
-from src.controllers import StorageController
+
 
 bootstrap_database()
+send_mail = SendMail()
+
+from src.controllers import StorageController, NotificationsController
+notifications_controller = NotificationsController()
 
 # initializing models and controllers
+
 storage_controller = StorageController()
 scrapper = Scrapper()
 junction_scrapper = JunctionScrapper(scrapper=scrapper)
