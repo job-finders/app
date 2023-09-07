@@ -28,6 +28,19 @@ class Job(BaseModel):
         return format_reference(ref=value)
 
     @property
+    def slug(self) -> str:
+        """
+
+        :return:
+        """
+        special_chars = r'[!@#$%^&*()+=\[\]{}|;:",<>/`~]-'
+        _title = ""
+        for char in self.title:
+            if char not in special_chars:
+                _title += char
+        return _title.replace(" ", "_").lower().strip()
+
+    @property
     def posted_date(self) -> date:
         """
         Validate and convert the posted_date string to a date object.
@@ -67,6 +80,7 @@ class Job(BaseModel):
             "logo_link": self.logo_link,
             "job_link": self.job_link,
             "title": self.title,
+            "slug": self.slug,
             "company_name": self.company_name,
             "salary": self.salary,
             "position": self.position,

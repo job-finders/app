@@ -12,7 +12,7 @@
                         <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
                     </div>
                     <div class="card-header">
-                        <a href="{{ url_for('home.job_detail', reference=job.job_ref) }}">
+                        <a href="{{ url_for('home.job_slug', slug=job.slug) }}">
                             <h3 class="card-title text-white">{{ job.title|title }}</h3>
                         </a>
                     </div>

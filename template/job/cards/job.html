@@ -31,7 +31,7 @@
             {% endif %}
                 <div class="heading-with-logo">
                     <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
-                    <h2 class="card-title"><a href="{{ url_for('home.job_detail', reference=job.job_ref) }}">{{ job.title|title }}</a></h2>
+                    <h2 class="card-title"><a href="{{ url_for('home.job_slug', slug=job.slug) }}">{{ job.title|title }}</a></h2>
                 </div>
                 <div class="card-footer">
                     <span class="card-title text-info font-weight-bold">{{ job.company_name }} - {{ job.location }}</span>
@@ -44,7 +44,7 @@
                     </ul>
                 </div>
                 <div class="card-footer d-flex justify-content-between align-items-center">
-                    <a href="{{ url_for('home.job_detail', reference=job.job_ref) }}" class="btn btn-sm btn-success btn-outline-success"><i class="ti-info"></i> Job Details ...</a>
+                    <a href="{{ url_for('home.job_slug', slug=job.slug) }}" class="btn btn-sm btn-success btn-outline-success"><i class="ti-info"></i> Job Details ...</a>
                 </div>
             </div>
 {#        {% endif %}#}

@@ -80,6 +80,16 @@ class Scrapper:
             # In case of error return the last job
             return self.jobs[list(self.jobs.keys())[-1]]
 
+    async def search_by_slug(self, slug: str):
+        """
+
+        :param slug:
+        :return:
+        """
+        for job in self.jobs.values():
+            if job.slug == slug:
+                return job
+
     async def similar_jobs(self, search_term: str, title: str) -> list[Job]:
         """
         Find similar jobs based on common keywords in the title of the job from self.jobs.

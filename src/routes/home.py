@@ -213,6 +213,18 @@ async def job_detail(reference: str):
     return render_template('job.html', **context)
 
 
+@home_route.get('/search/job/<string:slug>')
+async def job_slug(slug: str):
+    job: Job = await scrapper.search_by_slug(slug=slug)
+
+    term = job.title
+    seo = await create_tags(search_term=term)
+    similar_jobs = await scrapper.similar_jobs(search_term=job.search_term, title=job.title)
+    home_logger.info(f"Similar Jobs : {similar_jobs}")
+    context = dict(term=term, job=job, search_terms=scrapper.search_terms, similar_jobs=similar_jobs, seo=seo)
+    return render_template('job.html', **context)
+
+
 # @home_route.get('/sw-check-permissions-a0d20.js')
 # async def get_pro_push_code():
 #     """
