@@ -38,6 +38,7 @@ class Job(BaseModel):
         for char in self.title:
             if char not in special_chars:
                 _title += char
+        _title = f"{_title}_{self.job_ref.replace('-', '_')}"
         return _title.replace(" ", "_").lower().strip()
 
     @property

@@ -186,7 +186,6 @@ async def search_bar():
         allows the front page to display a search bar
         which enables our clients to search for jobs using any term
         the results will search on any field
-    :param search_term:
     :return:
     """
     search_term = request.args.get('search_term')
@@ -201,6 +200,15 @@ async def search_bar():
     return response
 
 
+async def sub_job_detail(job):
+    term = job.title
+    seo = await create_tags(search_term=term)
+    similar_jobs = await scrapper.similar_jobs(search_term=job.search_term, title=job.title)
+    home_logger.info(f"Similar Jobs : {similar_jobs}")
+    context = dict(term=term, job=job, search_terms=scrapper.search_terms, similar_jobs=similar_jobs, seo=seo)
+    return render_template('job.html', **context)
+
+
 @home_route.get('/job/<string:reference>')
 async def job_detail(reference: str):
     job: Job = await scrapper.job_search(job_reference=reference)
@@ -213,24 +221,6 @@ async def job_slug(slug: str):
     job: Job = await scrapper.search_by_slug(slug=slug)
 
     return await sub_job_detail(job)
-
-
-async def sub_job_detail(job):
-    term = job.title
-    seo = await create_tags(search_term=term)
-    similar_jobs = await scrapper.similar_jobs(search_term=job.search_term, title=job.title)
-    home_logger.info(f"Similar Jobs : {similar_jobs}")
-    context = dict(term=term, job=job, search_terms=scrapper.search_terms, similar_jobs=similar_jobs, seo=seo)
-    return render_template('job.html', **context)
-
-
-# @home_route.get('/sw-check-permissions-a0d20.js')
-# async def get_pro_push_code():
-#     """
-#         will serve pro push code from static folder
-#     :return:
-#     """
-#     return send_from_directory(static_folder(), 'js/sw-check-permissions-a0d20.js')
 
 
 @home_route.get('/about')
