@@ -13,7 +13,7 @@ async def get_site_job_links() -> list[str]:
     """
     links = []
     for job in scrapper.jobs.values():
-        links.append(url_for('home.job_detail', _external=True, reference=job.job_ref))
+        links.append(url_for('home.job_slug', _external=True, slug=job.slug))
     return links
 
 
