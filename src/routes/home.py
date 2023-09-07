@@ -205,18 +205,17 @@ async def search_bar():
 async def job_detail(reference: str):
     job: Job = await scrapper.job_search(job_reference=reference)
 
-    term = job.title
-    seo = await create_tags(search_term=term)
-    similar_jobs = await scrapper.similar_jobs(search_term=job.search_term, title=job.title)
-    home_logger.info(f"Similar Jobs : {similar_jobs}")
-    context = dict(term=term, job=job, search_terms=scrapper.search_terms, similar_jobs=similar_jobs, seo=seo)
-    return render_template('job.html', **context)
+    return await sub_job_detail(job)
 
 
 @home_route.get('/search/job/<string:slug>')
 async def job_slug(slug: str):
     job: Job = await scrapper.search_by_slug(slug=slug)
 
+    return await sub_job_detail(job)
+
+
+async def sub_job_detail(job):
     term = job.title
     seo = await create_tags(search_term=term)
     similar_jobs = await scrapper.similar_jobs(search_term=job.search_term, title=job.title)
