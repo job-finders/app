@@ -22,25 +22,12 @@
 
     {% for job in job_list %}
         {% if loop.index % 4 == 0 %}
-           <div class="card">
-            <!-- Ad code here -->
-            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269"
-                 crossorigin="anonymous"></script>
-            <ins class="adsbygoogle"
-                 style="display:block"
-                 data-ad-format="fluid"
-                 data-ad-layout-key="-fh-27+15-eo+vq"
-                 data-ad-client="ca-pub-7134185943809269"
-                 data-ad-slot="6615484667"></ins>
-            <script>
-                 (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-            </div>
+{#            {% include 'adverts/horizontal.html' %}#}
         {% else %}
             {% if loop.index % 2 == 0 %}
-            <div class="card-footer">
+                <div class="card-footer">
             {% else %}
-            <div class="card">
+                <div class="card">
             {% endif %}
                 <div class="heading-with-logo">
                     <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
