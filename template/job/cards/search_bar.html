@@ -1,0 +1,21 @@
+
+
+
+<div class="card bg-dark">
+    <div class="card-header">
+        <h3 class="card-title text-white font-weight-bold"><i class="ti-search"> </i> Job Search</h3>
+    </div>
+    <div class="card-body">
+        <span class="card-content">Search our entire database using whatever term you like</span>
+        <form class="form-horizontal" method="get" action="{{ url_for('home.search_bar') }}" enctype="application/x-www-form-urlencoded">
+            <div class="form-group">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search_term" id="search_term">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="submit"><i class="ti-search"></i></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
