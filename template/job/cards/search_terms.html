@@ -1,5 +1,11 @@
 
 <ul class="list-group">
+    <li class="list-group-item font-weight-bold text-info">
+    <a href="{{ url_for('home.get_home') }}" class="font-weight-bold text-info">
+        Home
+    </a>
+    </li>
+
     {% for term in search_terms %}
         <li class="list-group-item font-weight-bold text-info">
         <a href="{{ url_for('home.job_search', search_term=term) }}" class="font-weight-bold text-info">
