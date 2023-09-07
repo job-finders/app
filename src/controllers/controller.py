@@ -1,4 +1,5 @@
 from flask import Flask
+from pymysql import OperationalError
 
 from src.database.sql import Session
 from src.logger import init_logger
@@ -15,10 +16,13 @@ class Controllers:
         self.logger = init_logger(self.__class__.__name__)
 
     def get_session(self) -> Session:
-        if self.sessions:
-            return self.sessions.pop()
-        self.sessions = [Session() for _ in range(20)]
-        return self.get_session()
+        try:
+            if self.sessions:
+                return self.sessions.pop()
+            self.sessions = [Session() for _ in range(20)]
+            return self.get_session()
+        except OperationalError as e:
+            self.logger.info("Operational Error")
 
     def setup_error_handler(self, app: Flask):
         # app.add_url_rule("")
@@ -37,4 +41,3 @@ class Controllers:
 
         if session_maker and session_limit:
             self.sessions = [session_maker() for _ in range(session_limit)]
-

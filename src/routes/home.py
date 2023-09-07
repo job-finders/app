@@ -212,6 +212,9 @@ async def email_me(search_term: str):
     except ValidationError as e:
         flash(message="There was a problem creating your email alert please try again later", category="danger")
         return redirect(url_for('home.get_home'), code=302)
+    except Exception as e:
+        flash(message="There was a problem creating your email alert please try again later", category="danger")
+        return redirect(url_for('home.get_home'), code=302)
 
     flash(f"Please check your email address for our verification email, "
           f"verify your email so we can send you jobs about {format_title(search_term)}", category="success")
