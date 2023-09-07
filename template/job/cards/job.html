@@ -21,9 +21,9 @@
 
 
     {% for job in job_list %}
-        {% if loop.index % 4 == 0 %}
+{#        {% if loop.index % 4 == 0 %}#}
 {#            {% include 'adverts/horizontal.html' %}#}
-        {% else %}
+{#        {% else %}#}
             {% if loop.index % 2 == 0 %}
                 <div class="card-footer">
             {% else %}
@@ -47,6 +47,6 @@
                     <a href="{{ url_for('home.job_detail', reference=job.job_ref) }}" class="btn btn-sm btn-success btn-outline-success"><i class="ti-info"></i> Job Details ...</a>
                 </div>
             </div>
-        {% endif %}
+{#        {% endif %}#}
     {% endfor %}
 
