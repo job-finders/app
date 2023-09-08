@@ -39,10 +39,12 @@ def create_app(config):
         # importing routes
         from src.routes.home import home_route
         from src.routes.seo import seo_route
+        from src.routes.blog import blog_route
 
         # registering routes
         app.register_blueprint(home_route)
         app.register_blueprint(seo_route)
+        app.register_blueprint(blog_route)
 
         # registering filters
         app.jinja_env.filters['title'] = format_title

@@ -3,6 +3,7 @@ import math
 from flask import Blueprint, render_template, send_from_directory, request, flash, redirect, url_for
 from pydantic import ValidationError
 
+from src.database.models.seo import create_tags
 from src.database.models.notifications import Notifications, CreateNotifications
 from src.database.models import Job, SEO
 from src.logger import init_logger
@@ -11,20 +12,6 @@ from src.utils import static_folder, format_title
 
 home_route = Blueprint('home', __name__)
 home_logger = init_logger("home_logger")
-
-
-async def create_tags(search_term: str) -> SEO:
-    """
-
-    :param search_term:
-    :return:
-    """
-    title = f"{search_term} Jobs"
-    description = f"jobfinders.site {search_term} Jobs"
-    term_words = ",".join(format_title(search_term).split(" "))
-    keywords = f"JobFinders, {term_words}"
-    seo_dict = dict(title=title, description=description, keywords=keywords)
-    return SEO(**seo_dict)
 
 
 async def create_context(search_term: str, page: int = 1, per_page: int = 10):
