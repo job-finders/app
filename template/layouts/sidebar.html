@@ -13,7 +13,7 @@
                 <li><a href="{{ url_for('home.get_home') }}"><i class="ti-home"></i> Home</a></li>
                 <li>
                     <a class="sidebar-sub-toggle">
-                     <i class="ti-folder"></i> Jobs <span class="sidebar-collapse-icon ti-angle-down"></span>
+                     <i class="ti-user"></i> Jobs <span class="sidebar-collapse-icon ti-angle-down"></span>
                     </a>
                     <ul>
                     {% for term in search_terms %}
@@ -30,10 +30,44 @@
 {#                        <i class="ti-linkedin"> </i>#}
 {#                        LinkedIn Learning</a>#}
 {#                    </li>#}
-                    <li> <a href="{{ url_for("blog.get_blog") }}">
-                        <i class="ti-book"> </i>
-                        Blog</a>
-                    </li>
+                <li>
+                    <a class="sidebar-sub-toggle">
+                     <i class="ti-folder"></i> Blog <span class="sidebar-collapse-icon ti-angle-down"></span>
+                    </a>
+                    <ul>
+                        <li> <a href="{{ url_for('blog.resume_writing_tips') }}">
+                            <i class="ti-file"> </i>
+                            Resume Writing Tips</a>
+                        </li>
+                        <li> <a href="{{ url_for('blog.job_search_strategies') }}">
+                            <i class="ti-file"> </i>
+                            Job Search Strategies</a>
+                        </li>
+                        <li> <a href="{{ url_for('blog.interview_strategies') }}">
+                            <i class="ti-file"> </i>
+                            Interview Preparations</a>
+                        </li>
+                        <li> <a href="{{ url_for('blog.freelancing') }}">
+                            <i class="ti-file"> </i>
+                            Remote Work &amp; Freelancing</a>
+                        </li>
+                        <li> <a href="{{ url_for('blog.job_application') }}">
+                            <i class="ti-file"> </i>
+                            Job Applications Tips</a>
+                        </li>
+                        <li> <a href="{{ url_for('blog.workplace_tips') }}">
+                            <i class="ti-file"> </i>
+                            Workplace Tips</a>
+                        </li>
+                        <li> <a href="{{ url_for('blog.job_market_research') }}">
+                            <i class="ti-file"> </i>
+                            Job Market Research</a>
+                        </li>
+                        <li> <a href="{{ url_for('blog.education') }}">
+                            <i class="ti-file"> </i>
+                            Education &amp; Training</a>
+                        </li>
+                    </ul>
 
                     <li> <a href="{{ url_for("home.contact") }}">
                         <i class="ti-email"> </i>
