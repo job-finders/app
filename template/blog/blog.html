@@ -3,11 +3,127 @@
     <section class="container-fluid">
         <div class="card-content">
             <div class="card-header">
-                <h1 class="card-title">{{ term|title }}</h1>
+                <h1 class="card-title">JobFinders {{ term|title }}</h1>
             </div>
+        <div class="card-body"> A Blog about looking for, finding and advancing your job in your choosen career path</div>
+        <div class="row">
+            <div class="col-lg-3 col-md-3 col-sm-12">
+                <div class="card bg-dark">
+                    <div class="card-header text-white">
+                        <h3 class="card-title text-white"> Resume Writing Tips</h3>
+                    </div>
+                    <img class="card-image" src="{{ url_for('static', filename='images/blog/resume.jpg') }}" alt="Resume Writing Tips Image">
+                    <div class="card-body">
+                        <span class="card-content">
+                            Offer advice on creating effective resumes, cover letters, and LinkedIn profiles.
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-12">
+                <div class="card bg-dark">
+                    <div class="card-header text-white">
+                        <h3 class="card-title text-white"> Job Search Strategies</h3>
+                    </div>
+                    <img class="card-image" src="{{ url_for('static', filename='images/blog/jobsearch.jpg') }}" alt="Resume Writing Tips Image">
+                    <div class="card-body">
+                        <span class="card-content">
+                             Tips and techniques for conducting a successful job search, including networking, using job boards, and leveraging social media
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-12">
+                <div class="card bg-dark">
+                    <div class="card-header text-white">
+                        <h3 class="card-title text-white font-weight-bold"> Interview Preparations</h3>
+                    </div>
+                    <img class="card-image" src="{{ url_for('static', filename='images/blog/interviewpreparations.jpg') }}" alt="Interview Preparations">
+                    <div class="card-body">
+                        <span class="card-content">
+                            Guidance on preparing for job interviews, including common interview questions, how to dress, and how to follow up after an interview
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-12">
+                <div class="card bg-dark">
+                    <div class="card-header text-white">
+                        <h3 class="card-title text-white"> Remote Work and Freelancing</h3>
+                    </div>
+                    <img class="card-image" src="{{ url_for('static', filename='images/blog/remotework.jpg') }}" alt="Remote Work and Freelancing">
+                    <div class="card-body">
+                        <span class="card-content">
+                            Benefits and challenges of remote work, how to find remote job opportunities, and how to excel in a freelance career.
+                        </span>
+                    </div>
+
+
+                </div>
+
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-12">
+                <div class="card bg-dark">
+                    <div class="card-header text-white">
+                        <h3 class="card-title text-white"> Job Applications Tips</h3>
+                    </div>
+                    <img class="card-image" src="{{ url_for('static', filename='images/blog/jobapplicationtips.jpg') }}" alt="Job Application Tips">
+                    <div class="card-body">
+                        <span class="card-content">
+                            Advice on completing online job applications, including ATS (Applicant Tracking System) optimization.
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-12">
+                <div class="card bg-dark">
+                    <div class="card-header text-white">
+                        <h3 class="card-title text-white"> Workplace Tips </h3>
+                    </div>
+                    <img class="card-image" src="{{ url_for('static', filename='images/blog/workplacetips.jpg') }}" alt="WorkPlace Tips">
+                    <div class="card-body">
+                        <span class="card-content">
+                            Tips for succeeding in the workplace, such as time management, effective communication, and building strong professional relationships.
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-12">
+                <div class="card bg-dark">
+                    <div class="card-header text-white">
+                        <h3 class="card-title text-white"> Job Market Research</h3>
+                    </div>
+                    <img class="card-image" src="{{ url_for('static', filename='images/blog/jobmarketresearch.jpg') }}" alt="Job Market Research">
+                    <div class="card-body">
+                        <span class="card-content">
+                            Research on job market trends, salary benchmarks, and the demand for specific skills in various industries.
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-12">
+                <div class="card bg-dark">
+                    <div class="card-header text-white">
+                        <h3 class="card-title text-white"> Education and Training</h3>
+                    </div>
+
+                    <img class="card-image" src="{{ url_for('static', filename='images/blog/educationresearch.jpg') }}" alt="Education and Training">
+                    <div class="card-body">
+                        <span class="card-content">
+                             The value of continuing education, certifications, and skill-building programs for career advancement.
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+
         </div>
-
-
+        </div>
     </section>
 {% endblock %}
 
