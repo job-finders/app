@@ -86,6 +86,11 @@
         <priority>0.7</priority>
     </url>
     <url>
+        <loc>https://jobfinders.site/blog</loc>
+        <changefreq>daily</changefreq>
+        <priority>1</priority>
+    </url>
+    <url>
         <loc>https://jobfinders.site/blog/resume-writing-tips</loc>
         <changefreq>daily</changefreq>
         <priority>0.7</priority>
