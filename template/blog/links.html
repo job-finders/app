@@ -2,9 +2,9 @@
             <div class="col-lg-3 col-md-3 col-sm-12">
                 <div class="card bg-dark">
                     <div class="card-header text-white">
-                        <a href="{{ url_for('blog.resume_writing_tips') }}"> <h3 class="card-title text-white"> Resume Writing Tips</h3></a>
+                        <a href="{{ url_for('blog.get_blog',topic='resume-writing-tips') }}"> <h3 class="card-title text-white"> Resume Writing Tips</h3></a>
                     </div>
-                    <a href="{{ url_for('blog.resume_writing_tips') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/resume.jpg') }}" alt="Resume Writing Tips Image"></a>
+                    <a href="{{ url_for('blog.get_blog',topic='resume-writing-tips') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/resume.jpg') }}" alt="Resume Writing Tips Image"></a>
                     <div class="card-body">
                         <span class="card-content">
                             Offer advice on creating effective resumes, cover letters, and LinkedIn profiles.
@@ -15,9 +15,9 @@
             <div class="col-lg-3 col-md-3 col-sm-12">
                 <div class="card bg-dark">
                     <div class="card-header text-white">
-                        <a href="{{ url_for('blog.job_search_strategies') }}"><h3 class="card-title text-white"> Job Search Strategies</h3></a>
+                        <a href="{{ url_for('blog.get_blog', topic='job-search-strategies') }}"><h3 class="card-title text-white"> Job Search Strategies</h3></a>
                     </div>
-                    <a href="{{ url_for('blog.job_search_strategies') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobsearch.jpg') }}" alt="Resume Writing Tips Image"></a>
+                    <a href="{{ url_for('blog.get_blog', topic='job-search-strategies') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobsearch.jpg') }}" alt="Resume Writing Tips Image"></a>
                     <div class="card-body">
                         <span class="card-content">
                              Tips and techniques for conducting a successful job search, including networking, using job boards, and leveraging social media
@@ -29,9 +29,9 @@
             <div class="col-lg-3 col-md-3 col-sm-12">
                 <div class="card bg-dark">
                     <div class="card-header text-white">
-                        <a href="{{ url_for('blog.interview_strategies') }}"> <h3 class="card-title text-white font-weight-bold"> Interview Preparations</h3></a>
+                        <a href="{{ url_for('blog.get_blog', topic='interview-strategies') }}"> <h3 class="card-title text-white font-weight-bold"> Interview Preparations</h3></a>
                     </div>
-                    <a href="{{ url_for('blog.interview_strategies') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/interviewpreparations.jpg') }}" alt="Interview Preparations"></a>
+                    <a href="{{ url_for('blog.get_blog', topic='interview-strategies') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/interviewpreparations.jpg') }}" alt="Interview Preparations"></a>
                     <div class="card-body">
                         <span class="card-content">
                             Guidance on preparing for job interviews, including common interview questions, how to dress, and how to follow up after an interview
@@ -44,9 +44,9 @@
             <div class="col-lg-3 col-md-3 col-sm-12">
                 <div class="card bg-dark">
                     <div class="card-header text-white">
-                        <a href="{{ url_for('blog.freelancing') }}"> <h3 class="card-title text-white"> Remote Work &amp; Freelancing</h3></a>
+                        <a href="{{ url_for('blog.get_blog', topic='remote-work-freelancing') }}"> <h3 class="card-title text-white"> Remote Work &amp; Freelancing</h3></a>
                     </div>
-                    <a href="{{ url_for('blog.freelancing') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/remotework.jpg') }}" alt="Remote Work and Freelancing"></a>
+                    <a href="{{ url_for('blog.get_blog', topic='remote-work-freelancing') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/remotework.jpg') }}" alt="Remote Work and Freelancing"></a>
                     <div class="card-body">
                         <span class="card-content">
                             Benefits and challenges of remote work, how to find remote job opportunities, and how to excel in a freelance career.
@@ -60,9 +60,9 @@
             <div class="col-lg-3 col-md-3 col-sm-12">
                 <div class="card bg-dark">
                     <div class="card-header text-white">
-                        <a href="{{ url_for('blog.job_application') }}"> <h3 class="card-title text-white"> Job Applications Tips</h3></a>
+                        <a href="{{ url_for('blog.get_blog', topic='job-application-tips') }}"> <h3 class="card-title text-white"> Job Applications Tips</h3></a>
                     </div>
-                    <a href="{{ url_for('blog.job_application') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobapplicationtips.jpg') }}" alt="Job Application Tips"></a>
+                    <a href="{{ url_for('blog.get_blog', topic='job-application-tips') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobapplicationtips.jpg') }}" alt="Job Application Tips"></a>
                     <div class="card-body">
                         <span class="card-content">
                             Advice on completing online job applications, including ATS (Applicant Tracking System) optimization.
@@ -73,9 +73,9 @@
             <div class="col-lg-3 col-md-3 col-sm-12">
                 <div class="card bg-dark">
                     <div class="card-header text-white">
-                        <a href="{{ url_for('blog.workplace_tips') }}"> <h3 class="card-title text-white"> Workplace Tips </h3></a>
+                        <a href="{{ url_for('blog.get_blog',topic='workplace-tips') }}"> <h3 class="card-title text-white"> Workplace Tips </h3></a>
                     </div>
-                    <a href="{{ url_for('blog.workplace_tips') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/workplacetips.jpg') }}" alt="WorkPlace Tips"></a>
+                    <a href="{{ url_for('blog.get_blog',topic='workplace-tips') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/workplacetips.jpg') }}" alt="WorkPlace Tips"></a>
                     <div class="card-body">
                         <span class="card-content">
                             Tips for succeeding in the workplace, such as time management, effective communication, and building strong professional relationships.
@@ -87,9 +87,9 @@
             <div class="col-lg-3 col-md-3 col-sm-12">
                 <div class="card bg-dark">
                     <div class="card-header text-white">
-                        <a href="{{ url_for('blog.job_market_research') }}">  <h3 class="card-title text-white"> Job Market Research</h3></a>
+                        <a href="{{ url_for('blog.get_blog', topic='job-market-research') }}">  <h3 class="card-title text-white"> Job Market Research</h3></a>
                     </div>
-                    <a href="{{ url_for('blog.job_market_research') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobmarketresearch.jpg') }}" alt="Job Market Research"></a>
+                    <a href="{{ url_for('blog.get_blog', topic='job-market-research') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobmarketresearch.jpg') }}" alt="Job Market Research"></a>
                     <div class="card-body">
                         <span class="card-content">
                             Research on job market trends, salary benchmarks, and the demand for specific skills in various industries.
@@ -101,10 +101,10 @@
             <div class="col-lg-3 col-md-3 col-sm-12">
                 <div class="card bg-dark">
                     <div class="card-header text-white">
-                        <a href="{{ url_for('blog.education') }}"> <h3 class="card-title text-white"> Education &amp; Training</h3></a>
+                        <a href="{{ url_for('blog.get_blog', topic='education') }}"> <h3 class="card-title text-white"> Education &amp; Training</h3></a>
                     </div>
 
-                    <a href="{{ url_for('blog.education') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/educationresearch.jpg') }}" alt="Education and Training"></a>
+                    <a href="{{ url_for('blog.get_blog', topic='education') }}"><img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/educationresearch.jpg') }}" alt="Education and Training"></a>
                     <div class="card-body">
                         <span class="card-content">
                              The value of continuing education, certifications, and skill-building programs for career advancement.

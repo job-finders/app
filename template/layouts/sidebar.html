@@ -35,35 +35,40 @@
                      <i class="ti-folder"></i> Blog <span class="sidebar-collapse-icon ti-angle-down"></span>
                     </a>
                     <ul>
-                        <li> <a href="{{ url_for('blog.resume_writing_tips') }}">
+                        <li> <a href="{{ url_for('blog.get_blog', topic='index') }}">
+                            <i class="ti-file"> </i>
+                            Blog</a>
+                        </li>
+
+                        <li> <a href="{{ url_for('blog.get_blog', topic='resume-writing-tips') }}">
                             <i class="ti-file"> </i>
                             Resume Writing Tips</a>
                         </li>
-                        <li> <a href="{{ url_for('blog.job_search_strategies') }}">
+                        <li> <a href="{{ url_for('blog.get_blog', topic='job-search-strategies') }}">
                             <i class="ti-file"> </i>
                             Job Search Strategies</a>
                         </li>
-                        <li> <a href="{{ url_for('blog.interview_strategies') }}">
+                        <li> <a href="{{ url_for('blog.get_blog', topic='interview-strategies') }}">
                             <i class="ti-file"> </i>
                             Interview Preparations</a>
                         </li>
-                        <li> <a href="{{ url_for('blog.freelancing') }}">
+                        <li> <a href="{{ url_for('blog.get_blog', topic='remote-work-freelancing') }}">
                             <i class="ti-file"> </i>
                             Remote Work &amp; Freelancing</a>
                         </li>
-                        <li> <a href="{{ url_for('blog.job_application') }}">
+                        <li> <a href="{{ url_for('blog.get_blog', topic='job-application-tips') }}">
                             <i class="ti-file"> </i>
                             Job Applications Tips</a>
                         </li>
-                        <li> <a href="{{ url_for('blog.workplace_tips') }}">
+                        <li> <a href="{{ url_for('blog.get_blog', topic='workplace_tips') }}">
                             <i class="ti-file"> </i>
                             Workplace Tips</a>
                         </li>
-                        <li> <a href="{{ url_for('blog.job_market_research') }}">
+                        <li> <a href="{{ url_for('blog.get_blog', topic='job-market-research') }}">
                             <i class="ti-file"> </i>
                             Job Market Research</a>
                         </li>
-                        <li> <a href="{{ url_for('blog.education') }}">
+                        <li> <a href="{{ url_for('blog.get_blog', topic='education') }}">
                             <i class="ti-file"> </i>
                             Education &amp; Training</a>
                         </li>
