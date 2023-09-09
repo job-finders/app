@@ -7,6 +7,14 @@ blog_route = Blueprint('blog', __name__)
 blog_logger = init_logger()
 
 
+@blog_route.get('/blog')
+async def blog_home():
+    search_term, template_path = ("Jobfinders Blog Articles", "blog/blog.html")
+    seo = await create_tags(search_term=search_term)
+    context = dict(seo=seo, term=search_term)
+    return render_template(template_path, **context)
+
+
 @blog_route.get('/blog/<string:topic>')
 async def get_blog(topic):
     """
