@@ -11,6 +11,10 @@
     <div class="card-body">
         <ul class="list-group">
             <li class="list-group-item text-dark">
+                <a href="{{ url_for('blog.get_blog',topic='index') }}"> <h3 class="card-title"> JobFinders Blog</h3></a>
+            </li>
+
+            <li class="list-group-item text-dark">
                 <a href="{{ url_for('blog.get_blog',topic='resume-writing-tips') }}"> <h3 class="card-title"> Resume Writing Tips</h3></a>
             </li>
             <li class="list-group-item text-dark">
