@@ -40,7 +40,7 @@ async def create_context(search_term: str, page: int = 1, per_page: int = 10):
 
     # Filter jobs based on the search term
     job_list = [job for job in scrapper.jobs.values() if job.search_term.casefold() == search_term.casefold()]
-    locations_list: list[str] = await job_locations(job_list)
+    locations_list: set[str] = await job_locations(job_list)
 
     # Calculate the start and end indices for the current page
     start_idx = (page - 1) * per_page
@@ -84,7 +84,7 @@ async def create_search_context(search_term: str, page: int = 1, per_page: int =
     # Filter jobs based on the search term matching any string field
     job_list = [job for job in scrapper.jobs.values() if
                 search_term_matches_any_field(job, search_term)]
-    locations_list: list[str] = await job_locations(job_list)
+    locations_list: set[str] = await job_locations(job_list)
     # Calculate the start and end indices for the current page
     start_idx = (page - 1) * per_page
     end_idx = start_idx + per_page
