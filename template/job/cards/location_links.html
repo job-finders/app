@@ -1,0 +1,20 @@
+<div class="card bg-dark">
+    <div class="card-header">
+        <h3 class="card-title text-white">Select Location</h3>
+    </div>
+
+    <div class="card-body">
+        <form action="{{ url_for('home.search_bar') }}" method="GET">
+            <div class="form-group">
+                <label for="locationSelect">Relevant Locations</label>
+                <select id="locationSelect" name="search_term" class="form-control">
+                    <option value="">Select Locations</option>
+                    {% for location in locations_list %}
+                        <option value="{{ location }}">{{ location|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="ti-location-pin"> </i> Limit Search</button>
+        </form>
+    </div>
+</div>

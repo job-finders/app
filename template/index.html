@@ -60,10 +60,13 @@
 {#            {% include "adverts/vertical.html" %}#}
             <div class="card bg-dark">
                 <div class="card-header">
-                    <h3 class="card-title text-white font-weight-bold"><i class="ti-link"> </i> Quick Links</h3>
+                    <h3 class="card-title text-white font-weight-bold"><i class="ti-link"> </i> Job Category</h3>
                 </div>
                 {% include "job/cards/search_terms.html" %}
             </div>
+
+
+
             {% include "blog/panel.html" %}
         </div>
         <!-- END OF SECTION -->
@@ -71,6 +74,7 @@
         <div class="col-lg-12 col-md-12 col-sm-12">
 
             <div class="card bg-dark">
+                <span class="font-weight-bold">Browse Jobs By Page Numbers</span>
                 <ul class="pagination">
                     {% if current_page > 1 %}
                         <li class="page-item">
@@ -95,7 +99,8 @@
                     {% endif %}
                 </ul>
             </div>
-
+            {% include "job/cards/location_links.html" %}
         </div>
+
     </div>
 {% endblock %}

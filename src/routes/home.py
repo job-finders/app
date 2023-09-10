@@ -14,6 +14,17 @@ home_route = Blueprint('home', __name__)
 home_logger = init_logger("home_logger")
 
 
+async def job_locations(jobs_list: list[Job]) -> set[str]:
+    """
+    Extracts unique job locations from a list of Job objects and returns them as a set.
+
+    :param jobs_list: List of Job objects
+    :return: Set of job locations
+    """
+    return {job.location for job in jobs_list if job} if jobs_list else set()
+
+
+# noinspection DuplicatedCode
 async def create_context(search_term: str, page: int = 1, per_page: int = 10):
     """
     Create common context for jobs with paged results.
@@ -29,6 +40,7 @@ async def create_context(search_term: str, page: int = 1, per_page: int = 10):
 
     # Filter jobs based on the search term
     job_list = [job for job in scrapper.jobs.values() if job.search_term.casefold() == search_term.casefold()]
+    locations_list: list[str] = await job_locations(job_list)
 
     # Calculate the start and end indices for the current page
     start_idx = (page - 1) * per_page
@@ -49,6 +61,7 @@ async def create_context(search_term: str, page: int = 1, per_page: int = 10):
         previous_term=previous_term,
         next_term=next_term,
         job_list=job_list_page,  # Use the sliced job list for the current page
+        locations_list=locations_list,
         search_terms=search_terms,
         seo=seo,
         current_page=page,  # Include the current page number in the context
@@ -58,6 +71,7 @@ async def create_context(search_term: str, page: int = 1, per_page: int = 10):
     return render_template('index.html', **context)
 
 
+# noinspection DuplicatedCode
 async def create_search_context(search_term: str, page: int = 1, per_page: int = 10):
     """
     Create common context for jobs with paged results.
@@ -70,7 +84,7 @@ async def create_search_context(search_term: str, page: int = 1, per_page: int =
     # Filter jobs based on the search term matching any string field
     job_list = [job for job in scrapper.jobs.values() if
                 search_term_matches_any_field(job, search_term)]
-
+    locations_list: list[str] = await job_locations(job_list)
     # Calculate the start and end indices for the current page
     start_idx = (page - 1) * per_page
     end_idx = start_idx + per_page
@@ -96,6 +110,7 @@ async def create_search_context(search_term: str, page: int = 1, per_page: int =
         previous_term=previous_term,
         next_term=next_term,
         job_list=job_list_page,  # Use the sliced job list for the current page
+        locations_list=locations_list,
         search_terms=search_terms,
         seo=seo,
         current_page=page,  # Include the current page number in the context
@@ -107,19 +122,19 @@ async def create_search_context(search_term: str, page: int = 1, per_page: int =
 
 def search_term_matches_any_field(job: Job, search_term: str):
     # Check if the search term matches any string field of the job
-    if field_contains_search_term(field=job.location, search_term=search_term):
+    if field_contains_search_term(field=job.title, search_term=search_term):
         return True
     if field_contains_search_term(field=job.search_term, search_term=search_term):
         return True
-    if field_contains_search_term(field=job.title, search_term=search_term):
-        return True
-    if field_contains_search_term(field=job.job_link, search_term=search_term):
-        return True
-    if field_contains_search_term(field=job.description, search_term=search_term):
+    if field_contains_search_term(field=job.location, search_term=search_term):
         return True
     if field_contains_search_term(field=job.company_name, search_term=search_term):
         return True
     if field_contains_search_term(field=job.desired_skills, search_term=search_term):
+        return True
+    if field_contains_search_term(field=job.description, search_term=search_term):
+        return True
+    if field_contains_search_term(field=job.job_link, search_term=search_term):
         return True
     return False
 
