@@ -44,3 +44,22 @@ async def get_blog(topic):
         # Handle invalid topic here, e.g., return a 404 page
         error = dict(title="Error Page not Found", message="Error finding that blog page")
         return render_template("error.html")
+
+
+@blog_route.get("/blog/resume-templates/<string:template_name>")
+async def get_resume_template(template_name: str):
+    """
+        resume templates here
+    :param template_name:
+    :return:
+    """
+    if template_name == "developer":
+        return render_template("blog/resume/software_developer_resume.html")
+    elif template_name == "marketing":
+        return render_template("blog/resume/marketing_manager_resume.html")
+
+    elif template_name == "classic":
+        return render_template("blog/resume/classic_resume.html")
+
+    elif template_name == "creative":
+        return render_template("blog/resume/creative_resume.html")
