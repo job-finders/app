@@ -2,11 +2,12 @@
 
 {% block content %}
 <section class="container-fluid">
-    <div class="card">
+<div class="row">
+    <div class="card col-lg-9 col-md-9 col-sm-12">
         <div class="card-header">
             <h1 class="card-title">Guidance on Preparing for Job Interviews</h1>
         </div>
-<img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/interviewpreparations.jpg') }}" alt="Interview Preparations">
+        <img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/interviewpreparations.jpg') }}" alt="Interview Preparations">
         <div class="card-body">
             <div class="card">
                 <p>Preparing for a job interview is a critical step in securing your desired position. To help you succeed, we've compiled comprehensive guidance on interview preparation, including common interview questions, dressing appropriately, and post-interview follow-up.</p>
@@ -51,6 +52,8 @@
             </div>
         </div>
     </div>
-{% include 'blog/links.html' %}
+    {% include 'blog/external_links.html' %}
+</div>
+    {% include 'blog/links.html' %}
 </section>
 {% endblock %}

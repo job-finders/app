@@ -2,11 +2,12 @@
 
 {% block content %}
 <section class="container-fluid">
-    <div class="card">
+<div class="row">
+    <div class="card col-lg-9 col-md-9 col-sm-12">
         <div class="card-header">
             <h1 class="card-title">{{ term|title }}</h1>
         </div>
-<img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/resume.jpg') }}" alt="Resume Writing Tips Image">
+        <img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/resume.jpg') }}" alt="Resume Writing Tips Image">
         <div class="card-body">
             <div class="card bg-dark font-weight-bold">
                 <p class="text-white">In today's competitive job market, your resume serves as your first impression to potential employers. A well-crafted resume can be the key to securing your dream job, while a poorly constructed one may leave you in the discard pile. In this article, we will guide you through the process of creating a standout resume, providing essential tips, downloadable templates, and real-world examples to help you succeed.</p>
@@ -76,6 +77,8 @@
         </div>
 
     </div>
-{% include 'blog/links.html' %}
+    {% include 'blog/external_links.html' %}
+</div>
+    {% include 'blog/links.html' %}
 </section>
 {% endblock %}

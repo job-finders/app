@@ -1,14 +1,19 @@
 {% extends "layouts/page.html" %}
 {% block content %}
     <section class="container-fluid">
-        <div class="card-content">
+    <div class="row">
+        <div class="card-content col-lg-9 col-md-9 col-sm-12">
             <div class="card-header">
                 <h1 class="card-title">JobFinders {{ term|title }}</h1>
             </div>
-        <div class="card-body"> A Blog about looking for, finding and advancing your job in your choosen career path</div>
-
-        {% include 'blog/links.html' %}
+        <div class="card-body">
+            A Blog about looking for, finding and advancing your job in your choosen career path
         </div>
+        {% include 'blog/links.html' %}
+
+        </div>
+        {% include 'blog/external_links.html' %}
+    </div>
     </section>
 {% endblock %}
 

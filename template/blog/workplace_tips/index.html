@@ -2,11 +2,12 @@
 
 {% block content %}
 <section class="container-fluid">
-    <div class="card">
+<div class="row">
+    <div class="card col-lg-9 col-md-9 col-sm-12">
         <div class="card-header">
             <h1 class="card-title">Workplace Tips: Keys to Success in Your Professional Journey</h1>
         </div>
-<img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/workplacetips.jpg') }}" alt="WorkPlace Tips">
+        <img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/workplacetips.jpg') }}" alt="WorkPlace Tips">
         <div class="card-body">
             <div class="card">
                 <p>Success in the workplace goes beyond technical skills and job knowledge. It involves mastering essential soft skills and strategies to thrive in a professional environment. In this article, we'll explore valuable workplace tips, including time management, effective communication, and building strong professional relationships.</p>
@@ -50,6 +51,8 @@
             </div>
         </div>
     </div>
+    {% include 'blog/external_links.html' %}
+</div>
     {% include 'blog/links.html' %}
 </section>
 {% endblock %}

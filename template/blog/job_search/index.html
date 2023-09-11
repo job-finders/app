@@ -2,11 +2,12 @@
 
 {% block content %}
 <section class="container-fluid">
-    <div class="card">
+<div class="row">
+    <div class="card col-lg-9 col-md-9 col-sm-12">
         <div class="card-header">
             <h1 class="card-title">Tips and Techniques for Conducting a Successful Job Search</h1>
         </div>
-<img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobsearch.jpg') }}" alt="Resume Writing Tips Image">
+        <img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobsearch.jpg') }}" alt="Resume Writing Tips Image">
         <div class="card-body">
             <div class="card bg-dark font-weight-bold">
                 <p class="text-white">Searching for a job can be a daunting task, but with the right strategies, you can streamline the process and increase your chances of landing your dream job. In this article, we'll explore valuable tips and techniques to help you conduct a successful job search, covering networking, job boards, and leveraging social media.</p>
@@ -56,6 +57,8 @@
             </div>
         </div>
     </div>
-{% include 'blog/links.html' %}
+    {% include 'blog/external_links.html' %}
+</div>
+    {% include 'blog/links.html' %}
 </section>
 {% endblock %}

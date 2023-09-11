@@ -2,11 +2,12 @@
 
 {% block content %}
 <section class="container-fluid">
-    <div class="card">
+<div class="row">
+    <div class="card col-lg-9 col-md-9 col-sm-12">
         <div class="card-header">
             <h1 class="card-title">Job Market Research: Navigating Your Career Path with Informed Decisions</h1>
         </div>
-<img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobmarketresearch.jpg') }}" alt="Job Market Research">
+        <img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobmarketresearch.jpg') }}" alt="Job Market Research">
         <div class="card-body">
             <div class="card">
                 <p>Job market research is a vital component of career planning and success. In this article, we'll explore the significance of researching job market trends, salary benchmarks, and the demand for specific skills across various industries. Armed with this knowledge, you can make informed decisions about your career path.</p>
@@ -47,6 +48,8 @@
             </div>
         </div>
     </div>
-{% include 'blog/links.html' %}
+    {% include 'blog/external_links.html' %}
+</div>
+    {% include 'blog/links.html' %}
 </section>
 {% endblock %}

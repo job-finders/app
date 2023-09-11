@@ -2,11 +2,12 @@
 
 {% block content %}
 <section class="container-fluid">
-    <div class="card">
+<div class="row">
+    <div class="card col-lg-9 col-md-9 col-sm-12">
         <div class="card-header">
             <h1 class="card-title">Job Application Tips: Mastering Online Applications and ATS Optimization</h1>
         </div>
-<img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobapplicationtips.jpg') }}" alt="Job Application Tips">
+        <img class="card-image img-fluid" src="{{ url_for('static', filename='images/blog/jobapplicationtips.jpg') }}" alt="Job Application Tips">
         <div class="card-body">
             <div class="card">
                 <p>Job applications are your gateway to new career opportunities, and mastering the art of online applications is essential. This article provides valuable tips for completing online job applications effectively and optimizing them for ATS (Applicant Tracking System) success.</p>
@@ -51,6 +52,8 @@
             </div>
         </div>
     </div>
-{% include 'blog/links.html' %}
+    {% include 'blog/external_links.html' %}
+</div>
+    {% include 'blog/links.html' %}
 </section>
 {% endblock %}
