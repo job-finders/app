@@ -40,10 +40,11 @@ async def get_blog(topic):
         seo = await create_tags(search_term=search_term)
         context = dict(seo=seo, term=search_term)
         return render_template(template_path, **context)
-    else:
-        # Handle invalid topic here, e.g., return a 404 page
-        error = dict(title="Error Page not Found", message="Error finding that blog page")
-        return render_template("error.html")
+
+    # Handle invalid topic here, e.g., return a 404 page
+    error = dict(title="Error Page not Found", message="Error finding that blog page")
+    context = dict(error=error)
+    return render_template("error.html", **context)
 
 
 @blog_route.get("/blog/resume-templates/<string:template_name>")
@@ -57,9 +58,12 @@ async def get_resume_template(template_name: str):
         return render_template("blog/resume/software_developer_resume.html")
     elif template_name == "marketing":
         return render_template("blog/resume/marketing_manager_resume.html")
-
     elif template_name == "classic":
         return render_template("blog/resume/classic_resume.html")
-
     elif template_name == "creative":
         return render_template("blog/resume/creative_resume.html")
+
+    error = dict(title="Error Page not Found", message="Error Resume Template not found")
+    context = dict(error=error)
+    return render_template("error.html", **context)
+
