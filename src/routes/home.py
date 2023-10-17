@@ -338,3 +338,8 @@ async def verify_email(verification_id: str):
 
     flash(message="Unfortunately we could not verify your email address please try again", category="danger")
     return redirect(url_for('home.get_home'), code=302)
+
+
+@home_route.get('/sw.enot.js')
+async def get_sw():
+    return send_from_directory(static_folder(), 'js/sw.enot.js')
