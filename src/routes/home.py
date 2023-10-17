@@ -1,6 +1,6 @@
 import math
 
-from flask import Blueprint, render_template, send_from_directory, request, flash, redirect, url_for
+from flask import Blueprint, render_template, send_from_directory, request, flash, redirect, url_for, Response
 from pydantic import ValidationError
 
 from src.database.models.seo import create_tags
@@ -342,4 +342,8 @@ async def verify_email(verification_id: str):
 
 @home_route.get('/sw.enot.js')
 async def get_sw():
-    return send_from_directory(static_folder(), 'js/sw.enot.js')
+    _filepath = f"{static_folder()}js/sw.enot.js"
+
+    with open(_filepath, 'r') as file:
+        contents = file.read()
+        return Response(contents, content_type='application/javascript')
