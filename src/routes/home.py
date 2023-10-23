@@ -342,7 +342,8 @@ async def verify_email(verification_id: str):
 
 @home_route.get('/sw.enot.js')
 async def get_sw():
-    _filepath = f"{static_folder()}js/sw.enot.js"
+    _filepath = f"{static_folder()}/js/sw.enot.js"
+    print(f'File Path : {_filepath}')
 
     with open(_filepath, 'r') as file:
         contents = file.read()
