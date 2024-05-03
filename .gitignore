@@ -16,9 +16,9 @@ jobs.cache
 downloads/
 eggs/
 .eggs/
-lib64/
+
 parts/
-sdist/
+
 var/
 wheels/
 share/python-wheels/

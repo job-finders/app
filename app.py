@@ -6,6 +6,6 @@ app = create_app(config=config_instance())
 
 
 if __name__ == "__main__":
-    # app.run(host='0.0.0.0', port=8084, debug=True, extra_files=['src', 'templates', 'static'])
+    app.run(host='0.0.0.0', port=8084, debug=True, extra_files=['src', 'templates', 'static'])
     app.run(debug=True, port=8084)
 
