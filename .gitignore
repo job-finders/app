@@ -5,12 +5,13 @@ __pycache__/
 .env.developer
 # C extensions
 *.so
+env/
 
 # Distribution / packaging
 .Python
 build/
 develop-eggs/
-dist/
+
 jobs.cache
 downloads/
 eggs/

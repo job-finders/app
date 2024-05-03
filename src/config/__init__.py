@@ -1,5 +1,5 @@
-from pydantic import Field
-from pydantic import BaseSettings
+from pydantic import Field, BaseSettings
+
 
 
 class MySQLSettings(BaseSettings):
