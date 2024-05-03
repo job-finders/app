@@ -46,8 +46,3 @@ async def robots():
 @seo_route.get("/Ads.txt")
 async def ads_txt():
     return send_from_directory(static_folder(), 'ads.txt')
-
-#
-# @seo_route.get("/ads.txt")
-# async def adstxt():
-#     return send_from_directory(static_folder(), 'ads.txt')
