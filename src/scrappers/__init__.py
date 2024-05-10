@@ -127,16 +127,21 @@ class JunctionScrapper:
         self._junction_base_url: str = "https://www.careerjunction.co.za/"
         self.scrapper = scrapper
         self.logger = init_logger(self.__class__.__name__)
+        self.loop = asyncio.get_event_loop()
 
-    async def init_loader(self):
-        # searches = []
+    async def reload(self):
         for search_term in self.scrapper.search_terms:
             self.logger.info(f"Searching for : {search_term}")
             jobs_list = await self.junction_scrape(term=search_term)
             await self.scrapper.manage_jobs(jobs=jobs_list)
 
-    def init_app(self, app: Flask):
-        asyncio.run(self.init_loader())
+    async def init_loader(self):
+        # searches = []
+        await self.reload()
+
+    def init_app(self, app: Flask, timer_multiplier: int = 1):
+        # asyncio.run(self.init_loader())
+        self.loop.create_task(self.scrape_scheduler(timer_multiplier=timer_multiplier))
 
     @cached
     async def junction_scrape(self, term: str, page_limit: int = 1) -> list[Job]:
@@ -215,6 +220,12 @@ class JunctionScrapper:
             return job_dict
         except AttributeError as e:
             return
+
+    async def scrape_scheduler(self, timer_multiplier: int = 1):
+        while True:
+            await self.reload()
+
+            await asyncio.sleep(60 * timer_multiplier)
 
 
 class CareerScrapper:
