@@ -7,6 +7,10 @@ app, junction_scrapper = create_app(config=config_instance())
 
 
 def run_scrapper_scheduler():
+    """
+
+    :return:
+    """
     junction_scrapper.loop.run_forever()
 
 
