@@ -57,6 +57,7 @@ class Scrapper:
         self.logger = init_logger(self.__class__.__name__)
 
     async def manage_jobs(self, jobs: list[Job]):
+        self.jobs = {}
         for job in jobs:
             ref = format_reference(ref=job.job_ref)
             self.jobs[ref] = job
