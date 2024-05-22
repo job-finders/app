@@ -57,7 +57,7 @@ class Scrapper:
         self.logger = init_logger(self.__class__.__name__)
 
     async def manage_jobs(self, jobs: list[Job]):
-        self.jobs = {}
+
         for job in jobs:
             ref = format_reference(ref=job.job_ref)
             self.jobs[ref] = job
@@ -131,6 +131,7 @@ class JunctionScrapper:
         self.loop = asyncio.get_event_loop()
 
     async def reload(self):
+        self.scrapper.jobs = {}
         for search_term in self.scrapper.search_terms:
             self.logger.info(f"Searching for : {search_term}")
             jobs_list = await self.junction_scrape(term=search_term)
