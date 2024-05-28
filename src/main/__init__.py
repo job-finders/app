@@ -33,7 +33,8 @@ def create_app(config):
     with app.app_context():
         # initialization
         # storage_controller.init_app(app=app)
-        run_every_hour = 3
+        #  12 hours
+        run_every_hour = 12
         junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
         # career_scrapper.init_app(app=app)
 

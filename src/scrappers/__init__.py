@@ -40,7 +40,7 @@ class Scrapper:
         self.request_sessions = CachedSession('jobs.cache', use_cache_dir=False,
                                               cache_control=True,
                                               # Use Cache-Control response headers for expiration, if available
-                                              expire_after=timedelta(hours=3),
+                                              expire_after=timedelta(hours=12),
                                               # Otherwise expire responses after one day
                                               allowable_codes=[200, 400],
                                               # Cache 400 responses as a solemn reminder of your failures
