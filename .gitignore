@@ -5,8 +5,8 @@ __pycache__/
 .env.developer
 # C extensions
 *.so
-cache/
-*.pkl
+
+
 # Distribution / packaging
 .Python
 build/
@@ -159,10 +159,3 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
-/static/images/faceavatar.JPG
-/static/images/facecover.JPG
-/static/images/pythonjob.JPG
-/static/images/trending.JPG
-*.pkl
-/cache
-/src/cache/
