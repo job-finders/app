@@ -100,9 +100,9 @@ class Scrapper:
         """
         similar_jobs = []
         title_lower = title.lower().split()  # Convert and split the provided title to lowercase for comparison
-        self.logger.info(f"similarity search: search_term: {search_term} title: {title_lower}")
+        # self.logger.info(f"similarity search: search_term: {search_term} title: {title_lower}")
         for job in [job for job in self.jobs.values() if job.search_term.casefold() == search_term.casefold()]:
-            self.logger.info(f"finding similarity in job : {job.title}")
+            # self.logger.info(f"finding similarity in job : {job.title}")
             job_title_lower = job.title.lower().split()  # Convert and split the job's title
 
             # Calculate the intersection (common keywords) between the provided title and the job title
