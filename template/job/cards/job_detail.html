@@ -77,9 +77,9 @@
                     <li>
                         <span class="font-italic">Expires:</span>  <span class="font-weight-bold text-info">  {{ job.expires }}</span>
                     </li>
-                    <li>
-                        <span class="font-italic"> Reference: </span> <span class="font-weight-bold text-info">  {{ job.job_ref }}</span>
-                    </li>
+{#                    <li>#}
+{#                        <span class="font-italic"> Reference: </span> <span class="font-weight-bold text-info">  {{ job.job_ref }}</span>#}
+{#                    </li>#}
                 </ul>
             </div>
 
@@ -96,8 +96,6 @@
                     </ul>
                 {% endif %}
             </div>
-
-
             <div class="card-footer d-flex justify-content-between align-items-center">
                 <a href="{{ job.job_link }}" rel="nofollow noreferrer" target="_blank"  class="btn btn-lg btn-info"><i class="ti-file"></i> Apply</a>
                 <!-- tweet button -->
