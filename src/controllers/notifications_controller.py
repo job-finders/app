@@ -4,7 +4,7 @@ from flask import render_template, url_for
 import asyncio
 from pymysql import OperationalError
 
-from src.main import send_mail, scrapper
+from src.main import send_mail
 from src.emailer import EmailModel
 from src.database.sql.notifications import NotificationsORM
 from src.database.models.notifications import Notifications
@@ -90,7 +90,7 @@ class NotificationsController(Controllers):
         Runs a background loop that sends job alerts periodically based on user preferences.
         Operates on +2 Pretoria timezone (use system time, assumed to be in +2 or handled externally).
         """
-
+        from src.main import scrapper
         while True:
             try:
                 self.logger.info(f"[{datetime.now()}] Job Alert Daemon running...")
