@@ -323,3 +323,55 @@ async def verify_email(verification_id: str):
 
     flash(message="Unfortunately we could not verify your email address please try again", category="danger")
     return redirect(url_for('home.get_home'), code=302)
+
+
+@home_route.get('/send-job-notifications')
+async def send_job_notifications():
+    """
+    This route sends job alerts to verified users based on their topic of interest.
+    Intended to be triggered by a scheduled job.
+    """
+    from src.main import scrapper  # Ensure scrapper is accessible
+
+    try:
+        with notifications_controller.get_session() as session:
+            notifications = session.query(NotificationsORM).filter(NotificationsORM.is_verified == True).all()
+
+        if not notifications:
+            home_logger.info("No verified notifications found.")
+            return {"status": "ok", "message": "No verified users to notify."}
+
+        for n in notifications:
+            topic = n.topic
+            jobs = [
+                job for job in scrapper.jobs.values()
+                if job.search_term.casefold() == topic.casefold()
+            ][:5]  # Limit to 5 jobs
+
+            if not jobs:
+                home_logger.info(f"No jobs found for topic: {topic}")
+                continue
+
+            # Create context and render email
+            job_links = [
+                {
+                    "title": job.title,
+                    "company": job.company_name,
+                    "location": job.location,
+                    "link": url_for('home.job_detail', reference=job.reference, _external=True)
+                }
+                for job in jobs
+            ]
+
+            email_html = render_template("email/job_alert.html", topic=topic, job_links=job_links)
+            subject = f"JobFinders.site - New {format_title(topic)} Job Opportunities"
+            msg = EmailModel(subject_=subject, to_=n.email, html_=email_html)
+
+            home_logger.info(f"Sending job alert to: {n.email}")
+            await send_mail.send_mail_resend(email=msg)
+
+        return {"status": "ok", "message": "Job alerts sent to verified users."}
+
+    except Exception as e:
+        home_logger.error(f"Failed to send job notifications: {e}")
+        return {"status": "error", "message": "Failed to send job notifications."}

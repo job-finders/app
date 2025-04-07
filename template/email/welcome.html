@@ -1,19 +1,25 @@
-
-
-
-<div class="card">
-
-    <div class="card-header">
-        <h3 class="card-title">Welcome to jobfinders.site</h3>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>JobFinders.site - Email Verification</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f4f4f4; font-family: Arial, sans-serif;">
+    <div style="max-width:600px; margin:30px auto; background-color:#ffffff; border:1px solid #dddddd; border-radius:4px; overflow:hidden;">
+      <div style="background-color:#007bff; color:#ffffff; padding:20px;">
+        <h3 style="margin:0; font-size:24px;">JobFinders.site Email Verification</h3>
+      </div>
+      <div style="padding:20px; color:#333333; font-size:16px; line-height:1.5;">
+        <p style="margin:0 0 15px;">Dear Valued User,</p>
+        <p style="margin:0 0 15px;">Thank you for registering with JobFinders.site and expressing interest in our job alerts service. To ensure the security of your account and to complete the registration process, we kindly ask that you verify your email address.</p>
+        <p style="margin:0 0 15px;">Please click the button below to confirm your email address. If you did not initiate this request, please disregard this message.</p>
+      </div>
+      <div style="padding:20px; text-align:center;">
+        <a href="{{ verification_link }}" style="display:inline-block; padding:15px 25px; font-size:16px; color:#ffffff; background-color:#28a745; text-decoration:none; border-radius:4px;">Confirm Email Address</a>
+      </div>
+      <div style="padding:20px; color:#777777; font-size:12px; text-align:center;">
+        <p style="margin:0;">© 2025 JobFinders.site. All rights reserved.</p>
+      </div>
     </div>
-
-    <div class="card-body">
-        <p class="card-content"> Hello</p>
-        <p class="card-content"> Thank you for showing interest in our job alerts services.</p>
-        <p class="card-content"> but before we can do anything please take the time to verify your email address.</p>
-    </div>
-
-    <div class="card-footer">
-        <a href="{{ verification_link }}" class="btn btn-lg btn-primary">Verify Your Email Address</a>
-    </div>
-</div>
+  </body>
+</html>

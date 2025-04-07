@@ -17,5 +17,4 @@ def run_scrapper_scheduler():
 if __name__ == "__main__":
     scrapper_thread = threading.Thread(target=run_scrapper_scheduler, daemon=True)
     scrapper_thread.start()
-
     app.run(host='0.0.0.0', port=8084, debug=True, extra_files=['src', 'templates', 'static'])

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Latest Nursing Job Alerts</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f4f4f4; font-family: Arial, sans-serif;">
+    <div style="max-width:600px; margin:30px auto; background-color:#ffffff; border:1px solid #dddddd; border-radius:4px; overflow:hidden;">
+      <!-- Header -->
+      <div style="background-color:#007bff; color:#ffffff; padding:20px; text-align:center;">
+        <h2 style="margin:0; font-size:24px;">Nursing Job Alerts</h2>
+      </div>
+      <!-- Introduction -->
+      <div style="padding:20px; color:#333333; font-size:16px; line-height:1.5;">
+        <p style="margin:0 0 15px;">Dear {{ user_name }},</p>
+        <p style="margin:0 0 15px;">Below are some of the latest nursing job opportunities tailored for you. We have selected a list of roles that we believe match your interests. If you'd like to explore more opportunities, please click the button at the bottom.</p>
+      </div>
+      <!-- Job List -->
+      <div style="padding:0 20px 20px;">
+        <ul style="list-style-type:none; padding:0; margin:0;">
+          {% for job in jobs %}
+          <li style="border-bottom:1px solid #dddddd; padding:10px 0;">
+            <a href="{{ job.link }}" style="text-decoration:none; color:#007bff; font-size:16px; font-weight:bold;">{{ job.title }}</a><br/>
+            <span style="font-size:14px; color:#555555;">{{ job.company }} &mdash; {{ job.location }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <!-- Call-to-Action -->
+      <div style="padding:20px; text-align:center;">
+        <a href="{{ more_jobs_link }}" style="display:inline-block; padding:15px 25px; font-size:16px; color:#ffffff; background-color:#28a745; text-decoration:none; border-radius:4px;">View More Nursing Jobs</a>
+      </div>
+      <!-- Footer -->
+      <div style="padding:20px; color:#777777; font-size:12px; text-align:center;">
+        <p style="margin:0;">© 2025 JobFinders.site. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>
+
