@@ -27,12 +27,16 @@ async def get_blog(topic):
         "index": ("Jobfinders Blog Articles", "blog/blog.html"),
         "resume-writing-tips": ("Resume Writing Tips", "blog/resume/index.html"),
         "job-search-strategies": ("Job Search Strategies", "blog/job_search/index.html"),
+        "mastering-networking": ("Mastering Networking", "blog/job_search/mastering_networking.html"),
         "interview-strategies": ("Interview Strategies", "blog/interview/index.html"),
         "remote-work-freelancing": ("Remote Work and Freelancing", "blog/freelancing/index.html"),
         "job-application-tips": ("Job Application Tips", "blog/job_application/index.html"),
         "workplace-tips": ("Workplace Tips", "blog/workplace_tips/index.html"),
         "job-market-research": ("Job Market Research", "blog/job_market/index.html"),
+        "career": ("Navigating Career Change", "blog/job_market/strategies_for_smooth_change.html"),
+        "digital-branding": ("Personal Branding", "blog/job_market/building_personal_brand.html"),
         "education": ("Education and Training", "blog/education/index.html"),
+
     }
 
     if topic in topic_mappings:
