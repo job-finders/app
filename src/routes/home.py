@@ -1,5 +1,6 @@
 import math
 import os
+import random
 from pathlib import Path
 
 import requests
@@ -108,6 +109,12 @@ async def create_search_context(search_term: str, page: int = 1, per_page: int =
     :param per_page: The number of job listings per page (default is 10).
     :return: The context for rendering the template.
     """
+    AFFILIATE_TEMPLATES = [
+        "affiliates/amazon/how_to_get_a_job_in_it.html",
+        "affiliates/amazon/2_hour_job_search.html",
+        "affiliates/amazon/it_career_jumpstart.html",
+    ]
+
     # Filter jobs based on the search term matching any string field
     job_list = [job for job in scrapper.jobs.values() if
                 search_term_matches_any_field(job, search_term)]
@@ -140,7 +147,8 @@ async def create_search_context(search_term: str, page: int = 1, per_page: int =
         search_terms=search_terms,
         seo=seo,
         current_page=page,  # Include the current page number in the context
-        total_pages=math.ceil(len(job_list) / per_page)  # Calculate the total number of pages
+        total_pages=math.ceil(len(job_list) / per_page),  # Calculate the total number of pages
+        affiliate_template=random.choice(AFFILIATE_TEMPLATES)
     )
 
     return render_template('index.html', **context)

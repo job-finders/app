@@ -21,7 +21,7 @@
     {% for job in job_list %}
 
             {% if loop.index == 3 %}
-                {% include "affiliates/amazon/how_to_get_a_job_in_it.html" %}
+                {% include affiliate_template %}
             {% endif %}
 
             {% if loop.index % 2 == 0 %}
