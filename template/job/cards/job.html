@@ -28,7 +28,7 @@
                 <div class="card">
             {% endif %}
                 <div class="heading-with-logo">
-                    <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
+                    <img src="{{ job.internal_image_link }}" alt="{{ job.company_name }} Logo">
                     <h2 class="card-title"><a href="{{ url_for('home.job_slug', slug=job.slug) }}">{{ job.title|title }}</a></h2>
                 </div>
                 <div class="card-footer">

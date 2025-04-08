@@ -42,6 +42,14 @@ class Job(BaseModel):
         return _title.replace(" ", "_").lower().strip()
 
     @property
+    def internal_image_link(self) -> str:
+        """
+        Returns an internal link for accessing the logo image via your application.
+        """
+        return f"/media/logos/{self.job_ref}.png"
+
+
+    @property
     def posted_date(self) -> date:
         """
         Validate and convert the posted_date string to a date object.

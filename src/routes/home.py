@@ -1,18 +1,57 @@
 import math
+import os
+from pathlib import Path
 
-from flask import Blueprint, render_template, send_from_directory, request, flash, redirect, url_for
+import requests
+from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, send_file
 from pydantic import ValidationError
 
+from src.database.models import Job
+from src.database.models.notifications import CreateNotifications
 from src.database.models.seo import create_tags
-from src.database.models.notifications import Notifications, CreateNotifications
-from src.database.models import Job, SEO
+from src.database.sql.notifications import NotificationsORM
 from src.logger import init_logger
 from src.main import scrapper, notifications_controller
-from src.utils import static_folder, format_title
+from src.utils import format_title
 
 home_route = Blueprint('home', __name__)
 home_logger = init_logger("home_logger")
 
+# 获取当前文件的绝对路径
+current_file = Path(__file__).resolve()
+
+# 定义媒体文件的根目录（相对于当前文件）
+MEDIA_DIR = current_file.parent.parent.parent / "media" / "logos"
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+# os.makedirs(MEDIA_DIR, exist_ok=True)
+
+def fetch_and_cache_logo(job):
+    if not job.logo_link:
+        return None
+
+    file_path = MEDIA_DIR / f"{job.job_ref}.png"
+    normalized_path = os.path.normpath(str(file_path))
+    if os.path.exists(normalized_path):
+        print(f"Logo already exists: {normalized_path}")
+        return Path(normalized_path)  # 返回 Path 对象
+
+    try:
+        response = requests.get(job.logo_link, timeout=5)
+        response.raise_for_status()
+
+        # 确保目录存在
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(file_path, "wb") as f:
+            f.write(response.content)
+        print(f"Logo fetched and saved: {file_path}")
+        return file_path  # 返回 Path 对象
+    except requests.RequestException as e:
+        print(f"Failed to fetch logo: {e}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
 
 async def create_context(search_term: str, page: int = 1, per_page: int = 10):
     """
@@ -141,6 +180,22 @@ async def not_found(search_term: str):
     status = "404 Not Found"
     error = dict(message=error_message, title=status)
     return render_template('error.html', error=error), 404
+
+@home_route.get("/media/logos/<job_ref>.png")
+def serve_logo(job_ref):
+    # 您需要一种方法来通过引用获取 Job 实例
+    job = scrapper.jobs.get(job_ref)
+
+    if not job:
+        print(f"Job not found: {job_ref}")
+        abort(404)
+
+    file_path = fetch_and_cache_logo(job)
+    if not file_path or not isinstance(file_path, Path) or not file_path.exists():
+        print(f"File not found: {file_path}")
+        abort(404)
+
+    return send_file(file_path, mimetype="image/png")
 
 
 @home_route.get('/')

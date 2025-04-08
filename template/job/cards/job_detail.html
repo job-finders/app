@@ -58,7 +58,7 @@
 
         <div class="card col-lg-9 col-md-9 col-sm-12">
             <div class="heading-with-logo">
-                <img src="{{ job.logo_link }}" alt="{{ job.company_name }} Logo">
+                <img src="{{ job.internal_image_link }}" alt="{{ job.company_name }} Logo">
                 <h2 class="card-title"><a href="{{ url_for('home.job_slug', slug=job.slug) }}">{{ job.title }}</a></h2>
             </div>
 
@@ -101,10 +101,13 @@
                 <hr>
             </div>
 
-            <div class="card-footer d-flex justify-content-between align-items-center">
-              <h4>Boost Your CV</h4>
-              <p>Job hunting? This Amazon-recommended guide helps you write a standout CV.</p>
-              <a href="https://amzn.to/42ghv4k" target="_blank">Check it out →</a>
+            <div class="card-footer">
+                <div class="card-header">
+                    <h2 class="card-title">Boost Your CV</h2>
+                </div>
+
+                <p class="card-body"><strong>Job hunting?</strong> This Amazon-recommended guide helps you write a standout CV.</p>
+                  <a href="https://amzn.to/3GaW8d7" class="btn btn-primary btn-sm" target="_blank">Check it out →</a>
             </div>
 
             <div class="card-footer d-flex justify-content-between align-items-center">
