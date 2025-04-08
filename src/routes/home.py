@@ -26,11 +26,7 @@ MEDIA_DIR = current_file.parent.parent.parent / "media" / "logos"
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 # os.makedirs(MEDIA_DIR, exist_ok=True)
 # updated images
-AFFILIATE_TEMPLATES = [
-    "affiliates/amazon/how_to_get_a_job_in_it.html",
-    "affiliates/amazon/2_hour_job_search.html",
-    "affiliates/amazon/it_career_jumpstart.html",
-]
+
 
 def fetch_and_cache_logo(job):
     if not job.logo_link:
@@ -59,6 +55,29 @@ def fetch_and_cache_logo(job):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return None
+
+
+def load_affiliate_templates(directory="template/affiliates/amazon"):
+    affiliate_templates = []
+
+    # Check if the directory exists
+    if not os.path.exists(directory):
+        print(f"Directory '{directory}' not found.")
+        return affiliate_templates
+
+    # Loop through the files in the specified directory
+    for filename in os.listdir(directory):
+        # Only add HTML files to the list
+        print(filename)
+        if filename.endswith(".html"):
+            # Construct the relative path (remove 'templates' from the start)
+            file_path = os.path.relpath(os.path.join(directory, filename), start='template/')
+            affiliate_templates.append(file_path)
+    print(f"Example of a template string : {affiliate_templates}")
+    return affiliate_templates
+
+
+
 
 async def create_context(search_term: str, page: int = 1, per_page: int = 10):
     """
@@ -89,6 +108,8 @@ async def create_context(search_term: str, page: int = 1, per_page: int = 10):
     current_index: int = search_terms.index(search_term)
     previous_term: str = search_terms[current_index - 1] if current_index > 0 else search_terms[len(search_terms) - 1]
     next_term: str = search_terms[current_index + 1] if current_index < len(search_terms) - 1 else search_terms[0]
+    # Call the method and assign the result to AFFILIATE_TEMPLATES
+    AFFILIATE_TEMPLATES = load_affiliate_templates()
 
     context = dict(
         term=search_term,
@@ -139,6 +160,8 @@ async def create_search_context(search_term: str, page: int = 1, per_page: int =
         current_index = 0
         previous_term = "programming"
         next_term = "information-technolodgy"
+    # Call the method and assign the result to AFFILIATE_TEMPLATES
+    AFFILIATE_TEMPLATES = load_affiliate_templates()
 
     context = dict(
         term=search_term,
