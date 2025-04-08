@@ -22,10 +22,19 @@ class Job(BaseModel):
     description: str | None
     desired_skills: list[str] | None
 
+
+
     @validator('job_ref', pre=True)
     def format_job_ref(cls, value):
         # Remove spaces and convert to lowercase
         return format_reference(ref=value)
+
+    @property
+    def apply_url(self) -> str:
+        """
+        Returns the full URL to the job application page.
+        """
+        return f"/apply/{self.job_ref}"
 
     @property
     def slug(self) -> str:
