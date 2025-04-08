@@ -25,7 +25,7 @@ current_file = Path(__file__).resolve()
 MEDIA_DIR = current_file.parent.parent.parent / "media" / "logos"
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 # os.makedirs(MEDIA_DIR, exist_ok=True)
-
+# updated images
 AFFILIATE_TEMPLATES = [
     "affiliates/amazon/how_to_get_a_job_in_it.html",
     "affiliates/amazon/2_hour_job_search.html",
