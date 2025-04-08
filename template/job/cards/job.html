@@ -19,14 +19,17 @@
     </style>
 {% endblock %}
     {% for job in job_list %}
-{#        {% if loop.index % 4 == 0 %}#}
-{#            {% include 'adverts/horizontal.html' %}#}
-{#        {% else %}#}
+
+            {% if loop.index == 3 %}
+                {% include "affiliates/amazon/how_to_get_a_job_in_it.html" %}
+            {% endif %}
+
             {% if loop.index % 2 == 0 %}
                 <div class="card-footer">
             {% else %}
                 <div class="card">
             {% endif %}
+
                 <div class="heading-with-logo">
                     <img src="{{ job.internal_image_link }}" alt="{{ job.company_name }} Logo">
                     <h2 class="card-title"><a href="{{ url_for('home.job_slug', slug=job.slug) }}">{{ job.title|title }}</a></h2>
