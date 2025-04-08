@@ -73,7 +73,7 @@ def load_affiliate_templates(directory="template/affiliates/amazon"):
             # Construct the relative path (remove 'templates' from the start)
             file_path = os.path.relpath(os.path.join(directory, filename), start='template/')
             affiliate_templates.append(file_path)
-    print(f"Example of a template string : {affiliate_templates}")
+
     return affiliate_templates
 
 
