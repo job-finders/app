@@ -1,4 +1,5 @@
 import asyncio
+import random
 import uuid
 from datetime import timedelta
 
@@ -74,7 +75,7 @@ class Scrapper:
         """
         ref = format_reference(ref=job_reference)
         try:
-            return self.jobs[ref]
+            return self.jobs.get(ref, random.choice(list(self.jobs.values())))
         except KeyError as e:
             # In case of error return the last job
             return self.jobs[list(self.jobs.keys())[-1]]
