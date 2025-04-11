@@ -95,6 +95,7 @@ class Scrapper:
         for job in self.jobs.values():
             if job.slug == slug:
                 return job
+        return None
 
     async def similar_jobs(self, search_term: str, title: str) -> list[Job]:
         """

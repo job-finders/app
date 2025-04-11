@@ -276,7 +276,9 @@ async def job_detail(reference: str):
 async def job_slug(slug: str):
     """Display job details identified by its slug."""
     job: Job = await scrapper.search_by_slug(slug=slug)
-    return await sub_job_detail(job)
+    if isinstance(job, Job) and job.title.strip():
+        return await sub_job_detail(job)
+    return redirect(url_for('home.get_home'))
 
 
 @home_route.get('/about')
