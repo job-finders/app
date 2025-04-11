@@ -1,23 +1,36 @@
 {% extends "layouts/page.html" %}
 
 {% block content %}
-    <section class="container-fluid">
-        <div class="card-content">
-            <div class="card-header">
-                <h2 class="card-title">How to Contact Us</h2>
-            </div>
-            <div class="card-body">
-
-                <p>If you have any questions, concerns, or feedback, please don't hesitate to reach out to us. We're here to assist you!</p>
-                <ul>
-                    <li><strong>Email:</strong> For general inquiries and information, you can contact our administration team at <a href="mailto:admin@jobfinders.site" class="font-weight-bold text-info">admin@jobfinders.site</a>.</li>
-                    <li><strong>Support:</strong> If you need technical assistance or encounter any issues, our support team is ready to help. Reach us at <a href="mailto:support@jobfinders.site" class="font-weight-bold text-info">support@jobfinders.site</a>.</li>
-                </ul>
-                <p>Your opinions matter to us, and we value the opportunity to improve our platform based on your input. Whether you have suggestions, questions, or need help, please don't hesitate to get in touch.</p>
-                <p>We aim to provide prompt responses and ensure your experience with JOBFinders.site is seamless and productive.</p>
-
-                <h4 class="card-title text-info font-weight-bold">Thank you for choosing <strong>JobFinders.site</strong> as your career resource.</h4>
-            </div>
+<section class="container-fluid py-5">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white text-center">
+      <h2 class="card-title mb-0">Get in Touch</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-4">Please fill out the form below to contact us. We value your feedback, inquiries, and suggestions—our team is here to help.</p>
+      <form method="post" action="/contact">
+        <!-- Include CSRF protection if required by your backend -->
+        <div class="form-group mb-3">
+          <label for="contact-name" class="fw-bold">Name</label>
+          <input type="text" class="form-control" id="contact-name" name="name" placeholder="Your full name" required>
         </div>
-    </section>
+        <div class="form-group mb-3">
+          <label for="contact-email" class="fw-bold">Email Address</label>
+          <input type="email" class="form-control" id="contact-email" name="email" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group mb-3">
+          <label for="contact-subject" class="fw-bold">Subject</label>
+          <input type="text" class="form-control" id="contact-subject" name="subject" placeholder="Subject" required>
+        </div>
+        <div class="form-group mb-4">
+          <label for="contact-message" class="fw-bold">Message</label>
+          <textarea class="form-control" id="contact-message" name="message" rows="5" placeholder="Write your message here..." required></textarea>
+        </div>
+        <div class="text-center">
+          <button type="submit" class="btn btn-primary px-4">Send Message</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
 {% endblock %}
