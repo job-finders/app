@@ -68,6 +68,7 @@ class Scrapper:
         except Exception as e:
             return None
 
+
     async def job_search(self, job_reference: str):
         """
         :param job_reference: The job reference string to search for.
@@ -84,7 +85,6 @@ class Scrapper:
 
         # Fallback: return None or raise an exception if no jobs are available
         return None
-
 
     async def search_by_slug(self, slug: str):
         """
