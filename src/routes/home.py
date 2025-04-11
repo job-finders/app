@@ -268,7 +268,7 @@ async def sub_job_detail(job: Job):
 async def job_detail(reference: str):
     """Display job details identified by job reference."""
     job: Job = await scrapper.job_search(job_reference=reference)
-    if job:
+    if isinstance(job, Job) and job.title.strip():
         return await sub_job_detail(job)
     return redirect(url_for('home.get_home'))
 
