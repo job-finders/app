@@ -2,7 +2,6 @@
 {% block content %}
         <div class="row">
                 <div class="col-lg-12 col-md-12 col-sm-12">
-
                     <div class="card">
                             <div class="card-header  d-flex justify-content-between align-items-center">
                                 <h2 class="card-title font-weight-bold">{{ term|title }}</h2>
@@ -14,11 +13,9 @@
                                 </div>
                             </div>
                     </div>
-
                     {% include "job/cards/job_detail.html" %}
                     {% include "job/cards/similar_jobs.html" %}
                 </div>
         </div>
     {% include 'job/cards/search_bar.html' %}
-
 {% endblock %}

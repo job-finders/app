@@ -8,7 +8,6 @@
     <meta property="og:image" content="https://jobfinders.site/static/images/jobfinder.jpg" />
 {% endblock %}
 {% block custom_css %}
-
 {% endblock %}
 {% block content %}
     <div class="row">
@@ -36,9 +35,7 @@
                     </div>
                     </div>
             </div>
-
             {% include "job/cards/job.html" %}
-
         </div>
         <!-- Google Advert -->
         <div class="col-lg-3 col-md-12 col-sm-12">
@@ -79,13 +76,11 @@
                             </a>
                         </li>
                     {% endif %}
-
                     {% for page_num in range(1, total_pages+1) %}
                         <li class="page-item{% if page_num == current_page %} active{% endif %}">
                             <a class="page-link" href="{{ url_for('home.job_search', search_term=term, page=page_num) }}">{{ page_num }}</a>
                         </li>
                     {% endfor %}
-
                     {% if current_page < total_pages %}
                         <li class="page-item">
                             <a class="page-link" href="{{ url_for('home.job_search', search_term=term, page=current_page+1) }}" aria-label="Next">
