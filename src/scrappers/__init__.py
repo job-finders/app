@@ -70,16 +70,21 @@ class Scrapper:
 
     async def job_search(self, job_reference: str):
         """
-            :param job_reference:
-            :return:
+        :param job_reference: The job reference string to search for.
+        :return: A job from self.jobs.
         """
         ref = format_reference(ref=job_reference)
-        try:
-            return self.jobs.get(ref, random.choice(list(self.jobs.values())))
 
-        except KeyError as e:
-            # In case of error return the last job
-            return self.jobs[list(self.jobs.keys())[-1]]
+        if ref in self.jobs:
+            return self.jobs[ref]
+
+        jobs_list = list(self.jobs.values())
+        if jobs_list:
+            return random.choice(jobs_list)
+
+        # Fallback: return None or raise an exception if no jobs are available
+        return None
+
 
     async def search_by_slug(self, slug: str):
         """
