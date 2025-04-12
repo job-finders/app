@@ -20,8 +20,9 @@ async def create_tags(search_term: str) -> SEO:
     :param search_term:
     :return:
     """
-    title = f"{search_term} Jobs"
-    description = f"jobfinders.site {search_term} Jobs"
+
+    title = f"{search_term} Jobs" if "jobs" not in search_term else search_term
+    description = f"jobfinders.site {title}"
     term_words = ",".join(format_title(search_term).split(" "))
     keywords = f"JobFinders, {term_words}"
     seo_dict = dict(title=title, description=description, keywords=keywords)

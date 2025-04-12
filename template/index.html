@@ -55,12 +55,26 @@
             </div>
 {#            {% include 'adverts/linkedin.html' %}#}
 {#            {% include "adverts/vertical.html" %}#}
+
             <div class="card bg-dark">
                 <div class="card-header">
-                    <h3 class="card-title text-white font-weight-bold"><i class="ti-link"> </i> Quick Links</h3>
+                    <h3 class="card-title text-white font-weight-bold"><i class="ti-link"> </i>Jobs By Category</h3>
                 </div>
                 {% include "job/cards/search_terms.html" %}
             </div>
+            <div class="card bg-dark">
+                <div class="card-header">
+                    <h3 class="card-title text-white font-weight-bold">Jobs By Province</h3>
+                </div>
+                <ol class="list-group">
+                      {% for province in provinces %}
+                          <li class="list-group-item font-weight-bold text-info">
+                              <a href="{{ url_for('home.jobs_by_location', location=province|lower|replace(' ', '-') ) }}">{{ province|title }}</a>
+                          </li>
+                      {% endfor %}
+                </ol>
+            </div>
+
             {% include "blog/panel.html" %}
         </div>
         <!-- END OF SECTION -->

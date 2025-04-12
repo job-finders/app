@@ -10,8 +10,8 @@
 
   gtag('config', 'G-TD3XXFCQ46');
 </script>
+    <title>JobFinders - {% if seo %} {{ seo.title|title }} {%  else %} Page Not Found {% endif %}</title>
 
-    <title>Job Finder - {{ seo.title|title  }}</title>
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -20,9 +20,14 @@
     <!-- theme meta -->
     <meta name="theme-name" content="focus" />
     <!-- ================= Favicon ================== -->
-    <meta name="description" content="{{ seo.description|title }}">
-    <meta name="keywords" content="{{ seo.keywords }}">
-    <!-- Add more SEO meta tags as needed -->
+<meta name="description" content="{{ seo.description if seo and seo.description else 'Find jobs across South Africa with JobFinders' }}">
+<meta name="keywords" content="{{ seo.keywords if seo and seo.keywords else 'jobs, careers, employment, jobfinders' }}">
+
+{% block meta %}
+
+{% endblock %}
+
+<!-- Add more SEO meta tags as needed -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -37,21 +42,17 @@
 }
 </script>
 
-
-{% block meta %}
-
-{% endblock %}
-    <!-- Standard -->
-    <link rel="shortcut icon" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-    <!-- Retina iPad Touch Icon-->
-    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-    <!-- Retina iPhone Touch Icon-->
-    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-    <!-- Standard iPad Touch Icon-->
-    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-    <!-- Standard iPhone Touch Icon-->
-    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-    <!-- Styles -->
+<!-- Standard -->
+<link rel="shortcut icon" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
+<!-- Retina iPad Touch Icon-->
+<link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
+<!-- Retina iPhone Touch Icon-->
+<link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
+<!-- Standard iPad Touch Icon-->
+<link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
+<!-- Standard iPhone Touch Icon-->
+<link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
+<!-- Styles -->
 {% block css %}
     <link href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" rel="stylesheet">
@@ -129,7 +130,7 @@
                     <div class="col-lg-8 p-r-0 title-margin-right">
                         <div class="page-header">
                             <h1 class="page-title font-weight-bold text-info">
-                                {{ term|title }}
+                                {% if term %}{{ term|title }} {% else %} Error {% endif %}
                             </h1>
                         {% include "layouts/flash.html" %}
                         <span class="card-content font-weight-bold">

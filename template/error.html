@@ -4,10 +4,10 @@
     <section class="container-fluid">
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title text-danger">{{ error.title }}</h2>
+                <h2 class="card-title text-danger">{{ title|title }}</h2>
             </div>
             <div class="card-body">
-                <span class="card-content"> {{ error.message }} </span>
+                <span class="card-content"> {{ message|title }} </span>
             </div>
         </div>
     </section>

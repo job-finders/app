@@ -22,6 +22,35 @@ CURRENT_FILE = Path(__file__).resolve()
 MEDIA_DIR = CURRENT_FILE.parents[2] / "media" / "logos"
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
+SOUTH_AFRICA_PROVINCES = {
+    "Eastern Cape": sorted([
+        "Bhisho", "East London", "Grahamstown", "King William’s Town", "Mthatha", "Port Alfred", "Port Elizabeth", "Queenstown"
+    ]),
+    "Free State": sorted([
+        "Bethlehem", "Bloemfontein", "Harrismith", "Kroonstad", "Parys", "Welkom"
+    ]),
+    "Gauteng": sorted([
+        "Alberton", "Benoni", "Boksburg", "Brakpan", "Centurion", "Germiston", "Johannesburg", "Krugersdorp", "Midrand", "Pretoria", "Randburg", "Roodepoort", "Sandton", "Soweto", "Springs", "Vanderbijlpark", "Vereeniging"
+    ]),
+    "KwaZulu-Natal": sorted([
+        "Durban", "Empangeni", "Eshowe", "Ladysmith", "Newcastle", "Pietermaritzburg", "Port Shepstone", "Richards Bay", "Stanger", "Ulundi", "Umlazi"
+    ]),
+    "Limpopo": sorted([
+        "Giyani", "Lebowakgomo", "Louis Trichardt", "Modimolle", "Mokopane", "Musina", "Phalaborwa", "Polokwane", "Thabazimbi", "Tzaneen"
+    ]),
+    "Mpumalanga": sorted([
+        "Barberton", "Bethal", "Ermelo", "Lydenburg", "Middelburg", "Nelspruit", "Secunda", "Standerton", "Witbank"
+    ]),
+    "North West": sorted([
+        "Brits", "Klerksdorp", "Lichtenburg", "Mahikeng", "Potchefstroom", "Rustenburg", "Vryburg", "Zeerust"
+    ]),
+    "Northern Cape": sorted([
+        "De Aar", "Douglas", "Kimberley", "Kuruman", "Port Nolloth", "Springbok", "Upington"
+    ]),
+    "Western Cape": sorted([
+        "Bellville", "Cape Town", "George", "Knysna", "Mossel Bay", "Paarl", "Stellenbosch", "Worcester"
+    ])
+}
 
 def fetch_and_cache_logo(job: Job) -> Path | None:
     """Fetches the job logo and caches it locally.
@@ -120,6 +149,8 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
     start_idx = (page - 1) * per_page
     jobs_paginated = job_list[start_idx: start_idx + per_page]
 
+    provinces = list(SOUTH_AFRICA_PROVINCES.keys())
+
     search_terms: list[str] = scrapper.search_terms
     seo = await create_tags(search_term=search_term)
 
@@ -145,6 +176,7 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
         current_page=page,
         total_pages=math.ceil(len(job_list) / per_page),
         affiliate_template=affiliate_template,
+        provinces=provinces
     )
 
 
@@ -162,7 +194,9 @@ async def create_context(search_term: str, page: int = 1, per_page: int = 10):
         return None
 
     jobs_filtered = [job for job in scrapper.jobs.values() if job.search_term.casefold() == search_term.casefold()]
-    context = await create_common_context(search_term, jobs_filtered, page, per_page)
+    context = await create_common_context(search_term=search_term, job_list=jobs_filtered,
+                                          page=page, per_page=per_page)
+
     return render_template('index.html', **context)
 
 
@@ -187,7 +221,8 @@ async def not_found(search_term: str):
     :return: (rendered error page, status code)
     """
     error = dict(message=f"Unable to retrieve job listings for: {search_term}", title="404 Not Found")
-    return render_template('error.html', error=error), 404
+    home_logger.error(error.get('message'))
+    return render_template('error.html', **error), 404
 
 
 def redirect_apply_page(job: Job):
@@ -227,6 +262,49 @@ async def get_home():
     if response is None:
         return await not_found(search_term)
     return response
+
+TOWN_TO_PROVINCE = {
+    town.lower(): province
+    for province, towns in SOUTH_AFRICA_PROVINCES.items()
+    for town in towns
+}
+
+
+@home_route.get('/jobs-in/<string:location>')
+async def jobs_by_location(location: str):
+    """
+    Handles jobs by province or town.
+    If the location is a known town, replace it with its parent province for consistent filtering.
+    """
+
+    page = int(request.args.get('page', 1))
+    location_lower = location.lower()
+
+    # If user typed a town, convert to province
+    if location_lower in TOWN_TO_PROVINCE:
+        province = TOWN_TO_PROVINCE[location_lower]
+    else:
+        province = location  # Assume it's already a province or partial match
+
+    jobs_filtered = [
+        job for job in scrapper.jobs.values()
+        if job.location and province.lower() in job.location.lower()
+    ]
+
+    if not jobs_filtered:
+        return await not_found(location)
+
+    # Slug for SEO
+    search_term = f"jobs-in-{location_lower.replace(' ', '-')}"
+
+    context = await create_common_context(
+        search_term=search_term,
+        job_list=jobs_filtered,
+        page=page,
+        per_page=10
+    )
+
+    return render_template('location.html', **context)
 
 
 @home_route.get('/jobs/<string:search_term>')
