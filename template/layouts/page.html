@@ -72,15 +72,15 @@
   <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
   <!-- Styles -->
   {% block css %}
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" as="style">
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" as="style">
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}" as="style">
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/weather-icons.css') }}" as="style">
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}" as="style">
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/bootstrap.min.css') }}" as="style">
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/helper.css') }}" as="style">
-    <link rel="preload" href="{{ url_for('static', filename='css/style.css') }}" as="style">
-    <link rel="preload" href="{{ url_for('static', filename='css/jobfinder.css') }}" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" as="style"  crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" as="style" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}" as="style" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/weather-icons.css') }}" as="style" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}" as="style" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/bootstrap.min.css') }}" as="style" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/helper.css') }}" as="style" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/style.css') }}" as="style" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/jobfinder.css') }}" as="style" crossorigin>
   {% endblock %}
   {% block custom_css %}{% endblock %}
   {% block head_scripts %}{% endblock %}
