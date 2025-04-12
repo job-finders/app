@@ -10,6 +10,30 @@
     gtag('config', 'G-TD3XXFCQ46');
   </script>
 
+{% block css %}
+  <link rel="preload" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='css/lib/weather-icons.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='css/lib/bootstrap.min.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='css/lib/helper.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='css/style.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='css/jobfinder.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+  <noscript>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/weather-icons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/helper.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobfinder.css') }}">
+  </noscript>
+{% endblock %}
+
+
   <!-- Preconnect & DNS Prefetch for critical third-party domains -->
   <link rel="preconnect" href="https://www.googletagmanager.com">
   <link rel="dns-prefetch" href="https://www.googletagmanager.com">
@@ -71,17 +95,8 @@
   <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
   <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
   <!-- Styles -->
-  {% block css %}
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" as="style"  crossorigin>
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" as="style" crossorigin>
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}" as="style" crossorigin>
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/weather-icons.css') }}" as="style" crossorigin>
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}" as="style" crossorigin>
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/bootstrap.min.css') }}" as="style" crossorigin>
-    <link rel="preload" href="{{ url_for('static', filename='css/lib/helper.css') }}" as="style" crossorigin>
-    <link rel="preload" href="{{ url_for('static', filename='css/style.css') }}" as="style" crossorigin>
-    <link rel="preload" href="{{ url_for('static', filename='css/jobfinder.css') }}" as="style" crossorigin>
-  {% endblock %}
+
+
   {% block custom_css %}{% endblock %}
   {% block head_scripts %}{% endblock %}
   <!-- Inline critical CSS can be placed here if available -->
