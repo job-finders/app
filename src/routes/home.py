@@ -220,10 +220,37 @@ async def not_found(search_term: str):
     :param search_term: The search term used.
     :return: (rendered error page, status code)
     """
-    error = dict(message=f"Unable to retrieve job listings for: {search_term}", title="404 Not Found")
-    home_logger.error(error.get('message'))
-    return render_template('error.html', **error), 404
+    message = f"Unable to retrieve job listings for: {search_term}"
+    home_logger.error(message)
 
+    context = {
+        "message": message,
+        "title": "404 Not Found",
+        "seo": {
+            "title": f"No Jobs Found - {search_term}",
+            "description": f"We couldn’t find any job listings for {search_term}. Try searching again.",
+            "keywords": "jobs, careers, not found, job search"
+        }
+    }
+
+    return render_template("error.html", **context), 404
+
+async def gone(search_term: str):
+    """Render a 410 Gone page for permanently removed job listings."""
+    message = f"The page for '{search_term}' has been permanently removed."
+    home_logger.info(message)
+
+    context = {
+        "message": message,
+        "title": "410 Gone",
+        "seo": {
+            "title": f"Job Page Removed - {search_term}",
+            "description": f"The job listing or page for {search_term} is no longer available.",
+            "keywords": "job removed, expired job, job no longer available"
+        }
+    }
+
+    return render_template("error.html", **context), 410
 
 def redirect_apply_page(job: Job):
     """Redirects to the job's apply page if available.
@@ -348,7 +375,7 @@ async def job_detail(reference: str):
     job: Job = await scrapper.job_search(job_reference=reference)
     if isinstance(job, Job) and job.title.strip():
         return await sub_job_detail(job)
-    return redirect(url_for('home.get_home'))
+    return await gone(search_term=reference)
 
 @home_route.get('/search/job/<string:slug>')
 async def job_slug(slug: str):
@@ -356,7 +383,7 @@ async def job_slug(slug: str):
     job: Job = await scrapper.search_by_slug(slug=slug)
     if isinstance(job, Job) and job.title.strip():
         return await sub_job_detail(job)
-    return redirect(url_for('home.get_home'))
+    return await gone(search_term=slug)
 
 
 @home_route.get('/about')
