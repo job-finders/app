@@ -15,6 +15,51 @@
     <meta name="twitter:title" content="{{ seo.twitter_title or seo.title }}">
     <meta name="twitter:description" content="{{ seo.twitter_description or seo.description }}">
     <meta name="twitter:image" content="{{ job.logo_link }}">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      "title": "{{ job.title|e }}",
+      "description": "{{ job.description|striptags|escape|replace('\n', ' ') }}",
+      "identifier": {
+        "@type": "PropertyValue",
+        "name": "JobFinders",
+        "value": "{{ job.job_ref }}"
+      },
+      "datePosted": "{{ job.posted_date.isoformat() }}",
+      "validThrough": "{{ job.date_expires.isoformat() }}",
+      "employmentType": "FULL_TIME",
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": "{{ job.company_name|e }}",
+        "sameAs": "{{ job.job_link }}",
+        "logo": "{{ job.logo_link }}"
+      },
+      "jobLocation": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "{{ job.location|e }}",
+          "addressCountry": "ZA"
+        }
+      },
+      "baseSalary": {
+        "@type": "MonetaryAmount",
+        "currency": "ZAR",
+        "value": {
+          "@type": "QuantitativeValue",
+          "value": "{{ job.salary|replace('R', '')|replace(',', '')|replace(' ', '') }}",
+          "unitText": "MONTH"
+        }
+      },
+      "applicantLocationRequirements": {
+        "@type": "Country",
+        "name": "South Africa"
+      },
+      "directApply": true
+    }
+    </script>
 {% endblock %}
 
 

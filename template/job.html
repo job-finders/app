@@ -1,4 +1,67 @@
 {% extends "layouts/page.html" %}
+{% block meta %}
+    <title>{{ seo.title }}</title>
+    <meta name="description" content="{{ seo.description }}">
+    <meta name="keywords" content="{{ seo.keywords }}">
+
+    <!-- Open Graph -->
+    <meta property="og:url" content="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{ seo.og_title or seo.title }}" />
+    <meta property="og:description" content="{{ seo.og_description or seo.description }}" />
+    <meta property="og:image" content="{{ job.logo_link }}">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.twitter_title or seo.title }}">
+    <meta name="twitter:description" content="{{ seo.twitter_description or seo.description }}">
+    <meta name="twitter:image" content="{{ job.logo_link }}">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      "title": "{{ job.title|e }}",
+      "description": "{{ job.description|striptags|escape|replace('\n', ' ') }}",
+      "identifier": {
+        "@type": "PropertyValue",
+        "name": "JobFinders",
+        "value": "{{ job.job_ref }}"
+      },
+      "datePosted": "{{ job.posted_date.isoformat() }}",
+      "validThrough": "{{ job.date_expires.isoformat() }}",
+      "employmentType": "FULL_TIME",
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": "{{ job.company_name|e }}",
+        "sameAs": "{{ job.job_link }}",
+        "logo": "{{ job.logo_link }}"
+      },
+      "jobLocation": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "{{ job.location|e }}",
+          "addressCountry": "ZA"
+        }
+      },
+      "baseSalary": {
+        "@type": "MonetaryAmount",
+        "currency": "ZAR",
+        "value": {
+          "@type": "QuantitativeValue",
+          "value": "{{ job.salary|replace('R', '')|replace(',', '')|replace(' ', '') }}",
+          "unitText": "MONTH"
+        }
+      },
+      "applicantLocationRequirements": {
+        "@type": "Country",
+        "name": "South Africa"
+      },
+      "directApply": true
+    }
+    </script>
+{% endblock %}
 {% block content %}
         <div class="row">
                 <div class="col-lg-12 col-md-12 col-sm-12">
