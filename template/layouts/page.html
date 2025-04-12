@@ -1,59 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-TD3XXFCQ46"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+  <!-- Google Tag Manager -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-TD3XXFCQ46"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-TD3XXFCQ46');
+  </script>
 
-  gtag('config', 'G-TD3XXFCQ46');
-</script>
-    <title>JobFinders - {% if seo %} {{ seo.title|title }} {%  else %} Page Not Found {% endif %}</title>
+  <!-- Preconnect & DNS Prefetch for critical third-party domains -->
+  <link rel="preconnect" href="https://www.googletagmanager.com">
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+  <link rel="preconnect" href="https://pagead2.googlesyndication.com">
+  <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
+  <link rel="preconnect" href="https://platform.twitter.com">
+  <link rel="dns-prefetch" href="https://platform.twitter.com">
+  <link rel="preconnect" href="https://connect.facebook.net">
+  <link rel="dns-prefetch" href="https://connect.facebook.net">
 
+  <!-- Canonical Link -->
+  <link rel="canonical" href="{{ seo.url | default(request.url) }}">
 
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name='ir-site-verification-token' value='503288039'>
-    <!-- theme meta -->
-    <meta name="theme-name" content="focus" />
-    <!-- ================= Favicon ================== -->
-<meta name="description" content="{{ seo.description if seo and seo.description else 'Find jobs across South Africa with JobFinders' }}">
-<meta name="keywords" content="{{ seo.keywords if seo and seo.keywords else 'jobs, careers, employment, jobfinders' }}">
+  <!-- Title with fallback -->
+  <title>JobFinders - {% if seo %}{{ seo.title | default('JobFinders') }}{% else %}Page Not Found{% endif %}</title>
 
-{% block meta %}
+  <!-- Standard Meta Tags -->
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="ir-site-verification-token" content="503288039">
+  <meta name="theme-name" content="focus">
 
-{% endblock %}
+  <!-- SEO Meta Tags with Fallbacks -->
+  <meta name="description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">
+  <meta name="keywords" content="{{ seo.keywords | default('jobs, careers, employment, jobfinders') }}">
 
-<!-- Add more SEO meta tags as needed -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "JobFinders",
-  "url": "https://jobfinders.site",
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": "https://jobfinders.site/search?q={search_term_string}",
-    "query-input": "required name=search_term_string"
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="{{ seo.title | default('JobFinders') }}">
+  <meta property="og:description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">
+  <meta property="og:url" content="{{ seo.url | default(request.url) }}">
+  <meta property="og:image" content="{{ seo.image | default(url_for('static', filename='images/jobfinder.jpg', _external=True)) }}">
+
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ seo.title | default('JobFinders') }}">
+  <meta name="twitter:description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">
+  <meta name="twitter:image" content="{{ seo.image | default(url_for('static', filename='images/jobfinder.jpg', _external=True)) }}">
+
+  {% block meta %}
+  {% endblock %}
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "JobFinders",
+    "url": "https://jobfinders.site",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://jobfinders.site/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
   }
-}
-</script>
+  </script>
 
-<!-- Standard -->
-<link rel="shortcut icon" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-<!-- Retina iPad Touch Icon-->
-<link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-<!-- Retina iPhone Touch Icon-->
-<link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-<!-- Standard iPad Touch Icon-->
-<link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-<!-- Standard iPhone Touch Icon-->
-<link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-<!-- Styles -->
-{% block css %}
+  <!-- Favicon & Icons -->
+  <link rel="shortcut icon" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
+  <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
+  <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
+  <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
+  <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
+
+  <!-- Styles -->
+  {% block css %}
     <link href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}" rel="stylesheet" />
@@ -63,110 +85,86 @@
     <link href="{{ url_for('static', filename='css/lib/helper.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/jobfinder.css') }}" rel="stylesheet">
-{% endblock %}
-{% block custom_css %}
+  {% endblock %}
+  {% block custom_css %}{% endblock %}
 
-{% endblock %}
+  {% block head_scripts %}{% endblock %}
 
-{% block head_scripts %}
+  <!-- Inline critical CSS can be placed here if available -->
 
-
-{% endblock %}
-<style>
-    /* Add this CSS to your stylesheet or in a <style> tag in your HTML */
-
-    /* Hide the desktop buttons by default */
-    .desktop-buttons {
-        display: none;
-    }
-
-    /* Show the desktop buttons when the screen width is greater than or equal to 768px (adjust as needed) */
+  <style>
+    /* Responsive adjustments */
+    .desktop-buttons { display: none; }
     @media (min-width: 768px) {
-        .desktop-buttons {
-            display: block;
-        }
+      .desktop-buttons { display: block; }
     }
-    /* CSS for styling the pagination bar */
+    /* Pagination styling */
     .pagination {
-        display: flex;
-        list-style: none;
-        padding: 0;
+      display: flex;
+      list-style: none;
+      padding: 0;
     }
-
-    .page-item {
-        margin: 0 5px;
-    }
-
+    .page-item { margin: 0 5px; }
     .page-link {
-        text-decoration: none;
-        background-color: #e9e9e9;
-        color: #333;
-        padding: 5px 10px;
-        border: 1px solid #ccc;
+      text-decoration: none;
+      background-color: #e9e9e9;
+      color: #333;
+      padding: 5px 10px;
+      border: 1px solid #ccc;
     }
-
     .page-link:hover {
-        background-color: #333;
-        color: #fff;
+      background-color: #333;
+      color: #fff;
     }
-
     .page-link[aria-label="Previous"],
     .page-link[aria-label="Next"] {
-        font-weight: bold;
+      font-weight: bold;
     }
+  </style>
 
-</style>
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269"
-     crossorigin="anonymous"></script>
+  <!-- Advertisements script with async -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269"
+       crossorigin="anonymous"></script>
 </head>
 <body class="sidebar-hide">
-{% include "layouts/sidebar.html" %}
-{% include "layouts/header.html" %}
-    <div class="content-wrap">
-        <div class="main">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-lg-8 p-r-0 title-margin-right">
-                        <div class="page-header">
-                            <h1 class="page-title font-weight-bold text-info">
-                                {% if term %}{{ term|title }} {% else %} Error {% endif %}
-                            </h1>
-                        {% include "layouts/flash.html" %}
-                        <span class="card-content font-weight-bold">
-                            We find Jobs, so you can get employed
-                        </span>
-                        </div>
-                    </div>
-
-                    <!-- /# column -->
-                </div>
-                <!-- /# row -->
-                {% block content %}
-                    {#   MAIN Content Section #}
-                {% endblock %}
+  {% include "layouts/sidebar.html" %}
+  {% include "layouts/header.html" %}
+  <div class="content-wrap">
+    <div class="main">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-8 p-r-0 title-margin-right">
+            <div class="page-header">
+              <h1 class="page-title font-weight-bold text-info">
+                {% if term %}{{ term | title }}{% else %}Error{% endif %}
+              </h1>
+              {% include "layouts/flash.html" %}
+              <span class="card-content font-weight-bold">
+                We find Jobs, so you can get employed
+              </span>
             </div>
-            {% include "layouts/footer.html" %}
-
+          </div>
+        </div>
+        {% block content %}
+          {# MAIN Content Section #}
+        {% endblock %}
+      </div>
+      {% include "layouts/footer.html" %}
     </div>
+  </div>
 
-    <script src="{{ url_for('static', filename='js/lib/jquery.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/lib/jquery.nanoscroller.min.js') }}"></script>
-    <!-- nano scroller -->
-    <script src="{{ url_for('static', filename='js/lib/menubar/sidebar.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/lib/preloader/pace.min.js') }}"></script>
-    <!-- sidebar -->
-    {% block scripts %}
-        {#  Page Custom Scripts #}
-    {% endblock %}
-
-    <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
-    <!-- bootstrap -->
-    <script src="{{ url_for('static', filename='js/interface/interface.js') }}"></script>
-
-    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v13.0" nonce="YOUR_NONCE_VALUE"></script>
-
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/lib/jquery.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/lib/jquery.nanoscroller.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/lib/menubar/sidebar.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/lib/preloader/pace.min.js') }}" defer></script>
+  {% block scripts %}
+    {# Page Custom Scripts #}
+  {% endblock %}
+  <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/scripts.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/interface/interface.js') }}" defer></script>
+  <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v13.0" nonce="YOUR_NONCE_VALUE"></script>
 </body>
 </html>
