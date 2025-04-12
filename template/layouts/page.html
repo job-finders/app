@@ -48,10 +48,8 @@
   <meta name="twitter:title" content="{{ seo.title | default('JobFinders') }}">
   <meta name="twitter:description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">
   <meta name="twitter:image" content="{{ seo.image | default(url_for('static', filename='images/jobfinder.jpg', _external=True)) }}">
-
   {% block meta %}
   {% endblock %}
-
   <!-- JSON-LD Structured Data -->
   <script type="application/ld+json">
   {
@@ -66,14 +64,12 @@
     }
   }
   </script>
-
   <!-- Favicon & Icons -->
   <link rel="shortcut icon" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
   <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
   <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
   <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
   <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='images/jobfinder.jpg') }}">
-
   <!-- Styles -->
   {% block css %}
     <link href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" rel="stylesheet">
@@ -87,11 +83,8 @@
     <link href="{{ url_for('static', filename='css/jobfinder.css') }}" rel="stylesheet">
   {% endblock %}
   {% block custom_css %}{% endblock %}
-
   {% block head_scripts %}{% endblock %}
-
   <!-- Inline critical CSS can be placed here if available -->
-
   <style>
     /* Responsive adjustments */
     .desktop-buttons { display: none; }
@@ -121,7 +114,6 @@
       font-weight: bold;
     }
   </style>
-
   <!-- Advertisements script with async -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269"
        crossorigin="anonymous"></script>
