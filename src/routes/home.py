@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from src.database.models import Job
 from src.database.models.notifications import CreateNotifications
-from src.database.models.seo import create_tags
+from src.database.models.seo import create_tags, create_seo_tags_for_job
 from src.database.sql.notifications import NotificationsORM
 from src.logger import init_logger
 from src.main import scrapper, notifications_controller
@@ -254,7 +254,7 @@ async def search_bar():
 
 async def sub_job_detail(job: Job):
     """Render detailed job view with SEO tags and similar jobs."""
-    seo = await create_tags(search_term=job.title)
+    seo = await create_seo_tags_for_job(job=job)
     similar_jobs = await scrapper.similar_jobs(search_term=job.search_term, title=job.title)
     home_logger.info(f"Similar Jobs: {similar_jobs}")
     affiliate_template = random.choice(load_affiliate_templates())

@@ -1,10 +1,22 @@
 {% block meta %}
+    <title>{{ seo.title }}</title>
+    <meta name="description" content="{{ seo.description }}">
+    <meta name="keywords" content="{{ seo.keywords }}">
+
+    <!-- Open Graph -->
     <meta property="og:url" content="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="jobfinders.site Job | {{ job.title }}" />
-    <meta property="og:description" content="{{ job.description|default('No description available')|truncate(255, True, '') }}" />
-    <meta property="og:image" content="{{ job.logo_link }}" />
+    <meta property="og:title" content="{{ seo.og_title or seo.title }}" />
+    <meta property="og:description" content="{{ seo.og_description or seo.description }}" />
+    <meta property="og:image" content="{{ job.logo_link }}">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.twitter_title or seo.title }}">
+    <meta name="twitter:description" content="{{ seo.twitter_description or seo.description }}">
+    <meta name="twitter:image" content="{{ job.logo_link }}">
 {% endblock %}
+
 
 {% block css  %}
     <style>
