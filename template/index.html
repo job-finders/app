@@ -17,43 +17,53 @@
     <!-- Main Hero Section -->
     <div class="card mb-4">
         <div class="card-body text-center">
-            <h1 class="display-4 font-weight-bold">Find Your Next Job in South Africa</h1>
-            <p class="lead">JobFinders.site connects you with opportunities across all industries and provinces.</p>
+            <h1 class="display-4 font-weight-bold">JobFinders</h1>
+            <p class="lead">JobFinders.site connects you with opportunities across all industries and provinces across South Africa.</p>
             {# {% include 'job/cards/search_bar.html' %} #}
         </div>
     </div>
+
+<div class="text-center mb-4">
+    <img src="{{ url_for('static', filename='images/banner.png') }}"
+         class="img-fluid rounded shadow-sm"
+         alt="JobFinders – Connecting South Africans to Jobs">
+</div>
+
 {% include 'job/cards/search_bar.html' %}
     <!-- Categories Section -->
-    <div class="card mb-4">
-        <div class="card-header text-center">
-            <h2 class="h3 font-weight-bold">Find Jobs by Categories</h2>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                {% for category in categories %}
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <a href="{{ url_for('home.category_jobs', category=category.slug) }}" class="text-decoration-none text-dark">
-                                    {{ category.name }}
-                                </a>
-                            </h5>
+ <!-- Categories Section -->
+<div class="card mb-5 border-0">
+    <div class="card-header bg-white text-center">
+        <h2 class="h3 font-weight-bold mb-3">Jobs by Categories</h2>
+        <p class="text-muted">Explore opportunities by career fields across South Africa</p>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for category in categories %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <a href="{{ url_for('home.category_jobs', category=category.slug) }}" class="text-decoration-none">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3 text-primary">
+                                <i class="fa fa-briefcase fa-2x"></i> {# Optionally use dynamic icons here #}
+                            </div>
+                            <h5 class="card-title text-dark font-weight-bold">{{ category.name }}</h5>
                             {% if category.description %}
                             <p class="card-text text-muted">
-                                {{ category.description[:120] }}{% if category.description|length > 120 %}...{% endif %}
+                                {{ category.description[:100] }}{% if category.description|length > 100 %}...{% endif %}
                             </p>
                             {% endif %}
-                        </div>
-                        <div class="card-footer text-muted small">
-                            {{ category.job_count or 0 }} job{{ 's' if category.job_count != 1 else '' }} available
+                            <div class="mt-auto text-muted small">
+                                {{ category.job_count or 0 }} job{{ 's' if category.job_count != 1 else '' }} available
+                            </div>
                         </div>
                     </div>
-                </div>
-                {% endfor %}
+                </a>
             </div>
+            {% endfor %}
         </div>
     </div>
+</div>
 
 </div>
 
