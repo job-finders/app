@@ -149,6 +149,68 @@ def create_homepage_tags() -> dict:
         "og_type": "website",
     }
 
+categories = [
+    {
+        "name": "Information Technology",
+        "slug": "information-technology",
+        "description": "Opportunities in software development, network administration, technical support, and more in IT."
+    },
+    {
+        "name": "Office Admin",
+        "slug": "office-admin",
+        "description": "Job opportunities in administrative support, secretarial roles, and office management."
+    },
+    {
+        "name": "Agriculture",
+        "slug": "agriculture",
+        "description": "Positions in farming, agri-business, agricultural management, and related industries."
+    },
+    {
+        "name": "Engineering",
+        "slug": "engineering",
+        "description": "Careers across various engineering disciplines including mechanical, electrical, and civil engineering."
+    },
+    {
+        "name": "Building Construction",
+        "slug": "building-construction",
+        "description": "Jobs in the construction industry, covering roles from project management to skilled trades."
+    },
+    {
+        "name": "Business Management",
+        "slug": "business-management",
+        "description": "Roles in corporate leadership, operations management, and strategic planning."
+    },
+    {
+        "name": "Cleaning Maintenance",
+        "slug": "cleaning-maintenance",
+        "description": "Opportunities in facility management, cleaning services, and general maintenance."
+    },
+    {
+        "name": "Community Social Welfare",
+        "slug": "community-social-welfare",
+        "description": "Jobs in non-profit organizations, social work, and community development initiatives."
+    },
+    {
+        "name": "Education",
+        "slug": "education",
+        "description": "Teaching positions, academic support roles, and jobs in educational administration."
+    },
+    {
+        "name": "Nursing",
+        "slug": "nursing",
+        "description": "Healthcare roles focused on nursing services, patient care, and clinical support."
+    },
+    {
+        "name": "Finance",
+        "slug": "finance",
+        "description": "Positions in banking, accounting, financial analysis, and financial management."
+    },
+    {
+        "name": "Programming",
+        "slug": "programming",
+        "description": "Opportunities in software engineering, web development, coding, and application development."
+    }
+]
 
 
 
@@ -185,7 +247,8 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
         current_page=page,
         total_pages=math.ceil(len(job_list) / per_page),
         affiliate_template=affiliate_template,
-        provinces=provinces
+        provinces=provinces,
+        categories=categories
     )
 
 
@@ -199,14 +262,17 @@ async def create_context(search_term: str, page: int = 1, per_page: int = 10):
     :return: Rendered template response.
     """
     # Validate search term before filtering
-    if search_term not in scrapper.search_terms:
+    if search_term not in scrapper.search_terms and search_term is not "home":
         return None
 
     jobs_filtered = [job for job in scrapper.jobs.values() if job.search_term.casefold() == search_term.casefold()]
     context = await create_common_context(search_term=search_term, job_list=jobs_filtered,
                                           page=page, per_page=per_page)
+    if search_term == "home":
+        return render_template('index.html', **context)
+    elif search_term in scrapper.search_terms:
+        return render_template('job_listing.html', **context)
 
-    return render_template('index.html', **context)
 
 
 async def create_search_context(search_term: str, page: int = 1, per_page: int = 10):
@@ -220,7 +286,7 @@ async def create_search_context(search_term: str, page: int = 1, per_page: int =
     """
     jobs_filtered = [job for job in scrapper.jobs.values() if search_term_matches_any_field(job, search_term)]
     context = await create_common_context(search_term, jobs_filtered, page, per_page)
-    return render_template('index.html', **context)
+    return render_template('job_listing.html', **context)
 
 
 async def not_found(search_term: str):
@@ -293,7 +359,7 @@ def serve_logo(job_ref: str):
 @home_route.get('/')
 async def get_home():
     """Render home page with a default search term."""
-    search_term = "information-technology"
+    search_term = "home"
     response = await create_context(search_term)
     if response is None:
         return await not_found(search_term)
@@ -341,6 +407,15 @@ async def jobs_by_location(location: str):
     )
 
     return render_template('location.html', **context)
+
+@home_route.get('/jobs/category/<string:category>')
+async def category_jobs(category: str):
+    """Render job search results by search term."""
+    page = int(request.args.get('page', 1))
+    response = await create_search_context(search_term=category, page=page)
+    if response is None:
+        return await not_found(category)
+    return response
 
 
 @home_route.get('/jobs/<string:search_term>')
