@@ -1,5 +1,6 @@
 import math
 import random
+from datetime import datetime
 from pathlib import Path
 
 import requests
@@ -253,7 +254,7 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
 
     affiliate_templates = load_affiliate_templates()
     affiliate_template = random.choice(affiliate_templates) if affiliate_templates else None
-
+    current_year = str(datetime.now().year)
     return dict(
         term=search_term,
         previous_term=previous_term,
@@ -265,7 +266,8 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
         total_pages=math.ceil(len(job_list) / per_page),
         affiliate_template=affiliate_template,
         provinces=provinces,
-        categories=enriched_categories  # ✅ Pass the enriched list
+        categories=enriched_categories,  # ✅ Pass the enriched list
+        current_year=current_year
     )
 
 
