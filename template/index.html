@@ -63,7 +63,7 @@
                                 {{ category.description[:100] }}{% if category.description|length > 100 %}...{% endif %}
                             </p>
                             {% endif %}
-                            <div class="mt-auto text-muted small">
+                            <div class="mt-auto text-info small">
                                 {{ category.job_count or 0 }} job{{ 's' if category.job_count != 1 else '' }} available
                             </div>
                         </div>

@@ -212,6 +212,13 @@ categories = [
     }
 ]
 
+def count_jobs_per_category(jobs: list[Job]) -> dict:
+    """Count how many jobs are in each category slug."""
+    counts = {}
+    for job in jobs:
+        slug = job.search_term.lower().strip()  # or use job.category if available
+        counts[slug] = counts.get(slug, 0) + 1
+    return counts
 
 
 async def create_common_context(search_term: str, job_list: list[Job], page: int, per_page: int) -> dict:
@@ -220,7 +227,17 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
     provinces = list(SOUTH_AFRICA_PROVINCES.keys())
     search_terms: list[str] = scrapper.search_terms
 
-    # 👇 Custom SEO for home page
+    # Count job postings by category
+    job_counts = count_jobs_per_category(list(scrapper.jobs.values()))
+
+    # Enrich categories with job_count
+    enriched_categories = []
+    for cat in categories:
+        slug = cat["slug"].lower().strip()
+        cat["job_count"] = job_counts.get(slug, 0)
+        enriched_categories.append(cat)
+
+    # SEO
     if not search_term or search_term.lower() in ["", "home", "homepage"]:
         seo = create_homepage_tags()
     else:
@@ -248,8 +265,9 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
         total_pages=math.ceil(len(job_list) / per_page),
         affiliate_template=affiliate_template,
         provinces=provinces,
-        categories=categories
+        categories=enriched_categories  # ✅ Pass the enriched list
     )
+
 
 
 async def create_context(search_term: str, page: int = 1, per_page: int = 10):
@@ -364,6 +382,7 @@ async def get_home():
     if response is None:
         return await not_found(search_term)
     return response
+
 
 TOWN_TO_PROVINCE = {
     town.lower(): province
