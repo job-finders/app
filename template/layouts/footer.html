@@ -3,19 +3,25 @@
 <div class="card-footer">
     <div class="row">
         <div class="col-lg-3 col-md-3 col-sm-3">
-        <a href="{{ url_for("home.about") }}" class="btn-sm btn-outline-success text-info">
-            About
-        </a>
+            <a href="{{ url_for("home.get_home") }}" class="btn-sm btn-outline-success text-info">
+                Home
+            </a>
+        </div>
+
+        <div class="col-lg-3 col-md-3 col-sm-3">
+            <a href="{{ url_for("home.about") }}" class="btn-sm btn-outline-success text-info">
+                About
+            </a>
         </div>
         <div class="col-lg-3 col-md-3 col-sm-3">
-        <a href="{{ url_for("home.contact") }}" class="btn-sm btn-outline-success text-info">
-            Contact
-        </a>
+            <a href="{{ url_for("home.contact") }}" class="btn-sm btn-outline-success text-info">
+                Contact
+            </a>
         </div>
         <div class="col-lg-3 col-md-3 col-sm-3">
-        <a href="{{ url_for("home.terms") }}" class="btn-sm btn-outline-success text-info">
-            Terms
-        </a>
+            <a href="{{ url_for("home.terms") }}" class="btn-sm btn-outline-success text-info">
+                Terms of Use & Privacy Policy
+            </a>
         </div>
         <!-- <div class="col-lg-3 col-md-3 col-sm-3">
         <a href="{{ url_for("home.sister_sites") }}" class="btn-sm btn-outline-success text-info">
