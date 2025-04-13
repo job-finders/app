@@ -136,30 +136,39 @@ def field_contains_search_term(field: str | list[str] | None, search_term: str) 
     return False
 
 
-async def create_common_context(search_term: str, job_list: list[Job], page: int, per_page: int) -> dict:
-    """Create a base context dictionary for templates.
 
-    :param search_term: The search term used.
-    :param job_list: The full list of matching jobs.
-    :param page: The current page number.
-    :param per_page: Jobs per page.
-    :return: A context dictionary for the template.
-    """
-    # Get paginated results
+def create_homepage_tags() -> dict:
+    return {
+        "title": "Find Jobs in South Africa - JobFinders.site",
+        "description": "Explore thousands of the latest job listings across South Africa. Apply now with JobFinders.site and land your dream job today!",
+        "keywords": "jobs in South Africa, job listings, careers, employment, JobFinders",
+        "canonical": "https://jobfinders.site/",
+        "og_title": "Find Jobs in South Africa - JobFinders.site",
+        "og_description": "Your one-stop job search engine. Discover new opportunities near you.",
+        "og_url": "https://jobfinders.site/",
+        "og_type": "website",
+    }
+
+
+
+
+async def create_common_context(search_term: str, job_list: list[Job], page: int, per_page: int) -> dict:
     start_idx = (page - 1) * per_page
     jobs_paginated = job_list[start_idx: start_idx + per_page]
-
     provinces = list(SOUTH_AFRICA_PROVINCES.keys())
-
     search_terms: list[str] = scrapper.search_terms
-    seo = await create_tags(search_term=search_term)
+
+    # 👇 Custom SEO for home page
+    if not search_term or search_term.lower() in ["", "home", "homepage"]:
+        seo = create_homepage_tags()
+    else:
+        seo = await create_tags(search_term=search_term)
 
     try:
         current_index = search_terms.index(search_term)
         previous_term = search_terms[current_index - 1] if current_index > 0 else search_terms[-1]
         next_term = search_terms[current_index + 1] if current_index < len(search_terms) - 1 else search_terms[0]
     except ValueError:
-        # Fallback if search_term is not found in scrapper.search_terms
         previous_term = "programming"
         next_term = "information-technology"
 
