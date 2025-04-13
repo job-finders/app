@@ -1,35 +1,46 @@
+<div class="card-footer bg-light border-top mt-5 pt-4">
+    <div class="container">
+        <div class="row text-center text-md-left">
 
+            <!-- Site Links -->
+            <div class="col-md-4 mb-3">
+                <h5 class="font-weight-bold text-dark">JobFinders.site</h5>
+                <ul class="list-unstyled">
+                    <li><a href="{{ url_for('home.get_home') }}" class="text-muted">Home</a></li>
+                    <li><a href="{{ url_for('home.about') }}" class="text-muted">About</a></li>
+                    <li><a href="{{ url_for('home.contact') }}" class="text-muted">Contact</a></li>
+                    <li><a href="{{ url_for('home.terms') }}" class="text-muted">Terms of Use & Privacy</a></li>
+                </ul>
+            </div>
 
-<div class="card-footer">
-    <div class="row">
-        <div class="col-lg-3 col-md-3 col-sm-3">
-            <a href="{{ url_for("home.get_home") }}" class="btn-sm btn-outline-success text-info">
-                Home
-            </a>
+            <!-- SA Job Resources -->
+            <div class="col-md-4 mb-3">
+                <h5 class="font-weight-bold text-dark">SA Job Resources</h5>
+                <ul class="list-unstyled">
+                    <li><a href="https://www.labour.gov.za/" target="_blank" class="text-muted">Department of Labour SA</a></li>
+                    <li><a href="https://sayouth.mobi/" target="_blank" class="text-muted">SA Youth Platform</a></li>
+                    <li><a href="https://www.nyda.gov.za/" target="_blank" class="text-muted">NYDA – Youth Agency</a></li>
+                </ul>
+            </div>
+
+            <!-- Ownership & Mission -->
+            <div class="col-md-4 mb-3">
+                <h5 class="font-weight-bold text-dark">Powered by</h5>
+                <p class="text-muted small mb-1">
+                    <strong>Custom Logic (Pty) Ltd</strong><br>
+                    Registered in South Africa<br>
+                    Connecting people with opportunity.
+                </p>
+            </div>
+
         </div>
 
-        <div class="col-lg-3 col-md-3 col-sm-3">
-            <a href="{{ url_for("home.about") }}" class="btn-sm btn-outline-success text-info">
-                About
-            </a>
-        </div>
-        <div class="col-lg-3 col-md-3 col-sm-3">
-            <a href="{{ url_for("home.contact") }}" class="btn-sm btn-outline-success text-info">
-                Contact
-            </a>
-        </div>
-        <div class="col-lg-3 col-md-3 col-sm-3">
-            <a href="{{ url_for("home.terms") }}" class="btn-sm btn-outline-success text-info">
-                Terms of Use & Privacy Policy
-            </a>
-        </div>
-        <!-- <div class="col-lg-3 col-md-3 col-sm-3">
-        <a href="{{ url_for("home.sister_sites") }}" class="btn-sm btn-outline-success text-info">
-            Sister Sites
-        </a>
-        </div> -->
-    </div>
+        <hr>
 
-    <div class="row">
+        <div class="row">
+            <div class="col text-center">
+                <p class="text-muted small mb-0">&copy; {{ current_year }} JobFinders.site – A property of Custom Logic (Pty) Ltd. All rights reserved.</p>
+            </div>
+        </div>
     </div>
 </div>
