@@ -174,7 +174,6 @@
   <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
   <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v13.0" nonce="YOUR_NONCE_VALUE"></script>
 
-
 <!-- Cookie Consent -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js"></script>
@@ -192,11 +191,10 @@ window.addEventListener("load", function () {
       message: "We use cookies to improve your experience. By continuing, you accept our cookie policy.",
       dismiss: "Got it!",
       link: "Learn more",
-      href: "/privacy-policy"
+      href: "{{ url_for('home.terms') }}"
     }
   });
 });
 </script>
-
 </body>
 </html>
