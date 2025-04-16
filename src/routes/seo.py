@@ -55,7 +55,7 @@ async def adstxt():
 @seo_route.get('/3DbtxGr64pUkTKHLCA2UFb8jyS6o6vu5j5.txt')
 async def get_indexnow_key():
     """
-
+        index now endpoint
     :return:
     """
     return send_from_directory(static_folder(), '3DbtxGr64pUkTKHLCA2UFb8jyS6o6vu5j5.txt')
