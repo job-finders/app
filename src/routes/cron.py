@@ -25,7 +25,7 @@ def ping_indexnow(url_list: list[str], key: str, key_location: str):
 @cron_route.get('/_cron/ping-index-now')
 async def cron_ping_index_now():
     """
-
+    https://jobfinders.site/_cron/ping-index-now
     :return:
     """
     key='3QxfFYZbaazjresnuK8uY5YHRp561rVc95'
