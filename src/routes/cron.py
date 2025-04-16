@@ -22,7 +22,7 @@ def ping_indexnow(url_list: list[str], key: str, key_location: str):
         return {'indexnow': str(e)}
 
 
-@cron_route.get('/_cron/ping-index-now/')
+@cron_route.get('/_cron/ping-index-now')
 async def cron_ping_index_now():
     """
 
@@ -30,7 +30,7 @@ async def cron_ping_index_now():
     """
     key='3QxfFYZbaazjresnuK8uY5YHRp561rVc95'
     jobs_links = await get_site_job_links()
-    ping_indexnow(url_list=jobs_links, key=key, key_location=url_for('seo.get_indexnow_key', _external=True))
-
+    result = ping_indexnow(url_list=jobs_links, key=key, key_location=url_for('seo.get_indexnow_key', _external=True))
+    return result
 
 
