@@ -53,6 +53,75 @@ SOUTH_AFRICA_PROVINCES = {
     ])
 }
 
+TOWN_TO_PROVINCE = {
+    town.lower(): province
+    for province, towns in SOUTH_AFRICA_PROVINCES.items()
+    for town in towns
+}
+categories = [
+    {
+        "name": "Information Technology",
+        "slug": "information-technology",
+        "description": "Opportunities in software development, network administration, technical support, and more in IT."
+    },
+    {
+        "name": "Office Admin",
+        "slug": "office-admin",
+        "description": "Job opportunities in administrative support, secretarial roles, and office management."
+    },
+    {
+        "name": "Agriculture",
+        "slug": "agriculture",
+        "description": "Positions in farming, agri-business, agricultural management, and related industries."
+    },
+    {
+        "name": "Engineering",
+        "slug": "engineering",
+        "description": "Careers across various engineering disciplines including mechanical, electrical, and civil engineering."
+    },
+    {
+        "name": "Building Construction",
+        "slug": "building-construction",
+        "description": "Jobs in the construction industry, covering roles from project management to skilled trades."
+    },
+    {
+        "name": "Business Management",
+        "slug": "business-management",
+        "description": "Roles in corporate leadership, operations management, and strategic planning."
+    },
+    {
+        "name": "Cleaning Maintenance",
+        "slug": "cleaning-maintenance",
+        "description": "Opportunities in facility management, cleaning services, and general maintenance."
+    },
+    {
+        "name": "Community Social Welfare",
+        "slug": "community-social-welfare",
+        "description": "Jobs in non-profit organizations, social work, and community development initiatives."
+    },
+    {
+        "name": "Education",
+        "slug": "education",
+        "description": "Teaching positions, academic support roles, and jobs in educational administration."
+    },
+    {
+        "name": "Nursing",
+        "slug": "nursing",
+        "description": "Healthcare roles focused on nursing services, patient care, and clinical support."
+    },
+    {
+        "name": "Finance",
+        "slug": "finance",
+        "description": "Positions in banking, accounting, financial analysis, and financial management."
+    },
+    {
+        "name": "Programming",
+        "slug": "programming",
+        "description": "Opportunities in software engineering, web development, coding, and application development."
+    }
+]
+
+
 def fetch_and_cache_logo(job: Job) -> Path | None:
     """Fetches the job logo and caches it locally.
 
@@ -150,68 +219,7 @@ def create_homepage_tags() -> dict:
         "og_type": "website",
     }
 
-categories = [
-    {
-        "name": "Information Technology",
-        "slug": "information-technology",
-        "description": "Opportunities in software development, network administration, technical support, and more in IT."
-    },
-    {
-        "name": "Office Admin",
-        "slug": "office-admin",
-        "description": "Job opportunities in administrative support, secretarial roles, and office management."
-    },
-    {
-        "name": "Agriculture",
-        "slug": "agriculture",
-        "description": "Positions in farming, agri-business, agricultural management, and related industries."
-    },
-    {
-        "name": "Engineering",
-        "slug": "engineering",
-        "description": "Careers across various engineering disciplines including mechanical, electrical, and civil engineering."
-    },
-    {
-        "name": "Building Construction",
-        "slug": "building-construction",
-        "description": "Jobs in the construction industry, covering roles from project management to skilled trades."
-    },
-    {
-        "name": "Business Management",
-        "slug": "business-management",
-        "description": "Roles in corporate leadership, operations management, and strategic planning."
-    },
-    {
-        "name": "Cleaning Maintenance",
-        "slug": "cleaning-maintenance",
-        "description": "Opportunities in facility management, cleaning services, and general maintenance."
-    },
-    {
-        "name": "Community Social Welfare",
-        "slug": "community-social-welfare",
-        "description": "Jobs in non-profit organizations, social work, and community development initiatives."
-    },
-    {
-        "name": "Education",
-        "slug": "education",
-        "description": "Teaching positions, academic support roles, and jobs in educational administration."
-    },
-    {
-        "name": "Nursing",
-        "slug": "nursing",
-        "description": "Healthcare roles focused on nursing services, patient care, and clinical support."
-    },
-    {
-        "name": "Finance",
-        "slug": "finance",
-        "description": "Positions in banking, accounting, financial analysis, and financial management."
-    },
-    {
-        "name": "Programming",
-        "slug": "programming",
-        "description": "Opportunities in software engineering, web development, coding, and application development."
-    }
-]
+
 
 def count_jobs_per_category(jobs: list[Job]) -> dict:
     """Count how many jobs are in each category slug."""
@@ -384,13 +392,6 @@ async def get_home():
     if response is None:
         return await not_found(search_term)
     return response
-
-
-TOWN_TO_PROVINCE = {
-    town.lower(): province
-    for province, towns in SOUTH_AFRICA_PROVINCES.items()
-    for town in towns
-}
 
 
 @home_route.get('/jobs-in/<string:location>')
