@@ -1,7 +1,7 @@
 import requests
 from flask import Blueprint, url_for
 
-from routes.seo import get_site_job_links
+from src.routes.seo import get_site_job_links
 from src.logger import init_logger
 
 cron_route = Blueprint('cron', __name__)
@@ -20,7 +20,6 @@ def ping_indexnow(url_list: list[str], key: str, key_location: str):
         return {'indexnow': r.status_code}
     except Exception as e:
         return {'indexnow': str(e)}
-
 
 
 @cron_route.get('/_cron/ping-index-now/')
