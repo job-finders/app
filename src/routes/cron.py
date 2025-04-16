@@ -23,8 +23,8 @@ def ping_indexnow(url_list: list[str], key: str, key_location: str):
 
 
 
-@cron_route.get('/_cron/jobs/')
-async def cron_jobs():
+@cron_route.get('/_cron/ping-index-now/')
+async def cron_ping_index_now():
     """
 
     :return:
