@@ -52,10 +52,10 @@ async def ads_txt():
 async def adstxt():
     return send_from_directory(static_folder(), 'ads.txt')
 
-@seo_route.get('/3DbtxGr64pUkTKHLCA2UFb8jyS6o6vu5j5.txt')
+@seo_route.get('/3554e950877947b59633174a3c18e6b3.txt')
 async def get_indexnow_key():
     """
         index now endpoint
     :return:
     """
-    return send_from_directory(static_folder(), '3DbtxGr64pUkTKHLCA2UFb8jyS6o6vu5j5.txt')
+    return send_from_directory(static_folder(), '3554e950877947b59633174a3c18e6b3.txt')
