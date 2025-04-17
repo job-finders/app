@@ -467,7 +467,7 @@ async def sub_job_detail(job: Job):
     """Render detailed job view with SEO tags and similar jobs."""
     seo = await create_seo_tags_for_job(job=job)
     similar_jobs = await scrapper.similar_jobs(search_term=job.search_term, title=job.title)
-    home_logger.info(f"Similar Jobs: {similar_jobs}")
+    # home_logger.info(f"Similar Jobs: {similar_jobs}")
     affiliate_template = random.choice(load_affiliate_templates())
     context = dict(term=job.title, job=job, search_terms=scrapper.search_terms, similar_jobs=similar_jobs,
                    seo=seo, affiliate_template=affiliate_template)
