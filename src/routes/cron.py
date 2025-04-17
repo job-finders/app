@@ -28,7 +28,7 @@ async def cron_ping_index_now():
     https://jobfinders.site/_cron/ping-index-now
     :return:
     """
-    key='3QxfFYZbaazjresnuK8uY5YHRp561rVc95'
+    key='3554e950877947b59633174a3c18e6b3'
     jobs_links = await get_site_job_links()
     result = ping_indexnow(url_list=jobs_links, key=key, key_location=url_for('seo.get_indexnow_key', _external=True))
     return result
