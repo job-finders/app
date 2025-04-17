@@ -25,6 +25,7 @@ def create_app(config):
     :return:
     """
     app: Flask = Flask(__name__)
+    app.url_map.strict_slashes = False
     app.template_folder = template_folder()
     app.static_folder = static_folder()
     app.config['SECRET_KEY'] = config.SECRET_KEY
