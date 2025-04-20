@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, send_file
 from pydantic import ValidationError
 
+from src.routes import flask_error_handler
 from src.database.models.notifications import CreateNotifications
 from src.database.models.seo import create_tags
 from src.logger import init_logger
@@ -15,7 +16,7 @@ home_logger = init_logger("home_logger")
 # Route definitions
 
 @home_route.get("/media/logos/<job_ref>.png")
-def serve_logo(job_ref: str):
+async def serve_logo(job_ref: str):
     """Serve a job logo that is cached or fetch it if not present."""
     job = scrapper.jobs.get(job_ref)
     if not job:
@@ -31,6 +32,7 @@ def serve_logo(job_ref: str):
 
 
 @home_route.get('/')
+@flask_error_handler
 async def get_home():
     """Render home page with a default search term."""
     search_term = "home"
@@ -40,6 +42,7 @@ async def get_home():
     return response
 
 @home_route.get('/about')
+@flask_error_handler
 async def about():
     """Render the about page."""
     seo = await create_tags(search_term="about")
@@ -47,6 +50,7 @@ async def about():
 
 
 @home_route.get('/contact')
+@flask_error_handler
 async def contact():
     """Render the contact page."""
     seo = await create_tags(search_term="contact")
@@ -54,6 +58,7 @@ async def contact():
 
 
 @home_route.get('/terms')
+@flask_error_handler
 async def terms():
     """Render the terms page."""
     seo = await create_tags(search_term="terms")
@@ -61,6 +66,7 @@ async def terms():
 
 
 @home_route.get('/sister-sites')
+@flask_error_handler
 async def sister_sites():
     """Render the sister sites page."""
     seo = await create_tags(search_term="sister-sites")
@@ -68,6 +74,7 @@ async def sister_sites():
 
 
 @home_route.get('/faq')
+@flask_error_handler
 async def faq():
     """Render the FAQ page."""
     seo = await create_tags(search_term="FAQ")
@@ -75,6 +82,7 @@ async def faq():
 
 
 @home_route.get('/linkedin-learning')
+@flask_error_handler
 async def linkedin_learning():
     """Render the LinkedIn Learning page."""
     seo = await create_tags(search_term="LinkedIn Learning")
@@ -82,6 +90,7 @@ async def linkedin_learning():
 
 
 @home_route.post('/job-notifications/<string:search_term>')
+@flask_error_handler
 async def email_me(search_term: str):
     """Process job notification email subscription."""
     page = int(request.args.get('page', 1))
@@ -109,6 +118,7 @@ async def email_me(search_term: str):
 
 
 @home_route.get('/email-verification/<string:verification_id>')
+@flask_error_handler
 async def verify_email(verification_id: str):
     """Verify email for job notifications."""
     email = request.args.get("email")
@@ -125,6 +135,7 @@ async def verify_email(verification_id: str):
 
 
 @home_route.get('/apply/<string:job_ref>')
+@flask_error_handler
 async def apply_for_job(job_ref: str):
     """Redirect to external job application page."""
     job = scrapper.jobs.get(job_ref)
