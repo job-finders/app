@@ -1,4 +1,48 @@
+# Block everything by default
 User-agent: *
-Disallow: /dashboard
-Disallow: /admin
+Disallow: /
+
+# Allow Google Search
+User-agent: Googlebot
+Allow: /
+
+# Google Ads bot
+User-agent: AdsBot-Google
+Allow: /
+
+# Bing Search
+User-agent: Bingbot
+Allow: /
+
+# OpenAI's ChatGPT crawler
+User-agent: GPTBot
+Allow: /
+
+# Anthropic (Claude AI)
+User-agent: anthropic-ai
+Allow: /
+
+# Common Crawl (used by many AI datasets)
+User-agent: CCBot
+Allow: /
+
+# Perplexity AI (uses Microsoft Bing's index + own crawling)
+User-agent: PerplexityBot
+Allow: /
+
+# Facebook/Meta AI Research (e.g. LLaMA-related)
+User-agent: FacebookExternalHit
+Allow: /
+
+# Hugging Face / HF inference engine
+User-agent: HuggingFaceBot
+Allow: /
+
+# Archive.org (Wayback Machine)
+User-agent: archive.org_bot
+Allow: /
+
+# Sitemap
 Sitemap: https://jobfinders.site/sitemap.xml
+Sitemap: https://jobfinders.site/jobs/sitemap.xml
+Sitemap: https://blog.jobfinders.site/sitemap.xml
