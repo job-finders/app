@@ -1,0 +1,69 @@
+import re
+from datetime import datetime
+from pydantic import BaseModel, validator, Field, EmailStr
+from typing import List, Optional
+from src.utils import format_reference  # assuming this is your own utility function
+
+
+class Roles(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    permissions: List[str] = []
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    @validator('id', pre=True, always=True)
+    def format_id(cls, v):
+        return format_reference("role") if v is None else v
+
+    @validator('name')
+    def name_must_be_alphanumeric(cls, v):
+        if not re.match(r"^[a-zA-Z0-9_\- ]+$", v):
+            raise ValueError("Role name must be alphanumeric with optional dashes, underscores, and spaces")
+        return v
+
+    @validator('permissions', each_item=True)
+    def permissions_must_be_valid_strings(cls, v):
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError("Each permission must be a non-empty string")
+        return v
+
+    @classmethod
+    def default_roles(cls) -> List["Roles"]:
+        return [
+            cls(name="admin", description="System administrator with full access", permissions=["*"]),
+            cls(name="employer", description="Employer who can post jobs and manage applicants", permissions=[
+                "create_job", "view_applicants", "edit_job", "delete_job"
+            ]),
+            cls(name="seeker", description="Job seeker who can view and apply for jobs", permissions=[
+                "view_jobs", "apply_job", "update_profile"
+            ]),
+        ]
+
+
+
+class User(BaseModel):
+    uid: str
+    name: str
+    email: EmailStr
+    password_hash: str
+    role: str
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    @validator('uid', pre=True, always=True)
+    def format_id(cls, v):
+        return format_reference("user") if v is None else v
+
+    @validator('name')
+    def name_must_be_valid(cls, v):
+        if not v.strip():
+            raise ValueError("Name cannot be empty")
+        return v
+
+    @validator('role')
+    def role_must_be_valid(cls, v):
+        allowed_roles = {'admin', 'employer', 'seeker'}
+        if v not in allowed_roles:
+            raise ValueError(f"Role must be one of {allowed_roles}")
+        return v

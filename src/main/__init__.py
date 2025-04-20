@@ -1,12 +1,17 @@
 from flask import Flask
-from src.emailer import SendMail
-from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
-from src.utils import template_folder, static_folder, format_title, format_description, bootstrap_database
 
+from src.utils import template_folder, static_folder, format_title, format_description, bootstrap_database
+from src.emailer import SendMail
 
 bootstrap_database()
 send_mail = SendMail()
 
+
+from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
+
+
+
+from src.controllers.users import UsersController
 from src.controllers import StorageController, NotificationsController
 notifications_controller = NotificationsController()
 
@@ -16,7 +21,7 @@ storage_controller = StorageController()
 scrapper = Scrapper()
 junction_scrapper = JunctionScrapper(scrapper=scrapper)
 career_scrapper = CareerScrapper(scrapper=scrapper)
-
+users_controller = UsersController()
 
 def create_app(config):
     """
@@ -38,17 +43,20 @@ def create_app(config):
         run_every_hour = 12*60
         junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
         # career_scrapper.init_app(app=app)
+        users_controller.init_app(app=app)
 
         # importing routes
         from src.routes.home import home_route
         from src.routes.seo import seo_route
         from src.routes.blog import blog_route
+        from src.routes.users import users_route
         from src.routes.cron import cron_route
 
         # registering routes
         app.register_blueprint(home_route)
         app.register_blueprint(seo_route)
         app.register_blueprint(blog_route)
+        app.register_blueprint(users_route)
         app.register_blueprint(cron_route)
 
         # registering filters
