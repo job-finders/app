@@ -1,0 +1,12 @@
+# llms.txt for JobFinders.site
+# Allowed paths for AI model training
+Allow: /jobs/
+Allow: /blog/
+Allow: /developers
+
+# Disallowed paths
+Disallow: /admin/
+Disallow: /auth/
+
+# Contact for crawler-related inquiries
+Contact: [email protected]

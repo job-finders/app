@@ -56,3 +56,5 @@ Disallow: /
 Sitemap: https://jobfinders.site/sitemap.xml
 Sitemap: https://jobfinders.site/jobs/sitemap.xml
 Sitemap: https://blog.jobfinders.site/sitemap.xml
+Sitemap: https://jobfinders.site/ai-crawlers-info
+
