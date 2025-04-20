@@ -5,7 +5,7 @@
     <meta name="keywords" content="{{ seo.keywords }}">
 
     <!-- Open Graph -->
-    <meta property="og:url" content="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}" />
+    <meta property="og:url" content="{{ url_for('jobs.job_detail', _external=True, reference=job.job_ref) }}" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="{{ seo.og_title or seo.title }}" />
     <meta property="og:description" content="{{ seo.og_description or seo.description }}" />

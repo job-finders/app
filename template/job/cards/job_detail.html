@@ -4,7 +4,7 @@
     <meta name="keywords" content="{{ seo.keywords }}">
 
     <!-- Open Graph -->
-    <meta property="og:url" content="{{ url_for('home.job_detail', _external=True, reference=job.job_ref) }}" />
+    <meta property="og:url" content="{{ url_for('jobs.job_detail', _external=True, reference=job.job_ref) }}" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="{{ seo.og_title or seo.title }}" />
     <meta property="og:description" content="{{ seo.og_description or seo.description }}" />
@@ -116,7 +116,7 @@
         <div class="card col-lg-9 col-md-9 col-sm-12">
             <div class="heading-with-logo">
                 <img src="{{ job.internal_image_link }}" alt="{{ job.company_name }} Logo">
-                <h2 class="card-title"><a href="{{ url_for('home.job_slug', slug=job.slug) }}">{{ job.title }}</a></h2>
+                <h2 class="card-title"><a href="{{ url_for('jobs.job_slug', slug=job.slug) }}">{{ job.title }}</a></h2>
             </div>
 
             <div class="card-footer">
@@ -163,7 +163,7 @@
             <div class="card-footer d-flex justify-content-between align-items-center">
                 <div id="facebook-share-button-container" >
                     <div class="fb-share-button"
-                        data-href="{{ url_for('home.job_slug', _external=True, slug=job.slug) }}"
+                        data-href="{{ url_for('jobs.job_slug', _external=True, slug=job.slug) }}"
                         data-layout="button_count"
                     >
                     </div>
@@ -171,7 +171,7 @@
                 <a class="twitter-share-button"
                     href="https://twitter.com/intent/tweet"
                     data-text="{{ job.title }}"
-                    data-url="{{ url_for('home.job_slug', _external=True, slug=job.slug) }}"
+                    data-url="{{ url_for('jobs.job_slug', _external=True, slug=job.slug) }}"
                     data-hashtags="jobfinder,sajobs"
                     data-size="large"
                 >
