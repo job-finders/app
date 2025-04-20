@@ -47,13 +47,16 @@ def create_app(config):
 
         # importing routes
         from src.routes.home import home_route
+        from src.routes.jobs import jobs_route
         from src.routes.seo import seo_route
         from src.routes.blog import blog_route
         from src.routes.users import users_route
         from src.routes.cron import cron_route
 
         # registering routes
+
         app.register_blueprint(home_route)
+        app.register_blueprint(jobs_route)
         app.register_blueprint(seo_route)
         app.register_blueprint(blog_route)
         app.register_blueprint(users_route)
