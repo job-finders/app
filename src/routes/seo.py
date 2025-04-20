@@ -20,7 +20,6 @@ async def get_site_job_links() -> list[str]:
 @seo_route.get('/sitemap.xml')
 async def sitemap():
     """
-
     :return:
     """
     return send_from_directory(static_folder(), 'sitemap.xml')
@@ -29,8 +28,6 @@ async def sitemap():
 @seo_route.get("/jobs/sitemap.xml")
 async def get_jobs_sitemap():
     """
-
-
     :return:
     """
     sitemap_urls = await get_site_job_links()
