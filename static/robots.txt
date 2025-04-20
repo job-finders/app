@@ -42,6 +42,16 @@ Allow: /
 User-agent: archive.org_bot
 Allow: /
 
+# Disallow known scrapers or bandwidth hogs (optional)
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
 # Sitemap
 Sitemap: https://jobfinders.site/sitemap.xml
 Sitemap: https://jobfinders.site/jobs/sitemap.xml
