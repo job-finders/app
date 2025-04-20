@@ -1,5 +1,5 @@
 
-from flask import Blueprint, render_template, send_from_directory, url_for
+from flask import Blueprint, render_template, send_from_directory, url_for, make_response
 
 from src.main import scrapper
 from src.utils import static_folder
@@ -32,7 +32,10 @@ async def get_jobs_sitemap():
     """
     sitemap_urls = await get_site_job_links()
     context = dict(sitemap_urls=sitemap_urls)
-    return render_template("sitemap.xml", **context)
+    xml_content = render_template("sitemap.xml", **context)
+    response = make_response(xml_content)
+    response.headers["Content-Type"] = "application/xml"
+    return response
 
 @seo_route.get('/lims.txt')
 async def lims():
