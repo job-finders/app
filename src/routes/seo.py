@@ -35,7 +35,7 @@ async def get_jobs_sitemap():
     return render_template("sitemap.xml", **context)
 
 @seo_route.get('/lims.txt')
-async def robots():
+async def lims():
     return send_from_directory(static_folder(), 'lims.txt')
 
 
