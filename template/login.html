@@ -1,0 +1,46 @@
+{% extends "layouts/auth.html" %}
+
+{% block content %}
+<!--suppress ALL -->
+<div class="login-content">
+    <div class="login-logo">
+        <a href="{{ url_for('home.get_home' )}}">
+            <span class="font-weight-bold">Job</span><span class="text-primary font-weight-bold">Finders</span>
+        </a>
+    </div>
+
+    {% include "layouts/flash.html" %}
+
+    <div class="login-form">
+        <h4 class="font-weight-bold text-primary">Welcome Back</h4>
+        <p class="font-weight-bold text-muted">Login to discover new opportunities</p>
+
+        <form action="{{ url_for('auth.do_login')}}" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="email" class="font-weight-bold">Email address</label>
+                <input type="email" class="form-control" id="email" name="email" placeholder="you@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="font-weight-bold">Password</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Your secure password" required>
+            </div>
+
+            <div class="checkbox d-flex justify-content-between">
+                <label>
+                    <input type="checkbox" name="remember"> Remember Me
+                </label>
+                <label>
+                    <a href="{{ url_for('auth.get_password_reset') }}">Forgot password?</a>
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-flat w-100 mt-3">Sign In</button>
+
+            <div class="register-link mt-4 text-center font-weight-bold">
+                <p>Don't have an account? <a href="{{ url_for('auth.get_register') }}">Create one here</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

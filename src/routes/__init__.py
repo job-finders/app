@@ -2,7 +2,6 @@
 import functools
 from flask import jsonify, request, flash, redirect, url_for
 from werkzeug.exceptions import BadRequest, NotFound, Unauthorized, InternalServerError
-
 from src.logger import init_logger
 
 

@@ -1,4 +1,3 @@
-import re
 from datetime import datetime, timedelta, date
 from pydantic import BaseModel, validator
 from src.utils import format_reference

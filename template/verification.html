@@ -1,0 +1,55 @@
+{% extends "layouts/page.html" %}
+
+{% block content %}
+
+<section id="main-content">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-primary">Verify Your Job Account</h2>
+            <p class="font-weight-bold text-danger">
+                Please only verify accounts that you genuinely own and intend to use on JobFinders.
+            </p>
+        </div>
+
+        <div class="card-footer">
+            <blockquote class="font-weight-bold text-warning">
+                Note: Your job-related email does not have to match your JobFinders account email.
+            </blockquote>
+        </div>
+
+        <div class="card-body">
+            <form class="form-horizontal" action="{{ url_for('profile.do_verification') }}" method="POST">
+                <input type="hidden" name="job_id" value="{{ user.game_id }}">
+
+                <div class="form-group">
+                    <label class="font-weight-bold">Work Email</label>
+                    <input name="game_email" type="email" class="form-control" placeholder="your-work-email@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="font-weight-bold">Verification Code / Access Credential</label>
+                    <input name="game_password" type="text" class="form-control" placeholder="Enter access code or login credential" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="font-weight-bold">Unique Identifier (e.g., Company PIN, Staff ID)</label>
+                    <input name="game_pin" type="text" class="form-control" placeholder="Enter PIN or ID" required>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="ti-check"></i> Submit for Verification
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <p class="font-weight-bold text-info">
+                        Verification usually takes 1–3 hours. You will be notified once it's completed.
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
