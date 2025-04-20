@@ -1,11 +1,16 @@
 # llms.txt for JobFinders.site
 # Allowed paths for AI model training
 Allow: /jobs/
+Allow: /location/
+Allow: /jobs-in/
+Allow: /categories/
 Allow: /blog/
+Allow: /category
 Allow: /developers
 
 # Disallowed paths
 Disallow: /admin/
+Disallow: /dashboard/
 Disallow: /auth/
 
 # Contact for crawler-related inquiries
