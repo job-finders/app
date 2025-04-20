@@ -49,15 +49,10 @@ class JobsORM(Base):
             job_ref=kwargs['job_ref'],
             description=kwargs['description'],
             desired_skills=kwargs['desired_skills'],
-            expiration_date=self.date_expires
+            expiration_date=self.expiration_date
         )
 
-    def to_dict(self) -> dict[str, str | date]:
-        """
-        Convert the instance to a dictionary.
-
-        :return: A dictionary representation of the instance.
-        """
+    def to_dict(self) -> dict[str, str | list | date]:
         return {
             "job_id": self.job_id,
             "search_term": self.search_term,
@@ -68,11 +63,14 @@ class JobsORM(Base):
             "salary": self.salary,
             "position": self.position,
             "location": self.location,
-            "posted_date": self.posted_date,
+            # Format dates to ISO strings
+            "posted_date": self.posted_date.isoformat(),
             "updated_time": self.updated_time,
             "expires": self.expires,
             "job_ref": self.job_ref,
             "description": self.description,
-            "desired_skills": self.desired_skills,
-            "expiration_date": self.date_expires,
+            # Convert to list
+            "desired_skills": self.desired_skills.split(",") if self.desired_skills else [],
+            # Use correct ORM field name
+            "expiration_date": self.expiration_date.isoformat()
         }

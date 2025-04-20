@@ -1,0 +1,133 @@
+from datetime import datetime, timedelta
+from sqlalchemy import or_, and_
+from sqlalchemy.exc import SQLAlchemyError
+from flask import Flask
+
+from src.database.models.jobs import Job
+from src.database.sql.jobs import JobsORM
+from src.controllers.controller import error_handler
+from src.controllers.controller import Controllers
+
+
+class JobsController(Controllers):
+    def __init__(self):
+        super().__init__()
+
+    def init_app(self, app: Flask):
+        super().init_app(app=app)
+
+    @error_handler
+    async def get_all_jobs(self) -> list[Job]:
+        """Complete listings of all jobs in database"""
+        with self.get_session() as session:
+            jobs_orm_list = session.query(JobsORM).all()
+            return [
+                Job(**self._orm_to_job_dict(job))
+                for job in jobs_orm_list if job
+            ]
+
+    @error_handler
+    async def get_job_by_id(self, job_id: str) -> Job:
+        """Find a job matching the job_id from database"""
+        with self.get_session() as session:
+            job_orm = session.get(JobsORM, job_id)
+            if not job_orm:
+                raise ValueError(f"Job {job_id} not found")
+            return Job(**self._orm_to_job_dict(job_orm))
+
+    @error_handler
+    async def get_jobs_by_search_terms(self, search_term: str) -> list[Job]:
+        """Find jobs matching the search terms"""
+        with self.get_session() as session:
+            search_pattern = f"%{search_term}%"
+            jobs_orm_list = session.query(JobsORM).filter(
+                or_(
+                    JobsORM.search_term.ilike(search_pattern),
+                    JobsORM.title.ilike(search_pattern),
+                    JobsORM.company_name.ilike(search_pattern),
+                    JobsORM.description.ilike(search_pattern),
+                    JobsORM.desired_skills.ilike(search_pattern)
+                )
+            ).all()
+
+            return [
+                Job(**self._orm_to_job_dict(job))
+                for job in jobs_orm_list if job
+            ]
+
+    @error_handler
+    async def update_job(self, job_id: str, updated_job: Job) -> Job:
+        """Updates the job matching the job_id"""
+        with self.get_session() as session:
+            job_orm = session.get(JobsORM, job_id)
+            if not job_orm:
+                raise ValueError(f"Job {job_id} not found")
+
+            # Update all fields except job_id
+            for key, value in updated_job.dict().items():
+                if key != "job_id" and hasattr(job_orm, key):
+                    setattr(job_orm, key, value)
+
+            job_orm.updated_time = datetime.now().strftime("%d %b %Y")
+            session.commit()
+            return Job(**self._orm_to_job_dict(job_orm))
+
+    @error_handler
+    async def de_activate_job_listing(self, job_id: str) -> Job:
+        """Mark job as inactive by setting expiration date to past"""
+        with self.get_session() as session:
+            job_orm = session.get(JobsORM, job_id)
+            if not job_orm:
+                raise ValueError(f"Job {job_id} not found")
+
+            # Set expiration date to yesterday
+            job_orm.expiration_date = datetime.now().date() - timedelta(days=1)
+            session.commit()
+            return Job(**self._orm_to_job_dict(job_orm))
+
+    @error_handler
+    async def activate_job_listing(self, job_id: str) -> Job:
+        """Activate job listing by resetting expiration date"""
+        with self.get_session() as session:
+            job_orm = session.get(JobsORM, job_id)
+            if not job_orm:
+                raise ValueError(f"Job {job_id} not found")
+
+            # Reset expiration date using original expires field
+            days = int(job_orm.expires.split()[2])
+            job_orm.expiration_date = datetime.now().date() + timedelta(days=days)
+            session.commit()
+            return Job(**self._orm_to_job_dict(job_orm))
+
+    @error_handler
+    async def create_job(self, job: Job) -> Job:
+        """Create new job listing"""
+        with self.get_session() as session:
+            # Convert Pydantic model to ORM-compatible dict
+            job_data = job.dict()
+            job_data["desired_skills"] = ", ".join(job_data["desired_skills"])
+
+            new_job_orm = JobsORM(**job_data)
+            session.add(new_job_orm)
+            session.commit()
+
+            return Job(**self._orm_to_job_dict(new_job_orm))
+
+    def _orm_to_job_dict(self, job_orm: JobsORM) -> dict:
+        """Convert ORM object to Job model-compatible dictionary"""
+        job_dict = job_orm.to_dict()
+
+        # Convert desired_skills string to list
+        if job_dict["desired_skills"]:
+            job_dict["desired_skills"] = [
+                skill.strip()
+                for skill in job_dict["desired_skills"].split(",")
+            ]
+        else:
+            job_dict["desired_skills"] = []
+
+        # Convert dates to string format
+        job_dict["posted_date"] = job_orm.posted_date.strftime("%d %b %Y")
+        job_dict["expiration_date"] = job_orm.expiration_date.strftime("%d %b %Y")
+
+        return job_dict
