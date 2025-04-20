@@ -49,6 +49,15 @@ async def ads_txt():
 async def adstxt():
     return send_from_directory(static_folder(), 'ads.txt')
 
+
+@seo_route.get("/ai-crawlers-info")
+async def get_ai_crawlers_info():
+    """
+    Serve the AI-Crawlers Info page from the static folder.
+    """
+    # current_app.static_folder points to your configured static directory
+    return send_from_directory(static_folder(), 'crawlers.MD')
+
 @seo_route.get('/3554e950877947b59633174a3c18e6b3.txt')
 async def get_indexnow_key():
     """
