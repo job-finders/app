@@ -9,4 +9,4 @@ Disallow: /admin/
 Disallow: /auth/
 
 # Contact for crawler-related inquiries
-Contact: [email protected]
+Contact: [developers@jobfinders.site]
