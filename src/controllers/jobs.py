@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
-from sqlalchemy import or_, and_
-from sqlalchemy.exc import SQLAlchemyError
-from flask import Flask
 
+from flask import Flask
+from sqlalchemy import or_
+
+from src.controllers.controller import Controllers
+from src.controllers.controller import error_handler
 from src.database.models.jobs import Job
 from src.database.sql.jobs import JobsORM
-from src.controllers.controller import error_handler
-from src.controllers.controller import Controllers
 
 
 class JobsController(Controllers):

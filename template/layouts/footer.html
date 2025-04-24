@@ -5,19 +5,19 @@
     <div class="row text-center text-md-left">
 
       <!-- Site Links -->
-      <div class="col-md-4 mb-4">
+      <div class="col-md-3 mb-4">
         <h5 class="fw-bold text-dark">JobFinders.site</h5>
         <ul class="list-unstyled">
           <li><a href="{{ url_for('home.get_home') }}" class="text-muted">Home</a></li>
           <li><a href="{{ url_for('home.about') }}" class="text-muted">About</a></li>
           <li><a href="{{ url_for('home.contact') }}" class="text-muted">Contact</a></li>
           <li><a href="{{ url_for('home.terms') }}" class="text-muted">Terms of Use & Privacy</a></li>
-          <li><a href="/ai-crawlers-info">AI Crawler Info</a></li>
+          <li><a href="/ai-crawlers-info" class="text-muted">AI Crawler Info</a></li>
         </ul>
       </div>
 
       <!-- SA Job Resources -->
-      <div class="col-md-4 mb-4">
+      <div class="col-md-3 mb-4">
         <h5 class="fw-bold text-dark">SA Job Resources</h5>
         <ul class="list-unstyled">
           <li><a href="https://www.labour.gov.za/" target="_blank" class="text-muted">Department of Labour SA</a></li>
@@ -26,8 +26,20 @@
         </ul>
       </div>
 
+      <!-- Blog & Insights -->
+      <div class="col-md-3 mb-4">
+        <h5 class="fw-bold text-dark">Career & Dev Reads</h5>
+        <ul class="list-unstyled">
+            <li><a href="https://blog.joobfinders.site" target="_blank" class="text-muted">Jobfinders Blog</a></li>
+            <li><a href="https://jobfinders.substack.com" target="_blank" class="text-muted">JobFinders Substack</a></li>
+            <li><a href="https://dev.to/freelancingsolutions/" target="_blank" class="text-muted">Dev Blog on DevTo</a></li>
+            <li><a href="https://python-devs.custom-logic.co.za/" target="_blank" class="text-muted">Python Developers Blog</a></li>
+            <li><a href="https://pocket-money-wallet.medium.com/" target="_blank" class="text-muted">Articles on Medium</a></li>
+        </ul>
+      </div>
+
       <!-- Ownership & Company Info -->
-      <div class="col-md-4 mb-4">
+      <div class="col-md-3 mb-4">
         <h5 class="fw-bold text-dark">Powered by</h5>
         <p class="text-muted small mb-1">
           <strong>Custom Logic (Pty) Ltd</strong><br>
@@ -38,13 +50,11 @@
       </div>
     </div>
 
-
     <!-- GDPR Section -->
     <div class="row mt-4 pt-3 border-top">
       <div class="col text-center text-md-left">
         <h6 class="fw-bold text-dark d-flex align-items-center">
-
-            Your Data & Privacy
+          Your Data & Privacy
         </h6>
         <p class="text-muted small mb-1">
           🔒 In compliance with GDPR, you may request access to or deletion of your personal data.
@@ -55,9 +65,10 @@
         <p class="text-muted small mb-0">
           Your data is secure & in your control.
         </p>
-      <span class="badge bg-success text-white ms-2">GDPR Compliant</span>
+        <span class="badge bg-success text-white ms-2">GDPR Compliant</span>
       </div>
     </div>
+
     <hr>
 
     <!-- Legal & Utility Row -->
@@ -71,8 +82,6 @@
         <a href="#top_header" class="text-muted small">Back to Top &uarr;</a>
       </div>
     </div>
-
-    <!-- GDPR Section -->
 
   </div>
 </div>
