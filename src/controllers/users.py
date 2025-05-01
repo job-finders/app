@@ -55,6 +55,34 @@ class UsersController(Controllers):
             return User(**user_orm.to_dict())
 
     @error_handler
+    async def get_user_by_email(self, email: str) -> User | None:
+        """
+
+        :param email:
+        :return:
+        """
+        with self.get_session() as session:
+            user_orm = session.query(UserORM).filter_by(email=email.casefold()).first()
+            if user_orm is None:
+                return None
+            return User(**user_orm.to_dict())
+
+    async def login_user(self, email: str, password: str) -> User | None:
+        """
+
+        :param email:
+        :param password:
+        :return:
+        """
+        with self.get_session() as session:
+            user_orm = session.query(UserORM).filter_by(email=email.casefold()).first()
+            if user_orm is None:
+                return None
+            user = User(**user_orm.to_dict())
+            return user if user.check_password(password=password) else None
+
+
+    @error_handler
     def update_user(self, uid: str, data: dict) -> User | None:
         """Update an existing user."""
         with self.get_session() as session:

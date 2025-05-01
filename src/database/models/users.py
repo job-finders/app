@@ -3,6 +3,9 @@ from datetime import datetime
 from pydantic import BaseModel, validator, Field, EmailStr
 from typing import List, Optional
 from src.utils import format_reference  # assuming this is your own utility function
+from src.main import encryptor
+from datetime import datetime
+import uuid
 
 
 class Roles(BaseModel):
@@ -42,18 +45,15 @@ class Roles(BaseModel):
 
 
 
+
 class User(BaseModel):
-    uid: str
+    uid: str = Field(default_factory=lambda: str(uuid.uuid4()))  # Generate a default UUID if not provided
     name: str
     email: EmailStr
     password_hash: str
     role: str
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    @validator('uid', pre=True, always=True)
-    def format_id(cls, v):
-        return format_reference("user") if v is None else v
 
     @validator('name')
     def name_must_be_valid(cls, v):
@@ -67,3 +67,18 @@ class User(BaseModel):
         if v not in allowed_roles:
             raise ValueError(f"Role must be one of {allowed_roles}")
         return v
+
+    def check_password(self, password: str) -> bool:
+        """
+        :param password: Password to compare
+        :return: Boolean indicating if password matches
+        """
+        return encryptor.compare_hashes(hash=self.password_hash, password=password)
+
+    @classmethod
+    def create(cls, name: str, email: EmailStr, password: str, role: str) -> "User":
+        """
+        Create a new User instance with a hashed password.
+        """
+        hashed = encryptor.create_hash(password)
+        return cls(name=name, email=email, password_hash=hashed, role=role)

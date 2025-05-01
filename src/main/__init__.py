@@ -12,6 +12,7 @@ from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
 
 
 from src.controllers.users import UsersController
+from src.controllers.encryptor import Encryptor
 from src.controllers import StorageController, NotificationsController
 notifications_controller = NotificationsController()
 from src.controllers.ats_controller import ATSToolController
@@ -23,6 +24,7 @@ junction_scrapper = JunctionScrapper(scrapper=scrapper)
 career_scrapper = CareerScrapper(scrapper=scrapper)
 users_controller = UsersController()
 ats_controller = ATSToolController()
+encryptor = Encryptor()
 
 def create_app(config):
     """
@@ -46,6 +48,7 @@ def create_app(config):
         # career_scrapper.init_app(app=app)
         users_controller.init_app(app=app)
         ats_controller.init_app(app=app)
+        encryptor.init_app(app=app)
 
         # importing routes
         from src.routes.home import home_route

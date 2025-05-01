@@ -1,7 +1,4 @@
-
-import uuid
-from datetime import date
-from sqlalchemy import Column, String, Date, Text, inspect, Boolean, DateTime
+from sqlalchemy import Column, String, inspect, Boolean, DateTime
 
 from src.database.constants import NAME_LEN, ID_LEN
 from src.database.sql import Base, engine
