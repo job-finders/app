@@ -1,5 +1,5 @@
 from flask import Flask
-from src.controllers.controller import Controllers
+from src.controllers.controller import Controllers, error_handler
 import os
 import tempfile
 import docx2txt
@@ -95,4 +95,24 @@ class ATSToolController(Controllers):
             "word_count": word_count,
             "used_action_verbs": used_action_verbs,
             "action_verb_ratio": round(len(used_action_verbs) / word_count * 100, 2) if word_count else 0
+        }
+
+    @error_handler
+    def handle_ats_match(self, request):
+        uploaded_file = request.files.get("resume")
+        job_desc = request.form.get("job_description")
+
+        if not uploaded_file or not job_desc:
+            raise ValueError("Resume and job description must be provided.")
+
+        resume_text = self.extract_text(uploaded_file)
+        resume_keywords = self.extract_keywords(resume_text)
+        job_keywords = self.extract_keywords(job_desc)
+
+        result = self.calculate_match_score(resume_keywords, job_keywords)
+
+        return {
+            "score": result["score"],
+            "matched": result["matched_keywords"],
+            "missing": result["missing_keywords"]
         }

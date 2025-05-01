@@ -95,6 +95,11 @@ class UnauthorizedError(Exception):
         super().__init__(self.description)
         error_logger.error(self.description)
 
+class ATSProcessingError(Exception):
+    def __init__(self, message="There was an error processing the resume."):
+        super().__init__(message)
+        error_logger.error(f"ATSProcessingError: {message}")
+
 
 def error_handler(view_func):
     @functools.wraps(view_func)
@@ -136,5 +141,12 @@ def error_handler(view_func):
             error_logger.error(message)
             flash("Oops! Something went wrong. Please try again later.", category='danger')
             return None
+
+        # Add this to the except blocks
+        except ATSProcessingError as e:
+            message = f"{view_func.__name__} : ATS processing error: {str(e)}"
+            error_logger.error(message)
+            flash("Failed to process your resume. Please upload a valid file.", category='danger')
+            return redirect(url_for('home.get_home'))
 
     return wrapped_method

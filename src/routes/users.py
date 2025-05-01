@@ -1,16 +1,8 @@
+from flask import Blueprint, request, jsonify
 
-import math
-import random
-from datetime import datetime
-from pathlib import Path
-
-import requests
-from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, send_file, jsonify
-from pydantic import ValidationError
-
-from src.routes import flask_error_handler
 from src.logger import init_logger
 from src.main import users_controller
+from src.routes import flask_error_handler
 
 users_route = Blueprint('user', __name__)
 users_logger = init_logger("home_logger")

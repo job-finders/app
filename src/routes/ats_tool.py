@@ -1,66 +1,47 @@
-from flask import Flask, Blueprint, request, render_template
-import os
-import tempfile
-import docx2txt
-import fitz  # PyMuPDF for PDF
-
-from sklearn.feature_extraction.text import CountVectorizer
-
-import re
-
-def clean_text(text):
-    # Remove special characters and lower the text
-    return re.sub(r'[^a-zA-Z\s]', '', text).lower()
-
-def extract_keywords(text, top_n=30):
-    text = clean_text(text)
-    vectorizer = CountVectorizer(stop_words='english', max_features=top_n)
-    X = vectorizer.fit_transform([text])
-    return vectorizer.get_feature_names_out().tolist()
-
-
-def extract_text(uploaded_file):
-    file_ext = os.path.splitext(uploaded_file.filename)[-1].lower()
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp:
-        uploaded_file.save(tmp.name)
-        tmp_path = tmp.name
-
-    if file_ext == ".pdf":
-        return extract_text_from_pdf(tmp_path)
-    elif file_ext in [".docx", ".doc"]:
-        return docx2txt.process(tmp_path)
-    else:
-        with open(tmp_path, "r", encoding="utf-8", errors="ignore") as f:
-            return f.read()
-
-
-def extract_text_from_pdf(path):
-    text = ""
-    with fitz.open(path) as doc:
-        for page in doc:
-            text += page.get_text()
-    return text
-
-
+from flask import Blueprint, request, render_template
+from src.main import ats_controller  # Assuming ats_controller is an instance of ATSToolController
 
 ats_tool_route = Blueprint('ats', __name__)
 
 
 @ats_tool_route.route("/ats-match", methods=["POST"])
 def ats_match():
+    context = ats_controller.handle_ats_match(request)
+    return render_template("ats/compare.html", **context)
 
-    resume_text = extract_text(request.files["resume"])
-    job_desc = request.form["job_description"]
 
-    resume_keywords = extract_keywords(resume_text)
-    job_keywords = extract_keywords(job_desc)
+@ats_tool_route.route("/resume-quality", methods=["POST"])
+def resume_quality():
+    uploaded_file = request.files.get("resume")
+    if not uploaded_file:
+        return render_template("ats/resume_quality.html", error="No file uploaded.")
 
-    matched = set(resume_keywords) & set(job_keywords)
-    missing = set(job_keywords) - set(resume_keywords)
+    resume_text = ats_controller.extract_text(uploaded_file)
+    context = ats_controller.get_resume_quality_insights(resume_text)
+    return render_template("ats/resume_quality.html", **context)
 
-    score = round(len(matched) / len(job_keywords) * 100, 2)
 
-    context = {'score': score, 'matched': matched, 'missing': missing}
+@ats_tool_route.route("/keyword-extract", methods=["POST"])
+def keyword_extract():
+    uploaded_file = request.files.get("resume")
+    if not uploaded_file:
+        return render_template("ats/keywords.html", error="Please upload a resume.")
 
-    return render_template("ats/compare.html", score=score, matched=matched, missing=missing)
+    resume_text = ats_controller.extract_text(uploaded_file)
+    context = {
+        "keywords": ats_controller.extract_keywords(resume_text),
+        "weighted_keywords": ats_controller.extract_weighted_keywords(resume_text)
+    }
+    return render_template("ats/keywords.html", **context)
+
+
+@ats_tool_route.route("/categorize-keywords", methods=["POST"])
+def categorize_keywords():
+    uploaded_file = request.files.get("resume")
+    if not uploaded_file:
+        return render_template("ats/categories.html", error="Please upload a resume.")
+
+    resume_text = ats_controller.extract_text(uploaded_file)
+    context = ats_controller.categorize_keywords(resume_text)
+    return render_template("ats/categories.html", **context)
+

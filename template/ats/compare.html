@@ -4,18 +4,47 @@
 <section class="container-fluid py-5">
   <div class="card shadow-sm">
     <div class="card-header bg-primary text-white text-center">
-      <h2 class="card-title mb-0">ATS Keyword Tool</h2>
+      <h2 class="card-title mb-0">ATS Keyword Match</h2>
     </div>
     <div class="card-body">
-      <p class="mb-4">  .</p>
-          <form method="post" action="/contact">
-            <!-- Include CSRF protection if required by your backend -->
+      <p class="mb-4">Below is the match score between your resume and the provided job description.</p>
 
-            <div class="text-center">
-              <button type="submit" class="btn btn-primary px-4">Return Score</button>
-            </div>
-          </form>
+      <!-- ATS Match Score Display -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <h4>Match Score</h4>
+          <p class="lead">{{ score }}%</p>
+        </div>
+      </div>
 
+      <!-- Matched Keywords Display -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <h4>Matched Keywords</h4>
+          <ul>
+            {% for keyword in matched %}
+              <li>{{ keyword }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Missing Keywords Display -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <h4>Missing Keywords</h4>
+          <ul>
+            {% for keyword in missing %}
+              <li>{{ keyword }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Back Button or Further Action -->
+      <div class="text-center">
+        <a href="/ats-match" class="btn btn-primary px-4">Try Another Match</a>
+      </div>
     </div>
   </div>
 </section>
