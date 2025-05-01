@@ -15,6 +15,10 @@ class ATSToolController(Controllers):
     def __init__(self):
         self.top_n_keywords = 30
 
+    def __del__(self):
+        if hasattr(self, "sessions"):
+            self.sessions.close()
+
     def init_app(self, app: Flask):
         # Route setup can be done here
         pass

@@ -140,3 +140,10 @@ class UsersController(Controllers):
             users_orm_list = session.query(UserORM).filter_by(role=role).all()
             return [User(**user.to_dict()) for user in users_orm_list]
 
+    async def send_reset_link(email):
+        """
+
+        :return:
+        """
+        pass
+

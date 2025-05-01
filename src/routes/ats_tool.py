@@ -45,3 +45,26 @@ def categorize_keywords():
     context = ats_controller.categorize_keywords(resume_text)
     return render_template("ats/categories.html", **context)
 
+
+@ats_tool_route.route("/ats-tools", methods=["GET", "POST"])
+def ats_tools():
+    if request.method == "GET":
+        return render_template("ats/tools_results_inline.html")
+
+    uploaded_file = request.files.get("resume")
+    job_desc = request.form.get("job_description")
+
+    if not uploaded_file or not job_desc:
+        return render_template("ats/tools_results_inline.html", error="Please upload a resume and paste job description.")
+
+    resume_text = ats_controller.extract_text(uploaded_file)
+
+    context = {
+        "match": ats_controller.handle_ats_match_text(resume_text, job_desc),
+        "quality": ats_controller.get_resume_quality_insights(resume_text),
+        "keywords": ats_controller.extract_keywords(resume_text),
+        "weighted_keywords": ats_controller.extract_weighted_keywords(resume_text),
+        "categorized": ats_controller.categorize_keywords(resume_text)
+    }
+
+    return render_template("ats/tools_results_inline.html", **context)

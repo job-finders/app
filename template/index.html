@@ -49,6 +49,7 @@
     </div>
 
 <div class="text-center mb-4">
+
     <img src="{{ url_for('static', filename='images/banner.png') }}"
          class="img-fluid rounded shadow-sm"
          alt="JobFinders – Connecting South Africans to Jobs">
@@ -67,16 +68,37 @@
     {% include 'adverts/horizontal.html' %}
 </div>
 <div class="card my-4 border-dark">
-<section class="py-5 bg-light text-center">
+    <section class="py-5 bg-light text-center">
+      <div class="container">
+        <h2 class="fw-bold">Create or Login to your Account !</h2>
+        <p class="lead text-muted mb-4">Join thousands of South Africans finding their dream jobs today.</p>
+            <a href="{{ url_for('auth.subscribe') }}" class="btn btn-primary btn-lg me-2">Create Account</a>
+          <a href="{{ url_for('auth.login') }}" class="btn btn-outline-success btn-lg me-2">Login</a>
+    {#    <a href="/post-job" class="btn btn-outline-success btn-lg">Post a Job</a>#}
+      </div>
+    </section>
+</div>
+<div class="card my-4 border-dark">
+    <section class="py-5 bg-light text-center">
+      <div class="container">
+        <h2 class="fw-bold">Ready to Take the Next Step?</h2>
+        <p class="lead text-muted mb-4">Join thousands of South Africans finding their dream jobs today.</p>
+        <a href="{{ url_for('jobs.job_search', search_term='gauteng') }}" class="btn btn-success btn-lg me-2">Browse Jobs in Gauteng</a>
+          <a href="{{ url_for('jobs.job_search', search_term='cape town') }}" class="btn btn-success btn-lg me-2">Browse Jobs in Cape Town</a>
+    {#    <a href="/post-job" class="btn btn-outline-success btn-lg">Post a Job</a>#}
+      </div>
+    </section>
+</div>
+
+<section class="py-5 text-center bg-white">
   <div class="container">
-    <h2 class="fw-bold">Ready to Take the Next Step?</h2>
-    <p class="lead text-muted mb-4">Join thousands of South Africans finding their dream jobs today.</p>
-    <a href="{{ url_for('jobs.job_search', search_term='gauteng') }}" class="btn btn-success btn-lg me-2">Browse Jobs in Gauteng</a>
-      <a href="{{ url_for('jobs.job_search', search_term='cape town') }}" class="btn btn-success btn-lg me-2">Browse Jobs in Cape Town</a>
-{#    <a href="/post-job" class="btn btn-outline-success btn-lg">Post a Job</a>#}
+    <h2 class="fw-bold text-dark">Smarter Hiring Starts Here</h2>
+    <p class="lead text-muted mb-4">Use our free <strong>AI-powered ATS tool</strong> to streamline applications, shortlist top talent, and hire faster.</p>
+    <a href="{{ url_for('ats.ats_tools') }}" class="btn btn-outline-success btn-lg font-weight-bold">Try the ATS Tool</a>
   </div>
 </section>
-</div>
+
+
  <!-- Categories Section -->
 <div class="card mb-5 border-0">
     <div class="card-header bg-white text-center">

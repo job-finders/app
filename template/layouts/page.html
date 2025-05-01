@@ -43,13 +43,13 @@
   <link rel="dns-prefetch" href="https://platform.twitter.com">
   <link rel="preconnect" href="https://connect.facebook.net">
   <link rel="dns-prefetch" href="https://connect.facebook.net">
-
+{% if seo %}
   <!-- Canonical Link -->
   <link rel="canonical" href="{{ seo.url | default(request.url) }}">
 
   <!-- Title with fallback -->
   <title>JobFinders - {% if seo %}{{ seo.title | default('JobFinders') }}{% else %}Page Not Found{% endif %}</title>
-
+{% endif %}
   <!-- Standard Meta Tags -->
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -58,6 +58,7 @@
   <meta name="theme-name" content="focus">
 
   <!-- SEO Meta Tags with Fallbacks -->
+{% if seo %}
   <meta name="description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">
   <meta name="keywords" content="{{ seo.keywords | default('jobs, careers, employment, jobfinders') }}">
 
@@ -72,6 +73,7 @@
   <meta name="twitter:title" content="{{ seo.title | default('JobFinders') }}">
   <meta name="twitter:description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">
   <meta name="twitter:image" content="{{ seo.image | default(url_for('static', filename='images/jobfinder.jpg', _external=True)) }}">
+{% endif %}
   {% block meta %}
   {% endblock %}
   <!-- JSON-LD Structured Data -->

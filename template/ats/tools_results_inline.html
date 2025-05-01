@@ -1,0 +1,56 @@
+<div class="ats-result-card container-fluid p-3 border border-light rounded" style="background:#f9f9f9;">
+  {% if ats_results %}
+    <h4 class="card-header bg-ash">ATS Match Score</h4>
+    <div class="fs-3 fw-bold text-success">
+      {{ ats_results.score }}%
+    </div>
+    {% if ats_results.score < 50 %}
+      <p class="text-danger">Your resume may not pass the ATS for this job.</p>
+    {% else %}
+      <p class="text-success">Your resume is reasonably well matched.</p>
+    {% endif %}
+    <details class="mt-3">
+      <summary class="cursor-pointer">Matched Keywords ({{ ats_results.matched|length }})</summary>
+      <ul class="ps-3">
+        {% for kw in ats_results.matched %}
+          <li>{{ kw }}</li>
+        {% endfor %}
+      </ul>
+    </details>
+    <details class="mt-2">
+      <summary class="cursor-pointer">Missing Keywords ({{ ats_results.missing|length }})</summary>
+      <ul class="ps-3 text-danger">
+        {% for kw in ats_results.missing %}
+          <li>{{ kw }}</li>
+        {% endfor %}
+      </ul>
+    </details>
+
+    <form action="/ats-tools" method="POST" enctype="multipart/form-data" class="mt-3">
+      <input type="file" name="resume" class="form-control mb-2" required>
+      <input type="hidden" name="job_description" value="{{ ats_results.job_description }}">
+      <button type="submit" class="btn btn-primary w-100">
+        Re-analyze
+      </button>
+    </form>
+
+  {% else %}
+    <div class="ats-tool-section">
+        <h4 class="fw-bold text-primary">Optimize Your Resume with AI</h4>
+        <p class="text-muted">Leverage our AI-powered Resume Match tool to analyze how well your resume aligns with the job description. Get insights on improving your resume to increase your chances of getting noticed!</p>
+
+        <form action="{{ url_for('ats.ats_tools') }}" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="resume" class="fw-bold">Upload Your Resume</label>
+                <input type="file" name="resume" class="form-control-file mb-3" required>
+            </div>
+
+            <input type="hidden" name="job_description" value="{{ job.description }}">
+
+            <button type="submit" class="btn btn-primary btn-lg w-100">Try Our AI-Powered Tool</button>
+        </form>
+
+        <p class="mt-3 text-muted">Our AI analyzes your resume in real-time, comparing it to job descriptions to suggest improvements for a better match. Let AI guide you to success!</p>
+    </div>
+  {% endif %}
+</div>

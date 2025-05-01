@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Response, make_response
 
-from database.models.users import User
+from src.database.models.users import User
 from src.database.models import Role
 from src.main import users_controller
 
@@ -46,7 +46,7 @@ async def login():
 
 
 @auth_route.route("/logout")
-def logout():
+async def logout():
     # Clear the session and the 'auth' cookie
     session.clear()
     response = make_response(redirect(url_for("auth.login")))
@@ -58,10 +58,12 @@ def logout():
 
     return response
 
-
-
-@auth_route.route("/subscribe", methods=["POST"])
+@auth_route.route("/subscribe", methods=["POST", "GET"])
 async def subscribe():
+
+    if request.method.casefold() == "get":
+        return render_template('register.html')
+
     email = request.form.get("email")
     password = request.form.get('password')
     role = request.form.get("role")
@@ -100,3 +102,24 @@ async def subscribe():
 
 
 
+@auth_route.route("/password-reset", methods=["GET", "POST"])
+async def password_reset():
+    if request.method == "GET":
+        return render_template("password_reset.html")
+
+    email = request.form.get("email")
+
+    if not email or "@" not in email:
+        flash("Please enter a valid email address.", "danger")
+        return redirect(request.referrer or url_for("auth.password_reset"))
+
+    user = await users_controller.get_user_by_email(email)
+    if not user:
+        flash("If the email exists in our system, a reset link has been sent.", "info")
+        return redirect(url_for("auth.password_reset"))
+
+    # Send the reset link (with async)
+    await users_controller.send_reset_link(email)
+
+    flash("Check your email for a password reset link.", "success")
+    return redirect(url_for("auth.get_auth"))

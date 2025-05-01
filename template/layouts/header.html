@@ -1,33 +1,27 @@
-    <div class="header">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="float-left">
-                        <div class="hamburger sidebar-toggle">
-                            <span class="line"></span>
-                            <span class="line"></span>
-                            <span class="line"></span>
-                        </div>
+<div class="header">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-lg-12 d-flex justify-content-between">
+                <!-- Left Side (Hamburger Menu) -->
+                <div class="d-flex align-items-center">
+                    <div class="hamburger sidebar-toggle mr-3">
+                        <span class="line"></span>
+                        <span class="line"></span>
+                        <span class="line"></span>
                     </div>
-{#                    <div class="float-left">#}
-{#                        <a href="{{ url_for('home.get_home') }}" class="float-left job-header">#}
-{#                        <h2 class="inline-title font-weight-bold text-info">Job Finders</h2>#}
-{#                        </a>#}
-{#                    </div>#}
-                    <div class="float-right">
-                        <div class="dropdown dib">
-                        <div>
-                            <a href="{{ url_for("home.get_home") }}" class="btn-sm font-weight-bold btn-outline-success text-info">Home</a> |
-                            <a href="{{ url_for("home.contact") }}" class="btn-sm font-weight-bold btn-outline-success text-info">Contact</a> |
-                            <a href="{{ url_for("home.about") }}" class="btn-sm font-weight-bold btn-outline-success text-info">About</a> |
-                            <a href="https://blog.jobfinders.site" class="btn-sm font-weight-bold btn-outline-success text-info">Blog</a>
-                        </div>
-                            <div class="header-icon" data-toggle="dropdown">
-                            </div>
-                        </div>
-                    </div>
+                </div>
+                <!-- Right Side (Nav Links) -->
+                <div class="d-flex align-items-center">
+                    <a href="{{ url_for('home.get_home') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Home</a>
+                    <a href="{{ url_for('home.contact') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Contact</a>
+                    <a href="{{ url_for('home.about') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">About</a>
+                    <a href="https://blog.jobfinders.site" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Blog</a>
+
+                    <!-- Auth Links -->
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">Login</a>
+                    <a href="{{ url_for('auth.subscribe') }}" class="btn btn-sm btn-primary font-weight-bold text-white mx-1">Create Account</a>
                 </div>
             </div>
         </div>
     </div>
-
+</div>

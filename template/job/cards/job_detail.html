@@ -107,6 +107,15 @@
             width: 1em; /* Adjust as needed */
             margin-left: -1em;
         }
+        .ats-result-card {
+          transition: all 0.3s ease;
+        }
+
+        .ats-result-card:hover {
+          background-color: #f1f1f1; /* Light background color on hover */
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Soft shadow on hover */
+        }
+
 
     </style>
 {% endblock %}
@@ -157,6 +166,9 @@
                 <a href="{{ job.apply_url }}" rel="nofollow noreferrer" target="_blank"  class="btn btn-lg btn-info"><i class="ti-file"></i> Apply</a>
                 <hr>
             </div>
+<div class="card-footer">
+    {% include 'ats/tools_results_inline.html' %}
+</div>
             <!--adsense advert -->
             {% include 'adverts/horizontal.html' %}
             {% include affiliate_template %}

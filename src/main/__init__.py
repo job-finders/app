@@ -2,18 +2,21 @@ from flask import Flask
 
 from src.utils import template_folder, static_folder, format_title, format_description, bootstrap_database
 from src.emailer import SendMail
+from src.controllers.encryptor import Encryptor
 
 bootstrap_database()
 send_mail = SendMail()
-
+encryptor = Encryptor()
 
 from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
 
 
 
 from src.controllers.users import UsersController
-from src.controllers.encryptor import Encryptor
-from src.controllers import StorageController, NotificationsController
+
+from src.controllers.storage import StorageController
+from src.controllers.notifications_controller import NotificationsController
+
 notifications_controller = NotificationsController()
 from src.controllers.ats_controller import ATSToolController
 # initializing models and controllers
@@ -24,7 +27,7 @@ junction_scrapper = JunctionScrapper(scrapper=scrapper)
 career_scrapper = CareerScrapper(scrapper=scrapper)
 users_controller = UsersController()
 ats_controller = ATSToolController()
-encryptor = Encryptor()
+
 
 def create_app(config):
     """
@@ -51,6 +54,7 @@ def create_app(config):
         encryptor.init_app(app=app)
 
         # importing routes
+        from src.routes.auth import auth_route
         from src.routes.home import home_route
         from src.routes.jobs import jobs_route
         from src.routes.seo import seo_route
@@ -59,8 +63,9 @@ def create_app(config):
         from src.routes.cron import cron_route
         from src.routes.ats_tool import ats_tool_route
 
-        # registering routes
 
+        # registering routes
+        app.register_blueprint(auth_route)
         app.register_blueprint(home_route)
         app.register_blueprint(jobs_route)
         app.register_blueprint(seo_route)
