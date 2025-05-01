@@ -2,7 +2,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
-
+# updated for version 2 pydantic
 class MySQLSettings(BaseSettings):
     PRODUCTION_DB: str = Field(..., alias="production_sql_db")
     DEVELOPMENT_DB: str = Field(..., alias="dev_sql_db")
