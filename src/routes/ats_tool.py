@@ -60,7 +60,7 @@ def ats_tools():
     resume_text = ats_controller.extract_text(uploaded_file)
 
     context = {
-        "match": ats_controller.handle_ats_match_text(resume_text, job_desc),
+        "match": ats_controller.handle_ats_match(resume_text, job_desc),
         "quality": ats_controller.get_resume_quality_insights(resume_text),
         "keywords": ats_controller.extract_keywords(resume_text),
         "weighted_keywords": ats_controller.extract_weighted_keywords(resume_text),

@@ -8,6 +8,9 @@ bootstrap_database()
 send_mail = SendMail()
 encryptor = Encryptor()
 
+from src.controllers.jobs import JobsController
+jobs_controller = JobsController()
+
 from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
 
 
@@ -19,14 +22,17 @@ from src.controllers.notifications_controller import NotificationsController
 
 notifications_controller = NotificationsController()
 from src.controllers.ats_controller import ATSToolController
+
+
 # initializing models and controllers
 
 storage_controller = StorageController()
 scrapper = Scrapper()
-junction_scrapper = JunctionScrapper(scrapper=scrapper)
-career_scrapper = CareerScrapper(scrapper=scrapper)
 users_controller = UsersController()
 ats_controller = ATSToolController()
+
+junction_scrapper = JunctionScrapper(scrapper=scrapper)
+career_scrapper = CareerScrapper(scrapper=scrapper)
 
 
 def create_app(config):
@@ -47,11 +53,15 @@ def create_app(config):
         # storage_controller.init_app(app=app)
         #  12 hours
         run_every_hour = 12*60
-        junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
-        # career_scrapper.init_app(app=app)
+        from src.main.boot import boot
+        boot()
+
         users_controller.init_app(app=app)
         ats_controller.init_app(app=app)
         encryptor.init_app(app=app)
+        jobs_controller.init_app(app=app)
+        junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
+        # career_scrapper.init_app(app=app)
 
         # importing routes
         from src.routes.auth import auth_route

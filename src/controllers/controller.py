@@ -111,42 +111,42 @@ def error_handler(view_func):
         except (OperationalError, ProgrammingError, IntegrityError) as e:
             message = f"{view_func.__name__} : Database error: {str(e)}"
             error_logger.error(message)
-            flash("Error accessing database - please try again.", category='danger')
+            # flash("Error accessing database - please try again.", category='danger')
             return None
 
         # Unauthorized access errors
         except UnauthorizedError as e:
             message = f"{view_func.__name__} : Unauthorized access: {str(e)}"
             error_logger.error(message)
-            flash("You are not authorized to access this resource.", category='danger')
+            # flash("You are not authorized to access this resource.", category='danger')
             return redirect(url_for('home.get_home'), code=302)
 
         # Connection issues (e.g., reset connection)
         except ConnectionResetError as e:
             message = f"{view_func.__name__} : Connection reset: {str(e)}"
             error_logger.error(message)
-            flash("Unable to connect to the database, please try again.", category='danger')
+            # flash("Unable to connect to the database, please try again.", category='danger')
             return None
 
         # Validation errors from Pydantic (input validation)
         except ValidationError as e:
             message = f"{view_func.__name__} : Validation error: {str(e)}"
             error_logger.error(message)
-            flash("There was an issue with the provided data. Please check your input.", category='danger')
+            # flash("There was an issue with the provided data. Please check your input.", category='danger')
             return None
 
         # General unexpected errors
         except Exception as e:
             message = f"{view_func.__name__} : Unexpected error: {str(e)}"
             error_logger.error(message)
-            flash("Oops! Something went wrong. Please try again later.", category='danger')
+            # flash("Oops! Something went wrong. Please try again later.", category='danger')
             return None
 
         # Add this to the except blocks
         except ATSProcessingError as e:
             message = f"{view_func.__name__} : ATS processing error: {str(e)}"
             error_logger.error(message)
-            flash("Failed to process your resume. Please upload a valid file.", category='danger')
+            # flash("Failed to process your resume. Please upload a valid file.", category='danger')
             return redirect(url_for('home.get_home'))
 
     return wrapped_method

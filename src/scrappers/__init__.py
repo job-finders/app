@@ -12,7 +12,7 @@ from src.cache import cached
 from src.database.models.jobs import Job
 from src.logger import init_logger
 from src.utils import format_reference
-
+from src.main import jobs_controller
 
 class Scrapper:
     def __init__(self):
@@ -60,6 +60,9 @@ class Scrapper:
         for job in jobs:
             ref = format_reference(ref=job.job_ref)
             self.jobs[ref] = job
+            job_exists = await jobs_controller.get_job_by_reference(reference=job.job_ref)
+            if not job_exists:
+                job_ = await jobs_controller.create_job(job=job)
 
     # noinspection PyBroadException
     async def fetch_url(self, url: str) -> bytes | None:

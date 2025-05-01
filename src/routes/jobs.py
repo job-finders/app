@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for
 
-from src.routes import flask_error_handler
-from src.database.models import Job
+from src.authentication import user_details
+from src.database.models import Job, Role
+from src.database.models.users import User
 from src.main import scrapper
+from src.routes import flask_error_handler
 from src.routes.utils import (create_common_context, not_found, gone, TOWN_TO_PROVINCE, create_search_context,
                               sub_job_detail)
 
@@ -12,7 +14,8 @@ jobs_route = Blueprint('jobs', __name__)
 
 @jobs_route.get('/jobs-in/<string:location>')
 @flask_error_handler
-async def jobs_by_location(location: str):
+@user_details
+async def jobs_by_location(user: User,location: str):
     """
     Handles jobs by province or town.
     If the location is a known town, replace it with its parent province for consistent filtering.
@@ -50,7 +53,8 @@ async def jobs_by_location(location: str):
 
 @jobs_route.get('/jobs/category/<string:category>')
 @flask_error_handler
-async def category_jobs(category: str):
+@user_details
+async def category_jobs(user: User,category: str):
     """Render job search results by search term."""
     page = int(request.args.get('page', 1))
     response = await create_search_context(search_term=category, page=page)
@@ -61,7 +65,8 @@ async def category_jobs(category: str):
 
 @jobs_route.get('/jobs/<string:search_term>')
 @flask_error_handler
-async def job_search(search_term: str):
+@user_details
+async def job_search(user: User,search_term: str):
     """Render job search results by search term."""
     page = int(request.args.get('page', 1))
     response = await create_search_context(search_term=search_term, page=page)
@@ -72,7 +77,8 @@ async def job_search(search_term: str):
 
 @jobs_route.get('/search')
 @flask_error_handler
-async def search_bar():
+@user_details
+async def search_bar(user: User):
     """Render search results from a query submitted via search bar."""
     search_term = request.args.get('search_term')
     if not search_term:
@@ -86,16 +92,23 @@ async def search_bar():
 
 @jobs_route.get('/job/<string:reference>')
 @flask_error_handler
-async def job_detail(reference: str):
+@user_details
+async def job_detail(user: User, reference: str):
     """Display job details identified by job reference."""
+    if user and user.role == Role.SEEKER:
+        # Obtain Job Seeker Resume
+        pass
+
     job: Job = await scrapper.job_search(job_reference=reference)
+
     if isinstance(job, Job) and job.title.strip():
         return await sub_job_detail(job)
     return await gone(search_term=reference)
 
 @jobs_route.get('/search/job/<string:slug>')
 @flask_error_handler
-async def job_slug(slug: str):
+@user_details
+async def job_slug(user: User,slug: str):
     """Display job details identified by its slug."""
     job: Job = await scrapper.search_by_slug(slug=slug)
     if isinstance(job, Job) and job.title.strip():

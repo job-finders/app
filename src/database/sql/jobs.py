@@ -30,6 +30,10 @@ class JobsORM(Base):
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
 
     def __init__(self, **kwargs):
         # Initialize the ORM instance based on the Pydantic model
@@ -52,7 +56,7 @@ class JobsORM(Base):
             expiration_date=self.expiration_date
         )
 
-    def to_dict(self) -> dict[str, str | list | date]:
+    def to_dict(self) -> dict:
         return {
             "job_id": self.job_id,
             "search_term": self.search_term,
@@ -63,14 +67,11 @@ class JobsORM(Base):
             "salary": self.salary,
             "position": self.position,
             "location": self.location,
-            # Format dates to ISO strings
-            "posted_date": self.posted_date.isoformat(),
+            "posted_date": self.posted_date.isoformat() if self.posted_date else None,
             "updated_time": self.updated_time,
             "expires": self.expires,
             "job_ref": self.job_ref,
             "description": self.description,
-            # Convert to list
-            "desired_skills": self.desired_skills.split(",") if self.desired_skills else [],
-            # Use correct ORM field name
-            "expiration_date": self.expiration_date.isoformat()
+            "desired_skills": self.desired_skills,
+            "expiration_date": self.expiration_date.isoformat() if self.expiration_date else None
         }

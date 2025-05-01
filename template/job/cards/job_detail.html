@@ -166,9 +166,12 @@
                 <a href="{{ job.apply_url }}" rel="nofollow noreferrer" target="_blank"  class="btn btn-lg btn-info"><i class="ti-file"></i> Apply</a>
                 <hr>
             </div>
-<div class="card-footer">
-    {% include 'ats/tools_results_inline.html' %}
-</div>
+
+        <div class="card-footer">
+            {% if job %}
+                {% include 'ats/inline_ats_tool.html' %}
+            {% endif %}
+        </div>
             <!--adsense advert -->
             {% include 'adverts/horizontal.html' %}
             {% include affiliate_template %}

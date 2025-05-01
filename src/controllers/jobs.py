@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta
 
 from flask import Flask
@@ -27,13 +28,26 @@ class JobsController(Controllers):
             ]
 
     @error_handler
-    async def get_job_by_id(self, job_id: str) -> Job:
+    async def get_job_by_id(self, job_id: str) -> Job | None:
         """Find a job matching the job_id from database"""
         with self.get_session() as session:
             job_orm = session.get(JobsORM, job_id)
             if not job_orm:
-                raise ValueError(f"Job {job_id} not found")
+                return None
             return Job(**self._orm_to_job_dict(job_orm))
+
+    async def get_job_by_reference(self, reference: str) -> Job | None:
+        """
+
+        :param reference:
+        :return:
+        """
+        with self.get_session() as session:
+            job_orm = session.query(JobsORM).filter_by(job_ref=reference).first()
+            if not job_orm:
+                return None
+            return Job(**self._orm_to_job_dict(job_orm))
+
 
     @error_handler
     async def get_jobs_by_search_terms(self, search_term: str) -> list[Job]:
@@ -105,12 +119,21 @@ class JobsController(Controllers):
         with self.get_session() as session:
             # Convert Pydantic model to ORM-compatible dict
             job_data = job.dict()
-            job_data["desired_skills"] = ", ".join(job_data["desired_skills"])
+
+            # Handle optional fields and conversions
+            job_data["desired_skills"] = ", ".join(job_data.get("desired_skills", []))
+
+            # Ensure posted_date and expiration_date are set
+            if "posted_date" not in job_data or not job_data["posted_date"]:
+                job_data["posted_date"] = datetime.utcnow().date()
+            if "expiration_date" not in job_data or not job_data["expiration_date"]:
+                job_data["expiration_date"] = job_data["posted_date"] + timedelta(days=30)
+            if not job_data.get("job_id"):
+                job_data["job_id"] = str(uuid.uuid4())
 
             new_job_orm = JobsORM(**job_data)
             session.add(new_job_orm)
             session.commit()
-
             return Job(**self._orm_to_job_dict(new_job_orm))
 
     def _orm_to_job_dict(self, job_orm: JobsORM) -> dict:
@@ -126,8 +149,11 @@ class JobsController(Controllers):
         else:
             job_dict["desired_skills"] = []
 
+
         # Convert dates to string format
         job_dict["posted_date"] = job_orm.posted_date.strftime("%d %b %Y")
-        job_dict["expiration_date"] = job_orm.expiration_date.strftime("%d %b %Y")
+        job_dict["expiration_date"] = (
+            job_orm.expiration_date.strftime("%d %b %Y") if job_orm.expiration_date else None
+        )
 
         return job_dict
