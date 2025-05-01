@@ -1,0 +1,22 @@
+{% extends "layouts/page.html" %}
+
+{% block content %}
+<section class="container-fluid py-5">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white text-center">
+      <h2 class="card-title mb-0">ATS Keyword Tool</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-4">  .</p>
+          <form method="post" action="/contact">
+            <!-- Include CSRF protection if required by your backend -->
+
+            <div class="text-center">
+              <button type="submit" class="btn btn-primary px-4">Return Score</button>
+            </div>
+          </form>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

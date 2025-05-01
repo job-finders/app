@@ -14,7 +14,7 @@ from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
 from src.controllers.users import UsersController
 from src.controllers import StorageController, NotificationsController
 notifications_controller = NotificationsController()
-
+from src.controllers.ats_controller import ATSToolController
 # initializing models and controllers
 
 storage_controller = StorageController()
@@ -22,6 +22,7 @@ scrapper = Scrapper()
 junction_scrapper = JunctionScrapper(scrapper=scrapper)
 career_scrapper = CareerScrapper(scrapper=scrapper)
 users_controller = UsersController()
+ats_controller = ATSToolController()
 
 def create_app(config):
     """
@@ -52,6 +53,7 @@ def create_app(config):
         from src.routes.blog import blog_route
         from src.routes.users import users_route
         from src.routes.cron import cron_route
+        from src.routes.ats_tool import ats_tool_route
 
         # registering routes
 
@@ -61,6 +63,7 @@ def create_app(config):
         app.register_blueprint(blog_route)
         app.register_blueprint(users_route)
         app.register_blueprint(cron_route)
+        app.register_blueprint(ats_tool_route)
 
         # registering filters
         app.jinja_env.filters['title'] = format_title

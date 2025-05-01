@@ -1,50 +1,57 @@
 from pydantic import Field
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from functools import lru_cache
 
 
 class MySQLSettings(BaseSettings):
-    PRODUCTION_DB: str = Field(..., env="production_sql_db")
-    DEVELOPMENT_DB: str = Field(..., env="dev_sql_db")
+    PRODUCTION_DB: str = Field(..., alias="production_sql_db")
+    DEVELOPMENT_DB: str = Field(..., alias="dev_sql_db")
 
-    class Config:
-        env_file = '.env.developer'
-        env_file_encoding = 'utf-8'
+    model_config = SettingsConfigDict(
+        env_file=".env.developer",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 
 class ResendSettings(BaseSettings):
-    API_KEY: str = Field(..., env="RESEND_API_KEY")
-    from_: str = Field(default="norespond@jobfinders.site")
+    API_KEY: str = Field(..., alias="RESEND_API_KEY")
+    from_: str = "norespond@jobfinders.site"
 
-    class Config:
-        env_file = '.env.developer'
-        env_file_encoding = 'utf-8'
+    model_config = SettingsConfigDict(
+        env_file=".env.developer",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 
 class EmailSettings(BaseSettings):
-    RESEND: ResendSettings = ResendSettings()
+    RESEND: ResendSettings = Field(default_factory=ResendSettings)
 
-    class Config:
-        env_file = '.env.developer'
-        env_file_encoding = 'utf-8'
+    model_config = SettingsConfigDict(
+        env_file=".env.developer",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 
 class Settings(BaseSettings):
-    APP_NAME: str = Field(default='Job Finders')
-    LOGO_URL: str = Field(default="https://rental-manager.site/static/images/custom/logo.png")
-    SECRET_KEY: str = Field(..., env="SECRET_KEY")
-    CLIENT_SECRET: str = Field(..., env="CLIENT_SECRET")
-    DEVELOPMENT_SERVER_NAME: str = Field(default="DESKTOP-T9V7F59")
-    HOST_ADDRESSES: str = Field(..., env='HOST_ADDRESSES')
-    MYSQL_SETTINGS: MySQLSettings = MySQLSettings()
-    EMAIL_SETTINGS: EmailSettings = EmailSettings()
+    APP_NAME: str = "Job Finders"
+    LOGO_URL: str = "https://rental-manager.site/static/images/custom/logo.png"
+    SECRET_KEY: str
+    CLIENT_SECRET: str
+    DEVELOPMENT_SERVER_NAME: str = "DESKTOP-T9V7F59"
+    HOST_ADDRESSES: str
+    MYSQL_SETTINGS: MySQLSettings = Field(default_factory=MySQLSettings)
+    EMAIL_SETTINGS: EmailSettings = Field(default_factory=EmailSettings)
 
-    class Config:
-        env_file = '.env.developer'
-        env_file_encoding = 'utf-8'
+    model_config = SettingsConfigDict(
+        env_file=".env.developer",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 
+@lru_cache()
 def config_instance() -> Settings:
-    """
-    :return:
-    """
     return Settings()
