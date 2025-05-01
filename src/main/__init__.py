@@ -45,6 +45,7 @@ def create_app(config):
         junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
         # career_scrapper.init_app(app=app)
         users_controller.init_app(app=app)
+        ats_controller.init_app(app=app)
 
         # importing routes
         from src.routes.home import home_route
