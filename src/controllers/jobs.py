@@ -11,6 +11,7 @@ from src.database.sql.jobs import JobsORM
 
 
 class JobsController(Controllers):
+    # TODO make this job controller support the full functionality of a job site
     def __init__(self):
         super().__init__()
 
