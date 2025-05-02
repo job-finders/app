@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Date, DateTime, Boolean, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import Column, String, Date, DateTime, Boolean, ForeignKey, Text, UniqueConstraint, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from src.database.constants import ID_LEN, NAME_LEN
@@ -15,8 +15,8 @@ class JobSeekerCVORM(Base):
     user_uid = Column(String(36), nullable=False, index=True)
     professional_title = Column(String(255), nullable=False)
     summary = Column(Text, nullable=True)
-    skills = Column(JSONB, default=[])
-    portfolio_links = Column(JSONB, default=[])
+    skills = Column(JSON, default=[])
+    portfolio_links = Column(JSON, default=[])
     resume_file_url = Column(String(255), nullable=True)
     profile_image_url = Column(String(255), nullable=True)
     location = Column(String(255), nullable=True)  # Added location
@@ -78,6 +78,16 @@ class ExperienceORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="experience")
 
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.create(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
 
 class EducationORM(Base):
     __tablename__ = 'cv_education'
@@ -93,6 +103,15 @@ class EducationORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="education")
 
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.create(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
 
 class CertificationORM(Base):
     __tablename__ = 'cv_certifications'
@@ -107,6 +126,15 @@ class CertificationORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="certifications")
 
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.create(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
 
 class LanguageORM(Base):
     __tablename__ = 'cv_languages'
@@ -118,6 +146,15 @@ class LanguageORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="languages")
 
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.create(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
 
 class ProjectORM(Base):
     __tablename__ = 'cv_projects'
@@ -126,10 +163,21 @@ class ProjectORM(Base):
     cv_id = Column(String(ID_LEN), ForeignKey('jobseeker_cvs.cv_id'), index=True)
     title = Column(String(NAME_LEN))
     description = Column(Text)
-    technologies = Column(JSONB, default=[])
+    technologies = Column(JSON, default=[])
     link = Column(String(255), nullable=True)
 
     cv = relationship("JobSeekerCVORM", back_populates="projects")
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.create(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
 
 class PublicationORM(Base):
     __tablename__ = 'cv_publications'
@@ -142,6 +190,16 @@ class PublicationORM(Base):
     link = Column(String(255), nullable=True)
 
     cv = relationship("JobSeekerCVORM", back_populates="publications")
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.create(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
 
 
 class AwardORM(Base):
@@ -156,6 +214,16 @@ class AwardORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="awards")
 
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.create(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
 
 class CustomSectionORM(Base):
     __tablename__ = 'cv_custom_sections'
@@ -163,9 +231,19 @@ class CustomSectionORM(Base):
     id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
     cv_id = Column(String(ID_LEN), ForeignKey('jobseeker_cvs.cv_id'), index=True)
     title = Column(String(NAME_LEN))
-    content = Column(JSONB)  # Can be text or list
+    content = Column(JSON)  # Can be text or list
 
     cv = relationship("JobSeekerCVORM", back_populates="custom_sections")
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.create(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
 
 
 class SavedCVORM(Base):
@@ -173,7 +251,7 @@ class SavedCVORM(Base):
 
     id = Column(String(ID_LEN), primary_key=True)
     employer_uid = Column(String(ID_LEN), ForeignKey("users.uid"), nullable=False, index=True)
-    cv_id = Column(String(ID_LEN), ForeignKey("job_seeker_cvs.id"), nullable=False, index=True)
+    cv_id = Column(String(ID_LEN), ForeignKey("jobseeker_cvs.cv_id"), nullable=False, index=True)
     saved_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
@@ -182,3 +260,13 @@ class SavedCVORM(Base):
 
     def __bool__(self):
         return bool(self.id) and bool(self.cv_id)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.create(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
