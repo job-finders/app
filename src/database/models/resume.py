@@ -80,18 +80,26 @@ class CustomSection(BaseModel):
     title: str
     content: Union[str, List[str]]  # Supports plain text or bullet lists
 
+class SavedCV(BaseModel):
+    id: str
+    employer_uid: str
+    cv_id: str
+    saved_at: datetime = Field(default_factory=datetime.utcnow)
 
-# Main JobSeeker CV Model
+    class Config:
+        orm_mode = True
+
+
 class JobSeekerCV(BaseModel):
     cv_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_uid: str  # FK to User.uid
     professional_title: str
     summary: Optional[str] = None
-    location: Optional[str] = None
-    phone : Optional[str] = None
-    website : Optional[str] = None
-    linkedin : Optional[str] = None
-    github : Optional[str] = None
+    location: Optional[str] = None  # New field for location
+    phone: Optional[str] = None  # New field for phone
+    website: Optional[str] = None  # New field for website
+    linkedin: Optional[str] = None  # New field for linkedin
+    github: Optional[str] = None  # New field for github
     skills: List[str]
     experience: List[Experience] = []
     education: List[Education] = []
@@ -120,3 +128,10 @@ class JobSeekerCV(BaseModel):
         if not v or not all(s.strip() for s in v):
             raise ValueError("At least one valid skill must be provided")
         return v
+
+    class Config:
+        # Allow the model to use `datetime` fields as ISO format strings when serialized
+        use_enum_values = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()  # Ensure the datetime fields are serialized in ISO format
+        }

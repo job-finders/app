@@ -1,4 +1,5 @@
-from sqlalchemy import Column, String, Date, DateTime, Boolean, ForeignKey, Text
+import uuid
+from sqlalchemy import Column, String, Date, DateTime, Boolean, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from src.database.constants import ID_LEN, NAME_LEN
@@ -10,14 +11,19 @@ from datetime import datetime
 class JobSeekerCVORM(Base):
     __tablename__ = 'jobseeker_cvs'
 
-    cv_id = Column(String(ID_LEN), primary_key=True, unique=True, index=True)
-    user_uid = Column(String(ID_LEN), ForeignKey('users.uid'), nullable=False, index=True)
-    professional_title = Column(String(NAME_LEN), nullable=False)
+    cv_id = Column(String(36), primary_key=True, unique=True, index=True)
+    user_uid = Column(String(36), nullable=False, index=True)
+    professional_title = Column(String(255), nullable=False)
     summary = Column(Text, nullable=True)
     skills = Column(JSONB, default=[])
     portfolio_links = Column(JSONB, default=[])
     resume_file_url = Column(String(255), nullable=True)
     profile_image_url = Column(String(255), nullable=True)
+    location = Column(String(255), nullable=True)  # Added location
+    phone = Column(String(255), nullable=True)  # Added phone
+    website = Column(String(255), nullable=True)  # Added website
+    linkedin = Column(String(255), nullable=True)  # Added linkedin
+    github = Column(String(255), nullable=True)  # Added github
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships (if needed)
@@ -50,6 +56,11 @@ class JobSeekerCVORM(Base):
             "portfolio_links": self.portfolio_links,
             "resume_file_url": self.resume_file_url,
             "profile_image_url": self.profile_image_url,
+            "location": self.location,
+            "phone": self.phone,
+            "website": self.website,
+            "linkedin": self.linkedin,
+            "github": self.github,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
 
@@ -155,3 +166,19 @@ class CustomSectionORM(Base):
     content = Column(JSONB)  # Can be text or list
 
     cv = relationship("JobSeekerCVORM", back_populates="custom_sections")
+
+
+class SavedCVORM(Base):
+    __tablename__ = "saved_cvs"
+
+    id = Column(String(ID_LEN), primary_key=True)
+    employer_uid = Column(String(ID_LEN), ForeignKey("users.uid"), nullable=False, index=True)
+    cv_id = Column(String(ID_LEN), ForeignKey("job_seeker_cvs.id"), nullable=False, index=True)
+    saved_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("employer_uid", "cv_id", name="uq_employer_cv"),
+    )
+
+    def __bool__(self):
+        return bool(self.id) and bool(self.cv_id)

@@ -26,6 +26,7 @@ class ResendSettings(BaseSettings):
 
 
 class EmailSettings(BaseSettings):
+    ADMIN_EMAIL: str = Field(default="admin@jobfinders.site")
     RESEND: ResendSettings = Field(default_factory=ResendSettings)
 
     model_config = SettingsConfigDict(
