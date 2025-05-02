@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, send_file
 from pydantic import ValidationError
 
+from src.authentication import user_details
+from src.database.models.users import User
 from src.routes import flask_error_handler
 from src.database.models.notifications import CreateNotifications
 from src.database.models.seo import create_tags
@@ -33,7 +35,8 @@ async def serve_logo(job_ref: str):
 
 @home_route.get('/')
 @flask_error_handler
-async def get_home():
+@user_details
+async def get_home(user: User):
     """Render home page with a default search term."""
     search_term = "home"
     response = await create_context(search_term)
@@ -43,7 +46,8 @@ async def get_home():
 
 @home_route.get('/about')
 @flask_error_handler
-async def about():
+@user_details
+async def about(user: User):
     """Render the about page."""
     seo = await create_tags(search_term="about")
     return render_template('about.html', seo=seo, term="about")
@@ -51,7 +55,8 @@ async def about():
 
 @home_route.get('/contact')
 @flask_error_handler
-async def contact():
+@user_details
+async def contact(user: User):
     """Render the contact page."""
     seo = await create_tags(search_term="contact")
     return render_template('contact.html', seo=seo, term="contact")
@@ -59,7 +64,8 @@ async def contact():
 
 @home_route.get('/terms')
 @flask_error_handler
-async def terms():
+@user_details
+async def terms(user: User):
     """Render the terms page."""
     seo = await create_tags(search_term="terms")
     return render_template('terms.html', seo=seo, term="terms")
@@ -67,7 +73,8 @@ async def terms():
 
 @home_route.get('/sister-sites')
 @flask_error_handler
-async def sister_sites():
+@user_details
+async def sister_sites(user: User):
     """Render the sister sites page."""
     seo = await create_tags(search_term="sister-sites")
     return render_template('sisters.html', seo=seo, term="sister-sites")
@@ -75,7 +82,8 @@ async def sister_sites():
 
 @home_route.get('/faq')
 @flask_error_handler
-async def faq():
+@user_details
+async def faq(user: User):
     """Render the FAQ page."""
     seo = await create_tags(search_term="FAQ")
     return render_template('faq.html', seo=seo, term="FAQ")
@@ -83,7 +91,8 @@ async def faq():
 
 @home_route.get('/linkedin-learning')
 @flask_error_handler
-async def linkedin_learning():
+@user_details
+async def linkedin_learning(user: User):
     """Render the LinkedIn Learning page."""
     seo = await create_tags(search_term="LinkedIn Learning")
     return render_template('linkedin.html', seo=seo, term="LinkedIn Learning")
@@ -91,7 +100,8 @@ async def linkedin_learning():
 
 @home_route.post('/job-notifications/<string:search_term>')
 @flask_error_handler
-async def email_me(search_term: str):
+@user_details
+async def email_me(user: User, search_term: str):
     """Process job notification email subscription."""
     page = int(request.args.get('page', 1))
     try:
@@ -119,7 +129,8 @@ async def email_me(search_term: str):
 
 @home_route.get('/email-verification/<string:verification_id>')
 @flask_error_handler
-async def verify_email(verification_id: str):
+@user_details
+async def verify_email(user: User, verification_id: str):
     """Verify email for job notifications."""
     email = request.args.get("email")
     if not email:
@@ -136,7 +147,8 @@ async def verify_email(verification_id: str):
 
 @home_route.get('/apply/<string:job_ref>')
 @flask_error_handler
-async def apply_for_job(job_ref: str):
+@user_details
+async def apply_for_job(user: User, job_ref: str):
     """Redirect to external job application page."""
     job = scrapper.jobs.get(job_ref)
     return redirect_apply_page(job)

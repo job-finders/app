@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Response, make_response
 
+from src.authentication import login_required, user_details
 from src.database.models.users import User
 from src.database.models import Role
 from src.main import users_controller
@@ -18,7 +19,13 @@ async def create_response(redirect_url, message=None, category=None) -> Response
 
 
 @auth_route.route("/login", methods=["GET", "POST"])
-async def login():
+@user_details
+async def login(user: User):
+
+    if user:
+        flash("you are already logged in", "success")
+        return redirect(url_for("home.get_home"))
+
     if request.method == "POST":
         email = request.form.get("email")
         password = request.form.get("password")
@@ -46,7 +53,8 @@ async def login():
 
 
 @auth_route.route("/logout")
-async def logout():
+@login_required
+async def logout(user: User):
     # Clear the session and the 'auth' cookie
     session.clear()
     response = make_response(redirect(url_for("auth.login")))
