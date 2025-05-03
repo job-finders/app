@@ -1,6 +1,8 @@
 import uuid
-from datetime import date
-from sqlalchemy import Column, String, Date, Text, inspect
+from datetime import datetime
+
+from sqlalchemy import Column, String, Date, Text, inspect, DateTime, UniqueConstraint, ForeignKey
+from sqlalchemy.orm import relationship
 
 from src.database.constants import NAME_LEN, ID_LEN
 from src.database.sql import Base, engine
@@ -74,4 +76,72 @@ class JobsORM(Base):
             "description": self.description,
             "desired_skills": self.desired_skills,
             "expiration_date": self.expiration_date.isoformat() if self.expiration_date else None
+        }
+
+class SavedJobORM(Base):
+    __tablename__ = 'saved_jobs'
+
+    user_id = Column(String(ID_LEN), primary_key=True)
+    job_id = Column(String(ID_LEN), primary_key=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "user_id": self.user_id,
+            "job_id": self.job_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class JobApplicationORM(Base):
+    __tablename__ = 'job_applications'
+
+    application_id = Column(String(36), primary_key=True, index=True)
+    user_id = Column(String(36), index=True)
+    job_id = Column(String(36), index=True)
+    applied_date = Column(DateTime, default=datetime.utcnow)
+    status = Column(String(50), default='pending')  # pending, accepted, rejected
+    method = Column(String(50), default='website')      # e.g., "website", "email"
+    notes = Column(String(255), nullable=True)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            application_id=kwargs.get('application_id', str(uuid.uuid4())),
+            user_id=kwargs['user_id'],
+            job_id=kwargs['job_id'],
+            applied_date=kwargs.get('applied_date', datetime.utcnow()),
+            status=kwargs.get('status', 'pending'),
+            method=kwargs.get('method'),
+            notes=kwargs.get('notes')
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "application_id": self.application_id,
+            "user_id": self.user_id,
+            "job_id": self.job_id,
+            "applied_date": self.applied_date.isoformat() if self.applied_date else None,
+            "status": self.status,
+            "method": self.method,
+            "notes": self.notes
         }

@@ -16,8 +16,8 @@ jobseeker_route = Blueprint('jobseekers', __name__)
 
 
 @jobseeker_route.route('/jobseeker/dashboard', methods=['GET'])
-@login_required
 @flask_error_handler
+@login_required
 async def dashboard(user: User):
     """
 
@@ -27,53 +27,53 @@ async def dashboard(user: User):
     user_cvs = await resume_controller.list_cvs_for_user(user_uid=user.uid)
     saved_jobs = []
     seeker_stats = dict(count=len(user_cvs),cv_uploaded=bool(user_cvs), saved_jobs=saved_jobs)
-    context = dict(user=user, seeker_stats=seeker_stats)
+    context = dict(current_user=user, seeker_stats=seeker_stats)
     return render_template("jobseekers/dashboard.html", **context)
 
 
 @jobseeker_route.route('/jobseeker/apply', methods=['GET'])
-@login_required
 @flask_error_handler
+@login_required
 async def apply(user: User):
     context = dict(user=user)
     return render_template("jobseekers/apply.html", **context)
 
 
 @jobseeker_route.route('/jobseeker/saved-jobs', methods=['GET'])
-@login_required
 @flask_error_handler
+@login_required
 async def saved_jobs(user: User):
     context = dict(user=user)
     return render_template("jobseekers/saved_jobs.html", **context)
 
 
 @jobseeker_route.route('/jobseeker/upload-cv', methods=['GET', 'POST'])
-@login_required
 @flask_error_handler
+@login_required
 async def upload_cv(user: User):
     context = dict(user=user)
     return render_template("jobseekers/upload_cv.html", **context)
 
 
 @jobseeker_route.route('/jobseeker/profile', methods=['GET', 'POST'])
-@login_required
 @flask_error_handler
+@login_required
 async def profile(user: User):
     context = dict(user=user)
     return render_template("jobseekers/profile.html", **context)
 
 
 @jobseeker_route.route('/jobseeker/applications', methods=['GET'])
-@login_required
 @flask_error_handler
+@login_required
 async def applications(user: User):
     context = dict(user=user)
     return render_template("jobseekers/applications.html", **context)
 
 
 @jobseeker_route.route('/jobseeker/notifications', methods=['GET'])
-@login_required
 @flask_error_handler
+@login_required
 async def notifications(user: User):
     context = dict(user=user)
     return render_template("jobseekers/notifications.html", **context)

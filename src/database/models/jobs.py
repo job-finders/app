@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, date
 from pydantic import BaseModel, Field, field_validator
 from src.utils import format_reference
@@ -72,3 +73,26 @@ class Job(BaseModel):
             "desired_skills": self.desired_skills,
             "expiration_date": self.date_expires
         }
+
+class SavedJob(BaseModel):
+    user_id: str
+    job_id: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Config:
+        from_attributes = True
+
+
+
+class JobApplication(BaseModel):
+    application_id: str = Field(default_factory=str(uuid.uuid4()))
+    user_id: str
+    job_id: str
+    applied_date: datetime = Field(default_factory=datetime.utcnow)
+    status: str = Field(default='pending')
+    method: str | None = Field(default="website")  # e.g.,"website", "email", "walk-in", etc.
+    notes: str | None = None
+
+    class Config:
+        orm_mode = True
+

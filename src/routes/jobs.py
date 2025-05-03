@@ -121,3 +121,10 @@ async def job_slug(user: User,slug: str):
 @user_details
 async def categories(user: User):
     pass
+
+
+@jobs_route.get('/jobs/ai-based-search')
+@flask_error_handler
+@user_details
+async def assisted_search(user: User):
+    pass
