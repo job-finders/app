@@ -11,7 +11,7 @@ from src.routes import flask_error_handler
 from src.routes.utils import (create_common_context, not_found, gone, TOWN_TO_PROVINCE, create_search_context,
                               sub_job_detail)
 
-jobseeker_route = Blueprint('jobseeker', __name__)
+jobseeker_route = Blueprint('jobseekers', __name__)
 
 
 
@@ -66,3 +66,11 @@ async def profile(user: User):
 async def applications(user: User):
     context = dict(user=user)
     return render_template("jobseekers/applications.html", **context)
+
+
+@jobseeker_route.route('/jobseeker/notifications', methods=['GET'])
+@login_required
+@flask_error_handler
+async def notifications(user: User):
+    context = dict(user=user)
+    return render_template("jobseekers/notifications.html", **context)

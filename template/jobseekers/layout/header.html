@@ -14,9 +14,9 @@
 
                 <!-- Right Side (Navigation Buttons) -->
                 <div class="d-flex align-items-center">
-                    <a href="{{ url_for('jobs.browse') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Find Jobs</a>
-                    <a href="{{ url_for('cvs.submit') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Submit CV</a>
-                    <a href="{{ url_for('applications.index') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">My Applications</a>
+                    <a href="{{ url_for('jobs.categories') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Find Jobs</a>
+                    <a href="{{ url_for('jobseekers.cv_upload') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Submit CV</a>
+                    <a href="{{ url_for('jobseekers.applications') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">My Applications</a>
                     <a href="https://blog.jobfinders.site" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Blog</a>
                     <a href="{{ url_for('home.contact') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Contact</a>
                     <a href="{{ url_for('home.about') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">About</a>
@@ -26,7 +26,7 @@
                         <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">Login</a>
                         <a href="{{ url_for('auth.subscribe') }}" class="btn btn-sm btn-primary font-weight-bold text-white mx-1">Create Account</a>
                     {% else %}
-                        <a href="{{ url_for('profile.view') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">My Profile</a>
+                        <a href="{{ url_for('jobseekers.profile') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">My Profile</a>
                         <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-danger font-weight-bold text-white mx-1">Logout</a>
                     {% endif %}
                 </div>

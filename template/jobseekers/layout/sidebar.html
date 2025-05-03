@@ -5,37 +5,37 @@
         <li class="label">JobSeeker Dashboard</li>
 
         <li>
-          <a href="{{ url_for('dashboard.index') }}">
+          <a href="{{ url_for('jobseekers.dashboard') }}">
             <i class="ti-home"></i> Dashboard
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('jobs.browse') }}">
+          <a href="{{ url_for('jobs.categories') }}">
             <i class="ti-briefcase"></i> Find Jobs
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('applications.index') }}">
+          <a href="{{ url_for('jobseekers.applications') }}">
             <i class="ti-check-box"></i> My Applications
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('cv.upload') }}">
+          <a href="{{ url_for('jobseekers.upload_cv') }}">
             <i class="ti-upload"></i> Upload CV
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('profile.view') }}">
+          <a href="{{ url_for('jobseekers.profile') }}">
             <i class="ti-user"></i> My Profile
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('notifications.index') }}">
+          <a href="{{ url_for('jobseekers.notifications') }}">
             <i class="ti-bell"></i> Notifications
           </a>
         </li>

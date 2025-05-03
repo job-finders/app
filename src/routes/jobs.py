@@ -114,3 +114,10 @@ async def job_slug(user: User,slug: str):
     if isinstance(job, Job) and job.title.strip():
         return await sub_job_detail(job)
     return await gone(search_term=slug)
+
+
+@jobs_route.get('/jobs/categories')
+@flask_error_handler
+@user_details
+async def categories(user: User):
+    pass
