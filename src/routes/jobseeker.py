@@ -6,7 +6,7 @@ from src.authentication import login_required
 from src.authentication import user_details
 from src.database.models import Job, Role
 from src.database.models.users import User
-from src.main import scrapper
+from src.main import scrapper, resume_controller
 from src.routes import flask_error_handler
 from src.routes.utils import (create_common_context, not_found, gone, TOWN_TO_PROVINCE, create_search_context,
                               sub_job_detail)
@@ -24,7 +24,10 @@ async def dashboard(user: User):
     :param user:
     :return:
     """
-    context = dict(user=user)
+    user_cvs = await resume_controller.list_cvs_for_user(user_uid=user.uid)
+    saved_jobs = []
+    seeker_stats = dict(count=len(user_cvs),cv_uploaded=bool(user_cvs), saved_jobs=saved_jobs)
+    context = dict(user=user, seeker_stats=seeker_stats)
     return render_template("jobseekers/dashboard.html", **context)
 
 

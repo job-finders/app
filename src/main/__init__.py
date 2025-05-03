@@ -1,5 +1,6 @@
 from flask import Flask
 
+
 from src.utils import template_folder, static_folder, format_title, format_description, bootstrap_database
 from src.emailer import SendMail
 from src.controllers.encryptor import Encryptor
@@ -22,7 +23,7 @@ from src.controllers.notifications_controller import NotificationsController
 
 notifications_controller = NotificationsController()
 from src.controllers.ats_controller import ATSToolController
-
+from src.controllers.resume_controller import ResumeController
 
 # initializing models and controllers
 
@@ -30,6 +31,8 @@ storage_controller = StorageController()
 scrapper = Scrapper()
 users_controller = UsersController()
 ats_controller = ATSToolController()
+
+resume_controller = ResumeController()
 
 junction_scrapper = JunctionScrapper(scrapper=scrapper)
 career_scrapper = CareerScrapper(scrapper=scrapper)

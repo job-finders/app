@@ -84,7 +84,7 @@
     {% if current_user and current_user.is_authenticated %}
       <a href="{{ url_for('auth.logout') }}" class="btn btn-danger btn-lg me-2">Logout</a>
         {% if current_user.role == 'seeker' %}
-            <a href="{{ url_for('jobseeker.dashboard') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">My Profile</a>
+            <a href="{{ url_for('jobseekers.dashboard') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">My Profile</a>
         {% endif %}
         {% if current_user.role == 'employer' %}
             <a href="#" class="btn btn-primary btn-lg me-2 font-weight-bold mx-1">My Profile</a>

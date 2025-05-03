@@ -19,7 +19,7 @@
     <div class="card shadow-sm">
       <div class="card-body text-center">
         <h5 class="card-title">Applications</h5>
-        <p class="display-4 text-success">{{ stats.applications }}</p>
+        <p class="display-4 text-success">{{ seeker_stats.applications }}</p>
         <small class="text-muted">Jobs you've applied for</small>
       </div>
     </div>
@@ -28,7 +28,7 @@
     <div class="card shadow-sm">
       <div class="card-body text-center">
         <h5 class="card-title">Saved Jobs</h5>
-        <p class="display-4 text-info">{{ stats.saved_jobs }}</p>
+        <p class="display-4 text-info">{{ seeker_stats.saved_jobs }}</p>
         <small class="text-muted">Jobs saved for later</small>
       </div>
     </div>
@@ -37,7 +37,7 @@
     <div class="card shadow-sm">
       <div class="card-body text-center">
         <h5 class="card-title">CV Status</h5>
-        {% if stats.cv_uploaded %}
+        {% if seeker_stats.cv_uploaded %}
         <p class="text-success font-weight-bold">Uploaded</p>
         {% else %}
         <p class="text-danger font-weight-bold">Not Uploaded</p>
