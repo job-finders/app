@@ -39,7 +39,8 @@ async def serve_logo(job_ref: str):
 async def get_home(user: User):
     """Render home page with a default search term."""
     search_term = "home"
-    response = await create_context(search_term)
+    home_logger.info(f"User Details: {user}")
+    response = await create_context(user=user, search_term=search_term)
     if response is None:
         return await not_found(search_term)
     return response
@@ -50,7 +51,8 @@ async def get_home(user: User):
 async def about(user: User):
     """Render the about page."""
     seo = await create_tags(search_term="about")
-    return render_template('about.html', seo=seo, term="about")
+    context = dict(current_user=user,seo=seo,term='About')
+    return render_template('about.html', **context)
 
 
 @home_route.get('/contact')
@@ -59,7 +61,8 @@ async def about(user: User):
 async def contact(user: User):
     """Render the contact page."""
     seo = await create_tags(search_term="contact")
-    return render_template('contact.html', seo=seo, term="contact")
+    context = dict(current_user=user, seo=seo, term='Contact Us')
+    return render_template('contact.html', **context)
 
 
 @home_route.get('/terms')
@@ -68,7 +71,8 @@ async def contact(user: User):
 async def terms(user: User):
     """Render the terms page."""
     seo = await create_tags(search_term="terms")
-    return render_template('terms.html', seo=seo, term="terms")
+    context = dict(current_user=user, seo=seo, term='Privacy Policy | Terms & Conditions')
+    return render_template('terms.html', **context)
 
 
 @home_route.get('/sister-sites')
@@ -77,7 +81,8 @@ async def terms(user: User):
 async def sister_sites(user: User):
     """Render the sister sites page."""
     seo = await create_tags(search_term="sister-sites")
-    return render_template('sisters.html', seo=seo, term="sister-sites")
+    context = dict(current_user=user, seo=seo, term='Sister Websites')
+    return render_template('sisters.html', **context)
 
 
 @home_route.get('/faq')
@@ -86,7 +91,8 @@ async def sister_sites(user: User):
 async def faq(user: User):
     """Render the FAQ page."""
     seo = await create_tags(search_term="FAQ")
-    return render_template('faq.html', seo=seo, term="FAQ")
+    context = dict(current_user=user, seo=seo, term='FAQ| Frequently Asked Questions')
+    return render_template('faq.html', **context)
 
 
 @home_route.get('/linkedin-learning')
@@ -95,7 +101,8 @@ async def faq(user: User):
 async def linkedin_learning(user: User):
     """Render the LinkedIn Learning page."""
     seo = await create_tags(search_term="LinkedIn Learning")
-    return render_template('linkedin.html', seo=seo, term="LinkedIn Learning")
+    context = dict(current_user=user, seo=seo, term='LinkedIn Learning')
+    return render_template('linkedin.html', **context)
 
 
 @home_route.post('/job-notifications/<string:search_term>')

@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     LOGO_URL: str = "https://rental-manager.site/static/images/custom/logo.png"
     SECRET_KEY: str
     CLIENT_SECRET: str
-    DEVELOPMENT_SERVER_NAME: str = "DESKTOP-T9V7F59"
+    IS_DEVELOPMENT_SERVER: bool = Field(..., alias="IS_DEVELOPMENT_SERVER")
     HOST_ADDRESSES: str
     MYSQL_SETTINGS: MySQLSettings = Field(default_factory=MySQLSettings)
     EMAIL_SETTINGS: EmailSettings = Field(default_factory=EmailSettings)

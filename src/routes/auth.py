@@ -1,14 +1,16 @@
 from datetime import datetime, timedelta
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Response, make_response
+from pydantic.v1 import EmailStr
 
+from src.logger import init_logger
 from src.authentication import login_required, user_details
 from src.database.models.users import User
 from src.database.models import Role
 from src.main import users_controller
 
 auth_route = Blueprint("auth", __name__, template_folder="templates")
-
+auth_logger = init_logger('auth_logger')
 
 async def create_response(redirect_url, message=None, category=None) -> Response:
     response = make_response(redirect(redirect_url))
@@ -30,8 +32,10 @@ async def login(user: User):
         email = request.form.get("email")
         password = request.form.get("password")
         remember_me = request.form.get("remember_me")
-        thirty_days = 0
-        thirty_minutes = 0
+
+        thirty_minutes = 30
+        thirty_days = 30 * 24 * 60  # 30 days × 24 hours × 60 minutes
+
         REMEMBER_ME_DELAY = thirty_days if remember_me else thirty_minutes
 
         user = await users_controller.login_user(email=email, password=password)
@@ -47,7 +51,7 @@ async def login(user: User):
 
         flash("Login successful", "success")
 
-        return redirect(url_for("home.get_home"))
+        return response
 
     return render_template("login.html")
 
@@ -91,14 +95,16 @@ async def subscribe():
         return redirect(request.referrer or url_for("home.get_home"))
 
     # Create and store the user
+    email = EmailStr(email)
     user_data = User.create(
         name='John Doe',
         email=email,
         password=password,
         role=role
     )
+    auth_logger.info(f"User Data: {user_data}")
     user = await users_controller.create_user(user_data)
-
+    auth_logger.info(f"User: {user}")
     # Automatically log the user in
     response = make_response(redirect(url_for("home.get_home")))
     expiration = datetime.utcnow() + timedelta(minutes=30)

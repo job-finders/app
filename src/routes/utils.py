@@ -6,6 +6,7 @@ from pathlib import Path
 import requests
 from flask import render_template, redirect, url_for
 
+from src.database.models.users import User
 from src.database.models import Job
 from src.database.models.seo import create_seo_tags_for_job, create_tags
 from src.logger import init_logger
@@ -283,10 +284,11 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
         current_year=current_year
     )
 
-async def create_context(search_term: str, page: int = 1, per_page: int = 10):
+async def create_context(user:User, search_term: str, page: int = 1, per_page: int = 10):
     """
     Create context for jobs strictly matching the search term in the job record.
 
+    :param user:
     :param search_term: The search term.
     :param page: Page number.
     :param per_page: Number of jobs per page.
@@ -299,6 +301,12 @@ async def create_context(search_term: str, page: int = 1, per_page: int = 10):
     jobs_filtered = [job for job in scrapper.jobs.values() if job.search_term.casefold() == search_term.casefold()]
     context = await create_common_context(search_term=search_term, job_list=jobs_filtered,
                                           page=page, per_page=per_page)
+    if user:
+        context.update(current_user=user)
+    else:
+        context.update(current_user=None)
+
+
     if search_term == "home":
         return render_template('index.html', **context)
     elif search_term in scrapper.search_terms:

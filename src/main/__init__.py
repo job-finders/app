@@ -70,6 +70,7 @@ def create_app(config):
         from src.routes.seo import seo_route
         from src.routes.blog import blog_route
         from src.routes.users import users_route
+        from src.routes.jobseeker import jobseeker_route
         from src.routes.cron import cron_route
         from src.routes.ats_tool import ats_tool_route
 
@@ -80,7 +81,10 @@ def create_app(config):
         app.register_blueprint(jobs_route)
         app.register_blueprint(seo_route)
         app.register_blueprint(blog_route)
+
         app.register_blueprint(users_route)
+        app.register_blueprint(jobseeker_route)
+
         app.register_blueprint(cron_route)
         app.register_blueprint(ats_tool_route)
 

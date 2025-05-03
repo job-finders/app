@@ -1,11 +1,12 @@
 import re
-from datetime import datetime
-from pydantic import BaseModel, validator, Field, EmailStr
-from typing import List, Optional
-from src.utils import format_reference  # assuming this is your own utility function
-from src.main import encryptor
-from datetime import datetime
 import uuid
+from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field, EmailStr, field_validator
+
+from src.main import encryptor
+from src.utils import format_reference  # assuming this is your own utility function
 
 
 class Roles(BaseModel):
@@ -15,21 +16,16 @@ class Roles(BaseModel):
     permissions: List[str] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    @validator('id', pre=True, always=True)
+    @field_validator('id')
     def format_id(cls, v):
         return format_reference("role") if v is None else v
 
-    @validator('name')
+    @field_validator('name')
     def name_must_be_alphanumeric(cls, v):
         if not re.match(r"^[a-zA-Z0-9_\- ]+$", v):
             raise ValueError("Role name must be alphanumeric with optional dashes, underscores, and spaces")
         return v
 
-    @validator('permissions', each_item=True)
-    def permissions_must_be_valid_strings(cls, v):
-        if not isinstance(v, str) or not v.strip():
-            raise ValueError("Each permission must be a non-empty string")
-        return v
 
     @classmethod
     def default_roles(cls) -> List["Roles"]:
@@ -52,16 +48,23 @@ class User(BaseModel):
     email: EmailStr
     password_hash: str
     role: str
-    is_active: bool = True
+    is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    @validator('name')
+    def __bool__(self):
+        return bool(self.password_hash)
+
+    @property
+    def is_authenticated(self):
+        return self.is_active
+
+    @field_validator('name')
     def name_must_be_valid(cls, v):
         if not v.strip():
             raise ValueError("Name cannot be empty")
         return v
 
-    @validator('role')
+    @field_validator('role')
     def role_must_be_valid(cls, v):
         allowed_roles = {'admin', 'employer', 'seeker'}
         if v not in allowed_roles:
@@ -82,3 +85,4 @@ class User(BaseModel):
         """
         hashed = encryptor.create_hash(password)
         return cls(name=name, email=email, password_hash=hashed, role=role)
+

@@ -19,12 +19,12 @@ class AppLogger:
 
 
 @functools.lru_cache
-def init_logger(name: str = "eod-stock-api"):
+def init_logger(name: str = "jobfinders.site"):
     """
         should include a future version which uses azure monitor to create log messages
     :param name:
     :return:
     """
-    is_development = socket.gethostname() == config_instance().DEVELOPMENT_SERVER_NAME
+    is_development = config_instance().IS_DEVELOPMENT_SERVER
     logger = AppLogger(name=name, is_file_logger=not is_development, log_level=logging.INFO)
     return logger.logger

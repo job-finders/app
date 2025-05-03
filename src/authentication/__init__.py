@@ -20,6 +20,7 @@ async def get_user_details(uid: str) -> User:
     with Session() as session:
         # Perform the query to retrieve the user based on the uid
         user = session.query(UserORM).filter(UserORM.uid == uid).first()
+        auth_logger.info(f"Is the Authericator able to get user details : {user.to_dict()}")
         return User(**user.to_dict()) if user else None
 
 
@@ -40,7 +41,7 @@ def login_required(route_function):
                 _mess = f'Error making request please try again later {str(e)}'
                 flash(message=_mess, category="danger")
                 return redirect(url_for('home.get_home'))
-        return redirect(url_for('auth.get_auth'))  # Redirect to login page if not logged in
+        return redirect(url_for('auth.login'))  # Redirect to login page if not logged in
 
     return decorated_function
 
@@ -102,6 +103,7 @@ def user_details(route_function):
     @wraps(route_function)
     async def decorated_function(*args, **kwargs):
         uid = request.cookies.get('auth')
+        auth_logger.info(f"Found UID Cookie: {uid}")
         user: User | None = await get_user_details(uid=uid) if uid else None
         return await route_function(user, *args, **kwargs)
 

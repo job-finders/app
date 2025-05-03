@@ -18,7 +18,7 @@ class UsersController(Controllers):
 
 
     @error_handler
-    def load_users(self):
+    async def load_users(self):
         with self.get_session() as session:
             # Fetch all users from the database
             users_orm_list: list[UserORM] = session.query(UserORM).all()
@@ -28,14 +28,14 @@ class UsersController(Controllers):
 
 
     @error_handler
-    def create_user(self, user_data: User) -> User:
+    async def create_user(self, user_data: User) -> User:
         """Create a new user."""
         with self.get_session() as session:
             # Create a new ORM user object
             user_orm = UserORM(
                 uid=str(user_data.uid),
                 name=user_data.name,
-                email=user_data.email,
+                email=str(user_data.email),
                 password_hash=user_data.password_hash,
                 role=user_data.role,
                 is_active=user_data.is_active,
@@ -46,7 +46,7 @@ class UsersController(Controllers):
             return user_data
 
     @error_handler
-    def get_user_by_uid(self, uid: str) -> User | None:
+    async def get_user_by_uid(self, uid: str) -> User | None:
         """Fetch user by ID."""
         with self.get_session() as session:
             user_orm = session.query(UserORM).filter_by(uid=uid).first()
@@ -83,7 +83,7 @@ class UsersController(Controllers):
 
 
     @error_handler
-    def update_user(self, uid: str, data: dict) -> User | None:
+    async def update_user(self, uid: str, data: dict) -> User | None:
         """Update an existing user."""
         with self.get_session() as session:
             user_orm = session.query(UserORM).filter_by(uid=uid).first()
@@ -100,7 +100,7 @@ class UsersController(Controllers):
 
 
     @error_handler
-    def delete_user(self, uid: str):
+    async def delete_user(self, uid: str):
         """Delete a user by ID."""
         with self.get_session() as session:
             user_orm = session.query(UserORM).filter_by(uid=uid).first()
@@ -115,7 +115,7 @@ class UsersController(Controllers):
 
 
     @error_handler
-    def search_users(self, search_term: str):
+    async def search_users(self, search_term: str):
         """Search for users by name or email."""
         with self.get_session() as session:
             users_orm_list = session.query(UserORM).filter(
@@ -131,7 +131,7 @@ class UsersController(Controllers):
 
 
     @error_handler
-    def get_users_by_role(self, role: str):
+    async def get_users_by_role(self, role: str):
         """Fetch all users by a specific role."""
         with self.get_session() as session:
             if role not in ['seeker', 'employer', 'admin']:
