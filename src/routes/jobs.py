@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, redirect, url_for
 from src.authentication import user_details
 from src.database.models import Job, Role
 from src.database.models.users import User
-from src.main import scrapper
+from src.main import scrapper, jobs_controller
 from src.routes import flask_error_handler
 from src.routes.utils import (create_common_context, not_found, gone, TOWN_TO_PROVINCE, create_search_context,
                               sub_job_detail)
@@ -34,6 +34,8 @@ async def jobs_by_location(user: User,location: str):
         job for job in scrapper.jobs.values()
         if job.location and province.lower() in job.location.lower()
     ]
+
+
 
     if not jobs_filtered:
         return await not_found(location)
