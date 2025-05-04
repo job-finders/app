@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import Flask
 from sqlalchemy import or_, select, func
@@ -78,12 +78,14 @@ class JobsController(Controllers):
                 raise ValueError(f"Job {job_id} not found")
 
             # Update all fields except job_id
-            for key, value in updated_job.dict().items():
+            for key, value in updated_job.model_dump(exclude_unset=True).items():
                 if key != "job_id" and hasattr(job_orm, key):
                     setattr(job_orm, key, value)
 
-            job_orm.updated_time = datetime.now().strftime("%d %b %Y")
+            # Use UTC-aware datetime with proper timezone
+            job_orm.updated_time = datetime.now(timezone.utc)
             session.commit()
+
             return Job(**self._orm_to_job_dict(job_orm))
 
     @error_handler
@@ -95,7 +97,7 @@ class JobsController(Controllers):
                 raise ValueError(f"Job {job_id} not found")
 
             # Set expiration date to yesterday
-            job_orm.expiration_date = datetime.now().date() - timedelta(days=1)
+            job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
             session.commit()
             return Job(**self._orm_to_job_dict(job_orm))
 
@@ -109,7 +111,7 @@ class JobsController(Controllers):
 
             # Reset expiration date using original expires field
             days = int(job_orm.expires.split()[2])
-            job_orm.expiration_date = datetime.now().date() + timedelta(days=days)
+            job_orm.expiration_date = datetime.now(timezone.utc).date() + timedelta(days=days)
             session.commit()
             return Job(**self._orm_to_job_dict(job_orm))
 
@@ -118,14 +120,14 @@ class JobsController(Controllers):
         """Create new job listing"""
         with self.get_session() as session:
             # Convert Pydantic model to ORM-compatible dict
-            job_data = job.dict()
+            job_data = job.model_dump()
 
             # Handle optional fields and conversions
             job_data["desired_skills"] = ", ".join(job_data.get("desired_skills", []))
 
             # Ensure posted_date and expiration_date are set
             if "posted_date" not in job_data or not job_data["posted_date"]:
-                job_data["posted_date"] = datetime.utcnow().date()
+                job_data["posted_date"] = datetime.now(timezone.utc).date()
             if "expiration_date" not in job_data or not job_data["expiration_date"]:
                 job_data["expiration_date"] = job_data["posted_date"] + timedelta(days=30)
             if not job_data.get("job_id"):
@@ -233,7 +235,7 @@ class JobsController(Controllers):
     async def get_active_jobs(self) -> list[Job]:
         """Get only currently active jobs (non-expired)"""
         with self.get_session() as session:
-            today = datetime.utcnow().date()
+            today = datetime.now(timezone.utc).date()
             jobs_orm_list = (
                 session.query(JobsORM)
                 .filter(JobsORM.expiration_date >= today)
@@ -331,7 +333,7 @@ class JobsController(Controllers):
         with self.get_session() as session:
             # Assuming expiration_date is a column in JobsORM and the active jobs are those that haven't expired
             result = await session.execute(
-                select([func.count(JobsORM.job_id)]).filter(JobsORM.expiration_date > datetime.now().date())
+                select([func.count(JobsORM.job_id)]).filter(JobsORM.expiration_date > datetime.now(timezone.utc).date())
             )
             active_jobs = result.scalar()
             return active_jobs

@@ -23,16 +23,19 @@ class ATSToolController(Controllers):
         # Route setup can be done here
         pass
 
-    def clean_text(self, text: str) -> str:
+    @error_handler
+    async def clean_text(self, text: str) -> str:
         return re.sub(r'[^a-zA-Z\s]', '', text).lower()
 
-    def extract_keywords(self, text: str, top_n: int = None) -> list:
+    @error_handler
+    async def extract_keywords(self, text: str, top_n: int = None) -> list:
         text = self.clean_text(text)
         vectorizer = CountVectorizer(stop_words='english', max_features=top_n or self.top_n_keywords)
         X = vectorizer.fit_transform([text])
         return vectorizer.get_feature_names_out().tolist()
 
-    def extract_weighted_keywords(self, text: str, top_n: int = None) -> list:
+    @error_handler
+    async def extract_weighted_keywords(self, text: str, top_n: int = None) -> list:
         """Uses TF-IDF for more intelligent keyword ranking"""
         text = self.clean_text(text)
         vectorizer = TfidfVectorizer(stop_words='english')
@@ -41,7 +44,8 @@ class ATSToolController(Controllers):
         sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
         return [kw for kw, score in sorted_scores[:(top_n or self.top_n_keywords)]]
 
-    def categorize_keywords(self, text: str) -> dict:
+    @error_handler
+    async def categorize_keywords(self, text: str) -> dict:
         """Uses spaCy to identify parts of speech and categorize"""
         doc = nlp(text)
         categories = {
@@ -61,7 +65,8 @@ class ATSToolController(Controllers):
                 categories["soft_skills"].append(token.text)
         return categories
 
-    def extract_text(self, uploaded_file):
+    @error_handler
+    async def extract_text(self, uploaded_file):
         file_ext = os.path.splitext(uploaded_file.filename)[-1].lower()
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp:
             uploaded_file.save(tmp.name)
@@ -74,14 +79,16 @@ class ATSToolController(Controllers):
             with open(tmp_path, "r", encoding="utf-8", errors="ignore") as f:
                 return f.read()
 
-    def extract_text_from_pdf(self, path: str) -> str:
+    @error_handler
+    async def extract_text_from_pdf(self, path: str) -> str:
         text = ""
         with fitz.open(path) as doc:
             for page in doc:
                 text += page.get_text()
         return text
 
-    def calculate_match_score(self, resume_keywords: list, job_keywords: list) -> dict:
+    @error_handler
+    async def calculate_match_score(self, resume_keywords: list, job_keywords: list) -> dict:
         matched = set(resume_keywords) & set(job_keywords)
         missing = set(job_keywords) - set(resume_keywords)
         score = round(len(matched) / len(job_keywords) * 100, 2) if job_keywords else 0
@@ -91,7 +98,8 @@ class ATSToolController(Controllers):
             "missing_keywords": list(missing),
         }
 
-    def get_resume_quality_insights(self, text: str) -> dict:
+    @error_handler
+    async def get_resume_quality_insights(self, text: str) -> dict:
         word_count = len(text.split())
         action_verbs = ["managed", "developed", "led", "created", "implemented"]
         used_action_verbs = [word for word in text.split() if word.lower() in action_verbs]
@@ -102,7 +110,7 @@ class ATSToolController(Controllers):
         }
 
     @error_handler
-    def handle_ats_match(self, request):
+    async def handle_ats_match(self, request):
         uploaded_file = request.files.get("resume")
         job_desc = request.form.get("job_description")
 
