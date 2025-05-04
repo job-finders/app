@@ -1,52 +1,103 @@
-from flask import Flask
-from src.controllers.controller import Controllers, error_handler
 import os
-import tempfile
-import docx2txt
-import fitz  # PyMuPDF for PDF
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 import re
-import spacy
+import tempfile
+from typing import Dict, List, Optional
 
+import docx2txt
+import fitz  # PyMuPDF
+import spacy
+from flask import Request, Flask
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+
+from src.controllers.controller import Controllers, error_handler
+
+# Pre-load NLP model and compile regex patterns
 nlp = spacy.load("en_core_web_sm")
+CLEAN_TEXT_PATTERN = re.compile(r'[^a-zA-Z\s]')
+ACTION_VERBS = {"managed", "developed", "led", "created", "implemented"}
 
 
 class ATSToolController(Controllers):
-    def __init__(self):
-        self.top_n_keywords = 30
+    """ATS (Applicant Tracking System) Analysis Toolkit
 
-    def __del__(self):
-        if hasattr(self, "sessions"):
-            self.sessions.close()
+    Provides functionality for resume parsing, keyword extraction, and job description matching.
+
+    Attributes:
+        top_n_keywords: Default number of keywords to extract (default: 30)
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.top_n_keywords = 30
+        self._vectorizer_cache = {}  # For potential vectorizer reuse
 
     def init_app(self, app: Flask):
-        # Route setup can be done here
-        pass
+        super().init_app(app=app)
 
     @error_handler
     async def clean_text(self, text: str) -> str:
-        return re.sub(r'[^a-zA-Z\s]', '', text).lower()
+        """Normalize text for processing
+
+        Args:
+            text: Raw input text
+
+        Returns:
+            Lowercase text with only alphabetical characters and whitespace
+        """
+        return CLEAN_TEXT_PATTERN.sub('', text).lower()
 
     @error_handler
-    async def extract_keywords(self, text: str, top_n: int = None) -> list:
-        text = self.clean_text(text)
-        vectorizer = CountVectorizer(stop_words='english', max_features=top_n or self.top_n_keywords)
-        X = vectorizer.fit_transform([text])
+    async def extract_keywords(
+            self,
+            text: str,
+            top_n: Optional[int] = None,
+            vectorizer_type: str = "count"
+    ) -> List[str]:
+        """Extract keywords from text using different vectorization methods
+
+        Args:
+            text: Input text to analyze
+            top_n: Number of top keywords to return
+            vectorizer_type: 'count' for frequency-based, 'tfidf' for weighted
+
+        Returns:
+            List of extracted keywords ordered by significance
+        """
+        clean_text = await self.clean_text(text)
+        top_n = top_n or self.top_n_keywords
+
+        if vectorizer_type == "tfidf":
+            vectorizer = TfidfVectorizer(stop_words='english')
+            matrix = vectorizer.fit_transform([clean_text])
+            features = vectorizer.get_feature_names_out()
+            scores = matrix.toarray()[0]
+            return [kw for kw, _ in sorted(zip(features, scores),
+                                           key=lambda x: x[1], reverse=True)[:top_n]]
+
+        # Default to CountVectorizer
+        vectorizer = CountVectorizer(
+            stop_words='english',
+            max_features=top_n
+        )
+        matrix = vectorizer.fit_transform([clean_text])
         return vectorizer.get_feature_names_out().tolist()
 
     @error_handler
-    async def extract_weighted_keywords(self, text: str, top_n: int = None) -> list:
-        """Uses TF-IDF for more intelligent keyword ranking"""
-        text = self.clean_text(text)
-        vectorizer = TfidfVectorizer(stop_words='english')
-        tfidf_matrix = vectorizer.fit_transform([text])
-        scores = zip(vectorizer.get_feature_names_out(), tfidf_matrix.toarray()[0])
-        sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
-        return [kw for kw, score in sorted_scores[:(top_n or self.top_n_keywords)]]
+    async def categorize_keywords(self, text: str) -> Dict[str, List[str]]:
+        """Categorize text elements using NLP analysis
 
-    @error_handler
-    async def categorize_keywords(self, text: str) -> dict:
-        """Uses spaCy to identify parts of speech and categorize"""
+        Args:
+            text: Input text to categorize
+
+        Returns:
+            Dictionary mapping categories to relevant tokens:
+            {
+                "technical_skills": [],
+                "soft_skills": [],
+                "verbs": [],
+                "nouns": []
+            }
+        """
         doc = nlp(text)
         categories = {
             "technical_skills": [],
@@ -54,77 +105,146 @@ class ATSToolController(Controllers):
             "verbs": [],
             "nouns": [],
         }
+
         for token in doc:
             if token.pos_ == "VERB":
-                categories["verbs"].append(token.text)
+                categories["verbs"].append(token.lemma_)
             elif token.pos_ == "NOUN":
-                categories["nouns"].append(token.text)
-            elif token.ent_type_ in ("SKILL", "ORG", "PRODUCT"):
+                categories["nouns"].append(token.lemma_)
+            if token.ent_type_ in ("SKILL", "ORG", "PRODUCT"):
                 categories["technical_skills"].append(token.text)
             elif token.ent_type_ == "PERSON":
                 categories["soft_skills"].append(token.text)
+
         return categories
 
     @error_handler
-    async def extract_text(self, uploaded_file):
+    async def extract_text(self, uploaded_file) -> str:
+        """Extract text from various file formats
+
+        Args:
+            uploaded_file: File object from Flask request
+
+        Returns:
+            Extracted text content as a single string
+
+        Raises:
+            ValueError: For unsupported file types
+        """
         file_ext = os.path.splitext(uploaded_file.filename)[-1].lower()
+
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp:
             uploaded_file.save(tmp.name)
-            tmp_path = tmp.name
-        if file_ext == ".pdf":
-            return self.extract_text_from_pdf(tmp_path)
-        elif file_ext in [".docx", ".doc"]:
-            return docx2txt.process(tmp_path)
-        else:
-            with open(tmp_path, "r", encoding="utf-8", errors="ignore") as f:
-                return f.read()
+            try:
+                if file_ext == ".pdf":
+                    return await self._extract_pdf_text(tmp.name)
+                if file_ext in (".docx", ".doc"):
+                    return docx2txt.process(tmp.name)
+                return self._read_text_file(tmp.name)
+            finally:
+                os.unlink(tmp.name)  # Clean up temp file
 
-    @error_handler
-    async def extract_text_from_pdf(self, path: str) -> str:
-        text = ""
+    @staticmethod
+    async def _extract_pdf_text(path: str) -> str:
+        """Extract text content from PDF files"""
+        text = []
         with fitz.open(path) as doc:
             for page in doc:
-                text += page.get_text()
-        return text
+                text.append(page.get_text())
+        return "\n".join(text)
+
+    @staticmethod
+    def _read_text_file(path: str) -> str:
+        """Read text from plain text files"""
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
 
     @error_handler
-    async def calculate_match_score(self, resume_keywords: list, job_keywords: list) -> dict:
-        matched = set(resume_keywords) & set(job_keywords)
-        missing = set(job_keywords) - set(resume_keywords)
-        score = round(len(matched) / len(job_keywords) * 100, 2) if job_keywords else 0
+    async def calculate_match_score(
+            self,
+            resume_keywords: List[str],
+            job_keywords: List[str]
+    ) -> Dict[str, float]:
+        """Calculate match score between resume and job description
+
+        Args:
+            resume_keywords: Keywords from resume
+            job_keywords: Keywords from job description
+
+        Returns:
+            Dictionary with match metrics:
+            {
+                "score": percentage match,
+                "matched_keywords": [],
+                "missing_keywords": []
+            }
+        """
+        job_set = set(job_keywords)
+        resume_set = set(resume_keywords)
+
+        matched = job_set & resume_set
+        missing = job_set - resume_set
+
+        score = (len(matched) / len(job_set)) * 100 if job_set else 0.0
+
         return {
-            "score": score,
-            "matched_keywords": list(matched),
-            "missing_keywords": list(missing),
+            "score": round(score, 2),
+            "matched_keywords": sorted(matched),
+            "missing_keywords": sorted(missing)
         }
 
     @error_handler
-    async def get_resume_quality_insights(self, text: str) -> dict:
-        word_count = len(text.split())
-        action_verbs = ["managed", "developed", "led", "created", "implemented"]
-        used_action_verbs = [word for word in text.split() if word.lower() in action_verbs]
+    async def get_resume_quality_insights(self, text: str) -> Dict:
+        """Analyze resume text quality metrics
+
+        Args:
+            text: Resume text content
+
+        Returns:
+            Quality metrics dictionary:
+            {
+                "word_count": int,
+                "used_action_verbs": list,
+                "action_verb_ratio": float
+            }
+        """
+        words = text.split()
+        used_verbs = [word for word in words if word.lower() in ACTION_VERBS]
+        total_words = len(words)
+
         return {
-            "word_count": word_count,
-            "used_action_verbs": used_action_verbs,
-            "action_verb_ratio": round(len(used_action_verbs) / word_count * 100, 2) if word_count else 0
+            "word_count": total_words,
+            "used_action_verbs": used_verbs,
+            "action_verb_ratio":
+                round((len(used_verbs) / total_words * 100), 2) if total_words else 0
         }
 
     @error_handler
-    async def handle_ats_match(self, request):
-        uploaded_file = request.files.get("resume")
-        job_desc = request.form.get("job_description")
+    async def handle_ats_match(self, request: Request) -> Dict:
+        """Main endpoint for ATS match analysis
 
-        if not uploaded_file or not job_desc:
-            raise ValueError("Resume and job description must be provided.")
+        Args:
+            request: Flask request object with files/form data
 
-        resume_text = self.extract_text(uploaded_file)
-        resume_keywords = self.extract_keywords(resume_text)
-        job_keywords = self.extract_keywords(job_desc)
+        Returns:
+            Match analysis results
 
-        result = self.calculate_match_score(resume_keywords, job_keywords)
+        Raises:
+            ValueError: If missing required files/data
+        """
+        if not (uploaded_file := request.files.get("resume")):
+            raise ValueError("Resume file is required")
+        if not (job_desc := request.form.get("job_description")):
+            raise ValueError("Job description is required")
+
+        resume_text = await self.extract_text(uploaded_file)
+        resume_keywords = await self.extract_keywords(resume_text)
+        job_keywords = await self.extract_keywords(job_desc)
+
+        analysis = await self.calculate_match_score(resume_keywords, job_keywords)
 
         return {
-            "score": result["score"],
-            "matched": result["matched_keywords"],
-            "missing": result["missing_keywords"]
+            "score": analysis["score"],
+            "matched": analysis["matched_keywords"],
+            "missing": analysis["missing_keywords"]
         }

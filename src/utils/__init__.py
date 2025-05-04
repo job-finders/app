@@ -2,6 +2,52 @@ from os import path
 import re
 from datetime import date
 from bs4 import BeautifulSoup
+import os
+from pathlib import Path
+from werkzeug.utils import secure_filename
+from datetime import datetime
+
+# Define the base directory for user data (for profile images and other files)
+CURRENT_FILE = Path(__file__).resolve()
+USERDATA_DIR = CURRENT_FILE.parents[2] / "userdata"
+USERDATA_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def allowed_file(filename: str, allowed_extensions: set) -> bool:
+    """Check if the file has an allowed extension."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+
+def save_file_to_storage(file, filename: str, allowed_extensions: set = None, subfolder: str = None) -> str:
+    """
+    Save the uploaded file to the userdata directory (or a subfolder) and return the file URL.
+
+    - Validates the file extension based on provided allowed extensions.
+    - Generates a unique filename using a timestamp to avoid conflicts.
+    - Saves the file to the userdata directory (or the specified subfolder).
+    - Returns the file path or URL.
+    """
+    if allowed_extensions is None:
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}  # Default allowed extensions
+
+    if not allowed_file(filename, allowed_extensions):
+        raise ValueError(f"Invalid file format. Allowed formats are {', '.join(allowed_extensions)}.")
+
+    # Determine the final folder path (userdata or a subfolder)
+    folder_path = USERDATA_DIR
+    if subfolder:
+        folder_path = folder_path / subfolder
+    folder_path.mkdir(exist_ok=True, parents=True)
+
+    # Generate a unique filename using timestamp
+    unique_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{secure_filename(filename)}"
+    file_path = folder_path / unique_filename
+
+    # Save the file to the defined path
+    file.save(file_path)
+
+    # Return the file URL or relative path
+    return str(file_path)  # Or a URL, depending on your application structure
 
 
 def static_folder() -> str:
@@ -142,13 +188,6 @@ def number_days_to_expiry(updated_time: str, date_expires: date):
     """
     pass
 
-
-def bootstrap_database():
-    from src.database.sql.jobs import JobsORM
-    from src.database.sql.notifications import NotificationsORM
-
-    JobsORM.create_if_not_table()
-    NotificationsORM.create_if_not_table()
 
 
 def sanitize_filename(filename):

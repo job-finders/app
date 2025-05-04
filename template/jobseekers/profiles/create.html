@@ -1,0 +1,126 @@
+{% extends "jobseekers/layout/page.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3>Create Your JobFinder Profile</h3>
+  <form method="POST">
+
+    <!-- Full Name (from current_user, display only) -->
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" class="form-control" value="{{ current_user.first_name }} {{ current_user.last_name }}" disabled>
+    </div>
+
+    <!-- Phone -->
+    <div class="form-group">
+      <label for="phone">Phone Number</label>
+      <input type="text" name="phone" class="form-control" placeholder="Enter phone number">
+    </div>
+
+    <!-- Website -->
+    <div class="form-group">
+      <label for="website">Personal Website</label>
+      <input type="url" name="website" class="form-control" placeholder="https://example.com">
+    </div>
+
+    <!-- LinkedIn -->
+    <div class="form-group">
+      <label for="linkedin">LinkedIn Profile</label>
+      <input type="url" name="linkedin" class="form-control" placeholder="https://linkedin.com/in/...">
+    </div>
+
+    <!-- GitHub -->
+    <div class="form-group">
+      <label for="github">GitHub Profile</label>
+      <input type="url" name="github" class="form-control" placeholder="https://github.com/...">
+    </div>
+
+    <!-- Job Titles of Interest -->
+    <div class="form-group">
+      <label for="job_titles_of_interest">Job Titles of Interest</label>
+      <select name="job_titles_of_interest" id="job_titles_of_interest" class="form-control" multiple>
+        {% for title in job_titles %}
+          <option value="{{ title.value }}">{{ title.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Industries of Interest -->
+    <div class="form-group">
+      <label for="industries_of_interest">Industries of Interest</label>
+      <select name="industries_of_interest" id="industries_of_interest" class="form-control" multiple>
+        {% for industry in industries %}
+          <option value="{{ industry.value }}">{{ industry.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Preferred Work Locations -->
+    <div class="form-group">
+      <label for="locations_of_interest">Preferred Work Locations</label>
+      <select name="locations_of_interest" id="locations_of_interest" class="form-control" multiple>
+        {% for loc in locations %}
+          <option value="{{ loc.value }}">{{ loc.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Remote Preference -->
+    <div class="form-check my-2">
+      <input type="checkbox" name="remote_preference" class="form-check-input" id="remote_preference">
+      <label class="form-check-label" for="remote_preference">Open to remote work</label>
+    </div>
+
+    <!-- Availability -->
+    <div class="form-group">
+      <label for="availability">Availability</label>
+      <input type="text" name="availability" class="form-control" placeholder="e.g. Immediate, 30-day notice">
+    </div>
+
+    <!-- Bio -->
+    <div class="form-group">
+      <label for="bio">Short Bio</label>
+      <textarea name="bio" id="bio" class="form-control" rows="4" placeholder="Tell employers a bit about yourself..."></textarea>
+    </div>
+
+    <!-- Freelancer -->
+    <div class="form-check my-2">
+      <input type="checkbox" name="is_freelancer" class="form-check-input" id="is_freelancer">
+      <label class="form-check-label" for="is_freelancer">Available for freelance work</label>
+    </div>
+
+    <!-- Freelance Skills -->
+    <div class="form-group">
+      <label for="freelance_skills">Freelance Skills</label>
+      <input type="text" name="freelance_skills" class="form-control" placeholder="Comma-separated skills">
+    </div>
+
+    <!-- Hourly Rate -->
+    <div class="form-group">
+      <label for="hourly_rate">Hourly Rate (ZAR)</label>
+      <input type="number" name="hourly_rate" class="form-control" step="0.01" min="0">
+    </div>
+
+    <!-- Freelance Experience -->
+    <div class="form-group">
+      <label for="freelance_experience">Freelance Experience</label>
+      <textarea name="freelance_experience" class="form-control" rows="3" placeholder="Brief description..."></textarea>
+    </div>
+
+    <!-- Freelance Availability -->
+    <div class="form-group">
+      <label for="freelance_availability">Freelance Availability</label>
+      <input type="text" name="freelance_availability" class="form-control" placeholder="e.g. 10 hrs/week">
+    </div>
+
+    <!-- Visibility -->
+    <div class="form-check my-2">
+      <input type="checkbox" name="visibility" class="form-check-input" id="visibility" checked>
+      <label class="form-check-label" for="visibility">Make profile visible to employers</label>
+    </div>
+
+    <!-- Submit -->
+    <button type="submit" class="btn btn-primary">Create Profile</button>
+  </form>
+</div>
+{% endblock %}

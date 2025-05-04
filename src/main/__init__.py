@@ -1,11 +1,11 @@
 from flask import Flask
 
 
-from src.utils import template_folder, static_folder, format_title, format_description, bootstrap_database
+from src.utils import template_folder, static_folder, format_title, format_description
 from src.emailer import SendMail
 from src.controllers.encryptor import Encryptor
 
-bootstrap_database()
+
 send_mail = SendMail()
 encryptor = Encryptor()
 
@@ -37,6 +37,9 @@ resume_controller = ResumeController()
 junction_scrapper = JunctionScrapper(scrapper=scrapper)
 career_scrapper = CareerScrapper(scrapper=scrapper)
 
+from src.controllers.profile_controller import JobSeekerProfilesController
+job_seeker_profile_controller = JobSeekerProfilesController()
+
 
 def create_app(config):
     """
@@ -64,6 +67,7 @@ def create_app(config):
         encryptor.init_app(app=app)
         jobs_controller.init_app(app=app)
         junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
+        job_seeker_profile_controller.init_app(app=app)
         # career_scrapper.init_app(app=app)
 
         # importing routes
@@ -74,8 +78,10 @@ def create_app(config):
         from src.routes.blog import blog_route
         from src.routes.users import users_route
         from src.routes.jobseeker import jobseeker_route
+        from src.routes.jobseeker_profile import jobseeker_profiles_bp
         from src.routes.cron import cron_route
         from src.routes.ats_tool import ats_tool_route
+
 
 
         # registering routes
@@ -87,6 +93,7 @@ def create_app(config):
 
         app.register_blueprint(users_route)
         app.register_blueprint(jobseeker_route)
+        app.register_blueprint(jobseeker_profiles_bp)
 
         app.register_blueprint(cron_route)
         app.register_blueprint(ats_tool_route)

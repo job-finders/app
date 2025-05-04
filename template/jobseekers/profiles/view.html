@@ -1,0 +1,74 @@
+{% extends "jobseekers/layout/page.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <h3 class="mb-4">Your Jobseeker Profile</h3>
+
+  <!-- Profile Info Section -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="card-title">Personal Information</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <p><strong>Name:</strong> {{ current_user.first_name }} {{ current_user.last_name }}</p>
+          <p><strong>Email:</strong> {{ current_user.email }}</p>
+          <p><strong>Phone:</strong> {{ profile.phone or "Not Provided" }}</p>
+          <p><strong>LinkedIn:</strong> <a href="{{ profile.linkedin }}" target="_blank" class="text-decoration-none">{{ profile.linkedin or "Not Provided" }}</a></p>
+          <p><strong>GitHub:</strong> <a href="{{ profile.github }}" target="_blank" class="text-decoration-none">{{ profile.github or "Not Provided" }}</a></p>
+        </div>
+        <div class="col-md-6">
+          <p><strong>Location:</strong> {{ profile.location or "Not Provided" }}</p>
+          <p><strong>Website:</strong> <a href="{{ profile.website }}" target="_blank" class="text-decoration-none">{{ profile.website or "Not Provided" }}</a></p>
+          <p><strong>Bio:</strong> {{ profile.bio or "No bio available" }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job Preferences Section -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="card-title">Job Preferences</h5>
+    </div>
+    <div class="card-body">
+      <p><strong>Job Titles of Interest:</strong> {{ profile.job_titles_of_interest | join(', ') if profile.job_titles_of_interest else "Not Provided" }}</p>
+      <p><strong>Industries of Interest:</strong> {{ profile.industries_of_interest | join(', ') if profile.industries_of_interest else "Not Provided" }}</p>
+      <p><strong>Preferred Work Locations:</strong> {{ profile.locations_of_interest | join(', ') if profile.locations_of_interest else "Not Provided" }}</p>
+      <p><strong>Remote Work Preference:</strong> {{ "Yes" if profile.remote_preference else "No" }}</p>
+      <p><strong>Availability:</strong> {{ profile.availability or "Not Provided" }}</p>
+    </div>
+  </div>
+
+  <!-- Freelance Details Section (if applicable) -->
+  {% if profile.is_freelancer %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="card-title">Freelance Availability</h5>
+    </div>
+    <div class="card-body">
+      <p><strong>Freelance Skills:</strong> {{ profile.freelance_skills | join(', ') if profile.freelance_skills else "Not Provided" }}</p>
+      <p><strong>Hourly Rate:</strong> ZAR {{ profile.hourly_rate or "Not Provided" }}</p>
+      <p><strong>Freelance Experience:</strong> {{ profile.freelance_experience or "Not Provided" }}</p>
+      <p><strong>Freelance Availability:</strong> {{ profile.freelance_availability or "Not Provided" }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Profile Visibility -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="card-title">Profile Visibility</h5>
+    </div>
+    <div class="card-body">
+      <p><strong>Visible to Employers:</strong> {{ "Yes" if profile.visibility else "No" }}</p>
+    </div>
+  </div>
+
+  <!-- Edit Profile Button -->
+  <div class="text-right">
+    <a href="{{ url_for('jobseeker_profiles.edit_profile') }}" class="btn btn-primary">Edit Profile</a>
+  </div>
+</div>
+{% endblock %}

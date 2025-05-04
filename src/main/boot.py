@@ -6,12 +6,13 @@ def boot():
     from src.database.sql.users import UserORM
     from src.database.sql.resume import (JobSeekerCVORM, ExperienceORM, EducationORM, CertificationORM, LanguageORM,
                                          ProjectORM, PublicationORM, AwardORM, CustomSectionORM, SavedCVORM)
-
+    from src.database.sql.jobseeker_profile import JobSeekerProfileORM
+    from src.database.sql.config import ConfigurationORM
 
     # Ensure that jobseeker_cvs is created first
     classes_to_create = [JobsORM, UserORM, JobSeekerCVORM, ExperienceORM, EducationORM, CertificationORM, LanguageORM,
                          ProjectORM, PublicationORM, AwardORM, CustomSectionORM, SavedCVORM, SavedJobORM,
-                         JobApplicationORM]
+                         JobApplicationORM, JobSeekerProfileORM, ConfigurationORM]
 
     create_classes = True
     if create_classes:
