@@ -6,7 +6,7 @@ from src.database.constants import ID_LEN, NAME_LEN
 from src.database.sql import Base, engine
 from sqlalchemy import inspect
 from datetime import datetime
-
+from datetime import datetime, timezone
 
 class JobSeekerCVORM(Base):
     __tablename__ = 'jobseeker_cvs'
@@ -83,10 +83,22 @@ class ExperienceORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             cls.__table__.create(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "cv_id": self.cv_id,
+            "job_title": self.job_title,
+            "company": self.company,
+            "start_date": self.start_date.isoformat() if self.start_date else None,
+            "end_date": self.end_date.isoformat() if self.end_date else None,
+            "location": self.location,
+            "description": self.description
+        }
 
 
 class EducationORM(Base):
@@ -103,15 +115,30 @@ class EducationORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="education")
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             cls.__table__.create(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'cv_id': self.cv_id,
+            'institution': self.institution,
+            'qualification': self.qualification,
+            'field_of_study': self.field_of_study,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date': self.end_date.isoformat() if self.end_date else None,
+            'description': self.description
+        }
+
 
 class CertificationORM(Base):
     __tablename__ = 'cv_certifications'
@@ -126,15 +153,28 @@ class CertificationORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="certifications")
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             cls.__table__.create(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'cv_id': self.cv_id,
+            'name': self.name,
+            'issuer': self.issuer,
+            'issue_date': self.issue_date.isoformat() if self.issue_date else None,
+            'expiry_date': self.expiry_date.isoformat() if self.expiry_date else None,
+            'credential_url': self.credential_url
+        }
 
 class LanguageORM(Base):
     __tablename__ = 'cv_languages'
@@ -146,15 +186,26 @@ class LanguageORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="languages")
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             cls.__table__.create(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'cv_id': self.cv_id,
+            'name': self.name,
+            'proficiency': self.proficiency
+        }
+
 
 class ProjectORM(Base):
     __tablename__ = 'cv_projects'
@@ -168,16 +219,28 @@ class ProjectORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="projects")
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             cls.__table__.create(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'cv_id': self.cv_id,
+            'title': self.title,
+            'description': self.description,
+            'technologies': self.technologies,
+            'link': self.link
+        }
 
 class PublicationORM(Base):
     __tablename__ = 'cv_publications'
@@ -191,15 +254,28 @@ class PublicationORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="publications")
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             cls.__table__.create(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'cv_id': self.cv_id,
+            'title': self.title,
+            'publisher': self.publisher,
+            'date': self.date.isoformat() if self.date else None,
+            'link': self.link
+        }
+
 
 
 class AwardORM(Base):
@@ -214,15 +290,27 @@ class AwardORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="awards")
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             cls.__table__.create(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'cv_id': self.cv_id,
+            'title': self.title,
+            'issuer': self.issuer,
+            'date': self.date.isoformat() if self.date else None,
+            'description': self.description
+        }
 
 
 class CustomSectionORM(Base):
@@ -235,15 +323,27 @@ class CustomSectionORM(Base):
 
     cv = relationship("JobSeekerCVORM", back_populates="custom_sections")
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             cls.__table__.create(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'cv_id': self.cv_id,
+            'title': self.title,
+            'content': self.content
+        }
+
+
 
 
 class SavedCVORM(Base):
@@ -252,8 +352,13 @@ class SavedCVORM(Base):
     id = Column(String(ID_LEN), primary_key=True)
     employer_uid = Column(String(ID_LEN), ForeignKey("users.uid"), nullable=False, index=True)
     cv_id = Column(String(ID_LEN), ForeignKey("jobseeker_cvs.cv_id"), nullable=False, index=True)
-    saved_at = Column(DateTime, default=datetime.utcnow)
+    saved_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
+    __table_args__ = (
+        UniqueConstraint("employer_uid", "cv_id", name="uq_employer_cv"),
+    )
+
+    # ... rest of the class remains the same
     __table_args__ = (
         UniqueConstraint("employer_uid", "cv_id", name="uq_employer_cv"),
     )
@@ -261,12 +366,22 @@ class SavedCVORM(Base):
     def __bool__(self):
         return bool(self.id) and bool(self.cv_id)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             cls.__table__.create(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'employer_uid': self.employer_uid,
+            'cv_id': self.cv_id,
+            'saved_at': self.saved_at.isoformat() if self.saved_at else None
+        }

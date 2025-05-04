@@ -1,19 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from flask import Flask, url_for
-
 from src.database.sql.users import UserORM
 from src.main import send_mail
 from src.emailer import EmailModel, settings
-from src.database.sql.resume import (
-    JobSeekerCVORM, ExperienceORM, EducationORM, CertificationORM, LanguageORM,
-    ProjectORM, PublicationORM, AwardORM, CustomSectionORM, SavedCVORM
-)
-from src.database.models.resume import (
-    Experience, Education, Certification, Language, Publication, Project,
-    Award, CustomSection, JobSeekerCV
-)
-from src.controllers.controller import Controllers
-
+from src.database.sql.resume import (JobSeekerCVORM, ExperienceORM, EducationORM, CertificationORM, LanguageORM,
+                                     ProjectORM, PublicationORM, AwardORM, CustomSectionORM, SavedCVORM)
+from src.database.models.resume import (Experience, Education, Certification, Language, Publication, Project,
+                                        Award, CustomSection, JobSeekerCV)
+from src.controllers.controller import Controllers, error_handler
 import uuid
 
 
@@ -24,6 +18,7 @@ class ResumeController(Controllers):
     def init_app(self, app: Flask):
         super().init_app(app=app)
 
+    @error_handler
     async def create_cv(self, user_uid: str, data: JobSeekerCV) -> dict:
         # Create a new resume with related entries (experience, education, etc.)
         with self.get_session() as session:
@@ -38,38 +33,41 @@ class ResumeController(Controllers):
                 website=data.website,
                 linkedin=data.linkedin,
                 github=data.github,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             )
             session.add(cv)
-            self._save_related_entries(session, cv_id, data)
+            await self._save_related_entries(session=session, cv_id=cv_id, data=data)
             return {"cv_id": cv_id, "status": "created"}
 
+    # noinspection DuplicatedCode
+    @error_handler
     async def _save_related_entries(self, session, cv_id: str, data: JobSeekerCV):
         # Save nested resume data like experience, education, etc.
         for exp in data.experience:
-            session.add(ExperienceORM(cv_id=cv_id, **exp.dict()))
+            session.add(ExperienceORM(cv_id=cv_id, **exp.model_dump()))
 
         for edu in data.education:
-            session.add(EducationORM(cv_id=cv_id, **edu.dict()))
+            session.add(EducationORM(cv_id=cv_id, **edu.model_dump()))
 
         for cert in data.certifications:
-            session.add(CertificationORM(cv_id=cv_id, **cert.dict()))
+            session.add(CertificationORM(cv_id=cv_id, **cert.model_dump()))
 
         for lang in data.languages:
-            session.add(LanguageORM(cv_id=cv_id, **lang.dict()))
+            session.add(LanguageORM(cv_id=cv_id, **lang.model_dump()))
 
         for proj in data.projects:
-            session.add(ProjectORM(cv_id=cv_id, **proj.dict()))
+            session.add(ProjectORM(cv_id=cv_id, **proj.model_dump()))
 
         for pub in data.publications:
-            session.add(PublicationORM(cv_id=cv_id, **pub.dict()))
+            session.add(PublicationORM(cv_id=cv_id, **pub.model_dump()))
 
         for award in data.awards:
-            session.add(AwardORM(cv_id=cv_id, **award.dict()))
+            session.add(AwardORM(cv_id=cv_id, **award.model_dump()))
 
         for section in data.custom_sections:
-            session.add(CustomSectionORM(cv_id=cv_id, **section.dict()))
+            session.add(CustomSectionORM(cv_id=cv_id, **section.model_dump()))
 
+    @error_handler
     async def get_cv_by_id(self, cv_id: str) -> JobSeekerCV | None:
         # Retrieve full CV details including all related data
         with self.get_session() as session:
@@ -80,24 +78,24 @@ class ResumeController(Controllers):
                 return None  # If CV not found, return None
 
             # Retrieve all related data using CV ID
-            experience = session.query(ExperienceORM).filter(ExperienceORM.cv_id == cv_id).all()
-            education = session.query(EducationORM).filter(EducationORM.cv_id == cv_id).all()
-            certifications = session.query(CertificationORM).filter(CertificationORM.cv_id == cv_id).all()
-            languages = session.query(LanguageORM).filter(LanguageORM.cv_id == cv_id).all()
-            projects = session.query(ProjectORM).filter(ProjectORM.cv_id == cv_id).all()
-            publications = session.query(PublicationORM).filter(PublicationORM.cv_id == cv_id).all()
-            awards = session.query(AwardORM).filter(AwardORM.cv_id == cv_id).all()
-            custom_sections = session.query(CustomSectionORM).filter(CustomSectionORM.cv_id == cv_id).all()
+            experience_orm_list = session.query(ExperienceORM).filter(ExperienceORM.cv_id == cv_id).all()
+            education_orm_list = session.query(EducationORM).filter(EducationORM.cv_id == cv_id).all()
+            certifications_orm_list = session.query(CertificationORM).filter(CertificationORM.cv_id == cv_id).all()
+            languages_orm_list = session.query(LanguageORM).filter(LanguageORM.cv_id == cv_id).all()
+            projects_orm_list = session.query(ProjectORM).filter(ProjectORM.cv_id == cv_id).all()
+            publications_orm_list = session.query(PublicationORM).filter(PublicationORM.cv_id == cv_id).all()
+            awards_orm_list = session.query(AwardORM).filter(AwardORM.cv_id == cv_id).all()
+            custom_sections_orm_list = session.query(CustomSectionORM).filter(CustomSectionORM.cv_id == cv_id).all()
 
             # Convert all related entries to Pydantic models
-            experience_pydantic = [Experience.from_orm(exp) for exp in experience]
-            education_pydantic = [Education.from_orm(edu) for edu in education]
-            certifications_pydantic = [Certification.from_orm(cert) for cert in certifications]
-            languages_pydantic = [Language.from_orm(lang) for lang in languages]
-            projects_pydantic = [Project.from_orm(proj) for proj in projects]
-            publications_pydantic = [Publication.from_orm(pub) for pub in publications]
-            awards_pydantic = [Award.from_orm(award) for award in awards]
-            custom_sections_pydantic = [CustomSection.from_orm(section) for section in custom_sections]
+            experience_pydantic = [Experience(**exp.to_dict()) for exp in experience_orm_list]
+            education_pydantic = [Education(**edu.to_dict()) for edu in education_orm_list]
+            certifications_pydantic = [Certification(**cert.to_dict()) for cert in certifications_orm_list]
+            languages_pydantic = [Language(**lang.to_dict()) for lang in languages_orm_list]
+            projects_pydantic = [Project(**proj.to_dict()) for proj in projects_orm_list]
+            publications_pydantic = [Publication(**pub.to_dict()) for pub in publications_orm_list]
+            awards_pydantic = [Award(**award.to_dict()) for award in awards_orm_list]
+            custom_sections_pydantic = [CustomSection(**section.to_dict()) for section in custom_sections_orm_list]
 
             # Prepare the result as a Pydantic model for JobSeekerCV
             result = JobSeekerCV(
@@ -123,6 +121,7 @@ class ResumeController(Controllers):
 
             return result
 
+    @error_handler
     async def list_cvs_for_user(self, user_uid: str) -> list[JobSeekerCV]:
         # Get all resumes for a specific job seeker
         with self.get_session() as session:
@@ -136,51 +135,12 @@ class ResumeController(Controllers):
             # Retrieve all related data for each CV (experience, education, certifications, etc.)
             result = []
             for cv in cvs:
-                experience = session.query(ExperienceORM).filter(ExperienceORM.cv_id == cv.cv_id).all()
-                education = session.query(EducationORM).filter(EducationORM.cv_id == cv.cv_id).all()
-                certifications = session.query(CertificationORM).filter(CertificationORM.cv_id == cv.cv_id).all()
-                languages = session.query(LanguageORM).filter(LanguageORM.cv_id == cv.cv_id).all()
-                projects = session.query(ProjectORM).filter(ProjectORM.cv_id == cv.cv_id).all()
-                publications = session.query(PublicationORM).filter(PublicationORM.cv_id == cv.cv_id).all()
-                awards = session.query(AwardORM).filter(AwardORM.cv_id == cv.cv_id).all()
-                custom_sections = session.query(CustomSectionORM).filter(CustomSectionORM.cv_id == cv.cv_id).all()
-
-                # Convert all related entries to Pydantic models
-                experience_pydantic = [Experience.from_orm(exp) for exp in experience]
-                education_pydantic = [Education.from_orm(edu) for edu in education]
-                certifications_pydantic = [Certification.from_orm(cert) for cert in certifications]
-                languages_pydantic = [Language.from_orm(lang) for lang in languages]
-                projects_pydantic = [Project.from_orm(proj) for proj in projects]
-                publications_pydantic = [Publication.from_orm(pub) for pub in publications]
-                awards_pydantic = [Award.from_orm(award) for award in awards]
-                custom_sections_pydantic = [CustomSection.from_orm(section) for section in custom_sections]
-
-                # Create Pydantic model for the CV
-                cv_pydantic = JobSeekerCV(
-                    cv_id=cv.cv_id,
-                    user_uid=cv.user_uid,
-                    professional_title=cv.professional_title,
-                    summary=cv.summary,
-                    location=cv.location,
-                    phone=cv.phone,
-                    website=cv.website,
-                    linkedin=cv.linkedin,
-                    github=cv.github,
-                    created_at=cv.created_at,
-                    experience=experience_pydantic,
-                    education=education_pydantic,
-                    certifications=certifications_pydantic,
-                    languages=languages_pydantic,
-                    projects=projects_pydantic,
-                    publications=publications_pydantic,
-                    awards=awards_pydantic,
-                    custom_sections=custom_sections_pydantic
-                )
-
-                result.append(cv_pydantic)
+                _cv = await self.get_cv_by_id(cv_id=cv.cv_id)
+                result.append(_cv)
 
             return result
 
+    @error_handler
     async def delete_cv(self, cv_id: str) -> bool:
         # Delete a specific CV and its related entries
         with self.get_session() as session:
@@ -206,6 +166,7 @@ class ResumeController(Controllers):
             # Commit the changes (this is handled by your session controller)
             return True  # Return True to indicate successful deletion
 
+    @error_handler
     async def search_cvs(self, query: str, limit: int = 10) -> list[JobSeekerCV]:
         # Search for resumes using professional title or keyword
         with self.get_session() as session:
@@ -222,51 +183,12 @@ class ResumeController(Controllers):
             # Retrieve all related data for each CV (experience, education, certifications, etc.)
             result = []
             for cv in cvs:
-                experience = session.query(ExperienceORM).filter(ExperienceORM.cv_id == cv.cv_id).all()
-                education = session.query(EducationORM).filter(EducationORM.cv_id == cv.cv_id).all()
-                certifications = session.query(CertificationORM).filter(CertificationORM.cv_id == cv.cv_id).all()
-                languages = session.query(LanguageORM).filter(LanguageORM.cv_id == cv.cv_id).all()
-                projects = session.query(ProjectORM).filter(ProjectORM.cv_id == cv.cv_id).all()
-                publications = session.query(PublicationORM).filter(PublicationORM.cv_id == cv.cv_id).all()
-                awards = session.query(AwardORM).filter(AwardORM.cv_id == cv.cv_id).all()
-                custom_sections = session.query(CustomSectionORM).filter(CustomSectionORM.cv_id == cv.cv_id).all()
-
-                # Convert all related entries to Pydantic models
-                experience_pydantic = [Experience.from_orm(exp) for exp in experience]
-                education_pydantic = [Education.from_orm(edu) for edu in education]
-                certifications_pydantic = [Certification.from_orm(cert) for cert in certifications]
-                languages_pydantic = [Language.from_orm(lang) for lang in languages]
-                projects_pydantic = [Project.from_orm(proj) for proj in projects]
-                publications_pydantic = [Publication.from_orm(pub) for pub in publications]
-                awards_pydantic = [Award.from_orm(award) for award in awards]
-                custom_sections_pydantic = [CustomSection.from_orm(section) for section in custom_sections]
-
-                # Create Pydantic model for the CV
-                cv_pydantic = JobSeekerCV(
-                    cv_id=cv.cv_id,
-                    user_uid=cv.user_uid,
-                    professional_title=cv.professional_title,
-                    summary=cv.summary,
-                    location=cv.location,
-                    phone=cv.phone,
-                    website=cv.website,
-                    linkedin=cv.linkedin,
-                    github=cv.github,
-                    created_at=cv.created_at,
-                    experience=experience_pydantic,
-                    education=education_pydantic,
-                    certifications=certifications_pydantic,
-                    languages=languages_pydantic,
-                    projects=projects_pydantic,
-                    publications=publications_pydantic,
-                    awards=awards_pydantic,
-                    custom_sections=custom_sections_pydantic
-                )
-
-                result.append(cv_pydantic)
+                _cv = await self.get_cv_by_id(cv_id=cv.cv_id)
+                result.append(_cv)
 
             return result
 
+    @error_handler
     async def notify_admin_of_new_cv(self, user_email: str, cv_id: str):
         # Notify admin via email when a new resume is submitted
         with self.get_session() as session:
@@ -304,6 +226,7 @@ class ResumeController(Controllers):
             await send_mail.send_mail_resend(email=email)
             return True  # Return True to indicate email was sent successfully
 
+    @error_handler
     async def update_cv(self, cv_id: str, data: JobSeekerCV) -> bool:
         """
             Update an existing CV and all its associated sections.
@@ -371,6 +294,7 @@ class ResumeController(Controllers):
 
             return True
 
+    @error_handler
     async def get_cvs_by_skill(self, skill: str) -> list[JobSeekerCV]:
         """
         Retrieve CVs that mention a specific skill in the 'skills' field.
@@ -388,7 +312,7 @@ class ResumeController(Controllers):
             )
             return [JobSeekerCV.model_validate(cv) for cv in query.all()]
 
-
+    @error_handler
     async def get_cvs_by_location(self, location: str) -> list[JobSeekerCV]:
         """
         Retrieve CVs where the job seeker is located in a specific city or region.
@@ -405,6 +329,7 @@ class ResumeController(Controllers):
             )
             return [JobSeekerCV.model_validate(cv) for cv in query.all()]
 
+    @error_handler
     async def get_recent_cvs(self, limit: int = 10) -> list[JobSeekerCV]:
         """
         Fetch the most recently created CVs.
@@ -424,6 +349,7 @@ class ResumeController(Controllers):
             )
             return [JobSeekerCV.model_validate(cv) for cv in query.all()]
 
+    @error_handler
     async def flag_cv_for_review(self, cv_id: str, reason: str) -> bool:
         """
         Mark a CV for admin review by setting the `is_flagged` flag and storing the reason.
@@ -443,6 +369,7 @@ class ResumeController(Controllers):
             cv.flag_reason = reason
             return True
 
+    @error_handler
     async def mark_cv_as_verified(self, cv_id: str) -> bool:
         """
         Mark a CV as verified by setting the `is_verified` flag.
@@ -460,6 +387,7 @@ class ResumeController(Controllers):
             cv.is_verified = True
             return True
 
+    @error_handler
     async def employer_save_cv(self, employer_uid: str, cv_id: str) -> bool:
         """
         Allows an employer to bookmark or save a specific CV for later viewing.
@@ -490,6 +418,7 @@ class ResumeController(Controllers):
             session.add(save)
             return True
 
+    @error_handler
     async def employer_saved_cvs(self, employer_uid: str) -> list[JobSeekerCV]:
         """
         Get a list of CVs saved/bookmarked by a specific employer.
@@ -507,9 +436,11 @@ class ResumeController(Controllers):
             # Fetch the actual CV details using get_cv_by_id method, which should also handle ORM conversion
             cv_details = []
             for cv_id in cv_ids:
-                cv_details.append(await self.get_cv_by_id(cv_id=cv_id))
+                _cv = await self.get_cv_by_id(cv_id=cv_id)
+                cv_details.append(_cv)
             return cv_details
 
+    @error_handler
     async def get_cv_statistics(self) -> dict:
         """
         Admin stats: Retrieve various statistics about the CVs in the system.
@@ -544,6 +475,7 @@ class ResumeController(Controllers):
                 "recent_cvs": recent_cvs
             }
 
+    @error_handler
     async def get_cvs_by_certification(self, cert_name: str) -> list[JobSeekerCV]:
         """
         Filter CVs by a specific certification name.
@@ -563,6 +495,7 @@ class ResumeController(Controllers):
             # Return the full CV details for each CV ID
             return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids]
 
+    @error_handler
     async def get_cvs_by_language(self, language: str) -> list[JobSeekerCV]:
         """
         Filter CVs by known languages.

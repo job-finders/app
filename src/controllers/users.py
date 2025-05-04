@@ -67,6 +67,7 @@ class UsersController(Controllers):
                 return None
             return User(**user_orm.to_dict())
 
+    @error_handler
     async def login_user(self, email: str, password: str) -> User | None:
         """
 
