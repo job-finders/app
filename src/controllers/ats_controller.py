@@ -83,6 +83,33 @@ class ATSToolController(Controllers):
         return vectorizer.get_feature_names_out().tolist()
 
     @error_handler
+    async def extract_weighted_keywords(
+            self,
+            text: str,
+            top_n: Optional[int] = None
+    ) -> Dict[str, float]:
+        """Extract keywords with weights using TF-IDF
+
+        Args:
+            text: Resume text
+            top_n: Number of top weighted keywords to return
+
+        Returns:
+            Dictionary of keywords and their weights sorted by importance
+        """
+        clean_text = await self.clean_text(text)
+        top_n = top_n or self.top_n_keywords
+
+        vectorizer = TfidfVectorizer(stop_words='english')
+        matrix = vectorizer.fit_transform([clean_text])
+        features = vectorizer.get_feature_names_out()
+        scores = matrix.toarray()[0]
+
+        weighted_keywords = {kw: round(score, 4) for kw, score in zip(features, scores)}
+        sorted_keywords = dict(sorted(weighted_keywords.items(), key=lambda x: x[1], reverse=True)[:top_n])
+        return sorted_keywords
+
+    @error_handler
     async def categorize_keywords(self, text: str) -> Dict[str, List[str]]:
         """Categorize text elements using NLP analysis
 

@@ -1,8 +1,10 @@
 from flask import Blueprint, request, render_template
+
+from src.logger import init_logger
 from src.main import ats_controller  # Assuming ats_controller is an instance of ATSToolController
 
 ats_tool_route = Blueprint('ats', __name__)
-
+ats_logger = init_logger("ats_tool")
 
 @ats_tool_route.route("/ats-match", methods=["POST"])
 async def ats_match():
@@ -66,5 +68,5 @@ async def ats_tools():
         "weighted_keywords": await ats_controller.extract_weighted_keywords(resume_text),
         "categorized": await ats_controller.categorize_keywords(resume_text)
     }
-
+    ats_logger.info(f"ATS TOOL : {context}")
     return render_template("ats/tools_results_inline.html", **context)

@@ -3,7 +3,6 @@
 {% block content %}
 <div class="container mt-5">
   <h3 class="mb-4">Your Jobseeker Profile</h3>
-
   <!-- Profile Info Section -->
   <div class="card mb-4">
     <div class="card-header">
@@ -40,7 +39,6 @@
       <p><strong>Availability:</strong> {{ profile.availability or "Not Provided" }}</p>
     </div>
   </div>
-
   <!-- Freelance Details Section (if applicable) -->
   {% if profile.is_freelancer %}
   <div class="card mb-4">
@@ -55,7 +53,6 @@
     </div>
   </div>
   {% endif %}
-
   <!-- Profile Visibility -->
   <div class="card mb-4">
     <div class="card-header">
@@ -65,7 +62,6 @@
       <p><strong>Visible to Employers:</strong> {{ "Yes" if profile.visibility else "No" }}</p>
     </div>
   </div>
-
   <!-- Edit Profile Button -->
   <div class="text-right">
     <a href="{{ url_for('jobseeker_profiles.edit_profile') }}" class="btn btn-primary">Edit Profile</a>
