@@ -1,0 +1,219 @@
+
+{% macro render_experience(experience) %}
+{% if experience %}
+<div class="mb-4">
+  <h4 class="text-info"><i class="ti-briefcase mr-2"></i>Experience</h4>
+  {% for exp in experience %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="font-weight-bold">{{ exp.job_title }}</h5>
+      <div class="row text-muted small mb-2">
+        <div class="col-12 col-md-6">
+          <i class="ti-home"></i> {{ exp.company }}
+        </div>
+        <div class="col-12 col-md-6 text-md-right">
+          {{ exp.start_date.strftime('%b %Y') }} -
+          {{ exp.end_date.strftime('%b %Y') if exp.end_date else 'Present' }}
+        </div>
+      </div>
+      {% if exp.location %}
+      <div class="mb-2">
+        <i class="ti-location-pin"></i> {{ exp.location }}
+      </div>
+      {% endif %}
+      {% if exp.description %}
+      <p class="mb-0">{{ exp.description }}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_education(education) %}
+{% if education %}
+<div class="mb-4">
+  <h4 class="text-info"><i class="ti-book mr-2"></i>Education</h4>
+  {% for edu in education %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="font-weight-bold">{{ edu.qualification }}</h5>
+      <div class="row text-muted small mb-2">
+        <div class="col-12 col-md-6">
+          <i class="ti-medal"></i> {{ edu.institution }}
+        </div>
+        <div class="col-12 col-md-6 text-md-right">
+          {{ edu.start_date.strftime('%b %Y') }} -
+          {{ edu.end_date.strftime('%b %Y') if edu.end_date else 'Present' }}
+        </div>
+      </div>
+      {% if edu.field_of_study %}
+      <div class="mb-2">
+        <i class="ti-bookmark-alt"></i> {{ edu.field_of_study }}
+      </div>
+      {% endif %}
+      {% if edu.description %}
+      <p class="mb-0">{{ edu.description }}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_certifications(certifications) %}
+{% if certifications %}
+<div class="mb-4">
+  <h4 class="text-info"><i class="ti-medall mr-2"></i>Certifications</h4>
+  {% for cert in certifications %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="font-weight-bold">{{ cert.name }}</h5>
+      <div class="row text-muted small mb-2">
+        <div class="col-12 col-md-6">
+          <i class="ti-crown"></i> {{ cert.issuer }}
+        </div>
+        <div class="col-12 col-md-6 text-md-right">
+          {{ cert.issue_date.strftime('%b %Y') }} -
+          {{ cert.expiry_date.strftime('%b %Y') if cert.expiry_date else 'No Expiry' }}
+        </div>
+      </div>
+      {% if cert.credential_url %}
+      <a href="{{ cert.credential_url }}" class="btn btn-sm btn-outline-info">
+        <i class="ti-link"></i> Verify Credential
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_languages(languages) %}
+{% if languages %}
+<div class="mb-4">
+  <h4 class="text-info"><i class="ti-world mr-2"></i>Languages</h4>
+  <div class="row">
+    {% for lang in languages %}
+    <div class="col-6 col-md-4 col-lg-3 mb-2">
+      <div class="d-flex align-items-center">
+        <span class="font-weight-bold mr-2">{{ lang.name }}</span>
+        <span class="badge badge-pill badge-secondary">
+          {{ lang.proficiency }}
+        </span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_projects(projects) %}
+{% if projects %}
+<div class="mb-4">
+  <h4 class="text-info"><i class="ti-layout mr-2"></i>Projects</h4>
+  {% for project in projects %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="font-weight-bold">{{ project.title }}</h5>
+      {% if project.technologies %}
+      <div class="mb-2">
+        {% for tech in project.technologies %}
+        <span class="badge badge-pill badge-light border">{{ tech }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <p>{{ project.description }}</p>
+      {% if project.link %}
+      <a href="{{ project.link }}" class="btn btn-sm btn-outline-info">
+        <i class="ti-link"></i> View Project
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_publications(publications) %}
+{% if publications %}
+<div class="mb-4">
+  <h4 class="text-info"><i class="ti-notepad mr-2"></i>Publications</h4>
+  {% for pub in publications %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="font-weight-bold">{{ pub.title }}</h5>
+      <div class="row text-muted small mb-2">
+        <div class="col-12 col-md-6">
+          {% if pub.publisher %}<i class="ti-agenda"></i> {{ pub.publisher }}{% endif %}
+        </div>
+        <div class="col-12 col-md-6 text-md-right">
+          {% if pub.date %}{{ pub.date.strftime('%b %Y') }}{% endif %}
+        </div>
+      </div>
+      {% if pub.link %}
+      <a href="{{ pub.link }}" class="btn btn-sm btn-outline-info">
+        <i class="ti-link"></i> Read Publication
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_awards(awards) %}
+{% if awards %}
+<div class="mb-4">
+  <h4 class="text-info"><i class="ti-cup mr-2"></i>Awards</h4>
+  {% for award in awards %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="font-weight-bold">{{ award.title }}</h5>
+      <div class="row text-muted small mb-2">
+        <div class="col-12 col-md-6">
+          {% if award.issuer %}<i class="ti-star"></i> {{ award.issuer }}{% endif %}
+        </div>
+        <div class="col-12 col-md-6 text-md-right">
+          {% if award.date %}{{ award.date.strftime('%b %Y') }}{% endif %}
+        </div>
+      </div>
+      {% if award.description %}
+      <p class="mb-0">{{ award.description }}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_custom_sections(custom_sections) %}
+{% if custom_sections %}
+<div class="mb-4">
+  <h4 class="text-info"><i class="ti-layout-grid3 mr-2"></i>Additional Information</h4>
+  {% for section in custom_sections %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="font-weight-bold">{{ section.title }}</h5>
+      {% if section.content is string %}
+        <p>{{ section.content }}</p>
+      {% else %}
+        <ul class="mb-0">
+          {% for item in section.content %}
+          <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
