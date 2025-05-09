@@ -1,0 +1,316 @@
+{% extends "jobseekers/layout/page.html" %}
+{% block content %}
+<div class="container-fluid">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+      <h4 class="font-weight-bold text-info">
+        <i class="ti-file mr-2"></i>Build Your Professional CV
+      </h4>
+    </div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        <!-- Basic Information Section -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="font-weight-bold">
+              <i class="ti-user mr-2"></i>Basic Information
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <label class="font-weight-bold">Professional Title</label>
+                <input type="text" class="form-control" name="professional_title" required>
+                <small class="text-muted">E.g. "Senior Software Engineer"</small>
+              </div>
+              <div class="col-md-12 mb-3">
+                <label class="font-weight-bold">Summary</label>
+                <textarea class="form-control" name="summary" rows="3"></textarea>
+                <small class="text-muted">Brief overview of your professional experience</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Contact Information -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="font-weight-bold">
+              <i class="ti-location-pin mr-2"></i>Contact Details
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="font-weight-bold">Phone</label>
+                <input type="tel" class="form-control" name="phone">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="font-weight-bold">Location</label>
+                <input type="text" class="form-control" name="location">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="font-weight-bold">Website</label>
+                <input type="url" class="form-control" name="website">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="font-weight-bold">LinkedIn</label>
+                <input type="url" class="form-control" name="linkedin">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="font-weight-bold">GitHub</label>
+                <input type="url" class="form-control" name="github">
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Skills Section -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="font-weight-bold">
+              <i class="ti-star mr-2"></i>Skills
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="font-weight-bold">Add Skills</label>
+              <input type="text" class="form-control" name="skills"
+                     placeholder="Comma separated list (e.g. Python, Project Management, CAD Design)">
+              <small class="text-muted">Add at least 3 key skills</small>
+            </div>
+          </div>
+        </div>
+        <!-- Experience Section -->
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="font-weight-bold">
+              <i class="ti-briefcase mr-2"></i>Work Experience
+            </h5>
+            <button type="button" class="btn btn-sm btn-outline-success add-experience">
+              <i class="ti-plus"></i> Add Position
+            </button>
+          </div>
+          <div class="card-body experience-section">
+            <div class="experience-item mb-3">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label>Job Title</label>
+                  <input type="text" class="form-control" name="experience[0][job_title]">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label>Company</label>
+                  <input type="text" class="form-control" name="experience[0][company]">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label>Start Date</label>
+                  <input type="date" class="form-control" name="experience[0][start_date]">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label>End Date</label>
+                  <input type="date" class="form-control" name="experience[0][end_date]">
+                </div>
+                <div class="col-12 mb-3">
+                  <label>Description</label>
+                  <textarea class="form-control" name="experience[0][description]" rows="2"></textarea>
+                </div>
+              </div>
+              <hr class="my-3">
+            </div>
+          </div>
+        </div>
+        <!-- Education Section -->
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="font-weight-bold">
+              <i class="ti-book mr-2"></i>Education
+            </h5>
+            <button type="button" class="btn btn-sm btn-outline-primary add-education">
+              <i class="ti-plus"></i> Add Education
+            </button>
+          </div>
+          <div class="card-body education-section">
+            <div class="education-item mb-3">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label>Institution</label>
+                  <input type="text" class="form-control" name="education[0][institution]" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label>Qualification</label>
+                  <input type="text" class="form-control" name="education[0][qualification]" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label>Field of Study</label>
+                  <input type="text" class="form-control" name="education[0][field_of_study]" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label>Start Date</label>
+                  <input type="date" class="form-control" name="education[0][start_date]" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label>End Date</label>
+                  <input type="date" class="form-control" name="education[0][end_date]">
+                </div>
+                <div class="col-12 mb-3">
+                  <label>Description</label>
+                  <textarea class="form-control" name="education[0][description]" rows="2"></textarea>
+                </div>
+              </div>
+              <hr class="my-3">
+            </div>
+          </div>
+        </div>
+        <!-- Certifications Section -->
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="font-weight-bold">
+              <i class="ti-medall mr-2"></i>Certifications
+            </h5>
+            <button type="button" class="btn btn-sm btn-outline-info add-certification">
+              <i class="ti-plus"></i> Add Certification
+            </button>
+          </div>
+          <div class="card-body certification-section">
+            <div class="certification-item mb-3">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label>Certification Name</label>
+                  <input type="text" class="form-control" name="certifications[0][name]" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label>Issuing Organization</label>
+                  <input type="text" class="form-control" name="certifications[0][issuer]" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label>Issue Date</label>
+                  <input type="date" class="form-control" name="certifications[0][issue_date]" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label>Expiry Date</label>
+                  <input type="date" class="form-control" name="certifications[0][expiry_date]">
+                </div>
+                <div class="col-12 mb-3">
+                  <label>Certificate File</label>
+                  <div class="custom-file">
+                    <input type="file" class="custom-file-input"
+                           name="certifications[0][file]"
+                           accept=".pdf,.jpg,.png,.doc,.docx" required>
+                    <label class="custom-file-label">Choose file (PDF, Word, Images)</label>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                  <i class="ti-trash"></i> Remove
+                </button>
+              </div>
+              <hr class="my-3">
+            </div>
+          </div>
+        </div>
+        <!-- File Upload Section -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="font-weight-bold">
+              <i class="ti-upload mr-2"></i>Documents
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="font-weight-bold">Upload Resume (PDF)</label>
+              <div class="custom-file">
+                <input type="file" class="custom-file-input" name="resume" accept=".pdf">
+                <label class="custom-file-label">Choose file</label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="font-weight-bold">Profile Photo</label>
+              <div class="custom-file">
+                <input type="file" class="custom-file-input" name="profile_image" accept="image/*">
+                <label class="custom-file-label">Choose image</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Form Controls -->
+        <div class="d-flex justify-content-end mt-4">
+          <a href="{{ url_for('jobseekers.dashboard') }}"
+             class="btn btn-outline-secondary mr-3">
+            <i class="ti-close"></i> Cancel
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="ti-save"></i> Save CV
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  // Experience Section
+  document.querySelector('.add-experience').addEventListener('click', function() {
+    const clone = document.querySelector('.experience-item').cloneNode(true);
+    const index = document.querySelectorAll('.experience-item').length;
+    clone.querySelectorAll('input, textarea').forEach(el => {
+      el.name = el.name.replace('[0]', `[${index}]`);
+      el.value = '';
+    });
+    document.querySelector('.experience-section').appendChild(clone);
+  });
+
+  // Education Section (Add this)
+  document.querySelector('.add-education').addEventListener('click', function() {
+    const clone = document.querySelector('.education-item').cloneNode(true);
+    const index = document.querySelectorAll('.education-item').length;
+    clone.querySelectorAll('input, textarea').forEach(el => {
+      el.name = el.name.replace('[0]', `[${index}]`);
+      el.value = '';
+    });
+    document.querySelector('.education-section').appendChild(clone);
+  });
+
+  // Certifications Section
+  document.querySelector('.add-certification').addEventListener('click', function() {
+    const template = document.querySelector('.certification-item');
+    const clone = template.cloneNode(true);
+    const index = document.querySelectorAll('.certification-item').length;
+
+    // Update all inputs
+    clone.querySelectorAll('input').forEach(el => {
+      if(el.type !== 'file') {
+        el.name = el.name.replace('[0]', `[${index}]`);
+        el.value = '';
+      } else {
+        // Special handling for file inputs
+        el.name = `certifications[${index}][file]`;
+        el.value = '';
+        el.nextElementSibling.textContent = 'Choose file (PDF, Word, Images)';
+      }
+    });
+
+    // Add remove functionality
+    clone.querySelector('.remove-item').addEventListener('click', function() {
+      this.closest('.certification-item').remove();
+    });
+
+    document.querySelector('.certification-section').appendChild(clone);
+  });
+
+  // Initialize remove buttons
+  document.querySelectorAll('.remove-item').forEach(btn => {
+    btn.addEventListener('click', function() {
+      this.closest('.certification-item').remove();
+    });
+  });
+
+  // Handle file input labels
+  document.querySelectorAll('.custom-file-input').forEach(input => {
+    input.addEventListener('change', function(e) {
+      const fileName = e.target.files[0]?.name || 'Choose file';
+      this.nextElementSibling.textContent = fileName;
+    });
+  });
+</script>
+
+{% endblock %}

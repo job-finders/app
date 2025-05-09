@@ -151,6 +151,26 @@
     }
   }
 
+
+      /* Mobile-first styling */
+  .card {
+    border-radius: 0.8rem;
+  }
+  .form-control {
+    border-radius: 0.5rem;
+  }
+  .custom-file-label::after {
+    border-radius: 0 0.5rem 0.5rem 0;
+  }
+  @media (max-width: 768px) {
+    .card-header h5 {
+      font-size: 1.1rem;
+    }
+    .form-control {
+      font-size: 0.9rem;
+    }
+  }
+
   </style>
 
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269" crossorigin="anonymous"></script>
@@ -214,5 +234,6 @@
       });
     });
   </script>
+
 </body>
 </html>

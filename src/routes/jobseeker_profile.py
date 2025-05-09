@@ -7,7 +7,7 @@ from src.database.models.users import User
 from src.main import job_seeker_profile_controller
 from src.database.models.jobseeker_profile import JobSeekerProfile
 
-jobseeker_profiles_bp = Blueprint("jobseeker_profiles", __name__, url_prefix="/profiles/jobseekers")
+jobseeker_profiles_bp = Blueprint("jobseeker_profiles", __name__, url_prefix="/jobseeker/profile")
 
 
 @jobseeker_profiles_bp.route("/create", methods=["GET", "POST"])

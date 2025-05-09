@@ -11,11 +11,11 @@ from src.routes import flask_error_handler
 from src.routes.utils import (create_common_context, not_found, gone, TOWN_TO_PROVINCE, create_search_context,
                               sub_job_detail)
 
-jobseeker_route = Blueprint('jobseekers', __name__)
+jobseeker_route = Blueprint('jobseekers', __name__,  url_prefix="/jobseeker")
 
 
 
-@jobseeker_route.route('/jobseeker/dashboard', methods=['GET'])
+@jobseeker_route.route('/dashboard', methods=['GET'])
 @flask_error_handler
 @login_required
 async def dashboard(user: User):
@@ -30,50 +30,40 @@ async def dashboard(user: User):
     context = dict(current_user=user, seeker_stats=seeker_stats)
     return render_template("jobseekers/dashboard.html", **context)
 
-
-@jobseeker_route.route('/jobseeker/apply', methods=['GET'])
+@jobseeker_route.route('/apply', methods=['GET'])
 @flask_error_handler
 @login_required
 async def apply(user: User):
-    context = dict(user=user)
+    context = dict(current_user=user)
     return render_template("jobseekers/apply.html", **context)
 
 
-@jobseeker_route.route('/jobseeker/saved-jobs', methods=['GET'])
+@jobseeker_route.route('/saved-jobs', methods=['GET'])
 @flask_error_handler
 @login_required
 async def saved_jobs(user: User):
-    context = dict(user=user)
+    context = dict(current_user=user)
     return render_template("jobseekers/saved_jobs.html", **context)
 
 
-@jobseeker_route.route('/jobseeker/upload-cv', methods=['GET', 'POST'])
+@jobseeker_route.route('/upload-cv', methods=['GET', 'POST'])
 @flask_error_handler
 @login_required
 async def upload_cv(user: User):
-    context = dict(user=user)
+    context = dict(current_user=user)
     return render_template("jobseekers/upload_cv.html", **context)
 
-
-@jobseeker_route.route('/jobseeker/profile', methods=['GET', 'POST'])
-@flask_error_handler
-@login_required
-async def profile(user: User):
-    context = dict(user=user)
-    return render_template("jobseekers/profile.html", **context)
-
-
-@jobseeker_route.route('/jobseeker/applications', methods=['GET'])
+@jobseeker_route.route('/applications', methods=['GET'])
 @flask_error_handler
 @login_required
 async def applications(user: User):
-    context = dict(user=user)
+    context = dict(current_user=user)
     return render_template("jobseekers/applications.html", **context)
 
 
-@jobseeker_route.route('/jobseeker/notifications', methods=['GET'])
+@jobseeker_route.route('/notifications', methods=['GET'])
 @flask_error_handler
 @login_required
 async def notifications(user: User):
-    context = dict(user=user)
+    context = dict(current_user=user)
     return render_template("jobseekers/notifications.html", **context)
