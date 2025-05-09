@@ -10,8 +10,9 @@
                         <span class="line"></span>
                     </div>
                 </div>
-                <!-- Right Side (Nav Links) -->
-                <div class="d-flex align-items-center">
+
+                <!-- Right Side (Navigation Links - Desktop) -->
+                <div class="d-none d-lg-flex align-items-center">
                     <a href="{{ url_for('home.get_home') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Home</a>
                     <a href="{{ url_for('home.contact') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Contact</a>
                     <a href="{{ url_for('home.about') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">About</a>
@@ -30,9 +31,37 @@
                         <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">Login</a>
                         <a href="{{ url_for('auth.subscribe') }}" class="btn btn-sm btn-primary font-weight-bold text-white mx-1">Create Account</a>
                     {% endif %}
+                </div>
 
+                <!-- Mobile Dropdown Menu -->
+                <div class="dropdown d-lg-none">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                            id="mobileMenuButton" data-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                        Menu
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="mobileMenuButton">
+                        <a href="{{ url_for('home.get_home') }}" class="dropdown-item">Home</a>
+                        <a href="{{ url_for('home.about') }}" class="dropdown-item">About</a>
+                        <a href="{{ url_for('home.contact') }}" class="dropdown-item">Contact</a>
+                        <a href="https://blog.jobfinders.site" class="dropdown-item">Blog</a>
+                        <div class="dropdown-divider"></div>
+                        {% if current_user and current_user.is_authenticated %}
+                            {% if current_user and current_user.role == 'seeker' %}
+                                <a href="{{ url_for('jobseekers.dashboard') }}" class="dropdown-item">Dashboard</a>
+                            {% endif %}
+                            {% if current_user and current_user.role == 'employer' %}
+                                <a href="#" class="dropdown-item">Dashboard</a>
+                            {% endif %}
+                            <a href="{{ url_for('auth.logout') }}" class="dropdown-item text-danger">Logout</a>
+                        {% else %}
+                            <a href="{{ url_for('auth.login') }}" class="dropdown-item">Login</a>
+                            <a href="{{ url_for('auth.subscribe') }}" class="dropdown-item text-primary">Create Account</a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+

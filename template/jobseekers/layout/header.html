@@ -12,23 +12,70 @@
                     <a href="{{ url_for('home.get_home') }}" class="font-weight-bold text-info h5 mb-0">JobFinders</a>
                 </div>
 
-                <!-- Right Side (Navigation Buttons) -->
-                <div class="d-flex align-items-center">
-                    <a href="{{ url_for('home.get_home') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Find Jobs</a>
-                    <a href="{{ url_for('jobseekers.upload_cv') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Submit CV</a>
-                    <a href="{{ url_for('jobseekers.applications') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">My Applications</a>
-{#                    <a href="https://blog.jobfinders.site" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Blog</a>#}
-{#                    <a href="{{ url_for('home.contact') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Contact</a>#}
-{#                    <a href="{{ url_for('home.about') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">About</a>#}
+                <!-- Right Side (Navigation Buttons - Desktop) -->
+                <div class="d-none d-lg-flex align-items-center">
+                    <a href="{{ url_for('home.get_home') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
+                        <i class="ti-home"></i> Home
+                    </a>
+                    <a href="{{ url_for('jobseekers.upload_cv') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
+                        <i class="ti-upload"></i> Submit CV
+                    </a>
+                    <a href="{{ url_for('jobseekers.applications') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
+                        <i class="ti-check-box"></i> My Applications
+                    </a>
 
                     <!-- Auth Buttons -->
                     {% if current_user and not not current_user.is_authenticated %}
-                        <a href="{{ url_for('jobseekers.profile') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">My Profile</a>
-                        <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-danger font-weight-bold text-white mx-1">Logout</a>
+                        <a href="{{ url_for('jobseekers.profile') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">
+                            <i class="ti-user"></i> My Profile
+                        </a>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-danger font-weight-bold text-white mx-1">
+                            <i class="ti-power-off"></i> Logout
+                        </a>
                     {% else %}
-                        <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">Login</a>
-                        <a href="{{ url_for('auth.subscribe') }}" class="btn btn-sm btn-primary font-weight-bold text-white mx-1">Create Account</a>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">
+                            <i class="ti-shift-right"></i> Login
+                        </a>
+                        <a href="{{ url_for('auth.subscribe') }}" class="btn btn-sm btn-primary font-weight-bold text-white mx-1">
+                            <i class="ti-plus"></i> Create Account
+                        </a>
                     {% endif %}
+                </div>
+
+                <!-- Mobile Dropdown Menu -->
+                <div class="dropdown d-lg-none">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                            id="mobileMenuButton" data-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                        <i class="ti-menu"></i> Menu
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="mobileMenuButton">
+                        <a href="{{ url_for('home.get_home') }}" class="dropdown-item">
+                            <i class="ti-home mr-2"></i>Home
+                        </a>
+                        <a href="{{ url_for('jobseekers.upload_cv') }}" class="dropdown-item">
+                            <i class="ti-upload mr-2"></i>Submit CV
+                        </a>
+                        <a href="{{ url_for('jobseekers.applications') }}" class="dropdown-item">
+                            <i class="ti-check-box mr-2"></i>My Applications
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        {% if current_user and not not current_user.is_authenticated %}
+                            <a href="{{ url_for('jobseekers.profile') }}" class="dropdown-item">
+                                <i class="ti-user mr-2"></i>My Profile
+                            </a>
+                            <a href="{{ url_for('auth.logout') }}" class="dropdown-item text-danger">
+                                <i class="ti-power-off mr-2"></i>Logout
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('auth.login') }}" class="dropdown-item">
+                                <i class="ti-shift-right mr-2"></i>Login
+                            </a>
+                            <a href="{{ url_for('auth.subscribe') }}" class="dropdown-item text-primary">
+                                <i class="ti-plus mr-2"></i>Create Account
+                            </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
