@@ -1,15 +1,11 @@
-from crypt import methods
+from flask import Blueprint, render_template
 
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template
 
 from src.authentication import login_required
-from src.authentication import user_details
-from src.database.models import Job, Role
 from src.database.models.users import User
-from src.main import scrapper, resume_controller
+from src.main import resume_controller
 from src.routes import flask_error_handler
-from src.routes.utils import (create_common_context, not_found, gone, TOWN_TO_PROVINCE, create_search_context,
-                              sub_job_detail)
 
 jobseeker_route = Blueprint('jobseekers', __name__,  url_prefix="/jobseeker")
 
@@ -46,7 +42,7 @@ async def saved_jobs(user: User):
     return render_template("jobseekers/saved_jobs.html", **context)
 
 
-@jobseeker_route.route('/upload-cv', methods=['GET', 'POST'])
+@jobseeker_route.route('/cv', methods=['GET', 'POST'])
 @flask_error_handler
 @login_required
 async def upload_cv(user: User):
