@@ -14,12 +14,12 @@
 
                 <!-- Right Side (Navigation Buttons) -->
                 <div class="d-flex align-items-center">
-                    <a href="{{ url_for('jobs.assisted_search') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Find Jobs</a>
+                    <a href="{{ url_for('home.get_home') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Find Jobs</a>
                     <a href="{{ url_for('jobseekers.upload_cv') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Submit CV</a>
                     <a href="{{ url_for('jobseekers.applications') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">My Applications</a>
-                    <a href="https://blog.jobfinders.site" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Blog</a>
-                    <a href="{{ url_for('home.contact') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Contact</a>
-                    <a href="{{ url_for('home.about') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">About</a>
+{#                    <a href="https://blog.jobfinders.site" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Blog</a>#}
+{#                    <a href="{{ url_for('home.contact') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Contact</a>#}
+{#                    <a href="{{ url_for('home.about') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">About</a>#}
 
                     <!-- Auth Buttons -->
                     {% if current_user and not not current_user.is_authenticated %}

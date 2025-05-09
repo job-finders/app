@@ -12,7 +12,7 @@
                 </div>
                 <!-- Right Side (Nav Links) -->
                 <div class="d-flex align-items-center">
-                    <a href="{{ url_for('jobs.assisted_search') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Home</a>
+                    <a href="{{ url_for('home.get_home') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Home</a>
                     <a href="{{ url_for('home.contact') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Contact</a>
                     <a href="{{ url_for('home.about') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">About</a>
                     <a href="https://blog.jobfinders.site" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">Blog</a>
@@ -20,10 +20,10 @@
                     <!-- Auth Links -->
                     {% if current_user and current_user.is_authenticated %}
                         {% if current_user and current_user.role == 'seeker' %}
-                            <a href="{{ url_for('jobseekers.dashboard') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">My Profile</a>
+                            <a href="{{ url_for('jobseekers.dashboard') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">Dashboard</a>
                         {% endif %}
                         {% if current_user and current_user.role == 'employer' %}
-                            <a href="#" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">My Profile</a>
+                            <a href="#" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">Dashboard</a>
                         {% endif %}
                         <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-danger font-weight-bold text-white mx-1">Logout</a>
                     {% else %}

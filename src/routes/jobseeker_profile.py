@@ -123,12 +123,10 @@ async def upload_picture(user: User):
         sub_folder="profile_pics",
         allowed_extensions=["png", "jpg", "jpeg", "gif"]
     )
-
     if "error" in result:
         flash(result["error"], "danger")
     else:
         flash("Profile picture uploaded successfully.", "success")
-
     return redirect(url_for("jobseeker_profiles.view_profile"))
 
 
