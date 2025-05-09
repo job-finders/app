@@ -1,0 +1,205 @@
+{% extends "jobseekers/layout/page.html" %}
+{% import 'jobseekers/cv/partials/_cv_sections.html' as sections %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <!-- Main Edit Form -->
+    <div class="col-lg-8">
+      <form method="POST" enctype="multipart/form-data">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h2 class="font-weight-bold text-info mb-0">
+              Edit CV: {{ cv.professional_title }}
+            </h2>
+            <div class="ats-score-preview badge badge-pill badge-success">
+              ATS: {{ ats_score }}/100
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Core Information -->
+            <div class="form-group">
+              <label class="font-weight-bold">Professional Title</label>
+              <input type="text" class="form-control" name="professional_title"
+                     value="{{ cv.professional_title }}" required>
+            </div>
+
+            <div class="form-group">
+              <label class="font-weight-bold">Summary</label>
+              <textarea class="form-control" name="summary" rows="3"
+                        data-ats-check="summary">{{ cv.summary }}</textarea>
+            </div>
+
+            <!-- Dynamic Sections -->
+            <div class="mb-4">
+              <h4 class="text-info border-bottom pb-2">Sections</h4>
+
+              {{ sections.edit_experience(cv.experience) }}
+              {{ sections.edit_education(cv.education) }}
+              {{ sections.edit_certifications(cv.certifications) }}
+              {{ sections.edit_languages(cv.languages) }}
+              {{ sections.edit_projects(cv.projects) }}
+              {{ sections.edit_publications(cv.publications) }}
+              {{ sections.edit_awards(cv.awards) }}
+              {{ sections.edit_custom_sections(cv.custom_sections) }}
+
+            </div>
+          </div>
+        </div>
+        <div class="text-right mb-4">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="ti-save mr-2"></i>Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ATS Tools Sidebar -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm sticky-top">
+        <div class="card-header bg-light">
+          <h4 class="text-info"><i class="ti-stats-up mr-2"></i>Live ATS Feedback</h4>
+        </div>
+        <div class="card-body">
+          <div class="alert" :class="atsClass">
+            <h5>Current Score: {{ ats_score }}/100</h5>
+            <small>{{ ats_feedback }}</small>
+          </div>
+
+          <div class="accordion">
+            <!-- Keyword Optimization -->
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">
+                  <button class="btn btn-link" data-toggle="collapse" data-target="#keywordSuggestions">
+                    <i class="ti-search mr-2"></i>Keyword Suggestions
+                  </button>
+                </h6>
+              </div>
+              <div id="keywordSuggestions" class="collapse show">
+                <div class="card-body">
+                  <ul class="list-unstyled">
+                    {% for keyword in missing_keywords %}
+                    <li class="text-danger mb-1">
+                      <i class="ti-close"></i> {{ keyword }}
+                      <button type="button" class="btn btn-sm btn-link text-info"
+                              @click="addKeyword(keyword)">
+                        <i class="ti-plus"></i> Add
+                      </button>
+                    </li>
+                    {% endfor %}
+                    {% for keyword in matched_keywords %}
+                    <li class="text-success mb-1">
+                      <i class="ti-check"></i> {{ keyword }}
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section Completeness -->
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">
+                  <button class="btn btn-link" data-toggle="collapse" data-target="#sectionCompleteness">
+                    <i class="ti-check-box mr-2"></i>Missing Sections
+                  </button>
+                </h6>
+              </div>
+              <div id="sectionCompleteness" class="collapse">
+                <div class="card-body">
+                  <ul class="list-unstyled">
+                    {% if not cv.experience %}
+                    <li class="text-danger">
+                      <i class="ti-close"></i> Work Experience
+                    </li>
+                    {% endif %}
+                    <!-- Add other section checks -->
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+  .sticky-top {
+    top: 20px;
+    z-index: 1000;
+  }
+  .ats-score-preview {
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+  }
+  [data-ats-highlight="true"] {
+    border-left: 3px solid #17a2b8;
+    background-color: rgba(23, 162, 184, 0.05);
+  }
+  @media (max-width: 768px) {
+    .form-group input, .form-group textarea {
+      font-size: 0.9rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Real-time ATS scoring
+  const atsUpdate = debounce(function() {
+    const formData = new FormData(document.querySelector('form'));
+
+        fetch('/api/ats-check', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update UI with ATS results
+          document.querySelector('.ats-score-preview').textContent =
+            `ATS: ${data.score}/100`;
+          document.querySelector('.ats-score-preview').className =
+            `ats-score-preview badge badge-pill ${data.score > 75 ? 'badge-success' : 'badge-warning'}`;
+        })
+        .catch(error => {
+            console.error('ATS Error:', error);
+            // Show error to user
+        });
+  }, 500);
+
+  // Add event listeners to all inputs
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', atsUpdate);
+  });
+
+  // Handle keyword suggestions
+  window.addKeyword = function(keyword) {
+    const summaryField = document.querySelector('[name="summary"]');
+    summaryField.value = summaryField.value + ' ' + keyword;
+    atsUpdate();
+  }
+});
+
+function debounce(func, timeout = 300){
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+  };
+}
+</script>
+{% endblock %}

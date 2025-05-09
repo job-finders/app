@@ -1,5 +1,4 @@
 {% extends "jobseekers/layout/page.html" %}
-
 {% import 'jobseekers/cv/partials/_cv_sections.html' as cv_sections %}
 
 {% block content %}
@@ -18,7 +17,6 @@
           </h2>
           <p class="lead mb-0">{{ cv.summary }}</p>
         </div>
-
         <!-- Contact Info -->
         <div class="card-body">
           <div class="row text-center mb-4">
@@ -37,74 +35,14 @@
           </div>
 
           <!-- Dynamic Sections -->
-          {% macro render_section(title, items, icon) %}
-            {% if items %}
-            <div class="mb-4">
-              <h4 class="text-info"><i class="ti-{{ icon }} mr-2"></i>{{ title }}</h4>
-              {% for item in items %}
-              <div class="card mb-3">
-                <div class="card-body">
-                  {% if item.title %}<h5 class="font-weight-bold">{{ item.title }}</h5>{% endif %}
-                  <div class="row">
-                    {% if item.company %}
-                    <div class="col-12 col-md-6">
-                      <i class="ti-briefcase"></i> {{ item.company }}
-                    </div>
-                    {% endif %}
-                    <!-- Add similar fields for other sections -->
-                  </div>
-                  <!-- Add more fields as needed -->
-                </div>
-              </div>
-              {% endfor %}
-            </div>
-            {% endif %}
-          {% endmacro %}
-
-          {{ render_section("Experience", cv.experience, "briefcase") }}
-          {{ render_section("Education", cv.education, "book") }}
-          {{ render_section("Certifications", cv.certifications, "medall") }}
-          {{ render_publications(cv.publications) }}
-          {{ render_awards(cv.awards) }}
-          {{ render_custom_sections(cv.custom_sections) }}
-
-          <!-- Languages -->
-          {% if cv.languages %}
-          <div class="mb-4">
-            <h4 class="text-info"><i class="ti-world mr-2"></i>Languages</h4>
-            <div class="row">
-              {% for lang in cv.languages %}
-              <div class="col-6 col-md-3 mb-2">
-                <div class="badge badge-pill badge-info p-2">
-                  {{ lang.name }} ({{ lang.proficiency }})
-                </div>
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-          {% endif %}
-
-          <!-- Projects -->
-          {% if cv.projects %}
-          <div class="mb-4">
-            <h4 class="text-info"><i class="ti-layout mr-2"></i>Projects</h4>
-            {% for project in cv.projects %}
-            <div class="card mb-3">
-              <div class="card-body">
-                <h5>{{ project.title }}</h5>
-                <p>{{ project.description }}</p>
-                {% if project.technologies %}
-                <div class="mb-2">
-                  {% for tech in project.technologies %}
-                  <span class="badge badge-secondary">{{ tech }}</span>
-                  {% endfor %}
-                </div>
-                {% endif %}
-              </div>
-            </div>
-            {% endfor %}
-          </div>
-          {% endif %}
+          {{ cv_sections.render_experience(cv.experience) }}
+          {{ cv_sections.render_education(cv.education) }}
+          {{ cv_sections.render_certifications(cv.certifications) }}
+          {{ cv_sections.render_languages(cv.languages) }}
+          {{ cv_sections.render_projects(cv.projects) }}
+          {{ cv_sections.render_publications(cv.publications) }}
+          {{ cv_sections.render_awards(cv.awards) }}
+          {{ cv_sections.render_custom_sections(cv.custom_sections) }}
 
         </div>
       </div>

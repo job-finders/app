@@ -17,8 +17,8 @@
                     <a href="{{ url_for('home.get_home') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
                         <i class="ti-home"></i> Home
                     </a>
-                    <a href="{{ url_for('jobseekers.upload_cv') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
-                        <i class="ti-upload"></i> Submit CV
+                    <a href="{{ url_for('jobseeker_cv.list_cvs') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
+                        <i class="ti-files"></i> My CV's
                     </a>
                     <a href="{{ url_for('jobseekers.applications') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
                         <i class="ti-check-box"></i> My Applications
@@ -53,8 +53,8 @@
                         <a href="{{ url_for('home.get_home') }}" class="dropdown-item">
                             <i class="ti-home mr-2"></i>Home
                         </a>
-                        <a href="{{ url_for('jobseekers.upload_cv') }}" class="dropdown-item">
-                            <i class="ti-upload mr-2"></i>Submit CV
+                        <a href="{{ url_for('jobseeker_cv.list_cvs') }}" class="dropdown-item">
+                            <i class="ti-files mr-2"></i>My CV's
                         </a>
                         <a href="{{ url_for('jobseekers.applications') }}" class="dropdown-item">
                             <i class="ti-check-box mr-2"></i>My Applications

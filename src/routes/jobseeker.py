@@ -42,13 +42,6 @@ async def saved_jobs(user: User):
     return render_template("jobseekers/saved_jobs.html", **context)
 
 
-@jobseeker_route.route('/cv', methods=['GET', 'POST'])
-@flask_error_handler
-@login_required
-async def upload_cv(user: User):
-    context = dict(current_user=user)
-    return render_template("jobseekers/upload_cv.html", **context)
-
 @jobseeker_route.route('/applications', methods=['GET'])
 @flask_error_handler
 @login_required

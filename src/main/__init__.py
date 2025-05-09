@@ -30,9 +30,8 @@ from src.controllers.resume_controller import ResumeController
 storage_controller = StorageController()
 scrapper = Scrapper()
 users_controller = UsersController()
-ats_controller = ATSToolController()
-
 resume_controller = ResumeController()
+ats_controller = ATSToolController()
 
 junction_scrapper = JunctionScrapper(scrapper=scrapper)
 career_scrapper = CareerScrapper(scrapper=scrapper)
@@ -63,7 +62,9 @@ def create_app(config):
         boot()
 
         users_controller.init_app(app=app)
-        ats_controller.init_app(app=app)
+        resume_controller.init_app(app=app)
+        ats_controller.init_app(app=app, resume=resume_controller)
+
         encryptor.init_app(app=app)
         jobs_controller.init_app(app=app)
         junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
