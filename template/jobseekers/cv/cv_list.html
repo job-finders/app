@@ -1,0 +1,128 @@
+{% extends "jobseekers/layout/page.html" %}
+{% block content %}
+<div class="container-fluid">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h4 class="font-weight-bold text-info mb-0">
+        <i class="ti-files mr-2"></i>My CVs
+      </h4>
+      <a href="{{ url_for('jobseeker_cv.upload_cv') }}" class="btn btn-primary">
+        <i class="ti-plus mr-2"></i>Create New CV
+      </a>
+    </div>
+
+    <div class="card-body">
+      {% if cvs %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+          {% for cv in cvs %}
+          <div class="col">
+            <div class="card h-100 shadow-sm">
+              <div class="card-header bg-light">
+                <h5 class="font-weight-bold mb-0">
+                  <a href="{{ url_for('jobseeker_cv.view_cv', cv_id=cv.cv_id) }}" class="text-info">
+                    {{ cv.professional_title or "Untitled CV" }}
+                  </a>
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                  <small class="text-muted">
+                    <i class="ti-time mr-1"></i>
+                    {{ cv.created_at.strftime('%d %b %Y') }}
+                  </small>
+                  {% if cv.updated_at %}
+                  <small class="text-muted">
+                    <i class="ti-reload mr-1"></i>
+                    {{ cv.updated_at.strftime('%d %b %Y') }}
+                  </small>
+                  {% endif %}
+                </div>
+
+                {% if cv.summary %}
+                <p class="text-truncate-3 mb-3">
+                  {{ cv.summary }}
+                </p>
+                {% endif %}
+
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="badge badge-info p-2">
+                    {{ cv.experience|length }} Experience
+                  </div>
+                  <div class="badge badge-success p-2">
+                    {{ cv.education|length }} Education
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+                <a href="{{ url_for('jobseeker_cv.view_cv', cv_id=cv.cv_id) }}"
+                   class="btn btn-sm btn-outline-info">
+                  <i class="ti-eye"></i> View
+                </a>
+                <a href="{{ url_for('jobseeker_cv.edit_cv', cv_id=cv.cv_id) }}"
+                   class="btn btn-sm btn-outline-primary">
+                  <i class="ti-pencil"></i> Edit
+                </a>
+                <form method="POST" action="{{ url_for('jobseeker_cv.delete_cv', cv_id=cv.cv_id) }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                    onclick="return confirm('Are you sure you want to delete this CV?')">
+                    <i class="ti-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <div class="display-4 text-muted mb-4">
+            <i class="ti-files"></i>
+          </div>
+          <h4 class="text-muted mb-3">No CVs Found</h4>
+          <p class="text-muted">Get started by creating your first professional CV</p>
+          <a href="{{ url_for('jobseeker_cv.upload_cv') }}" class="btn btn-lg btn-primary">
+            <i class="ti-plus mr-2"></i>Create First CV
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% block styles %}
+
+<style>
+  .text-truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 4.5em;
+  }
+
+  .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+
+  @media (max-width: 768px) {
+    .card-footer .btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+    }
+    .card-header h5 {
+      font-size: 1.1rem;
+    }
+    .text-truncate-3 {
+      -webkit-line-clamp: 2;
+    }
+  }
+</style>
+
+{% endblock %}
+
+{% endblock %}
