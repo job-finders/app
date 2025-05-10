@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, Date, Text, inspect, DateTime, UniqueConstraint, ForeignKey
+from sqlalchemy import Column, String, Date, Text, inspect, DateTime, UniqueConstraint, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 from src.database.constants import NAME_LEN, ID_LEN
@@ -106,13 +106,21 @@ class SavedJobORM(Base):
 class JobApplicationORM(Base):
     __tablename__ = 'job_applications'
 
-    application_id = Column(String(36), primary_key=True, index=True)
-    user_id = Column(String(36), index=True)
-    job_id = Column(String(36), index=True)
+    application_id = Column(String(ID_LEN), primary_key=True, index=True)
+    user_id = Column(String(ID_LEN), index=True)
+    job_id = Column(String(ID_LEN), index=True)
+    cv_id = Column(String(ID_LEN), index=True)
+
     applied_date = Column(DateTime, default=datetime.utcnow)
+
+    cover_letter = Column(Text, nullable=True)
     status = Column(String(50), default='pending')  # pending, accepted, rejected
-    method = Column(String(50), default='website')      # e.g., "website", "email"
+    method = Column(String(50), default='website')  # e.g., "website", "email"
     notes = Column(String(255), nullable=True)
+
+    expected_salary = Column(Integer, nullable=True)
+    preferred_start_date = Column(Date, nullable=True)
+    preferred_location = Column(String, nullable=True)
 
     @classmethod
     def create_if_not_table(cls):
@@ -129,10 +137,15 @@ class JobApplicationORM(Base):
             application_id=kwargs.get('application_id', str(uuid.uuid4())),
             user_id=kwargs['user_id'],
             job_id=kwargs['job_id'],
+            cv_id=kwargs.get('cv_id'),
             applied_date=kwargs.get('applied_date', datetime.utcnow()),
+            cover_letter=kwargs.get('cover_letter'),
             status=kwargs.get('status', 'pending'),
-            method=kwargs.get('method'),
-            notes=kwargs.get('notes')
+            method=kwargs.get('method', 'website'),
+            notes=kwargs.get('notes'),
+            expected_salary=kwargs.get('expected_salary'),
+            preferred_start_date=kwargs.get('preferred_start_date'),
+            preferred_location=kwargs.get('preferred_location'),
         )
 
     def to_dict(self) -> dict:
@@ -140,8 +153,14 @@ class JobApplicationORM(Base):
             "application_id": self.application_id,
             "user_id": self.user_id,
             "job_id": self.job_id,
+            "cv_id": self.cv_id,
             "applied_date": self.applied_date.isoformat() if self.applied_date else None,
+            "cover_letter": self.cover_letter,
             "status": self.status,
             "method": self.method,
-            "notes": self.notes
+            "notes": self.notes,
+            "expected_salary": self.expected_salary,
+            "preferred_start_date": self.preferred_start_date.isoformat() if self.preferred_start_date else None,
+            "preferred_location": self.preferred_location,
         }
+

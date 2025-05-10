@@ -1,5 +1,7 @@
 import uuid
 from datetime import datetime, timedelta, date
+from typing import Optional
+
 from pydantic import BaseModel, Field, field_validator
 from src.utils import format_reference
 
@@ -85,13 +87,21 @@ class SavedJob(BaseModel):
 
 
 class JobApplication(BaseModel):
-    application_id: str = Field(default_factory=str(uuid.uuid4()))
+    application_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     job_id: str
+    cv_id: Optional[str] = None
+
     applied_date: datetime = Field(default_factory=datetime.utcnow)
+
+    cover_letter: Optional[str] = None
     status: str = Field(default='pending')
-    method: str | None = Field(default="website")  # e.g.,"website", "email", "walk-in", etc.
-    notes: str | None = None
+    method: Optional[str] = Field(default='website')
+    notes: Optional[str] = None
+
+    expected_salary: Optional[int] = None
+    preferred_start_date: Optional[date] = None
+    preferred_location: Optional[str] = None
 
     class Config:
         orm_mode = True

@@ -119,9 +119,7 @@ def _parse_ats_form_data(form_data, files) -> dict:
                 for field in ['title', 'company', 'start_date', 'description']
             })
             index += 1
-
     return parsed
-
 
 def lenient_cv_parse(data: dict) -> JobSeekerCV:
     """Lenient CV parsing with fallback values"""

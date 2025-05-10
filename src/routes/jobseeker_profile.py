@@ -175,7 +175,7 @@ async def search_profiles(user:User):
     query = request.args.get("q", "")
     profiles: list[JobSeekerProfile] = await job_seeker_profile_controller.search_profiles(query=query)
     context = dict(profiles=profiles, current_user=user, query=query)
-    return render_template("profiles/jobsseker/search.html", **context)
+    return render_template("jobseekers/profiles/search.html", **context)
 
 
 @jobseeker_profiles_bp.route("/upload-picture", methods=["POST"])
@@ -204,4 +204,4 @@ async def upload_picture(user: User):
 async def list_profiles_by_role(user: User, role: str):
     profiles = await job_seeker_profile_controller.list_profiles_by_role(role)
     context = dict(profiles=profiles, current_user=user, role=role)
-    return render_template("profiles/jobsseker/list.html", profiles=profiles, role=role)
+    return render_template("jobseekers/profiles/list.html", profiles=profiles, role=role)

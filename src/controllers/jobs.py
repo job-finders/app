@@ -5,7 +5,7 @@ from flask import Flask
 from sqlalchemy import or_, select, func
 from src.controllers.controller import Controllers
 from src.controllers.controller import error_handler
-from src.database.models.jobs import Job
+from src.database.models.jobs import Job, JobApplication
 from src.database.sql.jobs import JobsORM, SavedJobORM,  JobApplicationORM
 
 
@@ -349,42 +349,27 @@ class JobsController(Controllers):
             category_counts = {category: count for category, count in result}
             return category_counts
 
-    async def apply_to_job(self, user_id: str, job_id: str, method: str = 'website', notes: str = None):
+    async def apply_to_job(self, job_application: JobApplication):
         """
-        Apply a user to a job by saving the application and applied job records.
-        This method assumes there are 'JobApplicationORM' and 'AppliedJobORM' tables.
+            Apply a user to a job by saving the application and applied job records.
+            This method assumes there are 'JobApplicationORM' and 'AppliedJobORM' tables.
 
-        :param user_id: The ID of the user applying for the job
-        :param job_id: The ID of the job being applied to
-        :param method: The method of application (optional, e.g., "website")
-        :param notes: Additional notes (optional)
-        :return: Confirmation message or exception if the user has already applied
+            :param job_application:
+            :return: Confirmation message or exception if the user has already applied
         """
         # Open a session (use existing session management here)
         with self.get_session() as session:
             # Check if the user has already applied for this job (in AppliedJobORM)
-            existing_application = session.execute(
-                select(JobApplicationORM).filter(
-                    JobApplicationORM.user_id == user_id,
-                    JobApplicationORM.job_id == job_id
-                )
-            ).scalar_one_or_none()
-
+            existing_application = session.query(JobApplicationORM).filter_by(job_id=job_application.job_id, user_id=job_application.user_id).first()
             if existing_application:
-                raise ValueError("User has already applied for this job.")
+                return None
 
             # Create new AppliedJobORM record (tracking application action)
-            applied_job = JobApplicationORM(
-                user_id=user_id,
-                job_id=job_id,
-                status="pending",
-                method=method,
-                notes=notes
-            )
+            applied_job_orm = JobApplicationORM(**job_application.model_dump())
 
 
             # Add both records to the session and commit
-            session.add(applied_job)
-            session.commit()
+            session.add(applied_job_orm)
+            return job_application
 
-        return f"User {user_id} successfully applied for job {job_id}."
+
