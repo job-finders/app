@@ -120,7 +120,7 @@ class JobApplicationORM(Base):
 
     expected_salary = Column(Integer, nullable=True)
     preferred_start_date = Column(Date, nullable=True)
-    preferred_location = Column(String, nullable=True)
+    preferred_location = Column(String(255), nullable=True)
 
     @classmethod
     def create_if_not_table(cls):

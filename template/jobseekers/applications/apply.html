@@ -1,10 +1,220 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "jobseekers/layout/page.html" %}
+{% import 'jobseekers/cv/partials/_cv_sections.html' as sections %}
 
-</body>
-</html>
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <!-- Main Application Form -->
+    <div class="col-lg-8">
+      <form method="POST" enctype="multipart/form-data" id="application-form">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h2 class="font-weight-bold text-info mb-0">
+              Apply for: {{ job.title }}
+            </h2>
+            <div class="ats-score-preview badge badge-pill badge-success">
+              ATS: {{ ats_score }}/100
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- CV Selection -->
+            <div class="form-group">
+              <label class="font-weight-bold">Choose CV</label>
+              <select class="form-control" name="cv_id" required>
+                {% for cv in cvs %}
+                <option value="{{ cv.id }}">
+                  {{ cv.professional_title }} (ATS Score: {{ cv.ats_score }}%)
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <!-- Cover Letter -->
+            <div class="form-group">
+              <label class="font-weight-bold">Cover Letter</label>
+              <textarea class="form-control" name="cover_letter" rows="6">{{ cover_letter }}</textarea>
+              <button type="button" class="btn btn-link mt-1" id="ai-cover-draft">
+                <i class="ti-magic"></i> Generate with AI
+              </button>
+              <div class="text-muted small">Use job keywords for better ATS scores</div>
+            </div>
+
+            <!-- Application Preferences -->
+            <div class="form-group">
+              <label class="font-weight-bold">Expected Salary</label>
+              <input type="number" class="form-control" name="expected_salary" min="0">
+              <small class="form-text text-muted">
+                Recommended: R{{ salary_recommendation.min }} - R{{ salary_recommendation.max }}
+              </small>
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold">Preferred Start Date</label>
+              <input type="date" class="form-control" name="preferred_start_date">
+            </div>
+            <div class="form-group">
+              <label class="font-weight-bold">Preferred Location</label>
+              <select class="form-control" name="preferred_location">
+                {% for location in locations %}
+                <option value="{{ location }}">{{ location }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Notes -->
+            <div class="form-group">
+              <label class="font-weight-bold">Notes</label>
+              <textarea class="form-control" name="notes" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-right mb-4">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="ti-check mr-2"></i>Submit Application
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ATS Tools Sidebar -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm sticky-top">
+        <div class="card-header bg-light">
+          <h4 class="text-info"><i class="ti-stats-up mr-2"></i>ATS Optimization</h4>
+        </div>
+        <div class="card-body">
+          <div class="alert" :class="atsClass">
+            <h5>Score: {{ ats_score }}/100</h5>
+            <small>{{ ats_feedback }}</small>
+          </div>
+
+          <div class="accordion">
+            <!-- Keyword Suggestions -->
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">
+                  <button class="btn btn-link" data-toggle="collapse" data-target="#keywordSuggestions">
+                    <i class="ti-search mr-2"></i>Keyword Suggestions
+                  </button>
+                </h6>
+              </div>
+              <div id="keywordSuggestions" class="collapse show">
+                <div class="card-body">
+                  <ul class="list-unstyled">
+                    {% for keyword in missing_keywords %}
+                    <li class="text-danger mb-1">
+                      <i class="ti-close"></i> {{ keyword }}
+                      <button type="button" class="btn btn-sm btn-link text-info"
+                              onclick="addKeyword('{{ keyword }}')">
+                        <i class="ti-plus"></i> Add
+                      </button>
+                    </li>
+                    {% endfor %}
+                    {% for keyword in matched_keywords %}
+                    <li class="text-success mb-1">
+                      <i class="ti-check"></i> {{ keyword }}
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feedback Areas -->
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">
+                  <button class="btn btn-link" data-toggle="collapse" data-target="#coverLetterAnalysis">
+                    <i class="ti-light-bulb mr-2"></i>Cover Letter Tips
+                  </button>
+                </h6>
+              </div>
+              <div id="coverLetterAnalysis" class="collapse">
+                <div class="card-body">
+                  {{ cover_letter_feedback|safe }}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const debounce = (func, timeout = 500) => {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => func.apply(this, args), timeout);
+    };
+  };
+
+  const atsUpdate = debounce(() => {
+    const form = document.querySelector('#application-form');
+    const formData = new FormData(form);
+    fetch('/api/ats-check', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.querySelector('.ats-score-preview').textContent = `ATS: ${data.score}/100`;
+      document.querySelector('.ats-score-preview').className = `ats-score-preview badge badge-pill ${data.score > 75 ? 'badge-success' : 'badge-warning'}`;
+    })
+    .catch(err => console.error('ATS Error:', err));
+  });
+
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', atsUpdate);
+  });
+
+  window.addKeyword = function(keyword) {
+    const field = document.querySelector('[name="cover_letter"]');
+    field.value += ' ' + keyword;
+    atsUpdate();
+  }
+
+  document.querySelector('#ai-cover-draft').addEventListener('click', () => {
+    const formData = new FormData(document.querySelector('#application-form'));
+    fetch('/api/cover-draft', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.querySelector('[name="cover_letter"]').value = data.draft;
+      atsUpdate();
+    })
+    .catch(err => console.error('Cover Draft Error:', err));
+  });
+});
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+  .sticky-top {
+    top: 20px;
+    z-index: 1000;
+  }
+  .ats-score-preview {
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+  }
+  [data-ats-highlight="true"] {
+    border-left: 3px solid #17a2b8;
+    background-color: rgba(23, 162, 184, 0.05);
+  }
+  @media (max-width: 768px) {
+    .form-group input, .form-group textarea {
+      font-size: 0.9rem;
+    }
+  }
+</style>
+{% endblock %}

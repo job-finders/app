@@ -290,16 +290,11 @@ class JobsController(Controllers):
             jobs = result.scalars().all()
             return [Job(**job.to_dict()) for job in jobs]
 
-    async def get_applied_jobs_for_user(self, user_id: str) -> list[Job]:
+    async def get_applied_job_applications_for_user(self, user_id: str) -> list[JobApplication]:
         """Get jobs the user has applied for"""
         with self.get_session() as session:
-            result = await session.execute(
-                select(JobsORM)
-                .join(JobApplicationORM, JobsORM.job_id == JobApplicationORM.job_id)
-                .where(JobApplicationORM.user_id == user_id)
-            )
-            jobs = result.scalars().all()
-            return [Job(**job.to_dict()) for job in jobs]
+            applied_jobs_orm_list = session.query(JobApplicationORM).filter_by(user_id=user_id).all()
+            return [JobApplication(**job.to_dict()) for job in applied_jobs_orm_list]
 
 
     async def get_jobs_by_employer(self, employer_id: str) -> list[Job]:

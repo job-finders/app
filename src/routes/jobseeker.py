@@ -42,12 +42,6 @@ async def saved_jobs(user: User):
     return render_template("jobseekers/saved_jobs.html", **context)
 
 
-@jobseeker_route.route('/applications', methods=['GET'])
-@flask_error_handler
-@login_required
-async def applications(user: User):
-    context = dict(current_user=user)
-    return render_template("jobseekers/applications.html", **context)
 
 
 @jobseeker_route.route('/notifications', methods=['GET'])

@@ -1,9 +1,10 @@
 
-from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, Table
-from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy.orm import relationship
 from datetime import datetime
-from src.database.sql import Base  # Assuming this is your declarative base
+
+from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect
+from sqlalchemy.dialects.postgresql import ARRAY
+
+from src.database.sql import Base, engine  # Assuming this is your declarative base
 
 
 class JobSeekerProfileORM(Base):
@@ -31,6 +32,17 @@ class JobSeekerProfileORM(Base):
     visibility = Column(Boolean, default=True)
     profile_completion = Column(String, default="0")  # or Integer if more appropriate
     last_updated = Column(DateTime, default=datetime.utcnow)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
 
     def to_dict(self):
         return {

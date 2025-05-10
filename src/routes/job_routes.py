@@ -133,3 +133,7 @@ async def gone(search_term: str = ''):
     """Display a page when a job is not found."""
     return render_template('jobs/gone.html', search_term=search_term)
 
+@jobs_route.get('/view/<string:job_id>')
+@flask_error_handler
+async def view(job_id: str):
+    pass
