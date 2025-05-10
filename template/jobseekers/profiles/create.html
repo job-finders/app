@@ -1,126 +1,328 @@
 {% extends "jobseekers/layout/page.html" %}
 
+{% block styles %}
+<style>
+    .section-card {
+        margin-bottom: 1.5rem;
+        border-radius: 0.8rem;
+    }
+    .section-header {
+        background-color: #f8f9fa;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .form-icon {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+        color: #343a40; /* Changed from #6c757d to a darker gray */
+    }
+    .dynamic-section {
+        transition: all 0.3s ease;
+    }
+.form-icon.ti-brand-linkedin,
+.form-icon.ti-brand-github {
+    color: #0a66c2; /* LinkedIn blue */
+}
+
+.form-icon.ti-brand-github {
+    color: #24292e; /* GitHub dark gray */
+}
+
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-  <h3>Create Your JobFinder Profile</h3>
-  <form method="POST">
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="mb-4 text-center">Create Your Profile</h2>
+            <form method="POST" class="needs-validation" novalidate>
+                <!-- Personal Info Section -->
+                <div class="card section-card">
+                    <div class="section-header">
+                        <h5 class="mb-0"><i class="ti ti-user form-icon"></i>Personal Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-control"
+                                       value="{{ current_user.first_name }} {{ current_user.last_name }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" name="phone" id="phone" class="form-control"
+                                       placeholder="+27 12 345 6789" required>
+                                <div class="invalid-feedback">Please enter a valid phone number</div>
+                            </div>
 
-    <!-- Full Name (from current_user, display only) -->
-    <div class="form-group">
-      <label>Full Name</label>
-      <input type="text" class="form-control" value="{{ current_user.first_name }} {{ current_user.last_name }}" disabled>
+                            <div class="col-md-6">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" name="location" id="location" class="form-control"
+                                       placeholder="City, Country">
+                            </div>
+
+                            <div class="col-12">
+                                <label for="bio" class="form-label">Professional Bio</label>
+                                <textarea name="bio" id="bio" class="form-control" rows="3"
+                                          placeholder="Tell employers about yourself..." maxlength="500"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Social Links Section -->
+                <div class="card section-card">
+                    <div class="section-header">
+                        <h5 class="mb-0"><i class="ti ti-link form-icon"></i>Online Presence</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="linkedin" class="form-label">
+                                    <i class="ti ti-brand-linkedin form-icon"></i>LinkedIn
+                                </label>
+                                <input type="url" name="linkedin" class="form-control"
+                                       placeholder="https://linkedin.com/in/...">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="github" class="form-label">
+                                    <i class="ti ti-brand-github form-icon"></i>GitHub
+                                </label>
+                                <input type="url" name="github" class="form-control"
+                                       placeholder="https://github.com/...">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="website" class="form-label">
+                                    <i class="ti ti-world form-icon"></i>Website
+                                </label>
+                                <input type="url" name="website" class="form-control"
+                                       placeholder="https://example.com">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+<!-- Job Preferences Section -->
+<div class="card section-card">
+    <div class="section-header">
+        <h5 class="mb-0"><i class="ti ti-briefcase form-icon"></i>Job Preferences</h5>
     </div>
+    <div class="card-body">
 
-    <!-- Phone -->
-    <div class="form-group">
-      <label for="phone">Phone Number</label>
-      <input type="text" name="phone" class="form-control" placeholder="Enter phone number">
+        <!-- Job Titles -->
+        <div class="mb-4">
+            <label for="job-title-select" class="form-label">Preferred Job Title</label>
+            <div class="input-group">
+                <select id="job-title-select" class="form-select">
+                    <option disabled selected>Select a job title</option>
+                    {% for title in job_titles %}
+                        <option value="{{ title.value }}">{{ title.value }}</option>
+                    {% endfor %}
+                    <option value="other">Other</option>
+                </select>
+                <button class="btn btn-outline-primary" type="button" id="add-job-title">Add</button>
+            </div>
+            <input type="text" id="custom-job-title" class="form-control mt-2 d-none"
+                   placeholder="Enter your preferred job title">
+            <ul class="list-group list-group-sm mt-3" id="job-title-list"></ul>
+        </div>
+
+        <!-- Industries -->
+        <div class="mb-4">
+            <label for="industry-select" class="form-label">Preferred Industry</label>
+            <div class="input-group">
+                <select id="industry-select" class="form-select">
+                    <option disabled selected>Select an industry</option>
+                    {% for industry in industries %}
+                        <option value="{{ industry.value }}">{{ industry.value }}</option>
+                    {% endfor %}
+                    <option value="other">Other</option>
+                </select>
+                <button class="btn btn-outline-primary" type="button" id="add-industry">Add</button>
+            </div>
+            <input type="text" id="custom-industry" class="form-control mt-2 d-none"
+                   placeholder="Enter your preferred industry">
+            <ul class="list-group list-group-sm mt-3" id="industry-list"></ul>
+        </div>
+
+        <!-- Remote Work Toggle -->
+        <div class="form-check form-switch mt-4">
+            <input type="checkbox" name="remote_preference"
+                   class="form-check-input" id="remote_preference" role="switch">
+            <label class="form-check-label" for="remote_preference">
+                Open to Remote Work
+            </label>
+        </div>
     </div>
-
-    <!-- Website -->
-    <div class="form-group">
-      <label for="website">Personal Website</label>
-      <input type="url" name="website" class="form-control" placeholder="https://example.com">
-    </div>
-
-    <!-- LinkedIn -->
-    <div class="form-group">
-      <label for="linkedin">LinkedIn Profile</label>
-      <input type="url" name="linkedin" class="form-control" placeholder="https://linkedin.com/in/...">
-    </div>
-
-    <!-- GitHub -->
-    <div class="form-group">
-      <label for="github">GitHub Profile</label>
-      <input type="url" name="github" class="form-control" placeholder="https://github.com/...">
-    </div>
-
-    <!-- Job Titles of Interest -->
-    <div class="form-group">
-      <label for="job_titles_of_interest">Job Titles of Interest</label>
-      <select name="job_titles_of_interest" id="job_titles_of_interest" class="form-control" multiple>
-        {% for title in job_titles %}
-          <option value="{{ title.value }}">{{ title.value }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <!-- Industries of Interest -->
-    <div class="form-group">
-      <label for="industries_of_interest">Industries of Interest</label>
-      <select name="industries_of_interest" id="industries_of_interest" class="form-control" multiple>
-        {% for industry in industries %}
-          <option value="{{ industry.value }}">{{ industry.value }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <!-- Preferred Work Locations -->
-    <div class="form-group">
-      <label for="locations_of_interest">Preferred Work Locations</label>
-      <select name="locations_of_interest" id="locations_of_interest" class="form-control" multiple>
-        {% for loc in locations %}
-          <option value="{{ loc.value }}">{{ loc.value }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <!-- Remote Preference -->
-    <div class="form-check my-2">
-      <input type="checkbox" name="remote_preference" class="form-check-input" id="remote_preference">
-      <label class="form-check-label" for="remote_preference">Open to remote work</label>
-    </div>
-
-    <!-- Availability -->
-    <div class="form-group">
-      <label for="availability">Availability</label>
-      <input type="text" name="availability" class="form-control" placeholder="e.g. Immediate, 30-day notice">
-    </div>
-
-    <!-- Bio -->
-    <div class="form-group">
-      <label for="bio">Short Bio</label>
-      <textarea name="bio" id="bio" class="form-control" rows="4" placeholder="Tell employers a bit about yourself..."></textarea>
-    </div>
-
-    <!-- Freelancer -->
-    <div class="form-check my-2">
-      <input type="checkbox" name="is_freelancer" class="form-check-input" id="is_freelancer">
-      <label class="form-check-label" for="is_freelancer">Available for freelance work</label>
-    </div>
-
-    <!-- Freelance Skills -->
-    <div class="form-group">
-      <label for="freelance_skills">Freelance Skills</label>
-      <input type="text" name="freelance_skills" class="form-control" placeholder="Comma-separated skills">
-    </div>
-
-    <!-- Hourly Rate -->
-    <div class="form-group">
-      <label for="hourly_rate">Hourly Rate (ZAR)</label>
-      <input type="number" name="hourly_rate" class="form-control" step="0.01" min="0">
-    </div>
-
-    <!-- Freelance Experience -->
-    <div class="form-group">
-      <label for="freelance_experience">Freelance Experience</label>
-      <textarea name="freelance_experience" class="form-control" rows="3" placeholder="Brief description..."></textarea>
-    </div>
-
-    <!-- Freelance Availability -->
-    <div class="form-group">
-      <label for="freelance_availability">Freelance Availability</label>
-      <input type="text" name="freelance_availability" class="form-control" placeholder="e.g. 10 hrs/week">
-    </div>
-
-    <!-- Visibility -->
-    <div class="form-check my-2">
-      <input type="checkbox" name="visibility" class="form-check-input" id="visibility" checked>
-      <label class="form-check-label" for="visibility">Make profile visible to employers</label>
-    </div>
-
-    <!-- Submit -->
-    <button type="submit" class="btn btn-primary">Create Profile</button>
-  </form>
 </div>
+
+
+                <!-- Freelance Section -->
+                <div class="card section-card dynamic-section" id="freelanceSection">
+                    <div class="section-header">
+                        <h5 class="mb-0"><i class="ti ti-rocket form-icon"></i>Freelance Work</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Skills</label>
+                                <input type="text" name="freelance_skills" class="form-control"
+                                       placeholder="Separate skills with commas">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Hourly Rate</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">ZAR</span>
+                                    <input type="number" name="hourly_rate" class="form-control"
+                                           step="50" min="0">
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Availability</label>
+                                <input type="text" name="freelance_availability" class="form-control"
+                                       placeholder="e.g. 10 hrs/week">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visibility & Submit -->
+                <div class="card section-card">
+                    <div class="card-body">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" name="visibility" class="form-check-input"
+                                   id="visibility" checked role="switch">
+                            <label class="form-check-label" for="visibility">
+                                Make my profile visible to employers
+                            </label>
+                        </div>
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="ti ti-device-floppy me-2"></i>Create Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Toggle freelance section
+    const freelanceCheckbox = document.createElement('div');
+    freelanceCheckbox.innerHTML = `
+        <div class="form-check form-switch mb-3">
+            <input type="checkbox" class="form-check-input" id="is_freelancer">
+            <label class="form-check-label" for="is_freelancer">Available for freelance work</label>
+        </div>
+    `;
+    document.querySelector('#freelanceSection').parentNode.insertBefore(freelanceCheckbox, document.querySelector('#freelanceSection'));
+
+    document.getElementById('is_freelancer').addEventListener('change', (e) => {
+        document.getElementById('freelanceSection').style.display = e.target.checked ? 'block' : 'none';
+    });
+
+    // Multi-select enhancements
+    document.querySelectorAll('select[multiple]').forEach(select => {
+        select.addEventListener('focus', () => select.size = 5);
+        select.addEventListener('blur', () => select.size = 1);
+        select.addEventListener('change', () => {
+            select.title = Array.from(select.selectedOptions).map(opt => opt.text).join(', ');
+        });
+    });
+
+    // Form validation
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Elements
+    const jobSelect = document.getElementById('job-title-select');
+    const industrySelect = document.getElementById('industry-select');
+    const customJobInput = document.getElementById('custom-job-title');
+    const customIndustryInput = document.getElementById('custom-industry');
+    const jobList = document.getElementById('job-title-list');
+    const industryList = document.getElementById('industry-list');
+    const addJobBtn = document.getElementById('add-job-title');
+    const addIndustryBtn = document.getElementById('add-industry');
+
+    // Helper: Add item to a list
+    function addItemToList(value, listElement) {
+        const existingItems = Array.from(listElement.children).map(item => item.textContent.trim());
+        if (!value || existingItems.includes(value)) return;
+
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        li.textContent = value;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn btn-sm btn-outline-danger';
+        removeBtn.innerHTML = '<i class="ti ti-x"></i>';
+        removeBtn.onclick = () => li.remove();
+
+        li.appendChild(removeBtn);
+        listElement.appendChild(li);
+    }
+
+    // Job title dropdown change
+    jobSelect.addEventListener('change', () => {
+        customJobInput.classList.toggle('d-none', jobSelect.value !== 'other');
+        if (jobSelect.value !== 'other') customJobInput.value = '';
+    });
+
+    // Industry dropdown change
+    industrySelect.addEventListener('change', () => {
+        customIndustryInput.classList.toggle('d-none', industrySelect.value !== 'other');
+        if (industrySelect.value !== 'other') customIndustryInput.value = '';
+    });
+
+    // Add Job Title
+    addJobBtn.addEventListener('click', () => {
+        const value = jobSelect.value === 'other'
+            ? customJobInput.value.trim()
+            : jobSelect.value;
+
+        addItemToList(value, jobList);
+
+        // Reset
+        jobSelect.selectedIndex = 0;
+        customJobInput.classList.add('d-none');
+        customJobInput.value = '';
+    });
+
+    // Add Industry
+    addIndustryBtn.addEventListener('click', () => {
+        const value = industrySelect.value === 'other'
+            ? customIndustryInput.value.trim()
+            : industrySelect.value;
+
+        addItemToList(value, industryList);
+
+        // Reset
+        industrySelect.selectedIndex = 0;
+        customIndustryInput.classList.add('d-none');
+        customIndustryInput.value = '';
+    });
+});
+
+
+
+</script>
 {% endblock %}

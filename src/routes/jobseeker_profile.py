@@ -9,6 +9,46 @@ from src.database.models.jobseeker_profile import JobSeekerProfile
 
 jobseeker_profiles_bp = Blueprint("jobseeker_profiles", __name__, url_prefix="/jobseeker/profile")
 
+def parse_profile_form(form_data, user_uid):
+    # Parse job titles
+    job_titles = form_data.getlist("job_titles_of_interest")
+    if 'other' in job_titles:
+        job_titles.remove('other')
+        custom_job_title = form_data.get("custom_job_title", "").strip()
+        if custom_job_title:
+            job_titles.append(custom_job_title)
+
+    # Parse industries
+    industries = form_data.getlist("industries_of_interest")
+    if 'other' in industries:
+        industries.remove('other')
+        custom_industry = form_data.get("custom_industry", "").strip()
+        if custom_industry:
+            industries.append(custom_industry)
+
+    # Return parsed data in a dictionary format
+    return {
+        "user_uid": user_uid,
+        "job_titles_of_interest": job_titles,
+        "industries_of_interest": industries,
+        "locations_of_interest": form_data.getlist("locations_of_interest"),
+        "bio": form_data.get("bio"),
+        "profile_image_url": form_data.get("profile_image_url"),
+        "location": form_data.get("location"),
+        "phone": form_data.get("phone"),
+        "website": form_data.get("website"),
+        "linkedin": form_data.get("linkedin"),
+        "github": form_data.get("github"),
+        "remote_preference": bool(form_data.get("remote_preference")),
+        "availability": form_data.get("availability"),
+        "is_freelancer": bool(form_data.get("is_freelancer")),
+        "freelance_skills": form_data.getlist("freelance_skills"),
+        "hourly_rate": form_data.get("hourly_rate"),
+        "freelance_experience": form_data.get("freelance_experience"),
+        "freelance_availability": form_data.get("freelance_availability"),
+        "visibility": bool(form_data.get("visibility")),
+    }
+
 
 @jobseeker_profiles_bp.route("/create", methods=["GET", "POST"])
 @flask_error_handler
@@ -21,17 +61,15 @@ async def create_profile(user: User):
 
     if request.method == "POST":
         try:
-            form_data = request.form.to_dict()
-            form_data["user_uid"] = user.uid
-            form_data["job_titles_of_interest"] = request.form.getlist("job_titles_of_interest")
-            form_data["industries_of_interest"] = request.form.getlist("industries_of_interest")
-            form_data["locations_of_interest"] = request.form.getlist("locations_of_interest")
-
-            profile_data = JobSeekerProfile(**form_data)
+            # Parse the form data using the parse_profile_form function
+            parsed_data = parse_profile_form(request.form, user.uid)
+            # Create JobSeekerProfile instance from parsed data
+            profile_data = JobSeekerProfile(**parsed_data)
             jobseeker_profile = await job_seeker_profile_controller.create_profile(profile_data)
             if jobseeker_profile:
                 flash("Profile created successfully.", "success")
                 return redirect(url_for("jobseeker_profiles.view_profile"))
+
         except ValidationError as e:
             flash("Validation error. Please check your inputs.", "danger")
             context = dict(
@@ -40,22 +78,27 @@ async def create_profile(user: User):
                 industries=industries,
                 job_titles=job_titles,
                 errors=e.errors(),
-                form_data=form_data)
-
+                form_data=request.form
+            )
             return render_template("jobseekers/profiles/create.html", **context)
 
-    # GET request
-    context = dict(current_user=user,job_titles=job_titles, locations=locations, industries=industries)
-    return render_template("jobseekers/profiles/create.html", **context)
+    # Handle GET request and render the form
+    return render_template("jobseekers/profiles/create.html",
+                           current_user=user,
+                           locations=locations,
+                           industries=industries,
+                           job_titles=job_titles)
 
 
 @jobseeker_profiles_bp.route("/me")
 @login_required
 async def view_profile(user: User):
     profile: JobSeekerProfile = await job_seeker_profile_controller.get_profile_by_uid(user_uid=user.uid)
-    if not profile:
-        flash("Profile not found.", "warning")
-        return redirect(url_for("home.get_home"))  # or a 404 page
+
+    # if not profile:
+    #     flash("Please create your profile to get started", "info")
+    #     return redirect(url_for("jobseeker_profiles.create_profile"))
+
     context = dict(current_user=user, profile=profile)
     return render_template("jobseekers/profiles/view.html", **context)
 
@@ -63,29 +106,55 @@ async def view_profile(user: User):
 @jobseeker_profiles_bp.route("/edit", methods=["GET", "POST"])
 @login_required
 async def edit_profile(user: User):
-    if request.method == "POST":
-        update_data = request.form.to_dict()
-        update_data["job_titles_of_interest"] = request.form.getlist("job_titles_of_interest")
-        update_data["industries_of_interest"] = request.form.getlist("industries_of_interest")
-        update_data["locations_of_interest"] = request.form.getlist("locations_of_interest")
-        profile: JobSeekerProfile = await job_seeker_profile_controller.update_profile(user_uid=user.uid,
-                                                                                       update_data=update_data)
+    # Fetch config options for form
+    locations = await job_seeker_profile_controller.get_default_work_locations()
+    industries = await job_seeker_profile_controller.get_industries_of_interest()
+    job_titles = await job_seeker_profile_controller.get_job_titles_of_interest()
 
-        if not profile:
-            flash("Profile update failed.", "danger")
+    if request.method == "POST":
+        try:
+            # Parse the form data using the parse_profile_form function
+            parsed_data = parse_profile_form(request.form, user.uid)
+
+            # Update the profile with the new parsed data
+            profile_data = JobSeekerProfile(**parsed_data)
+            updated_profile = await job_seeker_profile_controller.update_profile(user_uid=user.uid, update_data=profile_data.dict())
+
+            if not updated_profile:
+                flash("Profile update failed.", "danger")
+                return redirect(url_for("jobseeker_profiles.view_profile"))
+
+            flash("Profile updated successfully.", "success")
             return redirect(url_for("jobseeker_profiles.view_profile"))
 
-        flash("Profile updated successfully.", "success")
-        return redirect(url_for("jobseeker_profiles.view_profile"))
+        except ValidationError as e:
+            flash("Validation error. Please check your inputs.", "danger")
+            context = dict(
+                current_user=user,
+                locations=locations,
+                industries=industries,
+                job_titles=job_titles,
+                errors=e.errors(),
+                form_data=request.form
+            )
+            return render_template("jobseekers/profiles/edit.html", **context)
 
-    profile : JobSeekerProfile = await job_seeker_profile_controller.get_profile_by_uid(user_uid=user.uid)
+    # Fetch current profile data for GET request
+    profile: JobSeekerProfile = await job_seeker_profile_controller.get_profile_by_uid(user_uid=user.uid)
 
     if not profile:
         flash("Profile not found.", "warning")
         return redirect(url_for("home.get_home"))
 
-    context = dict(current_user=user, profile=profile)
-    return render_template("profiles/jobsseker/edit.html", **context)
+    # Pre-fill form with existing profile data for editing
+    context = dict(
+        current_user=user,
+        profile=profile,
+        locations=locations,
+        industries=industries,
+        job_titles=job_titles
+    )
+    return render_template("jobseekers/profiles/edit.html", **context)
 
 
 @jobseeker_profiles_bp.route("/delete", methods=["POST"])

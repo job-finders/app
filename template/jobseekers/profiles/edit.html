@@ -1,0 +1,254 @@
+{% extends "jobseekers/layout/page.html" %}
+
+{% block styles %}
+<style>
+    .section-card {
+        margin-bottom: 1.5rem;
+        border-radius: 0.8rem;
+    }
+
+    .section-header {
+        background-color: #f8f9fa;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .form-icon {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+        color: #343a40;
+    }
+
+    .dynamic-section {
+        transition: all 0.3s ease;
+    }
+
+    /* Styles for mobile responsiveness */
+    @media (max-width: 768px) {
+        .form-label {
+            font-size: 1.1rem;
+        }
+        .section-header h5 {
+            font-size: 1.25rem;
+        }
+        .form-control {
+            font-size: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="mb-4 text-center">Edit Your Profile</h2>
+            <form method="POST" class="needs-validation" novalidate>
+                <!-- Personal Info Section -->
+                <div class="card section-card">
+                    <div class="section-header">
+                        <h5 class="mb-0"><i class="ti ti-user form-icon"></i>Personal Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" name="full_name" class="form-control"
+                                       value="{{ profile.full_name if profile.full_name else current_user.first_name }} {{ profile.last_name if profile.last_name else current_user.last_name }}"
+                                       placeholder="Your Full Name">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" name="phone" id="phone" class="form-control"
+                                       value="{{ profile.phone if profile.phone else '' }}"
+                                       placeholder="+27 12 345 6789">
+                                <div class="invalid-feedback">Please enter a valid phone number</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" name="location" id="location" class="form-control"
+                                       value="{{ profile.location if profile.location else '' }}"
+                                       placeholder="City, Country">
+                            </div>
+
+                            <div class="col-12">
+                                <label for="bio" class="form-label">Professional Bio</label>
+                                <textarea name="bio" id="bio" class="form-control" rows="3"
+                                          placeholder="Tell employers about yourself..." maxlength="500">{{ profile.bio if profile.bio else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Social Links Section -->
+                <div class="card section-card">
+                    <div class="section-header">
+                        <h5 class="mb-0"><i class="ti ti-link form-icon"></i>Online Presence</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="linkedin" class="form-label">
+                                    <i class="ti ti-brand-linkedin form-icon"></i>LinkedIn
+                                </label>
+                                <input type="url" name="linkedin" class="form-control"
+                                       value="{{ profile.linkedin if profile.linkedin else '' }}"
+                                       placeholder="https://linkedin.com/in/...">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="github" class="form-label">
+                                    <i class="ti ti-brand-github form-icon"></i>GitHub
+                                </label>
+                                <input type="url" name="github" class="form-control"
+                                       value="{{ profile.github if profile.github else '' }}"
+                                       placeholder="https://github.com/...">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="website" class="form-label">
+                                    <i class="ti ti-world form-icon"></i>Website
+                                </label>
+                                <input type="url" name="website" class="form-control"
+                                       value="{{ profile.website if profile.website else '' }}"
+                                       placeholder="https://example.com">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Job Preferences Section -->
+                <div class="card section-card">
+                    <div class="section-header">
+                        <h5 class="mb-0"><i class="ti ti-briefcase form-icon"></i>Job Preferences</h5>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- Job Titles -->
+                        <div class="mb-4">
+                            <label for="job-title-select" class="form-label">Preferred Job Title</label>
+                            <div class="input-group">
+                                <select id="job-title-select" class="form-select">
+                                    <option disabled selected>Select a job title</option>
+                                    {% for title in job_titles %}
+                                        <option value="{{ title.value }}" {% if title.value == profile.job_title %}selected{% endif %}>{{ title.value }}</option>
+                                    {% endfor %}
+                                    <option value="other">Other</option>
+                                </select>
+                                <button class="btn btn-outline-primary" type="button" id="add-job-title">Add</button>
+                            </div>
+                            <input type="text" id="custom-job-title" class="form-control mt-2 d-none"
+                                   placeholder="Enter your preferred job title">
+                            <ul class="list-group list-group-sm mt-3" id="job-title-list"></ul>
+                        </div>
+
+                        <!-- Industries -->
+                        <div class="mb-4">
+                            <label for="industry-select" class="form-label">Preferred Industry</label>
+                            <div class="input-group">
+                                <select id="industry-select" class="form-select">
+                                    <option disabled selected>Select an industry</option>
+                                    {% for industry in industries %}
+                                        <option value="{{ industry.value }}" {% if industry.value == profile.industry %}selected{% endif %}>{{ industry.value }}</option>
+                                    {% endfor %}
+                                    <option value="other">Other</option>
+                                </select>
+                                <button class="btn btn-outline-primary" type="button" id="add-industry">Add</button>
+                            </div>
+                            <input type="text" id="custom-industry" class="form-control mt-2 d-none"
+                                   placeholder="Enter your preferred industry">
+                            <ul class="list-group list-group-sm mt-3" id="industry-list"></ul>
+                        </div>
+
+                        <!-- Remote Work Toggle -->
+                        <div class="form-check form-switch mt-4">
+                            <input type="checkbox" name="remote_preference"
+                                   class="form-check-input" id="remote_preference" role="switch"
+                                   {% if profile.remote_preference %}checked{% endif %}>
+                            <label class="form-check-label" for="remote_preference">
+                                Open to Remote Work
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Freelance Section -->
+                <div class="card section-card dynamic-section" id="freelanceSection">
+                    <div class="section-header">
+                        <h5 class="mb-0"><i class="ti ti-rocket form-icon"></i>Freelance Work</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Skills</label>
+                                <input type="text" name="freelance_skills" class="form-control"
+                                       value="{{ profile.freelance_skills if profile.freelance_skills else '' }}"
+                                       placeholder="Separate skills with commas">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Hourly Rate</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">ZAR</span>
+                                    <input type="number" name="hourly_rate" class="form-control"
+                                           value="{{ profile.hourly_rate if profile.hourly_rate else '' }}"
+                                           step="50" min="0">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Availability</label>
+                                <input type="text" name="freelance_availability" class="form-control"
+                                       value="{{ profile.freelance_availability if profile.freelance_availability else '' }}"
+                                       placeholder="e.g. 10 hrs/week">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visibility & Submit -->
+                <div class="card section-card">
+                    <div class="card-body">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" name="visibility" class="form-check-input"
+                                   id="visibility" {% if profile.visibility %}checked{% endif %} role="switch">
+                            <label class="form-check-label" for="visibility">
+                                Make my profile visible to employers
+                            </label>
+                        </div>
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="ti ti-device-floppy me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Toggle freelance section
+const freelanceCheckbox = document.createElement('div');
+freelanceCheckbox.innerHTML = `
+    <div class="form-check form-switch mb-3">
+        <input type="checkbox" class="form-check-input" id="is_freelancer" {% if profile.freelance_skills %}checked{% endif %}>
+        <label class="form-check-label" for="is_freelancer">Available for freelance work</label>
+    </div>
+`;
+document.querySelector('#freelanceSection').parentNode.insertBefore(freelanceCheckbox, document.querySelector('#freelanceSection'));
+
+document.getElementById('is_freelancer').addEventListener('change', (e) => {
+    document.getElementById('freelanceSection').style.display = e.target.checked ? 'block' : 'none';
+});
+
+// Multi-select enhancements (Add job titles & industries)
+document.querySelectorAll('select[multiple]').forEach(select => {
+    select.addEventListener('focus', () => select.size = 5);
+    select.addEventListener('blur', () => select.size = 1);
+    select.addEventListener('change', () => {
+        select.title = Array.from(select.selectedOptions).map(opt => opt.text).join(', ');
+    });
+});
+</script>
+{% endblock %}

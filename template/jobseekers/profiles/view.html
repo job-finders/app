@@ -1,70 +1,235 @@
 {% extends "jobseekers/layout/page.html" %}
 
 {% block content %}
-<div class="container mt-5">
-  <h3 class="mb-4">Your Jobseeker Profile</h3>
-  <!-- Profile Info Section -->
-  <div class="card mb-4">
-    <div class="card-header">
-      <h5 class="card-title">Personal Information</h5>
+<div class="container mt-4">
+  {% if profile %}
+  <!-- Existing Profile Display -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">
+      <i class="ti-user text-primary"></i> My Profile
+      {% if profile.profile_completion %}
+      <span class="badge bg-success ms-2">{{ profile.profile_completion }}% Complete</span>
+      {% endif %}
+    </h3>
+    <a href="{{ url_for('jobseeker_profiles.edit_profile') }}" class="btn btn-primary">
+      <i class="ti-pencil"></i> Edit Profile
+    </a>
+  </div>
+  <!-- Profile Completion Progress -->
+  <div class="progress mb-5" style="height: 8px;">
+    <div class="progress-bar bg-primary" role="progressbar"
+         style="width: {{ profile.profile_completion }}%"
+         aria-valuenow="{{ profile.profile_completion }}"
+         aria-valuemin="0"
+         aria-valuemax="100">
     </div>
-    <div class="card-body">
-      <div class="row">
-        <div class="col-md-6">
-          <p><strong>Name:</strong> {{ current_user.first_name }} {{ current_user.last_name }}</p>
-          <p><strong>Email:</strong> {{ current_user.email }}</p>
-          <p><strong>Phone:</strong> {{ profile.phone or "Not Provided" }}</p>
-          <p><strong>LinkedIn:</strong> <a href="{{ profile.linkedin }}" target="_blank" class="text-decoration-none">{{ profile.linkedin or "Not Provided" }}</a></p>
-          <p><strong>GitHub:</strong> <a href="{{ profile.github }}" target="_blank" class="text-decoration-none">{{ profile.github or "Not Provided" }}</a></p>
+  </div>
+  <!-- Profile Sections -->
+  <div class="row g-4">
+    <!-- Personal Info Card -->
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-primary text-white">
+          <h5 class="card-title mb-0">
+            <i class="ti-info-alt me-2"></i>Personal Information
+          </h5>
         </div>
-        <div class="col-md-6">
-          <p><strong>Location:</strong> {{ profile.location or "Not Provided" }}</p>
-          <p><strong>Website:</strong> <a href="{{ profile.website }}" target="_blank" class="text-decoration-none">{{ profile.website or "Not Provided" }}</a></p>
-          <p><strong>Bio:</strong> {{ profile.bio or "No bio available" }}</p>
+        <div class="card-body">
+          <div class="d-flex mb-3">
+            {% if profile.profile_image_url %}
+            <img src="{{ profile.profile_image_url }}" class="rounded-circle me-3"
+                 alt="Profile photo" style="width: 80px; height: 80px; object-fit: cover;">
+            {% else %}
+            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center"
+                 style="width: 80px; height: 80px;">
+              <i class="ti-user fa-2x text-secondary"></i>
+            </div>
+            {% endif %}
+            <div>
+              <h4 class="mb-0">{{ current_user.first_name }} {{ current_user.last_name }}</h4>
+              <p class="text-muted mb-0">{{ profile.location or "Location not specified" }}</p>
+            </div>
+          </div>
+
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Contact</dt>
+            <dd class="col-sm-8">
+              {{ profile.phone or "Not provided" }}<br>
+              {{ current_user.email }}
+            </dd>
+
+            <dt class="col-sm-4">Links</dt>
+            <dd class="col-sm-8">
+              {% if profile.linkedin %}
+              <a href="{{ profile.linkedin }}" class="d-block text-decoration-none" target="_blank">
+                <i class="ti-link me-2"></i>LinkedIn
+              </a>
+              {% endif %}
+              {% if profile.github %}
+              <a href="{{ profile.github }}" class="d-block text-decoration-none" target="_blank">
+                <i class="ti-github me-2"></i>GitHub
+              </a>
+              {% endif %}
+              {% if profile.website %}
+              <a href="{{ profile.website }}" class="d-block text-decoration-none" target="_blank">
+                <i class="ti-world me-2"></i>Website
+              </a>
+              {% endif %}
+              {% if not (profile.linkedin or profile.github or profile.website) %}
+              <span class="text-muted">No links provided</span>
+              {% endif %}
+            </dd>
+
+            <dt class="col-sm-4">Bio</dt>
+            <dd class="col-sm-8">{{ profile.bio or "No bio added yet" }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Job Preferences Card -->
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-info text-white">
+          <h5 class="card-title mb-0">
+            <i class="ti-briefcase me-2"></i>Job Preferences
+          </h5>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Interested Roles</dt>
+            <dd class="col-sm-8">
+              {% if profile.job_titles_of_interest %}
+                {% for title in profile.job_titles_of_interest %}
+                  <span class="badge bg-primary me-1 mb-1">{{ title }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted">Not specified</span>
+              {% endif %}
+            </dd>
+
+            <dt class="col-sm-4">Industries</dt>
+            <dd class="col-sm-8">
+              {% if profile.industries_of_interest %}
+                {% for industry in profile.industries_of_interest %}
+                  <span class="badge bg-secondary me-1 mb-1">{{ industry }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted">Not specified</span>
+              {% endif %}
+            </dd>
+
+            <dt class="col-sm-4">Locations</dt>
+            <dd class="col-sm-8">
+              {% if profile.locations_of_interest %}
+                {% for location in profile.locations_of_interest %}
+                  <span class="badge bg-light text-dark me-1 mb-1">{{ location }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted">Not specified</span>
+              {% endif %}
+            </dd>
+
+            <dt class="col-sm-4">Remote Work</dt>
+            <dd class="col-sm-8">
+              <span class="badge bg-{{ 'success' if profile.remote_preference else 'secondary' }}">
+                {{ 'Yes' if profile.remote_preference else 'No' }}
+              </span>
+            </dd>
+
+            <dt class="col-sm-4">Availability</dt>
+            <dd class="col-sm-8">{{ profile.availability or "Not specified" }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Freelance Section -->
+    {% if profile.is_freelancer %}
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="card-title mb-0">
+            <i class="ti-rocket me-2"></i>Freelance Services
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <h6 class="text-muted">Hourly Rate</h6>
+              <p class="h4">ZAR {{ profile.hourly_rate | default('Negotiable', true) }}</p>
+            </div>
+            <div class="col-md-4">
+              <h6 class="text-muted">Skills</h6>
+              {% if profile.freelance_skills %}
+                {% for skill in profile.freelance_skills %}
+                  <span class="badge bg-warning text-dark me-1 mb-1">{{ skill }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted">No skills listed</span>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <h6 class="text-muted">Availability</h6>
+              <p>{{ profile.freelance_availability or "Flexible" }}</p>
+            </div>
+          </div>
+          {% if profile.freelance_experience %}
+          <div class="mt-3">
+            <h6 class="text-muted">Experience</h6>
+            <p class="mb-0">{{ profile.freelance_experience }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Visibility Settings -->
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="ti-eye me-2"></i>Profile Visibility
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <i class="ti-2x {{ 'ti-toggle-on text-success' if profile.visibility else 'ti-toggle-off text-secondary' }}"></i>
+            </div>
+            <div>
+              <p class="mb-0">
+                Your profile is currently
+                <span class="text-{{ 'success' if profile.visibility else 'secondary' }}">{{ 'visible' if profile.visibility else 'hidden' }}</span>
+                to employers and clients
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Job Preferences Section -->
-  <div class="card mb-4">
-    <div class="card-header">
-      <h5 class="card-title">Job Preferences</h5>
-    </div>
-    <div class="card-body">
-      <p><strong>Job Titles of Interest:</strong> {{ profile.job_titles_of_interest | join(', ') if profile.job_titles_of_interest else "Not Provided" }}</p>
-      <p><strong>Industries of Interest:</strong> {{ profile.industries_of_interest | join(', ') if profile.industries_of_interest else "Not Provided" }}</p>
-      <p><strong>Preferred Work Locations:</strong> {{ profile.locations_of_interest | join(', ') if profile.locations_of_interest else "Not Provided" }}</p>
-      <p><strong>Remote Work Preference:</strong> {{ "Yes" if profile.remote_preference else "No" }}</p>
-      <p><strong>Availability:</strong> {{ profile.availability or "Not Provided" }}</p>
-    </div>
-  </div>
-  <!-- Freelance Details Section (if applicable) -->
-  {% if profile.is_freelancer %}
-  <div class="card mb-4">
-    <div class="card-header">
-      <h5 class="card-title">Freelance Availability</h5>
-    </div>
-    <div class="card-body">
-      <p><strong>Freelance Skills:</strong> {{ profile.freelance_skills | join(', ') if profile.freelance_skills else "Not Provided" }}</p>
-      <p><strong>Hourly Rate:</strong> ZAR {{ profile.hourly_rate or "Not Provided" }}</p>
-      <p><strong>Freelance Experience:</strong> {{ profile.freelance_experience or "Not Provided" }}</p>
-      <p><strong>Freelance Availability:</strong> {{ profile.freelance_availability or "Not Provided" }}</p>
+  {% else %}
+  <!-- No Profile State -->
+  <div class="row justify-content-center mt-5">
+    <div class="col-12 col-md-8 col-lg-6 text-center">
+      <div class="card shadow-lg border-0">
+        <div class="card-body p-5">
+          <div class="mb-4">
+            <i class="ti-user-add fa-4x text-primary mb-3"></i>
+            <h2 class="h3">Create Your Profile</h2>
+            <p class="text-muted">Get discovered by employers and showcase your professional identity</p>
+          </div>
+          <a href="{{ url_for('jobseeker_profiles.create_profile') }}"
+             class="btn btn-primary btn-lg px-5">
+            <i class="ti-plus me-2"></i>Create Profile
+          </a>
+        </div>
+      </div>
     </div>
   </div>
   {% endif %}
-  <!-- Profile Visibility -->
-  <div class="card mb-4">
-    <div class="card-header">
-      <h5 class="card-title">Profile Visibility</h5>
-    </div>
-    <div class="card-body">
-      <p><strong>Visible to Employers:</strong> {{ "Yes" if profile.visibility else "No" }}</p>
-    </div>
-  </div>
-  <!-- Edit Profile Button -->
-  <div class="text-right">
-    <a href="{{ url_for('jobseeker_profiles.edit_profile') }}" class="btn btn-primary">Edit Profile</a>
-  </div>
 </div>
 {% endblock %}
