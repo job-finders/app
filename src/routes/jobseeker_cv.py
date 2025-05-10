@@ -289,8 +289,8 @@ async def upload_cv(user: User):
             flash(f"Validation error: {str(e)}", "danger")
         except Exception as e:
             flash(f"Error creating CV: {str(e)}", "danger")
-
-    return render_template("jobseekers/upload_cv.html")
+    context = dict(current_user=user)
+    return render_template("jobseekers/upload_cv.html", **context)
 
 @jobseeker_cv_bp.route("/view/<string:cv_id>")
 @login_required
@@ -298,7 +298,8 @@ async def upload_cv(user: User):
 async def view_cv(user: User, cv_id: str):
 
     cv = await resume_controller.get_cv_by_id(cv_id)
-    context = dict(current_user=user, cv=cv)
+    ats_report = await _get_ats_report(cv=cv)
+    context = dict(current_user=user, cv=cv, ats_report=ats_report)
     return render_template("jobseekers/cv/view_cv.html", **context)
 
 
