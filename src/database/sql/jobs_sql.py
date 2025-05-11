@@ -184,6 +184,10 @@ class JobsORM(Base):
     required_skills = Column(JSON)  # ["Python", "AWS"]
     preferred_skills = Column(JSON)  # ["Docker", "Kubernetes"]
 
+    # REQUIRED DOCUMENTATIONS AND QUESTIONAIRE
+    required_documents = Column(JSON, default=[])
+    required_questionnaire = Column(JSON)
+
     # Application Process
     application_url = Column(String(255))
     application_instructions = Column(Text)
@@ -258,6 +262,8 @@ class JobsORM(Base):
             "education_requirements": self.education_requirements,
             "required_skills": self.required_skills,
             "preferred_skills": self.preferred_skills,
+            "required_documents": self.required_documents,
+            "required_questionnaire": self.required_questionnaire,
             "application_url": self.application_url,
             "application_instructions": self.application_instructions,
             "view_count": self.view_count,
@@ -314,14 +320,24 @@ class JobApplicationORM(Base):
 
     # Rest of the existing columns...
     applied_date = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+
     cover_letter = Column(Text, nullable=True)
     status = Column(String(50), default='pending')
-    updated_at = Column(DateTime, nullable=True)
     method = Column(String(50), default='website')
     notes = Column(String(255), nullable=True)
+
     expected_salary = Column(Integer, nullable=True)
     preferred_start_date = Column(Date, nullable=True)
     preferred_location = Column(String(255), nullable=True)
+
+    required_documents = Column(JSON, default=[])  # ["CV", "ID Copy", "Certificates"]
+    questionnaire_answers = Column(JSON)  # {"questions": ["Why this role?", "Availability dat
+
+    application_stage = Column(String(50), default='submitted')  # submitted → qualified → interviewed → hired
+    validation_score = Column(Integer)
+    missing_requirements = Column(JSON)
+    review_summary = Column(Text)
 
     def to_dict(self) -> dict:
         return {
@@ -336,9 +352,15 @@ class JobApplicationORM(Base):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "method": self.method,
             "notes": self.notes,
+            "required_documents": self.required_documents,
+            "questionnaire_answers": self.questionnaire_answers,
             "expected_salary": self.expected_salary,
             "preferred_start_date": self.preferred_start_date.isoformat() if self.preferred_start_date else None,
             "preferred_location": self.preferred_location,
+            "application_stage": self.application_stage,
+            "validation_score": self.validation_score,
+            "missing_requirements": self.missing_requirements,
+            "review_summary": self.review_summary
         }
 
     # Rest of the existing methods...

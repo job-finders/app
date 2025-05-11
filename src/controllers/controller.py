@@ -21,6 +21,8 @@ class Controllers:
         self.session_maker = session_maker
         self.sessions = [session_maker() for _ in range(self.session_limit)]
         self.logger = init_logger(self.__class__.__name__)
+        self.app: Flask | None = None
+        self.deepseek_api_key: str | None  = None
 
     def init_app(self, app: Flask):
         """
@@ -28,10 +30,12 @@ class Controllers:
         :param app:
         :return:
         """
-        self.setup_error_handler(app=app)
+        self.app = app
+        self.setup_error_handler(self.app)
 
-        session_maker = app.config.get('session_maker')
-        session_limit = app.config.get('session_limit')
+        session_maker = self.app.config.get('session_maker')
+        session_limit = self.app.config.get('session_limit')
+        self.deepseek_api_key = self.app.config.get('DEEPSEEK_API_KEY', None)
 
         if session_maker and session_limit:
             self.sessions = [session_maker() for _ in range(session_limit)]
