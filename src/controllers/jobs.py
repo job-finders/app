@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -22,10 +23,8 @@ class JobsController(Controllers):
         """Complete listings of all jobs in database"""
         with self.get_session() as session:
             jobs_orm_list = session.query(JobsORM).all()
-            return [
-                Job(**self._orm_to_job_dict(job))
-                for job in jobs_orm_list if job
-            ]
+            self.logger.info(f"Loaded a total of {len(jobs_orm_list)} Jobs")
+            return [Job(**self._orm_to_job_dict(job)) for job in jobs_orm_list if job]
 
     @error_handler
     async def get_job_by_id(self, job_id: str) -> Job | None:
@@ -43,7 +42,8 @@ class JobsController(Controllers):
         :return:
         """
         with self.get_session() as session:
-            job_orm = session.query(JobsORM).filter_by(job_ref=reference).first()
+            _reference = reference.casefold()
+            job_orm = session.query(JobsORM).filter_by(job_ref=_reference).first()
             if not job_orm:
                 return None
             return Job(**self._orm_to_job_dict(job_orm))
@@ -139,26 +139,24 @@ class JobsController(Controllers):
             return Job(**self._orm_to_job_dict(new_job_orm))
 
     def _orm_to_job_dict(self, job_orm: JobsORM) -> dict:
-        """Convert ORM object to Job model-compatible dictionary"""
-        job_dict = job_orm.to_dict()
-
-        # Convert desired_skills string to list
-        if job_dict["desired_skills"]:
-            job_dict["desired_skills"] = [
-                skill.strip()
-                for skill in job_dict["desired_skills"].split(",")
-            ]
-        else:
-            job_dict["desired_skills"] = []
-
-
-        # Convert dates to string format
-        job_dict["posted_date"] = job_orm.posted_date.strftime("%d %b %Y")
-        job_dict["expiration_date"] = (
-            job_orm.expiration_date.strftime("%d %b %Y") if job_orm.expiration_date else None
-        )
-
-        return job_dict
+        """Convert SQLAlchemy ORM object to dictionary for Pydantic model"""
+        return {
+            "job_id": job_orm.job_id,
+            "search_term": job_orm.search_term,
+            "logo_link": job_orm.logo_link,
+            "job_link": job_orm.job_link,
+            "title": job_orm.title,
+            "company_name": job_orm.company_name,
+            "salary": job_orm.salary,
+            "position": job_orm.position,
+            "location": job_orm.location,
+            "updated_time": job_orm.updated_time,
+            "expires": job_orm.expires,
+            "job_ref": job_orm.job_ref,
+            "description": job_orm.description,
+            "desired_skills": json.loads(job_orm.desired_skills) if job_orm.desired_skills else []
+            # Add other fields as needed
+        }
 
     @error_handler
     async def get_jobs_by_title(self, title: str) -> list[Job]:

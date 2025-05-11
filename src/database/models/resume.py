@@ -117,6 +117,7 @@ class JobSeekerCV(BaseModel):
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
     @validator('professional_title')
     def title_must_not_be_empty(cls, v):
         if not v.strip():

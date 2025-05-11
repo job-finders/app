@@ -145,7 +145,7 @@ async def ats_check(user: User):
         cv_data = lenient_cv_parse(raw_data)
 
         # Generate ATS report
-        report = await ats_controller.generate_ats_report(cv_data)
+        report = await ats_controller.generate_industry_ats_report(cv_data)
 
         return jsonify({
             "score": report.get('score', 0),
@@ -227,7 +227,7 @@ async def _get_ats_report(cv: JobSeekerCV) -> dict:
     try:
         # Timeout after 15 seconds to prevent hanging
         return await asyncio.wait_for(
-            ats_controller.generate_ats_report(cv),
+            ats_controller.generate_industry_ats_report(cv),
             timeout=15
         )
     except TimeoutError:

@@ -13,6 +13,7 @@ class JobSeekerCVORM(Base):
 
     cv_id = Column(String(36), primary_key=True, unique=True, index=True)
     user_uid = Column(String(36), nullable=False, index=True)
+    is_primary = Column(Boolean, default=False)
     professional_title = Column(String(255), nullable=False)
     summary = Column(Text, nullable=True)
     skills = Column(JSON, default=[])

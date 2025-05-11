@@ -49,6 +49,7 @@ async def jobs_by_location(user: User,location: str):
         page=page,
         per_page=10
     )
+    context.update(current_user=user)
 
     return render_template('location.html', **context)
 
@@ -59,7 +60,7 @@ async def jobs_by_location(user: User,location: str):
 async def category_jobs(user: User,category: str):
     """Render job search results by search term."""
     page = int(request.args.get('page', 1))
-    response = await create_search_context(search_term=category, page=page)
+    response = await create_search_context(user=user, search_term=category, page=page)
     if response is None:
         return await not_found(category)
     return response
@@ -71,7 +72,7 @@ async def category_jobs(user: User,category: str):
 async def job_search(user: User,search_term: str):
     """Render job search results by search term."""
     page = int(request.args.get('page', 1))
-    response = await create_search_context(search_term=search_term, page=page)
+    response = await create_search_context(user=user, search_term=search_term, page=page)
     if response is None:
         return await not_found(search_term)
     return response
@@ -86,7 +87,7 @@ async def search_bar(user: User):
     if not search_term:
         return redirect(url_for('home.get_home'), code=302)
     page = int(request.args.get('page', 1))
-    response = await create_search_context(search_term=search_term, page=page)
+    response = await create_search_context(user=user, search_term=search_term, page=page)
     if response is None:
         return await not_found(search_term)
     return response
@@ -104,8 +105,8 @@ async def job_detail(user: User, reference: str):
     job: Job = await scrapper.job_search(job_reference=reference)
 
     if isinstance(job, Job) and job.title.strip():
-        return await sub_job_detail(job)
-    return await gone(search_term=reference)
+        return await sub_job_detail(user=user, job=job)
+    return await gone(user=user, search_term=reference)
 
 @jobs_route.get('/search/job/<string:slug>')
 @flask_error_handler
@@ -114,7 +115,7 @@ async def job_slug(user: User,slug: str):
     """Display job details identified by its slug."""
     job: Job = await scrapper.search_by_slug(slug=slug)
     if isinstance(job, Job) and job.title.strip():
-        return await sub_job_detail(job)
+        return await sub_job_detail(user=user, job=job)
     return await gone(search_term=slug)
 
 

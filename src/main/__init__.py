@@ -68,6 +68,7 @@ def create_app(config):
         encryptor.init_app(app=app)
         jobs_controller.init_app(app=app)
         junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
+        # junction_scrapper.reload()
         job_seeker_profile_controller.init_app(app=app)
         # career_scrapper.init_app(app=app)
 
@@ -81,7 +82,7 @@ def create_app(config):
         from src.routes.jobseeker import jobseeker_route
         from src.routes.jobseeker_profile import jobseeker_profiles_bp
         from src.routes.jobseeker_cv import jobseeker_cv_bp
-        from src.routes.jobseeker_applications import jobseeker_applications_bp
+        from src.routes.jobseeker_applications import jobseeker_applications_route
         from src.routes.cron import cron_route
         from src.routes.ats_tool import ats_tool_route
 
@@ -98,7 +99,7 @@ def create_app(config):
         app.register_blueprint(jobseeker_route)
         app.register_blueprint(jobseeker_profiles_bp)
         app.register_blueprint(jobseeker_cv_bp)
-        app.register_blueprint(jobseeker_applications_bp)
+        app.register_blueprint(jobseeker_applications_route)
 
         app.register_blueprint(cron_route)
         app.register_blueprint(ats_tool_route)

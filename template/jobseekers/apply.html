@@ -1,11 +1,45 @@
 {% extends "jobseekers/layout/page.html" %}
-
+{% block styles %}
+<style>
+  .sticky-top {
+    top: 20px;
+    z-index: 1000;
+  }
+  .ats-score-preview {
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+  }
+  [data-ats-highlight="true"] {
+    border-left: 3px solid #17a2b8;
+    background-color: rgba(23, 162, 184, 0.05);
+  }
+  .salary-tooltip {
+    border-bottom: 2px dotted #17a2b8;
+    cursor: help;
+  }
+  .confidence-badge {
+    font-size: 0.8em;
+    vertical-align: middle;
+  }
+  @media (max-width: 768px) {
+    .form-group input, .form-group textarea {
+      font-size: 0.9rem;
+    }
+  }
+</style>
+{% endblock %}
 {% block content %}
 <div class="container-fluid">
   <div class="row">
     <!-- Main Application Form -->
     <div class="col-lg-8">
-      <form method="POST" enctype="multipart/form-data" id="application-form">
+      <form action="{{ url_for('jobseeker_applications_bp.submit_application', job_id=job.job_id) }}"
+            method="post" enctype="multipart/form-data" id="application-form">
+        {% if ats_score %}
+          <input type="hidden" value="{{ ats_score }}" name="ats_score" />
+          <input type="hidden" value="{{ ats_report_id }}" name="ats_report_id" />
+        {% endif %}
+
         <div class="card shadow-sm mb-4">
           <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <h2 class="font-weight-bold text-info mb-0">
@@ -22,7 +56,7 @@
               <label class="font-weight-bold">Choose CV</label>
               <select class="form-control" name="cv_id" required>
                 {% for cv in cvs %}
-                <option value="{{ cv.id }}">
+                <option value="{{ cv.cv_id }}" {% if selected_cv_id == cv.cv_id %} selected {% endif %} >
                   {{ cv.professional_title }} (ATS Score: {{ cv.ats_score }}%)
                 </option>
                 {% endfor %}
@@ -33,6 +67,7 @@
             <div class="form-group">
               <label class="font-weight-bold">Cover Letter</label>
               <textarea class="form-control" name="cover_letter" rows="6">{{ cover_letter }}</textarea>
+
               <button type="button" class="btn btn-link mt-1" id="ai-cover-draft">
                 <i class="ti-magic"></i> Generate with AI
               </button>
@@ -42,11 +77,24 @@
             <!-- Application Preferences -->
             <div class="form-group">
               <label class="font-weight-bold">Expected Salary</label>
-              <input type="number" class="form-control" name="expected_salary" min="0">
+              <input type="number" class="form-control" name="expected_salary" min="0"
+                     placeholder="{{ salary_recommendation.currency }}{{ salary_recommendation.range[0]|int|comma }} - {{ salary_recommendation.currency }}{{ salary_recommendation.range[1]|int|comma }}">
               <small class="form-text text-muted">
-                Recommended: R{{ salary_recommendation.min }} - R{{ salary_recommendation.max }}
+                Recommended:
+                <span class="salary-tooltip" data-toggle="tooltip"
+                      title="Source: {{ salary_recommendation.source }}. {{ salary_recommendation.basis }}">
+                  {{ salary_recommendation.currency }}{{ salary_recommendation.range[0]|int|comma }} -
+                  {{ salary_recommendation.currency }}{{ salary_recommendation.range[1]|int|comma }}
+                </span>
+                <span class="confidence-badge badge
+                      {% if salary_recommendation.confidence >= 80 %}badge-success
+                      {% elif salary_recommendation.confidence >= 60 %}badge-warning
+                      {% else %}badge-danger{% endif %}">
+                  {{ salary_recommendation.confidence }}% confidence
+                </span>
               </small>
             </div>
+
             <div class="form-group">
               <label class="font-weight-bold">Preferred Start Date</label>
               <input type="date" class="form-control" name="preferred_start_date">
@@ -66,6 +114,7 @@
               <label class="font-weight-bold">Notes</label>
               <textarea class="form-control" name="notes" rows="2"></textarea>
             </div>
+
           </div>
         </div>
         <div class="text-right mb-4">
@@ -75,6 +124,7 @@
         </div>
       </form>
     </div>
+
     <!-- ATS Tools Sidebar -->
     <div class="col-lg-4">
       <div class="card shadow-sm sticky-top">
@@ -137,13 +187,19 @@
         </div>
       </div>
     </div>
-  </div>
+    <!-- End of ATS sidebar -->
+
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Initialize tooltips
+  $('[data-toggle="tooltip"]').tooltip();
+
+  // Debounce and ATS update logic
   const debounce = (func, timeout = 500) => {
     let timer;
     return (...args) => {
@@ -152,87 +208,126 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   };
 
+  // Existing ATS update logic with error handling
   const atsUpdate = debounce(() => {
     const form = document.querySelector('#application-form');
     const formData = new FormData(form);
 
-    fetch(`/api/ats-check?job_id={{ job.id }}`, {
+    fetch(`/jobseeker/applications/api/ats-check?job_id={{ job.job_id }}`, {
       method: 'POST',
       body: formData
     })
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error(res.statusText);
+      return res.json();
+    })
     .then(data => {
-      document.querySelector('.ats-score-preview').textContent = `ATS: ${data.score}/100`;
-      document.querySelector('.ats-score-preview').className = `ats-score-preview badge badge-pill ${data.score > 75 ? 'badge-success' : 'badge-warning'}`;
-      document.querySelector('#ats-live-score').textContent = data.score;
-      document.querySelector('#keyword-list').innerHTML = '';
+      // Update ATS Score display
+      const scoreElement = document.querySelector('.ats-score-preview');
+      scoreElement.textContent = `ATS: ${data.score}/100`;
+      scoreElement.className = `ats-score-preview badge badge-pill ${
+        data.score > 75 ? 'badge-success' :
+        data.score > 50 ? 'badge-warning' : 'badge-danger'}`;
+
+      // Update ats_report_id field if returned
+      if (data.ats_report_id) {
+        const atsReportInput = document.getElementById('ats-report-id');
+        atsReportInput.value = data.ats_report_id;
+        const atsScoreInput = document.getElementById('ats_score');
+        atsScoreInput.value = data.score;
+      }
+    })
+    .catch(error => {
+      console.error("ATS Check failed:", error);
+    });
+
+
+      // Update keyword lists
+      const keywordList = document.querySelector('#keyword-list');
+      keywordList.innerHTML = '';
 
       data.missing.forEach(keyword => {
-        document.querySelector('#keyword-list').innerHTML += `
-          <li class="text-danger mb-1">
-            <i class="ti-close"></i> ${keyword}
-            <button type="button" class="btn btn-sm btn-link text-info" onclick="addKeyword('${keyword}')">
-              <i class="ti-plus"></i> Add
-            </button>
-          </li>`;
+        const li = document.createElement('li');
+        li.className = 'text-danger mb-1';
+        li.innerHTML = `
+          <i class="ti-close"></i> ${keyword}
+          <button type="button" class="btn btn-sm btn-link text-info"
+                  onclick="addKeyword('${keyword}')">
+            <i class="ti-plus"></i> Add
+          </button>`;
+        keywordList.appendChild(li);
       });
 
       data.matched.forEach(keyword => {
-        document.querySelector('#keyword-list').innerHTML += `
-          <li class="text-success mb-1">
-            <i class="ti-check"></i> ${keyword}
-          </li>`;
+        const li = document.createElement('li');
+        li.className = 'text-success mb-1';
+        li.innerHTML = `<i class="ti-check"></i> ${keyword}`;
+        keywordList.appendChild(li);
       });
     })
-    .catch(err => console.error('ATS Error:', err));
+    .catch(err => {
+      console.error('ATS Update Error:', err);
+      showAlert('Failed to update ATS score. Please try again.', 'danger');
+    });
   });
 
+  // Event listeners for real-time updates
   document.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', atsUpdate);
   });
 
-  window.addKeyword = function(keyword) {
-    const field = document.querySelector('[name="cover_letter"]');
-    field.value += ' ' + keyword;
-    atsUpdate();
-  }
+  // AI Cover Letter Generation with loading state
+  document.querySelector('#ai-cover-draft').addEventListener('click', async () => {
+    const button = document.querySelector('#ai-cover-draft');
+    const originalHTML = button.innerHTML;
 
-  document.querySelector('#ai-cover-draft').addEventListener('click', () => {
-    const form = document.querySelector('#application-form');
-    const formData = new FormData(form);
-    fetch(`/api/cover-draft?job_id={{ job.id }}`, {
-      method: 'POST',
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
+    try {
+      button.innerHTML = '<i class="ti-loading spinner"></i> Generating...';
+      button.disabled = true;
+
+      const formData = new FormData(document.querySelector('#application-form'));
+      const response = await fetch(`/jobseeker/applications/api/cover-draft?job_id={{ job.id }}`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error(await response.text());
+
+      const data = await response.json();
       document.querySelector('[name="cover_letter"]').value = data.draft;
       atsUpdate();
-    })
-    .catch(err => console.error('Cover Draft Error:', err));
+    } catch (err) {
+      console.error('Cover Draft Error:', err);
+      showAlert('Failed to generate cover letter. Please try again.', 'danger');
+    } finally {
+      button.innerHTML = originalHTML;
+      button.disabled = false;
+    }
   });
+
+  // Helper function for showing alerts
+  function showAlert(message, type = 'danger') {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.style.position = 'fixed';
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '2000';
+    alert.innerHTML = `
+      ${message}
+      <button type="button" class="close" data-dismiss="alert">
+        <span>&times;</span>
+      </button>
+    `;
+    document.body.prepend(alert);
+    setTimeout(() => alert.remove(), 5000);
+  }
+
+  window.addKeyword = function(keyword) {
+    const field = document.querySelector('[name="cover_letter"]');
+    field.value += ` ${keyword}`;
+    field.dispatchEvent(new Event('input'));
+  }
 });
 </script>
-{% endblock %}
-
-{% block styles %}
-<style>
-  .sticky-top {
-    top: 20px;
-    z-index: 1000;
-  }
-  .ats-score-preview {
-    font-size: 1.1rem;
-    padding: 0.5rem 1rem;
-  }
-  [data-ats-highlight="true"] {
-    border-left: 3px solid #17a2b8;
-    background-color: rgba(23, 162, 184, 0.05);
-  }
-  @media (max-width: 768px) {
-    .form-group input, .form-group textarea {
-      font-size: 0.9rem;
-    }
-  }
-</style>
 {% endblock %}

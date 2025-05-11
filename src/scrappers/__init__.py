@@ -60,9 +60,6 @@ class Scrapper:
         for job in jobs:
             ref = format_reference(ref=job.job_ref)
             self.jobs[ref] = job
-            job_exists = await jobs_controller.get_job_by_reference(reference=job.job_ref)
-            if not job_exists:
-                job_ = await jobs_controller.create_job(job=job)
 
     # noinspection PyBroadException
     async def fetch_url(self, url: str) -> bytes | None:
@@ -145,12 +142,31 @@ class JunctionScrapper:
         self.loop = asyncio.get_event_loop()
 
     async def reload(self):
-
+        self.logger.info(f"Inside Reload")
         self.scrapper.jobs = {}
+        jobs_list: list[Job] = await jobs_controller.get_all_jobs()
+        self.logger.info(f"JOB : {jobs_list[-1]}")
+        await self.scrapper.manage_jobs(jobs=jobs_list)
+
+    async def scrape_endpoint(self):
+        """
+            use this to launch the job scrapper manually.
+            using a cron job will be great for this task
+        :return:
+        """
         for search_term in self.scrapper.search_terms:
             self.logger.info(f"Searching for : {search_term}")
-            jobs_list = await self.junction_scrape(term=search_term)
+
+            jobs_list: list[Job] = await self.junction_scrape(term=search_term)
+
+            self.logger.info(jobs_list[-1])
+            for job in jobs_list:
+                job_exists = await jobs_controller.get_job_by_reference(reference=job.job_ref)
+                if not job_exists:
+                    job_ = await jobs_controller.create_job(job=job)
+
             await self.scrapper.manage_jobs(jobs=jobs_list)
+
 
     async def init_loader(self):
         # searches = []
@@ -158,7 +174,7 @@ class JunctionScrapper:
 
     def init_app(self, app: Flask, timer_multiplier: int = 1):
         # asyncio.run(self.init_loader())
-        self.loop.create_task(self.scrape_scheduler(timer_multiplier=timer_multiplier))
+        self.loop.create_task(self.jobs_loader(timer_multiplier=timer_multiplier))
 
     @cached
     async def junction_scrape(self, term: str, page_limit: int = 1) -> list[Job]:
@@ -238,10 +254,10 @@ class JunctionScrapper:
         except AttributeError as e:
             return
 
-    async def scrape_scheduler(self, timer_multiplier: int = 1):
+    async def jobs_loader(self, timer_multiplier: int = 1):
+        """load jobs to Memory"""
         while True:
             await self.reload()
-
             await asyncio.sleep(60 * timer_multiplier)
 
 

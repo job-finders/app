@@ -7,8 +7,8 @@ from src.utils import format_reference
 
 
 class Job(BaseModel):
-    job_id: str | None = Field(default=None)
-    search_term: str
+    job_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    search_term: str| None = Field(default=None, alias="category")
     logo_link: str | None = Field(default=None)
     job_link: str
     title: str
@@ -22,10 +22,28 @@ class Job(BaseModel):
     description: str | None = Field(default=None)
     desired_skills: list[str] | None = Field(default=None)
 
+
     @field_validator("job_ref", mode="before")
-    @classmethod
     def format_job_ref(cls, value: str) -> str:
         return format_reference(ref=value)
+
+    @property
+    def ats_description(self) -> str:
+        """
+        A derived field that combines relevant attributes to help power keyword extraction and
+        scoring logic for ATS evaluations.
+        """
+        skill_text = f"Desired skills include: {', '.join(self.desired_skills)}." if self.desired_skills else ""
+        summary_parts = [
+            f"Job Title: {self.title}",
+            f"Company: {self.company_name}",
+            f"Location: {self.location}",
+            f"Position Type: {self.position}",
+            f"Salary: {self.salary}",
+            skill_text,
+            f"Job Description: {self.description or ''}"
+        ]
+        return "\n".join([part for part in summary_parts if part.strip()])
 
     @property
     def apply_url(self) -> str:
@@ -102,7 +120,21 @@ class JobApplication(BaseModel):
     expected_salary: Optional[int] = None
     preferred_start_date: Optional[date] = None
     preferred_location: Optional[str] = None
+    ats_score: float = Field(default=0)
 
     class Config:
         orm_mode = True
+
+
+class ATSReport(BaseModel):
+    ats_report_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_id: str = Field(..., description="ID of the job the report is associated with")
+    cv_id: str = Field(..., description="ID of the CV used in the evaluation")
+    score: float = Field(..., ge=0, le=100, description="ATS score out of 100")
+    matched_keywords: list[str] = Field(default_factory=list, description="List of matched keywords found in CV")
+    missing_keywords: list[str] = Field(default_factory=list, description="List of important keywords not found in CV")
+    feedback: str = Field(..., description="Feedback based on the ATS evaluation")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp when the report was generated")
+
+
 

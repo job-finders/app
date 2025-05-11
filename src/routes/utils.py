@@ -221,7 +221,7 @@ def count_jobs_per_category(jobs: list[Job]) -> dict:
 
 
 
-async def create_search_context(search_term: str, page: int = 1, per_page: int = 10):
+async def create_search_context(user: User, search_term: str, page: int = 1, per_page: int = 10):
     """
     Create context for jobs where the search term can match any field.
 
@@ -232,6 +232,7 @@ async def create_search_context(search_term: str, page: int = 1, per_page: int =
     """
     jobs_filtered = [job for job in scrapper.jobs.values() if search_term_matches_any_field(job, search_term)]
     context = await create_common_context(search_term, jobs_filtered, page, per_page)
+    context.update(current_user=user)
     return render_template('job_listing.html', **context)
 
 
@@ -249,7 +250,7 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
     enriched_categories = []
     for cat in categories:
         slug = cat["slug"].lower().strip()
-        cat["job_count"] = job_counts.get(slug, 0)
+        cat["job_count"] = str(job_counts.get(slug, 0))
         enriched_categories.append(cat)
 
     # SEO
@@ -331,16 +332,17 @@ async def not_found(search_term: str):
             "keywords": "jobs, careers, not found, job search"
         }
     }
-
     return render_template("error.html", **context), 404
 
 
-async def gone(search_term: str):
+async def gone(user:User, search_term: str):
     """Render a 410 Gone page for permanently removed job listings."""
     message = f"The page for '{search_term}' has been permanently removed."
     utils_logger.info(message)
 
     context = {
+
+        "current_user": user,
         "message": message,
         "title": "410 Gone",
         "seo": {
@@ -353,7 +355,7 @@ async def gone(search_term: str):
     return render_template("error.html", **context), 410
 
 
-async def sub_job_detail(job: Job):
+async def sub_job_detail(user: User, job: Job):
     """Render detailed job view with SEO tags and similar jobs."""
     seo = await create_seo_tags_for_job(job=job)
     similar_jobs = await scrapper.similar_jobs(search_term=job.search_term, title=job.title)
@@ -361,7 +363,7 @@ async def sub_job_detail(job: Job):
     affiliate_template = random.choice(load_affiliate_templates())
 
     context = dict(term=job.title, job=job, search_terms=scrapper.search_terms, similar_jobs=similar_jobs,
-                   seo=seo, affiliate_template=affiliate_template)
+                   seo=seo, affiliate_template=affiliate_template, current_user=user)
 
     return render_template('job.html', **context)
 

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, Date, Text, inspect, DateTime, UniqueConstraint, ForeignKey, Integer
+from sqlalchemy import Column, String, Date, Text, inspect, DateTime, UniqueConstraint, ForeignKey, Integer, JSON
 from sqlalchemy.orm import relationship
 
 from src.database.constants import NAME_LEN, ID_LEN
@@ -167,3 +167,38 @@ class JobApplicationORM(Base):
             "preferred_location": self.preferred_location,
         }
 
+
+class ATSReportORM(Base):
+    __tablename__ = "ats_reports"
+
+    ats_report_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id = Column(String, nullable=False)
+    cv_id = Column(String, nullable=False)
+    score = Column(Integer, nullable=False)
+    matched_keywords = Column(JSON, nullable=False, default=list)
+    missing_keywords = Column(JSON, nullable=False, default=list)
+    feedback = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self) -> dict:
+        return {
+            "ats_report_id": self.ats_report_id,
+            "job_id": self.job_id,
+            "cv_id": self.cv_id,
+            "score": self.score,
+            "matched_keywords": self.matched_keywords,
+            "missing_keywords": self.missing_keywords,
+            "feedback": self.feedback,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
