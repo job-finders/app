@@ -1,7 +1,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect
+from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect, Integer
 from sqlalchemy.dialects.postgresql import ARRAY
 
 from src.database.sql import Base, engine  # Assuming this is your declarative base
@@ -27,6 +27,7 @@ class JobSeekerProfileORM(Base):
     locations_of_interest = Column(ARRAY(String), default=[])
     remote_preference = Column(Boolean, default=False)
     availability = Column(String, nullable=True)
+    expected_salary = Column(Integer, nullable=True)
 
     # Settings
     visibility = Column(Boolean, default=True)
@@ -58,6 +59,7 @@ class JobSeekerProfileORM(Base):
             "industries_of_interest": self.industries_of_interest,
             "locations_of_interest": self.locations_of_interest,
             "remote_preference": self.remote_preference,
+            "expected_salary":self.expected_salary,
             "availability": self.availability,
             "visibility": self.visibility,
             "profile_completion": int(self.profile_completion),

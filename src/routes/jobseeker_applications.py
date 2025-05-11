@@ -221,6 +221,6 @@ async def withdraw_application(user: User, application_id: str):
 @flask_error_handler
 @login_required
 async def list_applications(user: User):
-    applications = await jobs_controller.get_applied_job_applications_for_user(user.uid)
+    applications = await jobs_controller.get_applied_jobs_for_user(user.uid)
     context = dict(current_user=user, applications=applications)
     return render_template("jobseekers/applications/list.html", **context)
