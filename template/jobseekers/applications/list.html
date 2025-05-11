@@ -8,21 +8,21 @@
 
   {% if applications %}
   <div class="row">
-    {% for app in applications %}
+    {% for job_app in applications %}
     <div class="col-md-6 col-lg-4 mb-4">
       <div class="card shadow-sm h-100">
         <div class="card-body">
-          <h5 class="card-title text-primary mb-1">{{ app.job_title }}</h5>
+          <h5 class="card-title text-primary mb-1">{{ job_app.job_title }}</h5>
           <p class="mb-2 text-muted small">
-            <i class="ti-location-pin"></i> {{ app.company_name }} • {{ app.location }}
+            <i class="ti-location-pin"></i> {{ job_app.company_name }} • {{ job_app.location }}
           </p>
 
           <p class="mb-2">
-            <span class="badge badge-{{ app.status_color }}">
-              {{ app.status }}
+            <span class="badge badge-{{ job_app.status_color }}">
+              {{ job_app.status }}
             </span>
             <small class="text-muted float-right">
-              Applied on {{ app.applied_at.strftime('%d %b %Y') }}
+              Applied on {{ job_app.applied_at.strftime('%d %b %Y') }}
             </small>
           </p>
 
@@ -30,8 +30,8 @@
             <a href="{{ url_for('jobs.view_job', job_id=app.job_id) }}" class="btn btn-sm btn-outline-info">
               <i class="ti-eye mr-1"></i>View Job
             </a>
-            {% if app.status == "Pending" %}
-            <form method="POST" action="{{ url_for('jobseeker_applications.withdraw_application', application_id=app.application_id) }}">
+            {% if job_app.status == "Pending" %}
+            <form method="POST" action="{{ url_for('jobseeker_applications.withdraw_application', application_id=job_app.application_id) }}">
               <button type="submit" class="btn btn-sm btn-outline-danger">
                 <i class="ti-close mr-1"></i>Withdraw
               </button>

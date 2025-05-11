@@ -18,7 +18,7 @@ async def get_location_options(user_id: str, cv_ids: list[str]) -> list[str]:
 @jobseeker_applications_bp.route('/api/ats-check', methods=['POST'])
 @login_required
 async def api_ats_check(user: User):
-    data = await request.form
+    data = request.form
     cv_id = data.get("cv_id")
     cover_letter = data.get("cover_letter", "")
 
@@ -40,7 +40,7 @@ async def api_ats_check(user: User):
 @jobseeker_applications_bp.route('/api/cover-draft', methods=['POST'])
 @login_required
 async def api_cover_draft(user: User):
-    data = await request.form
+    data = request.form
     job_id = request.args.get("job_id")
     cv_id = data.get("cv_id")
 
@@ -68,7 +68,7 @@ async def apply_for_job(user: User, job_id: str):
 
     # Find locations from job description and jobseekers’ preferred locations (from CV and Profile)
     cv_ids = [cv.cv_id for cv in cvs]
-    locations = await get_location_options(user_id=user.uid,job_id=job_details.job_id, cv_ids=cv_ids)
+    locations = await get_location_options(user_id=user.uid, cv_ids=cv_ids)
 
     context = dict(
         job=job_details,
@@ -119,11 +119,39 @@ async def submit_application(job_id: str, user: User):
 @login_required
 async def withdraw_application(user: User, application_id: str):
     """
-
-    :param user:
-    :return:
+    Handle job application withdrawal with proper authorization and state management
+    :param user: Authenticated user from decorator
+    :param application_id: UUID of the application to withdraw
     """
-    pass
+    # Get application with basic validation
+    application = await jobs_controller.get_job_application_by_id(application_id)
+
+    if not application:
+        flash("Application not found", "danger")
+        return redirect(url_for("jobseeker_applications.list_applications"))
+
+    # Authorization check
+    if application.user_uid != user.uid:
+        flash("You are not authorized to withdraw this application", "danger")
+        return redirect(url_for("jobseeker_applications.list_applications"))
+
+    # State validation
+    if application.status == "withdrawn":
+        flash("This application was already withdrawn", "warning")
+        return redirect(url_for("jobseeker_applications.list_applications"))
+
+    # Process withdrawal
+    success = await jobs_controller.withdraw_job_application(application_id)
+
+    if success:
+        flash("Application successfully withdrawn", "success")
+        # Consider adding audit log here
+    else:
+        flash("Failed to process withdrawal - please try again", "danger")
+
+
+    return redirect(url_for("jobseeker_applications.list_applications"))
+
 
 @jobseeker_applications_bp.route("/", methods=["GET"])
 @flask_error_handler

@@ -265,7 +265,7 @@ class JobsController(Controllers):
             new_saved_job = SavedJobORM(user_id=user_id, job_id=job_id)
             session.add(new_saved_job)
 
-
+    @error_handler
     async def remove_saved_job(self, user_id: str, job_id: str) -> None:
         """Remove a saved job from the user's list"""
         with self.get_session() as session:
@@ -278,7 +278,7 @@ class JobsController(Controllers):
             # Remove the saved job entry from the database
             session.delete(saved_job_orm)
 
-
+    @error_handler
     async def get_saved_jobs_for_user(self, user_id: str) -> list[Job]:
         """Get jobs saved by a user"""
         with self.get_session() as session:
@@ -290,13 +290,14 @@ class JobsController(Controllers):
             jobs = result.scalars().all()
             return [Job(**job.to_dict()) for job in jobs]
 
+    @error_handler
     async def get_applied_job_applications_for_user(self, user_id: str) -> list[JobApplication]:
         """Get jobs the user has applied for"""
         with self.get_session() as session:
             applied_jobs_orm_list = session.query(JobApplicationORM).filter_by(user_id=user_id).all()
             return [JobApplication(**job.to_dict()) for job in applied_jobs_orm_list]
 
-
+    @error_handler
     async def get_jobs_by_employer(self, employer_id: str) -> list[Job]:
         """List jobs posted by a specific employer"""
         with self.get_session() as session:
@@ -305,6 +306,7 @@ class JobsController(Controllers):
             jobs = result.scalars().all()
             return [Job(**job.to_dict()) for job in jobs]
 
+    @error_handler
     async def delete_job(self, job_id: str) -> None:
         """Permanently delete a job listing"""
         with self.get_session() as session:
@@ -316,6 +318,7 @@ class JobsController(Controllers):
                 session.delete(job_orm)
             return None
 
+    @error_handler
     async def count_total_jobs(self) -> int:
         """Count total number of jobs in the database"""
         with self.get_session() as session:
@@ -323,6 +326,7 @@ class JobsController(Controllers):
             total_jobs = result.scalar()
             return total_jobs
 
+    @error_handler
     async def count_active_jobs(self) -> int:
         """Count jobs that are still active (not expired)"""
         with self.get_session() as session:
@@ -333,6 +337,7 @@ class JobsController(Controllers):
             active_jobs = result.scalar()
             return active_jobs
 
+    @error_handler
     async def count_jobs_by_category(self) -> dict[str, int]:
         """Return a dictionary with categories and job counts"""
         with self.get_session() as session:
@@ -344,6 +349,7 @@ class JobsController(Controllers):
             category_counts = {category: count for category, count in result}
             return category_counts
 
+    @error_handler
     async def apply_to_job(self, job_application: JobApplication):
         """
             Apply a user to a job by saving the application and applied job records.
@@ -367,4 +373,38 @@ class JobsController(Controllers):
             session.add(applied_job_orm)
             return job_application
 
+
+    @error_handler
+    async def withdraw_job_application(self, application_id: str) -> bool:
+        """
+        Withdraws a job application by updating its status and withdrawal timestamp
+        Args:
+            application_id: The ID of the application to withdraw
+        Returns:
+            bool: True if withdrawal was successful, False otherwise
+        """
+        with self.get_session() as session:
+            # Get the application with lock to prevent race conditions
+            job_application = session.query(JobApplicationORM).filter_by(
+                application_id=application_id
+            ).with_for_update().first()
+
+            if not job_application:
+                self.logger.debug(f"Application {application_id} not found")
+                return False
+
+            # Check current state before making changes
+            if job_application.status == "withdrawn":
+                self.logger.debug(f"Application {application_id} already withdrawn")
+                return True  # Considered successful as it's in desired state
+
+            # Update fields
+            job_application.status = "withdrawn"  # Lowercase for consistency
+            job_application.updated_at = datetime.now(timezone.utc)
+
+            # Explicitly mark as modified (helps with detached instances)
+            session.add(job_application)
+
+            # Let the session handler handle commit/rollback
+            return True
 

@@ -114,7 +114,8 @@ class JobApplicationORM(Base):
     applied_date = Column(DateTime, default=datetime.utcnow)
 
     cover_letter = Column(Text, nullable=True)
-    status = Column(String(50), default='pending')  # pending, accepted, rejected
+    status = Column(String(50), default='pending')  # pending, accepted, rejected, withdrawn
+    updated_at = Column(DateTime, nullable=True)
     method = Column(String(50), default='website')  # e.g., "website", "email"
     notes = Column(String(255), nullable=True)
 
@@ -141,6 +142,7 @@ class JobApplicationORM(Base):
             applied_date=kwargs.get('applied_date', datetime.utcnow()),
             cover_letter=kwargs.get('cover_letter'),
             status=kwargs.get('status', 'pending'),
+            updated_at = kwargs.get('updated_at'),
             method=kwargs.get('method', 'website'),
             notes=kwargs.get('notes'),
             expected_salary=kwargs.get('expected_salary'),
@@ -157,6 +159,7 @@ class JobApplicationORM(Base):
             "applied_date": self.applied_date.isoformat() if self.applied_date else None,
             "cover_letter": self.cover_letter,
             "status": self.status,
+            "updated_at" : self.updated_at.isoformat() if self.updated_at else None,
             "method": self.method,
             "notes": self.notes,
             "expected_salary": self.expected_salary,
