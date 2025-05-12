@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, Date, Float, Integer, Boolean, ForeignKey, JSON, Index, DateTime, inspect
+from sqlalchemy import Column, String, Text, Date, Float, Integer, Boolean, ForeignKey, JSON, Index, DateTime, inspect, \
+    ARRAY
 from sqlalchemy.orm import relationship, deferred
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -204,6 +205,7 @@ class JobsORM(Base):
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
+
     # Relationships
     applications = relationship("JobApplicationORM", back_populates="job")
     saved_jobs = relationship("SavedJobORM", back_populates="job")
@@ -317,6 +319,7 @@ class JobApplicationORM(Base):
 
     # Relationship to Job
     job = relationship("JobsORM", back_populates="applications")  # New relationship
+    approval_requests = relationship("JobApprovalRequestORM", back_populates="job")
 
     # Rest of the existing columns...
     applied_date = Column(DateTime, default=datetime.now(timezone.utc))
@@ -411,3 +414,22 @@ class ATSReportORM(Base):
             "feedback": self.feedback,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class JobApprovalRequestORM(Base):
+    __tablename__ = 'job_approval_requests'
+
+    request_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id = Column(String(36), ForeignKey('jobs.job_id'), unique=True)
+    token = Column(String(36), unique=True, index=True)
+    token_expires = Column(DateTime)
+    requested_at = Column(DateTime, default=datetime.now(timezone.utc))
+    requested_by = Column(String(36), ForeignKey('companies.company_id'))
+    approvers = Column(ARRAY(String))  # List of user IDs
+    status = Column(String(20), default='pending')  # pending/approved/rejected/expired
+    decision_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
+    decision_by = Column(String(36), ForeignKey('users.user_id'))
+    feedback = Column(Text)
+
+    job = relationship("JobsORM", back_populates="approval_requests")
+

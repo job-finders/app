@@ -64,7 +64,7 @@ class Job(BaseModel):
 
     # Company Relationships
     company_id: Optional[str] = None
-    company_name: Optional[str] = Field(None, min_length=2, max_length=255)
+    company: Optional[Company] = Field(default=None)
 
     # Job Details
     title: str = Field(min_length=5, max_length=255)
@@ -130,6 +130,11 @@ class Job(BaseModel):
     @property
     def slug(self) -> str:
         return f"{self.title.lower().replace(' ', '-')}-{self.job_ref}"
+
+    @computed_field
+    @property
+    def posted_by(self) -> str:
+        return f"{self.company.name}"
 
     @field_validator("job_ref")
     def format_job_ref(cls, value: str) -> str:

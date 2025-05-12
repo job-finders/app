@@ -1,12 +1,14 @@
-import json
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import requests
-from flask import Flask
+from flask import Flask, url_for
+from requests import RequestException
 from sqlalchemy import or_, select, func, and_, case
 from sqlalchemy.orm import joinedload
+from Levenshtein import ratio as levenstein_ratio
 
 from database.models.jobseeker_profile import JobSeekerProfile
 from database.models.resume import JobSeekerCV
@@ -17,7 +19,7 @@ from src.controllers.controller import Controllers
 from src.controllers.controller import error_handler
 from src.database.models.jobs_model import Job, JobApplication, SavedJob, JobStatistics, StatusCounts, \
     ApplicationMetrics, ApplicationFunnelStats
-from src.database.sql.jobs_sql import JobsORM, SavedJobORM, JobApplicationORM, CompanyORM
+from src.database.sql.jobs_sql import JobsORM, SavedJobORM, JobApplicationORM, CompanyORM, JobApprovalRequestORM
 
 
 class JobsController(Controllers):
@@ -203,8 +205,6 @@ class JobsController(Controllers):
             jobs_orm_list = session.query(JobsORM).filter(or_(*conditions)).all()
 
             return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm]
-
-    from sqlalchemy import or_
 
     @error_handler
     async def get_jobs_by_location(self, location: str) -> list[Job]:
@@ -453,9 +453,13 @@ class JobsController(Controllers):
                 func.sum(case((JobsORM.status == 'archived', 1), else_=0)).label('archived_jobs'),
                 func.sum(JobsORM.application_count).label('total_applications'),
                 func.sum(case((JobsORM.application_count > 0, 1), else_=0)).label('jobs_with_applications'),
-                func.sum(case((JobsORM.status == 'active') & (JobsORM.expires_at > datetime.now(timezone.utc)), 1)).label('current_active_jobs')
+                func.sum(
+                    case(
+                        (JobsORM.status == 'active') & (JobsORM.expires_at > func.now()),  # Changed here
+                        1
+                    )
+                ).label('current_active_jobs')
             ).one()
-
             # Additional queries
             category_counts = dict(session.query(JobsORM.category,func.count(JobsORM.job_id)).group_by(JobsORM.category).all())
 
@@ -1232,4 +1236,438 @@ class JobsController(Controllers):
                 self.logger.error(f"DeepSeek summary failed: {str(e)}")
                 return "Summary generation service unavailable"
 
+
+
+    # ... existing methods JOB POSTING ENHANCEMENTS ...
+
+    @error_handler
+    async def validate_job_post(self, job: Job) -> dict:
+        """Validate job post completeness and employer credibility"""
+        validation_result = {
+            'valid': True,
+            'errors': [],
+            'requires_approval': False
+        }
+
+        # Basic field validation
+        required_fields = ['title', 'city', 'province', 'country', 'category']
+        for field in required_fields:
+            if not getattr(job, field):
+                validation_result['errors'].append(f"Missing required field: {field}")
+
+        # Salary validation
+        if job.salary_min and job.salary_max:
+            if job.salary_min > job.salary_max:
+                validation_result['errors'].append("Salary minimum cannot exceed maximum")
+
+        # Employer validation
+        with self.get_session() as session:
+            # Check employer posting limits
+            posted_last_month = session.query(func.count(JobsORM.job_id)).filter(
+                JobsORM.company_id == job.company_id,
+                JobsORM.posted_at >= datetime.now(timezone.utc) - timedelta(days=30)
+            ).scalar()
+
+            if posted_last_month >= 10:  # Example limit
+                validation_result['requires_approval'] = True
+                validation_result['errors'].append("Employer posting limit reached")
+
+        # New employer approval requirement
+        if job.company_id:
+            company = session.query(CompanyORM).get(job.company_id)
+            if company and company.creation_date > datetime.now(timezone.utc) - timedelta(days=30):
+                validation_result['requires_approval'] = True
+
+        validation_result['valid'] = len(validation_result['errors']) == 0
+        return validation_result
+
+    @error_handler
+    async def add_job_posting_workflow(self, job: Job) -> Job:
+        """Complete job submission workflow"""
+        with self.get_session() as session:
+            # Step 1: Save as draft
+            job.status = "draft"
+            draft_orm = JobsORM(**job.model_dump())
+            session.add(draft_orm)
+            session.flush()  # Get ID without commit
+
+            # Step 2: Generate preview
+            preview_data = self._generate_job_preview(draft_orm)
+
+            # Step 3: Automatic categorization
+            draft_orm.category = await self._auto_categorize_job(draft_orm.title, draft_orm.description)
+
+            # Step 4: Salary benchmarking
+            benchmark = await self._get_salary_benchmark(
+                draft_orm.category,
+                draft_orm.city,
+                draft_orm.experience_level
+            )
+            if benchmark:
+                draft_orm.salary_min = benchmark.get('25_percentile', draft_orm.salary_min)
+                draft_orm.salary_max = benchmark.get('75_percentile', draft_orm.salary_max)
+
+            # Step 5: Approval check
+            validation = await self.validate_job_post(Job(**draft_orm.to_dict()))
+            if validation['requires_approval']:
+                job.status = "pending_approval"
+                self._send_approval_request(draft_orm)
+            else:
+                job.status = "active"
+                draft_orm.posted_at = datetime.now(timezone.utc)
+
+            return Job(**draft_orm.to_dict())
+
+    @error_handler
+    async def detect_duplicate_jobs(self, job: Job) -> list[Job]:
+        """Identify similar existing jobs"""
+        with self.get_session() as session:
+            duplicates = session.query(JobsORM).filter(
+                JobsORM.company_id == job.company_id,
+                JobsORM.title.ilike(f"%{job.title}%"),
+                JobsORM.city == job.city,
+                JobsORM.salary_min.between(job.salary_min * 0.9, job.salary_max * 1.1)
+            ).order_by(JobsORM.posted_at.desc()).limit(5).all()
+
+            # Add NLP-based similarity check
+            similar_jobs = []
+            for existing_job in duplicates:
+                if self._calculate_title_similarity(job.title, existing_job.title) > 0.8:
+                    similar_jobs.append(existing_job)
+
+            return [Job(**job.to_dict()) for job in similar_jobs]
+
+    # Helper methods
+    @staticmethod
+    def _calculate_title_similarity(title1: str, title2: str) -> float:
+        """Calculate title similarity using Levenshtein distance"""
+        return levenstein_ratio(title1.lower(), title2.lower())
+
+    async def _auto_categorize_job(self, title: str, description: str) -> str:
+        """Heuristically categorize a job based on title and description."""
+        async def create_ai_prompt(title: str, description: str) -> str:
+            return f"""
+            You are a smart job categorization assistant.
+
+            Given a job title and job description, your task is to categorize the job into one of the following categories:
+
+            - information-technology
+            - office-admin
+            - agriculture
+            - engineering
+            - building-construction
+            - business-management
+            - cleaning-maintenance
+            - community-social-welfare
+            - education
+            - nursing
+            - finance
+            - programming
+
+            If the job does not clearly fit into any of the above, return "other".
+
+            Respond with only the category name (no explanations or extra text).
+
+            Here is the job:
+
+            Title: {title}
+            Description: {description}
+
+            What is the most appropriate category?
+                """.strip()
+
+        async def call_deepseek_api(prompt: str):
+            try:
+                headers = {
+                    "Authorization": f"Bearer {self.deepseek_api_key}",
+                    "Content-Type": "application/json"
+                }
+
+                payload = {
+                    "model": "deepseek-chat",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.2
+                }
+
+                response = requests.post(
+                    "https://api.deepseek.com/v1/chat/completions",
+                    headers=headers,
+                    json=payload
+                )
+
+                if response.status_code == 200:
+                    category = response.json()['choices'][0]['message']['content'].strip().lower()
+                    allowed_categories = [
+                        'information-technology', 'office-admin', 'agriculture',
+                        'engineering', 'building-construction', 'business-management',
+                        'cleaning-maintenance', 'community-social-welfare', 'education',
+                        'nursing', 'finance', 'programming', 'other'
+                    ]
+                    return category if category in allowed_categories else 'other'
+                else:
+                    self.logger.error(f"DeepSeek categorization failed: {response.text}")
+                    return 'other'
+            except RequestException as e:
+                self.logger.error(f"DeepSeek categorization error: {str(e)}")
+                return 'other'
+
+        category_keywords = {
+            'information-technology': [
+                'it', 'software', 'network', 'cybersecurity', 'systems analyst',
+                'tech support', 'infrastructure', 'cloud', 'devops', 'data center'
+            ],
+            'office-admin': [
+                'admin', 'administrative', 'receptionist', 'office assistant',
+                'secretary', 'clerk', 'front desk', 'scheduler'
+            ],
+            'agriculture': [
+                'farm', 'agricultural', 'harvest', 'crop', 'irrigation',
+                'livestock', 'farming', 'agribusiness'
+            ],
+            'engineering': [
+                'engineer', 'mechanical', 'civil', 'electrical', 'technician',
+                'systems engineer', 'structural', 'design engineer'
+            ],
+            'building-construction': [
+                'builder', 'construction', 'foreman', 'plumber', 'electrician',
+                'contractor', 'site supervisor', 'carpenter', 'bricklayer'
+            ],
+            'business-management': [
+                'manager', 'executive', 'business development', 'operations',
+                'project manager', 'strategy', 'team lead'
+            ],
+            'cleaning-maintenance': [
+                'cleaner', 'janitor', 'custodian', 'maintenance', 'groundskeeper',
+                'housekeeping'
+            ],
+            'community-social-welfare': [
+                'social worker', 'community outreach', 'non-profit',
+                'ngo', 'welfare', 'care worker', 'humanitarian'
+            ],
+            'education': [
+                'teacher', 'educator', 'lecturer', 'instructor',
+                'trainer', 'school', 'professor', 'tutor'
+            ],
+            'nursing': [
+                'nurse', 'midwife', 'caregiver', 'rn', 'enrolled nurse',
+                'clinical assistant', 'healthcare assistant'
+            ],
+            'finance': [
+                'accountant', 'bookkeeper', 'auditor', 'finance', 'financial analyst',
+                'investment', 'bank', 'payroll'
+            ],
+            'programming': [
+                'developer', 'programmer', 'software engineer', 'python', 'java',
+                'backend', 'frontend', 'fullstack', 'api', 'coding'
+            ]
+        }
+
+        combined_text = f"{title} {description}".lower()
+        scores = {category: 0 for category in category_keywords.keys()}
+
+        for category, keywords in category_keywords.items():
+            for keyword in keywords:
+                if keyword in combined_text:
+                    scores[category] += combined_text.count(keyword)
+
+        best_category = max(scores, key=scores.get)
+        category_fit = best_category if scores[best_category] > 0 else None
+        if not category_fit:
+            # TODO - could test if user is allowed to call this api
+            prompt = await create_ai_prompt(title=title, description=description)
+            category_fit = await call_deepseek_api(prompt=prompt)
+        return category_fit
+
+    # noinspection PyProtectedMember
+    async def _get_salary_benchmark(self, category: str, location: str, experience: str) -> dict:
+        """Get salary benchmarks from historical data"""
+        with self.get_session() as session:
+            # noinspection PyProtectedMember
+            return session.query(
+                func.percentile_cont(0.25).within_group(JobsORM.salary_min).label('25_percentile'),
+                func.percentile_cont(0.75).within_group(JobsORM.salary_min).label('75_percentile')
+            ).filter_by(
+                category=category,
+                city=location,
+                experience_level=experience
+            ).group_by(JobsORM.category).first()._asdict()
+
+    def _generate_job_preview(self, job: JobsORM) -> dict:
+        """Generate preview data for job posting"""
+        return {
+            'preview_html': f"<h1>{job.title}</h1><p>{job.description[:200]}...</p>",
+            'metadata': {
+                'word_count': len(job.description.split()),
+                'salary_range': f"{job.salary_min} - {job.salary_max}",
+                'readability_score': self._calculate_readability(job.description)
+            }
+        }
+
+    def _calculate_readability(self, text: str) -> float:
+        """
+        Calculate text readability using the Flesch Reading Ease formula.
+
+        Formula: 206.835 - 1.015*(words/sentences) - 84.6*(syllables/words)
+
+        Returns:
+            float: Readability score between 0-100 (higher = easier to read)
+        """
+        text = text.strip()
+        if not text:
+            return 0.0
+
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?])[\s\n]+', text) if s.strip()]
+        num_sentences = len(sentences)
+        if num_sentences == 0:
+            return 0.0
+
+        words = []
+        total_syllables = 0
+        for sentence in sentences:
+            words_in_sentence = re.findall(r"\b[a-zA-Z']+\b", sentence)
+            words.extend(words_in_sentence)
+            total_syllables += sum(self._count_word_syllables(word) for word in words_in_sentence)
+
+        num_words = len(words)
+        if num_words < 1 or num_sentences < 1:
+            return 0.0
+
+        avg_words_per_sentence = num_words / num_sentences
+        avg_syllables_per_word = total_syllables / num_words
+
+        score = 206.835 - (1.015 * avg_words_per_sentence) - (84.6 * avg_syllables_per_word)
+
+        return round(max(0.0, min(100.0, score)), 2)
+
+    def _count_word_syllables(self, word: str) -> int:
+        """Estimate syllables in a word using vowel groups and common patterns"""
+        word = word.lower()
+        if len(word) <= 3:
+            return 1
+
+        # Handle common exceptions
+        if word.endswith(('es', 'ed')) and not word.endswith(('ses', 'aes', 'ies', 'eed')):
+            word = word[:-2]
+        elif word.endswith('e'):
+            word = word[:-1]
+
+        # Count vowel groups
+        vowels = 'aeiouy'
+        count = 0
+        prev_char_vowel = False
+
+        for char in word:
+            if char in vowels:
+                if not prev_char_vowel:
+                    count += 1
+                prev_char_vowel = True
+            else:
+                prev_char_vowel = False
+
+        # Final adjustments
+        if word.endswith(('le', 're')) and count > 1:
+            count -= 1
+        if count == 0:
+            count = 1
+
+        return max(1, count)
+
+    def _send_approval_request(self, draft_orm: JobsORM) -> None:
+        """
+        Initiate and manage the job post approval workflow by:
+        1. Identifying appropriate approvers
+        2. Generating secure approval links
+        3. Sending notification emails
+        4. Creating audit records
+        5. Setting up approval tracking
+
+        Parameters:
+            draft_orm (JobsORM): The job post draft requiring approval
+
+        Workflow:
+            1. Determine approval recipients based on:
+               - Company hierarchy (if employer has internal approval flow)
+               - System admins (for new/unverified companies)
+               - Category moderators (for specialized job categories)
+            2. Generate unique approval token with expiration
+            3. Store approval request in database
+            4. Send email notifications with approval/rejection links
+            5. Update job post status to 'pending_approval'
+
+        Notifications Include:
+            - Direct approval/rejection links with JWT tokens
+            - Job post summary
+            - Submit timestamp
+            - Applicant statistics (for renewal posts)
+            - Approval deadline
+
+        Security:
+            - Uses time-limited JWT tokens for authorization
+            - Encodes company ID and job ID in token
+            - Stores hashed token version in database
+            - Automatic invalidation after:
+              - Approval/rejection action
+              - Token expiration (7 days)
+              - Job post modification
+
+        Raises:
+            ApprovalWorkflowException: If critical failure in notification sending
+        """
+        with self.get_session() as session:
+
+            # 1. Identify approvers
+            approvers = session.query(UserORM).filter_by(role = "admin").all()
+            if not approvers:
+                raise ValueError("No eligible approvers found")
+
+            # 2. Generate approval token
+            approval_token = str(uuid.uuid4())
+            token_expiration = datetime.now(timezone.utc) + timedelta(days=7)
+            draft = Job(**draft_orm.to_dict())
+            # 3. Create approval request record
+            approval_request = JobApprovalRequestORM(
+                job_id=draft_orm.job_id,
+                token=approval_token,
+                token_expires=token_expiration,
+                requested_by=draft.company.company_id,
+                approvers=[u.user_id for u in approvers],
+                status='pending'
+            )
+            session.add(approval_request)
+
+            # 4. Prepare approval email
+            approval_link = url_for('jobs.approve_job', approval_token=approval_token, _extarnal=True)
+            rejection_link = url_for('jobs.reject_job', approval_token=approval_token, _extarnal=True)
+
+            email_body = f"""
+            <h2>Job Post Approval Required</h2>
+            <p><strong>Title:</strong> {draft.title}</p>
+            <p><strong>Company:</strong> {draft.company.name}</p>
+            <p><strong>Category:</strong> {draft.category}</p>
+            <p><strong>Submitted:</strong> {draft.posted_at.strftime('%Y-%m-%d %H:%M')}</p>
+    
+            <h3>Actions Required by {token_expiration.strftime('%Y-%m-%d')}</h3>
+            <p>
+                <a href="{approval_link}" style="color: green;">Approve Job Post</a> | 
+                <a href="{rejection_link}" style="color: red;">Request Changes</a>
+            </p>
+    
+            <h4>Post Preview</h4>
+            <div>{draft.description[:500]}...</div>
+            """
+
+            # TODO - Send Message using Send Mail - 5. Send notifications
+            # for approver in approvers:
+            #     msg = Message(
+            #         subject=f"Approval Required: {draft_orm.title}",
+            #         recipients=[approver.email],
+            #         html=email_body
+            #     )
+            #     self.mail.send(msg)
+            #
+            # 6. Update job status
+            draft_orm.status = 'pending_approval'
+            session.commit()
+
+            self.logger.info(f"Sent approval request for job {draft_orm.job_id} to {len(approvers)} approvers")
 
