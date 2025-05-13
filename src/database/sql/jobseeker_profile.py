@@ -17,6 +17,10 @@ class JobSeekerProfileORM(Base):
     # Job Seeker need to enable Job Alerts in order to get alerts based on their preferences
     alerts_enabled: bool = Column(Boolean, default=False)
 
+    receive_deadline_reminders = Column(Boolean, default=True)
+    reminder_days_before = Column(Integer, default=3)  # Days before deadline to remind
+    last_reminded_at = Column(DateTime)  # Track last reminder time
+
     first_name = Column(String(NAME_LEN))
     last_name = Column(String(NAME_LEN))
     # Basic info
@@ -55,7 +59,18 @@ class JobSeekerProfileORM(Base):
     def to_dict(self):
         return {
             "user_uid": self.user_uid,
+
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+
             "bio": self.bio,
+
+            "email": self.email,
+            "receive_deadline_reminders": self.receive_deadline_reminders,
+            "reminder_days_before": self.reminder_days_before,
+            "last_reminded_at": self.last_reminded_at,
+            "alerts_enabled": self.alerts_enabled,
+
             "profile_image_url": self.profile_image_url,
             "location": self.location,
             "phone": self.phone,

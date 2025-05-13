@@ -1,9 +1,11 @@
 import asyncio
+from datetime import datetime, timezone, timedelta
 
 from flask import Flask, render_template
+from sqlalchemy import exists
 
-from src.database.models.jobs_model import Job, JobApplication
-from src.database.sql.jobs_sql import JobApplicationORM
+from src.database.models.jobs_model import Job, JobApplication, JobApplicationStatusEnum
+from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.emailer import EmailModel
@@ -52,7 +54,8 @@ class UserEngagementController(Controllers):
             context = dict(first_name=profile.first_name, jobs=job_data, count=len(job_data))
             return render_template('jobseekers/email/job_alert.html', **context)
 
-    def _format_salary(self, job: Job) -> str:
+    @staticmethod
+    def _format_salary(job: Job) -> str:
         """Helper for salary formatting"""
         if job.salary_confidential:
             return "Competitive Salary"
@@ -105,7 +108,7 @@ class UserEngagementController(Controllers):
             return True
 
         except Exception as e:
-            self.logger.error(f"Failed profile {profile.user_id}: {str(e)}")
+            self.logger.error(f"Failed profile {profile_orm.user_uid}: {str(e)}")
             return e
 
 
@@ -145,7 +148,7 @@ class UserEngagementController(Controllers):
         """Process individual status update"""
         try:
             job_application = JobApplication(**application_orm.to_dict())
-            user_profile = await self.get_user_profile(user_id=job_application.user_id)
+            user_profile = await job_seeker_profile_controller.get_profile_by_uid(user_id=job_application.user_id)
 
             if not job_application.job:
                 job_application.job = await jobs_controller.get_job_by_id(job_id=job_application.job_id)
@@ -159,7 +162,7 @@ class UserEngagementController(Controllers):
             return True
 
         except Exception as e:
-            self.logger.error(f"Status update failed for {job_application.application_id}: {str(e)}")
+            self.logger.error(f"Status update failed for {application_orm.application_id}: {str(e)}")
             return e
 
     async def _compose_status_email(self, application: JobApplication, profile: JobSeekerProfile) -> EmailModel:
@@ -182,8 +185,100 @@ class UserEngagementController(Controllers):
             html_=html_content
         )
 
-    async def get_user_profile(self, user_id: str) -> JobSeekerProfile:
-        """Helper to get user profile"""
+
+    async def send_deadline_reminders(self) -> dict:
+        """
+        Send deadline reminders for:
+        - Saved jobs with approaching deadlines
+        - Applications nearing expiration
+        """
+        results = {'sent': 0, 'errors': 0}
+
         with self.get_session() as session:
-            profile_orm = session.query(JobSeekerProfileORM).filter_by(user_id=user_id).first()
-            return JobSeekerProfile(**profile_orm.to_dict())
+            # Get users who want reminders
+            users = session.query(JobSeekerProfileORM).filter(
+                JobSeekerProfileORM.receive_deadline_reminders == True
+            ).all()
+
+            for i in range(0, len(users), 50):
+                batch = users[i:i + 50]
+                tasks = [self._process_user_reminders(user) for user in batch]
+                batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                results['sent'] += sum(1 for res in batch_results if not isinstance(res, Exception))
+                results['errors'] += sum(1 for res in batch_results if isinstance(res, Exception))
+
+                session.commit()
+                await asyncio.sleep(1)
+
+        return results
+
+    async def _process_user_reminders(self, user_profile_orm: JobSeekerProfileORM):
+        """Process reminders for a single user"""
+        try:
+            with self.get_session() as session:
+                # Get pending deadlines
+                reminders = []
+
+                # 1. Saved Jobs without applications
+                saved_jobs = session.query(SavedJobORM).filter(
+                    SavedJobORM.user_id == user_profile_orm.user_uid,
+                    ~exists().where(JobApplicationORM.job_id == SavedJobORM.job_id)
+                ).join(JobsORM).filter(
+                    JobsORM.application_deadline >= datetime.now(timezone.utc),
+                    JobsORM.application_deadline <= self._reminder_cutoff(user_profile_orm)
+                ).all()
+
+                # 2. Applications in progress
+                applications = session.query(JobApplicationORM).filter(
+                    JobApplicationORM.user_id == user_profile_orm.user_uid,
+                    JobApplicationORM.application_stage.in_([
+                        JobApplicationStatusEnum.APPLIED.value,
+                        JobApplicationStatusEnum.UNDER_REVIEW.value,
+                        JobApplicationStatusEnum.INTERVIEWING.value
+                    ]),
+                    JobsORM.application_deadline >= datetime.now(timezone.utc),
+                    JobsORM.application_deadline <= self._reminder_cutoff(user_profile_orm)
+                ).join(JobsORM).all()
+
+                # Combine and deduplicate
+                all_jobs = {(sj.job_id, sj.job) for sj in saved_jobs}
+                all_jobs.update({(app.job_id, app.job) for app in applications})
+
+                if not all_jobs:
+                    return None
+
+                # Send reminder
+                email = await self._compose_deadline_email(
+                    user_profile=JobSeekerProfile(**user_profile_orm.to_dict()),
+                    jobs=[job for _, job in all_jobs]
+                )
+                await self._send_alert(email)
+                user_profile_orm.last_reminded_at = datetime.now(timezone.utc)
+
+                return True
+
+        except Exception as e:
+            self.logger.error(f"Reminder failed for {user_profile_orm.user_uid}: {str(e)}")
+            return e
+
+    def _reminder_cutoff(self, profile: JobSeekerProfileORM) -> datetime:
+        """Calculate deadline cutoff date based on user preference"""
+        return datetime.now(timezone.utc) + timedelta(days=profile.reminder_days_before)
+
+
+    async def _compose_deadline_email(self, user_profile: JobSeekerProfile, jobs: list[Job]) -> EmailModel:
+        """Create deadline reminder email"""
+        with self.app.app_context():
+            context = dict(
+                user=user_profile,
+                jobs=jobs,
+                utcnow=datetime.now(timezone.utc)
+            )
+            html_content = render_template('jobseekers/email/deadline_reminder.html', **context)
+
+            return EmailModel(
+                to_=user_profile.email,
+                subject_=f"⏳ {len(jobs)} Upcoming Job Deadlines - Jobfinders.site",
+                html_=html_content
+            )

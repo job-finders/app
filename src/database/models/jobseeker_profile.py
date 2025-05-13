@@ -10,6 +10,13 @@ class JobSeekerProfile(BaseModel):
     last_name: str
     # Basic info
     bio: Optional[str] = None
+    email: str
+
+    alerts_enabled: bool = Field(default=True)
+    receive_deadline_reminders: bool = Field(default=True)
+    reminder_days_before: int = Field(default=7)
+    last_reminded_at: datetime| None = Field(default=None)
+
     profile_image_url: Optional[HttpUrl] = None
     location: Optional[str] = None
     phone: Optional[str] = None

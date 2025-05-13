@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .deadline-header { color: #c0392b; border-left: 4px solid #c0392b; padding: 10px; }
+        .job-card { margin: 15px 0; padding: 15px; border: 1px solid #ecf0f1; }
+        .time-left { color: #27ae60; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div style="max-width: 600px; margin: 0 auto;">
+        <h2>⏰ Upcoming Application Deadlines</h2>
+
+        {% for job in jobs %}
+        <div class="job-card">
+            <h3>{{ job.title }}</h3>
+            <p>{{ job.company.name }} • {{ job.location }}</p>
+
+            <div class="deadline-info">
+                <p class="time-left">
+                    {% set days_left = (job.application_deadline - utcnow()).days %}
+                    {{ days_left }} day{{ 's' if days_left != 1 }} remaining
+                </p>
+                <p>Deadline: {{ job.application_deadline.strftime('%Y-%m-%d %H:%M UTC') }}</p>
+            </div>
+
+            {% if job.application_url %}
+            <a href="{{ job.application_url }}" style="color: #2980b9;">Apply Now</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div style="margin-top: 20px; font-size: 0.9em; color: #7f8c8d;">
+            <p>Manage reminders:
+                <a href="{{ url_for('jobseeker_profiles.view_profile') }}">Profile Settings</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
