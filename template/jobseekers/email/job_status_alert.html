@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style type="text/css">
+        .status-change {
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        .old-status { color: #95a5a6; text-decoration: line-through; }
+        .new-status { color: #27ae60; font-weight: bold; }
+        .job-card { border: 1px solid #ecf0f1; padding: 15px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div style="max-width: 600px; margin: 0 auto;">
+        <!-- Status Header -->
+        <div class="status-change">
+            <h2>
+                <span class="old-status">
+                    {{ old_status.value if old_status else 'NEW APPLICATION' }}
+                </span>
+                →
+                <span class="new-status">{{ new_status.value }}</span>
+            </h2>
+            <p>Updated: {{ update_date }}</p>
+        </div>
+
+        <!-- Job Details -->
+        <div class="job-card">
+            <h3>{{ job.title }}</h3>
+            {% if job.company %}
+            <p>{{ job.company.name }}</p>
+            {% endif %}
+            <p>{{ job.location }}</p>
+            <p>Position Type: {{ job.position_type.replace('_', ' ') | title }}</p>
+        </div>
+
+        <!-- Reviewer Notes -->
+        {% if notes %}
+        <div class="notes">
+            <h4>Additional Notes:</h4>
+            <p>{{ notes }}</p>
+        </div>
+        {% endif %}
+
+    <!-- Add this section above the footer -->
+<div style="margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+    <p style="margin: 0; font-size: 0.9em; color: #7f8c8d;">
+        To unsubscribe from these alerts, please adjust your preferences in your
+        <a href="{{ url_for('jobseeker_profiles.view_profile') }}" style="color: #3498db; text-decoration: none;">
+            profile settings
+        </a>.
+    </p>
+</div>
+
+        <!-- Static Footer -->
+        <div style="margin-top: 20px; color: #7f8c8d; font-size: 0.8em;">
+            <p>This is an automated notification. Contact support for assistance.</p>
+        </div>
+    </div>
+</body>
+</html>

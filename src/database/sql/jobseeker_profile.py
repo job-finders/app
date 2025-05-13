@@ -12,6 +12,11 @@ class JobSeekerProfileORM(Base):
     __tablename__ = "job_seeker_profiles"
 
     user_uid = Column(String(ID_LEN), ForeignKey("users.uid"), primary_key=True)
+
+    email : str = Column(String(NAME_LEN), indexed=True)
+    # Job Seeker need to enable Job Alerts in order to get alerts based on their preferences
+    alerts_enabled: bool = Column(Boolean, default=False)
+
     first_name = Column(String(NAME_LEN))
     last_name = Column(String(NAME_LEN))
     # Basic info

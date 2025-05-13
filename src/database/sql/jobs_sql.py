@@ -337,6 +337,7 @@ class JobApplicationORM(Base):
     required_documents = Column(JSON, default=[])  # ["CV", "ID Copy", "Certificates"]
     questionnaire_answers = Column(JSON)  # {"questions": ["Why this role?", "Availability dat
     # See Job Application Stage Enum - the Default Stage is Applied
+    last_application_stage = Column(String(50), nullable=True)
     application_stage = Column(String(50))
     validation_score = Column(Integer)
     missing_requirements = Column(JSON)
@@ -359,6 +360,7 @@ class JobApplicationORM(Base):
             "expected_salary": self.expected_salary,
             "preferred_start_date": self.preferred_start_date.isoformat() if self.preferred_start_date else None,
             "preferred_location": self.preferred_location,
+            "last_application_stage": self.last_application_stage,
             "application_stage": self.application_stage,
             "validation_score": self.validation_score,
             "missing_requirements": self.missing_requirements,

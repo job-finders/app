@@ -203,6 +203,7 @@ class JobApplication(BaseModel):
 
     required_documents: list[str] = Field(default_factory=list)
     questionnaire_answers: dict[str, list[str]] = Field(default={})
+    last_application_stage : str| None = Field(default=None)
     application_stage: str = Field(default=JobApplicationStatusEnum.APPLIED.value)
     validation_score: int = Field(default=0)
     missing_requirements: list[str] = Field(default_factory=list)

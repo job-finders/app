@@ -10,13 +10,13 @@ from requests import RequestException
 from sqlalchemy import or_, select, func, and_, case
 from sqlalchemy.orm import joinedload
 from Levenshtein import ratio as levenstein_ratio
-
+from src.controllers.controller import Controllers
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.models.resume import JobSeekerCV
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.resume import JobSeekerCVORM
 from src.database.sql.users import UserORM
-from src.controllers.controller import Controllers
+
 from src.controllers.controller import error_handler
 from src.database.models.jobs_model import (Job, JobApplication, SavedJob, JobStatistics, StatusCounts,
     ApplicationMetrics, ApplicationFunnelStats, BulkImportResult, TalentPoolReport, JobApplicationDashboard, ATSReport,
