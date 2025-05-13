@@ -70,6 +70,14 @@ class CompanyORM(Base):
         }
 
 
+# Add new ORM model for tracking followed companies
+class CompanyFollowingORM(Base):
+    __tablename__ = 'company_following'
+    follow_id = Column(String(ID_LEN), primary_key=True, index=True)
+    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_id'), primary_key=True)
+    company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), primary_key=True)
+    followed_at = Column(DateTime, default=datetime.utcnow)
+    last_notified_at = Column(DateTime)
 
 
 class JobsORM(Base):

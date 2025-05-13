@@ -20,6 +20,7 @@ class JobSeekerProfileORM(Base):
     receive_deadline_reminders = Column(Boolean, default=True)
     reminder_days_before = Column(Integer, default=3)  # Days before deadline to remind
     last_reminded_at = Column(DateTime)  # Track last reminder time
+    receive_company_updates = Column(Boolean, default=True)
 
     first_name = Column(String(NAME_LEN))
     last_name = Column(String(NAME_LEN))
@@ -70,6 +71,7 @@ class JobSeekerProfileORM(Base):
             "reminder_days_before": self.reminder_days_before,
             "last_reminded_at": self.last_reminded_at,
             "alerts_enabled": self.alerts_enabled,
+            "receive_company_updates" : self.receive_company_updates,
 
             "profile_image_url": self.profile_image_url,
             "location": self.location,

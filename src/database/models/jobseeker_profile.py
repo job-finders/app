@@ -16,6 +16,7 @@ class JobSeekerProfile(BaseModel):
     receive_deadline_reminders: bool = Field(default=True)
     reminder_days_before: int = Field(default=7)
     last_reminded_at: datetime| None = Field(default=None)
+    receive_company_updates: bool = Field(default=True)
 
     profile_image_url: Optional[HttpUrl] = None
     location: Optional[str] = None

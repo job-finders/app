@@ -1,11 +1,12 @@
 import asyncio
+from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 
 from flask import Flask, render_template
 from sqlalchemy import exists
 
 from src.database.models.jobs_model import Job, JobApplication, JobApplicationStatusEnum
-from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM
+from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM, CompanyFollowingORM, CompanyORM
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.emailer import EmailModel
@@ -280,5 +281,84 @@ class UserEngagementController(Controllers):
             return EmailModel(
                 to_=user_profile.email,
                 subject_=f"⏳ {len(jobs)} Upcoming Job Deadlines - Jobfinders.site",
+                html_=html_content
+            )
+
+
+    async def send_company_updates(self) -> dict:
+        """Notify users about new jobs from followed companies"""
+        results = {'sent': 0, 'errors': 0}
+
+        with self.get_session() as session:
+            # Get all users who want company updates
+            users = session.query(JobSeekerProfileORM).filter(
+                JobSeekerProfileORM.receive_company_updates == True
+            ).all()
+
+            for i in range(0, len(users), 50):
+                batch = users[i:i + 50]
+                tasks = [self._process_company_updates(user) for user in batch]
+                batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                results['sent'] += sum(1 for res in batch_results if not isinstance(res, Exception))
+                results['errors'] += sum(1 for res in batch_results if isinstance(res, Exception))
+
+                session.commit()
+                await asyncio.sleep(1)
+
+        return results
+
+    async def _process_company_updates(self, user_profile: JobSeekerProfileORM):
+        """Process company updates for a single user"""
+        try:
+            with self.get_session() as session:
+                # Get followed companies with new jobs
+                updates = session.query(CompanyFollowingORM).filter(
+                    CompanyFollowingORM.user_id == user_profile.user_uid,
+                    CompanyFollowingORM.last_notified_at < JobsORM.posted_at
+                ).join(CompanyORM).join(JobsORM).filter(
+                    JobsORM.posted_at >= datetime.now(timezone.utc) - timedelta(days=1)  # Daily digest
+                ).all()
+
+                if not updates:
+                    return None
+
+                # Group jobs by company
+                company_jobs = defaultdict(list)
+                for follow in updates:
+                    jobs = session.query(JobsORM).filter(
+                        JobsORM.company_id == follow.company_id,
+                        JobsORM.posted_at > follow.last_notified_at
+                    ).limit(10).all()
+                    company_jobs[follow.company] = jobs
+                    follow.last_notified_at = datetime.now(timezone.utc)
+
+                # Compose and send email
+                email = await self._compose_company_update_email(
+                    profile=JobSeekerProfile(**user_profile.to_dict()),
+                    company_jobs=company_jobs
+                )
+                await self._send_alert(email)
+                return True
+
+        except Exception as e:
+            self.logger.error(f"Company updates failed for {user_profile.user_uid}: {str(e)}")
+            return e
+
+    async def _compose_company_update_email(self, profile: JobSeekerProfile,
+                                            company_jobs: dict[CompanyORM, list[JobsORM]]) -> EmailModel:
+        """Create company update email"""
+        with self.app.app_context():
+
+            context= dict(
+                user=profile,
+                companies=company_jobs,
+                utcnow=datetime.utcnow
+            )
+
+            html_content = render_template('jobseekers/email/company_updates.html', **context)
+            return EmailModel(
+                to_=profile.email,
+                subject_=f"🏢 New Jobs from Companies You Follow",
                 html_=html_content
             )
