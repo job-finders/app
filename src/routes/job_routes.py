@@ -1,7 +1,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for
 
-from authentication import login_required
+from authentication import login_required, admin_login
 from routes.utils import gone
 from src.authentication import user_details
 from src.routes import flask_error_handler
@@ -137,3 +137,45 @@ async def gone(search_term: str = ''):
 @flask_error_handler
 async def view(job_id: str):
     pass
+
+
+@jobs_route.get('/jobs/review/<string:approval_token>')
+@flask_error_handler
+@admin_login
+async def review_job(user: User, approval_token: str):
+    """
+    Display job details and prompt admin for approval or rejection with feedback.
+    """
+    job_data = await jobs_controller.get_job_by_token(approval_token)
+
+    if not job_data.success:
+        return render_template("admin/jobs/job_approval_error.html", message=job_data.message), 400
+
+    return render_template("admin/jobs/job_approval_error.html", job=job_data.data, token=approval_token)
+
+
+@jobs_route.post('/jobs/submit-review/<string:approval_token>')
+@flask_error_handler
+@admin_login
+async def submit_job_review(user: User, approval_token: str):
+    """
+    Process admin's decision (approve or reject) and feedback.
+    """
+    form = request.form
+    decision = form.get("decision")  # "approve" or "reject"
+    feedback = form.get("feedback", "").strip()
+
+    if decision == "approve":
+        result = await jobs_controller.approve_method(approval_token, approver=user, feedback=feedback)
+        template = "admin/jobs/job_approval_success.html"
+    elif decision == "reject":
+        result = await jobs_controller.reject_method(approval_token, rejector=user, feedback=feedback)
+        template = "admin/job_rejection_success.html"
+    else:
+        return render_template("admin/jobs/job_approval_error.html", message="Invalid decision"), 400
+
+    if result.success:
+        return render_template(template, job=result.data)
+    else:
+        return render_template("admin/jobs/job_approval_error.html", message=result.message), 400
+

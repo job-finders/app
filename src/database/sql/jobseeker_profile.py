@@ -4,34 +4,36 @@ from datetime import datetime
 from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect, Integer
 from sqlalchemy.dialects.postgresql import ARRAY
 
+from database.constants import ID_LEN, NAME_LEN
 from src.database.sql import Base, engine  # Assuming this is your declarative base
 
 
 class JobSeekerProfileORM(Base):
     __tablename__ = "job_seeker_profiles"
 
-    user_uid = Column(String, ForeignKey("users.uid"), primary_key=True)
-
+    user_uid = Column(String(ID_LEN), ForeignKey("users.uid"), primary_key=True)
+    first_name = Column(String(NAME_LEN))
+    last_name = Column(String(NAME_LEN))
     # Basic info
     bio = Column(Text, nullable=True)
     profile_image_url = Column(String, nullable=True)
-    location = Column(String, nullable=True)
-    phone = Column(String, nullable=True)
-    website = Column(String, nullable=True)
-    linkedin = Column(String, nullable=True)
-    github = Column(String, nullable=True)
+    location = Column(String(NAME_LEN), nullable=True)
+    phone = Column(String(36), nullable=True)
+    website = Column(String(NAME_LEN), nullable=True)
+    linkedin = Column(String(NAME_LEN), nullable=True)
+    github = Column(String(NAME_LEN), nullable=True)
 
     # Job preferences
     job_titles_of_interest = Column(ARRAY(String), default=[])
     industries_of_interest = Column(ARRAY(String), default=[])
     locations_of_interest = Column(ARRAY(String), default=[])
     remote_preference = Column(Boolean, default=False)
-    availability = Column(String, nullable=True)
+    availability = Column(String(NAME_LEN), nullable=True)
     expected_salary = Column(Integer, nullable=True)
 
     # Settings
     visibility = Column(Boolean, default=True)
-    profile_completion = Column(String, default="0")  # or Integer if more appropriate
+    profile_completion = Column(String(NAME_LEN), default="0")  # or Integer if more appropriate
     last_updated = Column(DateTime, default=datetime.utcnow)
 
     @classmethod

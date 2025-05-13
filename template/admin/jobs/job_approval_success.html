@@ -1,0 +1,21 @@
+
+
+
+{# Note place the form below for job approvals first display#}
+
+<form method="POST" action="{{ url_for('jobs_route.submit_job_review', approval_token=token) }}">
+  <h2>Review Job Submission</h2>
+
+  <div>
+    <h3>{{ job.title }}</h3>
+    <p><strong>Company:</strong> {{ job.company.name }}</p>
+    <p><strong>Description:</strong> {{ job.description }}</p>
+  </div>
+
+  <label for="feedback">Feedback (required):</label><br>
+  <textarea name="feedback" required rows="5" cols="60" placeholder="Enter your approval or rejection comments..."></textarea><br><br>
+
+  <button type="submit" name="decision" value="approve" class="btn btn-success">Approve Job</button>
+  <button type="submit" name="decision" value="reject" class="btn btn-danger">Reject Job</button>
+</form>
+

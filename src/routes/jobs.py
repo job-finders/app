@@ -10,7 +10,7 @@ from src.routes.utils import (create_common_context, not_found, gone, TOWN_TO_PR
 
 jobs_route = Blueprint('jobs', __name__)
 
-# Route Definitions
+# Route Definitions ----DEPREATED JOB ROUTES
 
 @jobs_route.get('/jobs-in/<string:location>')
 @flask_error_handler
@@ -132,42 +132,3 @@ async def categories(user: User):
 async def assisted_search(user: User):
     pass
 
-
-@jobs_route.get('/jobs/approve-job/<string:approval_token>')
-@flask_error_handler
-@admin_login
-async def approve_job(user: User, approval_token: str):
-    """
-    Approves a job posting using the provided approval token.
-
-    :param user: The admin user performing the approval.
-    :param approval_token: Unique token to identify the job awaiting approval.
-    :return: A success or failure message.
-    """
-    # TODO - ensure there is a place to enter feedback for the approval or rejection
-
-    result = await jobs_controller.approve_method(approval_token, approver=user)
-
-    if result.success:
-        return render_template("admin/job_approval_success.html", job=result.data)
-    else:
-        return render_template("admin/job_approval_error.html", message=result.message), 400
-
-
-@jobs_route.get('/jobs/reject-job/<string:approval_token>')
-@flask_error_handler
-@admin_login
-async def reject_job(user: User, approval_token: str):
-    """
-    Rejects a job posting using the provided approval token.
-
-    :param user: The admin user performing the rejection.
-    :param approval_token: Unique token to identify the job awaiting rejection.
-    :return: A success or failure message.
-    """
-    result = await jobs_controller.reject_method(approval_token, rejector=user)
-
-    if result.success:
-        return render_template("admin/job_rejection_success.html", job=result.data)
-    else:
-        return render_template("admin/job_approval_error.html", message=result.message), 400

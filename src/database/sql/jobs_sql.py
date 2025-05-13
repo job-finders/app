@@ -326,7 +326,7 @@ class JobApplicationORM(Base):
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     cover_letter = Column(Text, nullable=True)
-    status = Column(String(50), default='pending')
+
     method = Column(String(50), default='website')
     notes = Column(String(255), nullable=True)
 
@@ -336,8 +336,8 @@ class JobApplicationORM(Base):
 
     required_documents = Column(JSON, default=[])  # ["CV", "ID Copy", "Certificates"]
     questionnaire_answers = Column(JSON)  # {"questions": ["Why this role?", "Availability dat
-
-    application_stage = Column(String(50), default='submitted')  # submitted → qualified → interviewed → hired
+    # See Job Application Stage Enum - the Default Stage is Applied
+    application_stage = Column(String(50))
     validation_score = Column(Integer)
     missing_requirements = Column(JSON)
     review_summary = Column(Text)
@@ -351,7 +351,6 @@ class JobApplicationORM(Base):
             "cv_id": self.cv_id,
             "applied_date": self.applied_date.isoformat() if self.applied_date else None,
             "cover_letter": self.cover_letter,
-            "status": self.status,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "method": self.method,
             "notes": self.notes,
@@ -415,8 +414,42 @@ class ATSReportORM(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
-
 class JobApprovalRequestORM(Base):
+    """
+    SQLAlchemy ORM model representing job approval requests submitted by companies.
+
+    This table tracks the approval lifecycle of jobs that require administrative or delegated approval
+    before being listed publicly. Each request is tied to a specific job and includes metadata about
+    the request such as token expiration, approvers, and decision status.
+
+    Columns:
+        - request_id (UUID): Unique identifier for the approval request.
+        - job_id (UUID): Foreign key linking to the job being approved.
+        - token (str): Unique token used for secure approval links.
+        - token_expires (datetime): Expiry timestamp for the token.
+        - requested_at (datetime): Timestamp when the approval request was created.
+        - requested_by (UUID): ID of the company that submitted the request.
+        - approvers (list of str): List of user IDs assigned to review and decide.
+        - status (str): Current status ('pending', 'approved', 'rejected', 'expired').
+        - decision_at (datetime): Timestamp of when a decision was made (if applicable).
+        - decision_by (UUID): ID of the user who approved/rejected the request.
+        - feedback (str): Optional text feedback from the approver.
+
+    Relationships:
+        - job: SQLAlchemy relationship to the associated JobsORM object.
+
+    Example usage:
+        >>> request = JobApprovalRequestORM(
+        ...     job_id="job-1234",
+        ...     token="abc-uuid-token",
+        ...     token_expires=datetime.now(timezone.utc) + timedelta(days=2),
+        ...     requested_by="company-5678",
+        ...     approvers=["user-1", "user-2"]
+        ... )
+        >>> session.add(request)
+        >>> session.commit()
+    """
+
     __tablename__ = 'job_approval_requests'
 
     request_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -433,3 +466,61 @@ class JobApprovalRequestORM(Base):
 
     job = relationship("JobsORM", back_populates="approval_requests")
 
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self) -> dict:
+        return {
+            "request_id": self.request_id,
+            "job_id": self.job_id,
+            "token": self.token,
+            "token_expires": self.token_expires.isoformat() if self.token_expires else None,
+            "requested_at": self.requested_at.isoformat() if self.requested_at else None,
+            "requested_by": self.requested_by,
+            "approvers": self.approvers,
+            "status": self.status,
+            "decision_at": self.decision_at.isoformat() if self.decision_at else None,
+            "decision_by": self.decision_by,
+            "feedback": self.feedback,
+        }
+
+
+class ApplicationDashboardORM(Base):
+    """Cached dashboard data for quick access"""
+    __tablename__ = "application_dashboards"
+
+    dashboard_id = Column(String(ID_LEN), primary_key=True)
+    company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"))
+    snapshot_date = Column(DateTime)
+    data = Column(JSON)
+    metrics = Column(JSON)
+
+
+class TalentPoolReportORM(Base):
+    """Historical talent pool reports"""
+    __tablename__ = "talent_pool_reports"
+
+    report_id = Column(String(ID_LEN), primary_key=True)
+    company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"))
+    generated_at = Column(DateTime)
+    report_data = Column(JSON)
+    insights = Column(JSON)
+
+
+class ImportJobBatchORM(Base):
+    """Track bulk import operations"""
+    __tablename__ = "import_job_batches"
+
+    batch_id = Column(String(ID_LEN), primary_key=True)
+    company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"))
+    started_at = Column(DateTime)
+    completed_at = Column(DateTime)
+    status = Column(String(20))
+    summary = Column(JSON)

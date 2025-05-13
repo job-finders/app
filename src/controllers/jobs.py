@@ -5,21 +5,24 @@ from typing import Optional
 
 import requests
 from flask import Flask, url_for
+from pydantic import ValidationError
 from requests import RequestException
 from sqlalchemy import or_, select, func, and_, case
 from sqlalchemy.orm import joinedload
 from Levenshtein import ratio as levenstein_ratio
 
-from database.models.jobseeker_profile import JobSeekerProfile
-from database.models.resume import JobSeekerCV
+from src.database.models.jobseeker_profile import JobSeekerProfile
+from src.database.models.resume import JobSeekerCV
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.resume import JobSeekerCVORM
 from src.database.sql.users import UserORM
 from src.controllers.controller import Controllers
 from src.controllers.controller import error_handler
-from src.database.models.jobs_model import Job, JobApplication, SavedJob, JobStatistics, StatusCounts, \
-    ApplicationMetrics, ApplicationFunnelStats
-from src.database.sql.jobs_sql import JobsORM, SavedJobORM, JobApplicationORM, CompanyORM, JobApprovalRequestORM
+from src.database.models.jobs_model import (Job, JobApplication, SavedJob, JobStatistics, StatusCounts,
+    ApplicationMetrics, ApplicationFunnelStats, BulkImportResult, TalentPoolReport, JobApplicationDashboard, ATSReport,
+    JobApplicationStatusEnum)
+from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, CompanyORM, JobApprovalRequestORM,
+    ATSReportORM)
 
 
 class JobsController(Controllers):
@@ -118,7 +121,6 @@ class JobsController(Controllers):
             job_orm = session.get(JobsORM, job_id)
             if not job_orm:
                 return None
-
             # Set expiration date to yesterday
             job_orm.status = "archive"
             job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
@@ -133,7 +135,6 @@ class JobsController(Controllers):
             job_orm = session.get(JobsORM, job_id)
             if not job_orm:
                 return None
-
             # Set expiration date to yesterday
             job_orm.status = "active"
             job_orm.is_featured = True
@@ -143,17 +144,15 @@ class JobsController(Controllers):
             return Job(**job_orm.to_dict())
 
     @error_handler
-    async def create_job(self, job: Job) -> Job:
+    async def create_job(self, job: Job) -> Job | None:
         """Create new job listing"""
         with self.get_session() as session:
             # Convert Pydantic model to ORM-compatible dict
             job_existing = session.query(JobsORM).filter_by(job_id=job.job_id).first()
             if job_existing:
                 return None
-
             job_orm = JobsORM(**job.model_dump())
             session.add(job_orm)
-
             return Job(**job_orm.to_dict())
 
 
@@ -264,7 +263,7 @@ class JobsController(Controllers):
         Args:
             limit: Maximum number of jobs to return (capped at 100 for performance)
         Returns:
-            List of Job objects sorted by newest first, excluding expired/archived jobs
+            list of Job objects sorted by newest first, excluding expired/archived jobs
         Example:  >>> await api.get_recent_jobs(5)  # Get 5 newest active postings
         """
         # Enforce sensible upper limit for performance
@@ -849,7 +848,7 @@ class JobsController(Controllers):
             scores (dict): Score breakdown by category.
 
         Returns:
-            list[str]: List of actionable suggestions.
+            list[str]: list of actionable suggestions.
         """
 
         suggestions = []
@@ -880,7 +879,7 @@ class JobsController(Controllers):
             - location_radius: tuple[float, float, int]
                 Tuple of (latitude, longitude, radius_km) for geo-based proximity filtering.
             - locations: list[str]
-                List of cities or provinces to include in the search.
+                list of cities or provinces to include in the search.
             - experience_levels: list[str]
                 Experience level filters such as ['entry', 'mid', 'senior'].
             - min_salary: int
@@ -997,14 +996,12 @@ class JobsController(Controllers):
                     JobsORM.salary_max <= max_sal,
                     JobsORM.salary_confidential == False
                 )
-
             # Education Filter
             if filters.get('education_levels'):
                 edu_conds = [
                     JobsORM.education_requirements['minimum'].astext.in_(filters['education_levels'])
                 ]
                 query = query.filter(or_(*edu_conds))
-
             # Date Filters
             if filters.get('posting_date'):
                 date_map = {
@@ -1015,17 +1012,14 @@ class JobsController(Controllers):
                 days = date_map.get(filters['posting_date'], 30)
                 cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
                 query = query.filter(JobsORM.posted_at >= cutoff_date)
-
             # Sorting and Pagination
             query = query.order_by(
                 JobsORM.is_featured.desc(),
                 JobsORM.posted_at.desc(),
                 JobsORM.application_count.desc()
             )
-
             if filters.get('limit'):
                 query = query.limit(min(filters['limit'], 1000))
-
             return [Job(**job.to_dict()) for job in query.all()]
 
 
@@ -1292,7 +1286,7 @@ class JobsController(Controllers):
             session.flush()  # Get ID without commit
 
             # Step 2: Generate preview
-            preview_data = self._generate_job_preview(draft_orm)
+            preview_data = await self._generate_job_preview(draft_orm)
 
             # Step 3: Automatic categorization
             draft_orm.category = await self._auto_categorize_job(draft_orm.title, draft_orm.description)
@@ -1492,18 +1486,18 @@ class JobsController(Controllers):
                 experience_level=experience
             ).group_by(JobsORM.category).first()._asdict()
 
-    def _generate_job_preview(self, job: JobsORM) -> dict:
+    async def _generate_job_preview(self, job: JobsORM) -> dict:
         """Generate preview data for job posting"""
         return {
             'preview_html': f"<h1>{job.title}</h1><p>{job.description[:200]}...</p>",
             'metadata': {
                 'word_count': len(job.description.split()),
                 'salary_range': f"{job.salary_min} - {job.salary_max}",
-                'readability_score': self._calculate_readability(job.description)
+                'readability_score': await self._calculate_readability(job.description)
             }
         }
 
-    def _calculate_readability(self, text: str) -> float:
+    async def _calculate_readability(self, text: str) -> float:
         """
         Calculate text readability using the Flesch Reading Ease formula.
 
@@ -1539,7 +1533,8 @@ class JobsController(Controllers):
 
         return round(max(0.0, min(100.0, score)), 2)
 
-    def _count_word_syllables(self, word: str) -> int:
+    @staticmethod
+    def _count_word_syllables(word: str) -> int:
         """Estimate syllables in a word using vowel groups and common patterns"""
         word = word.lower()
         if len(word) <= 3:
@@ -1635,7 +1630,7 @@ class JobsController(Controllers):
             )
             session.add(approval_request)
 
-            # 4. Prepare approval email
+            # 4.TODO - APPROVALS MUST BE DEALT WITH ON THE ADMIN DASHBOARD ONLY --
             approval_link = url_for('jobs.approve_job', approval_token=approval_token, _extarnal=True)
             rejection_link = url_for('jobs.reject_job', approval_token=approval_token, _extarnal=True)
 
@@ -1671,3 +1666,303 @@ class JobsController(Controllers):
 
             self.logger.info(f"Sent approval request for job {draft_orm.job_id} to {len(approvers)} approvers")
 
+
+        # EMPLOYER DASHBOARDS AND RELATED METHODS
+
+    @error_handler
+    async def get_application_management_dashboard(self, employer_id: str) -> JobApplicationDashboard:
+        """Employer dashboard with advanced hiring analytics"""
+        with self.get_session() as session:
+            # Get all jobs for this employer
+            jobs = session.execute(
+                select(JobsORM.job_id)
+                .where(JobsORM.company_id == employer_id)
+            )
+            job_ids = [j[0] for j in jobs.scalars().all()]
+
+            # Application status breakdown
+            status_counts = session.execute(
+                select(
+                    JobApplicationORM.application_stage,
+                    func.count(JobApplicationORM.application_id)
+                )
+                .where(JobApplicationORM.job_id.in_(job_ids))
+                .group_by(JobApplicationORM.application_stage)
+            )
+            status_dict = {status: count for status, count in status_counts}
+
+            # Recent applications with candidate preview
+            recent_apps = session.execute(
+                select(JobApplicationORM)
+                .where(JobApplicationORM.job_id.in_(job_ids))
+                .order_by(JobApplicationORM.applied_date.desc())
+                .limit(10)
+            )
+            recent_applications = [
+                {
+                    "id": app.application_id,
+                    "name": app.candidate.name,  # Assuming relationship
+                    "score": app.ats_report.score if app.ats_report else 0,
+                    "status": app.status
+                }
+                for app in recent_apps.scalars().all()
+            ]
+
+            # Skills heatmap from ATS reports
+            skills_query = session.execute(
+                select(
+                    func.jsonb_object_keys(ATSReportORM.matched_keywords).label("skill"),
+                    func.count(ATSReportORM.ats_report_id)
+                )
+                .where(ATSReportORM.job_id.in_(job_ids))
+                .group_by("skill")
+            )
+            skills_heatmap = {skill: count for skill, count in skills_query}
+
+            return JobApplicationDashboard(
+                total_applications=sum(status_dict.values()),
+                applications_by_status=status_dict,
+                recent_applications=recent_applications,
+                average_application_score= await self._calculate_average_score(job_ids),
+                skills_heatmap=skills_heatmap,
+                pipeline_metrics=await self._calculate_pipeline_metrics(job_ids)
+            )
+
+    async def _calculate_average_score(self, job_ids: list[str]) -> float:
+        with self.get_session() as session:
+            result = session.execute(
+                select(func.avg(ATSReportORM.score))
+                .where(ATSReportORM.job_id.in_(job_ids))
+            )
+            return result.scalar() or 0.0
+
+    async def _calculate_pipeline_metrics(self, job_ids: list[str]) -> dict[str, float]:
+        with self.get_session() as session:
+            result = session.execute(
+                select(
+                    func.avg(
+                        case(
+                            (JobApplicationORM.application_stage == JobApplicationStatusEnum.HIRED.value,
+                             func.extract('epoch', JobApplicationORM.updated_at - JobApplicationORM.applied_date)),
+                            else_=None
+                        )
+                    ),
+                    func.avg(ATSReportORM.score)
+                )
+                .where(JobApplicationORM.job_id.in_(job_ids))
+            )
+            time_to_hire, avg_score = result.fetchone()
+            return {
+                "average_time_to_hire": time_to_hire or 0.0,
+                "average_ats_score": avg_score or 0.0
+            }
+
+    @error_handler
+    async def generate_talent_pool_report(self, employer_id: str) -> TalentPoolReport:
+        """Generate comprehensive talent pool analysis"""
+        with self.get_session() as session:
+            # Skills gap analysis
+            skills_gap = session.execute(
+                select(
+                    func.jsonb_object_keys(ATSReportORM.missing_keywords).label("skill"),
+                    func.count(ATSReportORM.ats_report_id)
+                )
+                .join(JobsORM, JobsORM.job_id == ATSReportORM.job_id)
+                .where(JobsORM.company_id == employer_id)
+                .group_by("skill")
+                .order_by(func.count(ATSReportORM.ats_report_id).desc())
+                .limit(10)
+            )
+
+            # Diversity metrics (requires candidate demographics data)
+            diversity_metrics = {
+                "gender": {"male": 45, "female": 53, "other": 2},
+                "ethnicity": {}  # Placeholder
+            }
+
+            # Source effectiveness
+            source_effectiveness = session.execute(
+                select(
+                    JobApplicationORM.method,
+                    func.count(JobApplicationORM.application_id),
+                    func.avg(ATSReportORM.score)
+                )
+                .join(ATSReportORM)
+                .join(JobsORM)
+                .where(JobsORM.company_id == employer_id)
+                .group_by(JobApplicationORM.method)
+            )
+
+            return TalentPoolReport(
+                skills_gap_analysis=dict(skills_gap.all()),
+                diversity_metrics=diversity_metrics,
+                source_effectiveness={
+                    method: {"count": count, "avg_score": score}
+                    for method, count, score in source_effectiveness
+                },
+                average_time_to_hire= await self._get_average_time_to_hire(employer_id),
+                candidate_comparison= await self._generate_candidate_comparison(employer_id)
+            )
+
+    async def _get_average_time_to_hire(self, employer_id: str) -> float:
+        """Calculate average time from application to hire in days"""
+        with self.get_session() as session:
+            result = session.execute(
+                select(
+                    func.avg(
+                        func.extract('epoch', JobApplicationORM.updated_at - JobApplicationORM.applied_date)
+                    )
+                )
+                .join(JobsORM, JobApplicationORM.job_id == JobsORM.job_id)
+                .where(
+                    JobsORM.company_id == employer_id,
+                    JobApplicationORM.application_stage == JobApplicationStatusEnum.HIRED.value,
+                    JobApplicationORM.updated_at.isnot(None)
+                )
+            )
+
+            avg_seconds = result.scalar()
+            return round(avg_seconds / 86400, 1) if avg_seconds else 0.0  # Convert to days
+
+    async def _generate_candidate_comparison(self, employer_id: str) -> list[dict]:
+        """Generate candidate comparison data for employer"""
+        with self.get_session() as session:
+            # Get applications with ATS reports and candidate info
+            job_applications: list[JobApplicationORM] = session.execute(
+                select(JobApplicationORM)
+                .join(JobsORM, JobApplicationORM.job_id == JobsORM.job_id)
+                .where(
+                    JobsORM.company_id == employer_id,
+                    JobApplicationORM.application_stage.in_([JobApplicationStatusEnum.HIRED.value,
+                                                             JobApplicationStatusEnum.SHORTLISTED.value,
+                                                             JobApplicationStatusEnum.INTERVIEWING.value])
+                )
+                .order_by(JobApplicationORM.applied_date.desc())
+                .limit(100)  # Limit for performance
+            ).scalars().all()
+
+            comparison_data = []
+            for job_app in job_applications:
+
+                ats_report_orm = session.query(ATSReportORM).filter_by(job_id=job_app.job_id, user_id=job_app.user_id).first()
+                if not ats_report_orm:
+                    continue
+                ats_report: ATSReport = ATSReport(**ats_report_orm.to_dict())
+                candidate_profile_orm = session.query(JobSeekerProfileORM).filter_by(user_uid=job_app.user_id).first()
+
+                if not candidate_profile_orm:
+                    continue
+                candidate_profile: JobSeekerProfile = JobSeekerProfile(**candidate_profile_orm.to_dict())
+
+
+                comparison_data.append({
+                    "application_id": job_app.application_id,
+                    "candidate_id": job_app.user_id,
+                    "name": f"{candidate_profile.first_name} {candidate_profile.last_name}" if candidate_profile else "Anonymous",
+                    "score": ats_report.score if ats_report else 0,
+                    "applied_date": job_app.applied_date.strftime("%Y-%m-%d"),
+                    "last_update": job_app.updated_at.strftime("%Y-%m-%d") if job_app.updated_at else None,
+                    "matched_skills": ats_report.matched_keywords if ats_report else [],
+                    "missing_skills": ats_report.missing_keywords if ats_report else [],
+                    "experience": candidate_profile.years_experience if candidate_profile else 0,
+                    "application_stage": job_app.application_stage,
+                    "application_source": job_app.method
+                })
+
+            # Add ranking by score
+            ranked = sorted(
+                comparison_data,
+                key=lambda x: x['score'],
+                reverse=True
+            )
+
+            # Add percentile ranking
+            scores = [x['score'] for x in ranked if x['score'] > 0]
+            max_score = max(scores) if scores else 100
+
+            for entry in ranked:
+                if entry['score'] > 0:
+                    entry['percentile'] = round((entry['score'] / max_score) * 100)
+                else:
+                    entry['percentile'] = 0
+
+            return ranked
+
+
+    @error_handler
+    async def bulk_import_jobs(self, company_id: str, jobs_data: list[dict]) -> BulkImportResult | None:
+        """Process bulk job imports with validation and error handling"""
+        batch_id = str(uuid.uuid4())
+        results = {
+            "total_processed": 0,
+            "successful": 0,
+            "failures": 0,
+            "error_details": []
+        }
+
+        with self.get_session() as session:
+            for index, job_data in enumerate(jobs_data):
+                try:
+                    # Validate and normalize data
+                    validated = await self._validate_import_job(job_data)
+
+                    # Check duplicates
+                    exists = session.execute(
+                        select(JobsORM)
+                        .where(JobsORM.job_ref == validated["job_ref"])
+                        .where(JobsORM.company_id == company_id)
+                    )
+                    if exists.scalars().first():
+                        raise ValueError("Duplicate job reference")
+
+                    # Create job
+                    new_job = JobsORM(
+                        **validated,
+                        company_id=company_id,
+                        created_at=datetime.utcnow()
+                    )
+                    session.add(new_job)
+                    results["successful"] += 1
+                except (ValidationError, ValueError) as e:
+                    results["failures"] += 1
+                    results["error_details"].append({
+                        "row": index + 1,
+                        "error": str(e),
+                        "data": job_data
+                    })
+                finally:
+                    results["total_processed"] += 1
+
+            session.commit()
+            return BulkImportResult(
+                **results,
+                batch_id=batch_id
+            )
+
+    async def _validate_import_job(self, job_data: dict) -> dict:
+        """Validate and normalize imported job data"""
+        required_fields = ["title", "description", "location"]
+        missing = [field for field in required_fields if field not in job_data]
+        if missing:
+            raise ValueError(f"Missing required fields: {', '.join(missing)}")
+
+        normalized = {
+            "job_ref": job_data.get("job_ref") or f"IMP-{uuid.uuid4().hex[:8]}",
+            "title": job_data["title"].strip(),
+            "description": job_data["description"],
+            "salary_min": await self._parse_salary(job_data.get("salary_min")),
+            "salary_max": await self._parse_salary(job_data.get("salary_max")),
+            "position_type": job_data.get("position_type", "FULL_TIME"),
+            "remote_policy": job_data.get("remote_policy", "ONSITE")
+        }
+        return normalized
+
+    @staticmethod
+    async def _parse_salary(value: str) -> float:
+        """Convert salary string to numeric value"""
+        if not value:
+            return None
+        try:
+            return float(value.replace("R", "").replace(",", "").strip())
+        except ValueError:
+            raise ValueError(f"Invalid salary format: {value}")

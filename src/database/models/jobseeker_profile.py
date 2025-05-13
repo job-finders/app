@@ -6,6 +6,8 @@ from datetime import datetime
 class JobSeekerProfile(BaseModel):
     user_uid: str  # FK to User.uid
 
+    first_name: str
+    last_name: str
     # Basic info
     bio: Optional[str] = None
     profile_image_url: Optional[HttpUrl] = None

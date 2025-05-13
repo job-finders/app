@@ -1,19 +1,16 @@
 import uuid
-from datetime import datetime, date, timezone
-from typing import Optional, List
-
-from pydantic import BaseModel, Field, computed_field, field_validator
-
+from datetime import date, timezone
+from pydantic import BaseModel, Field, field_validator, computed_field
+from typing import Optional
+from datetime import datetime
+from enum import Enum
 
 def format_reference(ref: str) -> str:
     """Sample reference formatter - implement your logic"""
     return ref.upper().replace(" ", "-")
 
 
-from pydantic import BaseModel, Field, field_validator, computed_field
-from typing import Optional, List
-from datetime import datetime
-import uuid
+
 
 class Company(BaseModel):
     """Pydantic model for company data"""
@@ -36,24 +33,20 @@ class Company(BaseModel):
     # Company Details
     employee_count: Optional[int] = None
     founded_year: Optional[int] = None
-    tech_stack: Optional[List[str]] = None
+    tech_stack: Optional[list[str]] = None
 
     # Social Media
     linkedin_url: Optional[str] = None
     twitter_handle: Optional[str] = None
 
     # Relationships
-    jobs: Optional[List['Job']] = None  # Forward reference
+    jobs: Optional[list['Job']] = None  # Forward reference
 
     class Config:
         orm_mode = True
         json_encoders = {
             datetime: lambda v: v.isoformat(),
         }
-
-
-# Update forward references for Pydantic model
-Company.update_forward_refs()
 
 
 class Job(BaseModel):
@@ -93,8 +86,8 @@ class Job(BaseModel):
     # Requirements
     experience_level: str = Field(pattern="ENTRY|MID|SENIOR")
     education_requirements: Optional[dict] = None
-    required_skills: List[str] = Field(default_factory=list)
-    preferred_skills: List[str] = Field(default_factory=list)
+    required_skills: list[str] = Field(default_factory=list)
+    preferred_skills: list[str] = Field(default_factory=list)
 
     required_documents: list[str] = Field(default_factory=list)
     required_questionnaire: list[str] = Field()
@@ -176,6 +169,20 @@ class SavedJob(BaseModel):
         from_attributes = True
 
 
+
+class JobApplicationStatusEnum(Enum):
+    """
+        statuses for job application life cycles
+    """
+    APPLIED = "Applied"
+    UNDER_REVIEW = "Under Review"
+    INTERVIEWING = "Interviewing"
+    SHORTLISTED = "Shortlisted"
+    OFFER_EXTENDED = "Offer Extended"
+    HIRED = "Hired"
+    REJECTED = "Rejected"
+    WITHDRAWN = "Withdrawn"
+
 class JobApplication(BaseModel):
     application_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
@@ -187,7 +194,6 @@ class JobApplication(BaseModel):
     updated_at: Optional[datetime] = Field(default=None)  # Changed from date to datetime
 
     cover_letter: Optional[str] = None
-    status: str = Field(default='pending')
     method: Optional[str] = Field(default='website')
     notes: Optional[str] = None
 
@@ -197,7 +203,7 @@ class JobApplication(BaseModel):
 
     required_documents: list[str] = Field(default_factory=list)
     questionnaire_answers: dict[str, list[str]] = Field(default={})
-    application_stage: str = Field(default="submitted")
+    application_stage: str = Field(default=JobApplicationStatusEnum.APPLIED.value)
     validation_score: int = Field(default=0)
     missing_requirements: list[str] = Field(default_factory=list)
     review_summary: Optional[str] = Field(default=None)
@@ -214,8 +220,8 @@ class ATSReport(BaseModel):
     job_id: str = Field(..., description="ID of the job the report is associated with")
     cv_id: str = Field(..., description="ID of the CV used in the evaluation")
     score: float = Field(..., ge=0, le=100, description="ATS score out of 100")
-    matched_keywords: list[str] = Field(default_factory=list, description="List of matched keywords found in CV")
-    missing_keywords: list[str] = Field(default_factory=list, description="List of important keywords not found in CV")
+    matched_keywords: list[str] = Field(default_factory=list, description="list of matched keywords found in CV")
+    missing_keywords: list[str] = Field(default_factory=list, description="list of important keywords not found in CV")
     feedback: str = Field(..., description="Feedback based on the ATS evaluation")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp when the report was generated")
 
@@ -267,10 +273,6 @@ class JobStatistics(BaseModel):
             }
         }
 
-
-from pydantic import BaseModel, Field
-
-
 class ApplicationFunnelStats(BaseModel):
     """
     Represents metrics related to a job's application funnel, from view to hiring.
@@ -311,3 +313,89 @@ class ApplicationFunnelStats(BaseModel):
         description="Percentage of submitted applicants who were hired. "
                     "Calculated as (hired / started) * 100."
     )
+
+
+# Update forward references for Pydantic model
+Company.model_rebuild()
+
+
+class JobApprovalRequest(BaseModel):
+    """
+    Pydantic model for job approval request data representation.
+
+    Includes utility methods for checking status, token expiry,
+    and interpreting approval decisions.
+    """
+    request_id: str
+    job_id: str
+    token: str
+    token_expires: Optional[datetime]
+    requested_at: Optional[datetime]
+    requested_by: str
+    approvers: list[str]
+    status: str = Field(default='pending')  # Values: pending, approved, rejected, expired
+    decision_at: Optional[datetime] = None
+    decision_by: Optional[str] = None
+    feedback: Optional[str] = None
+
+    # ----------- Helper Methods -----------
+
+    def is_token_valid(self) -> bool:
+        """Check if the approval token is still valid."""
+        return bool(self.token_expires and self.token_expires > datetime.now(timezone.utc))
+
+    def is_approved(self) -> bool:
+        """Return True if the job has been approved."""
+        return self.status == "approved"
+
+    def is_pending(self) -> bool:
+        """Return True if the request is still pending."""
+        return self.status == "pending"
+
+    def is_rejected(self) -> bool:
+        """Return True if the job has been explicitly rejected."""
+        return self.status == "rejected"
+
+    def has_expired(self) -> bool:
+        """Return True if the token is expired and not yet approved/rejected."""
+        return self.status == "pending" and not self.is_token_valid()
+
+    def decision_summary(self) -> str:
+        """Provide a human-readable summary of the decision."""
+        if self.is_approved():
+            return "Job approved"
+        elif self.is_rejected():
+            return f"Rejected: {self.feedback or 'No reason given'}"
+        elif self.has_expired():
+            return "Approval request expired"
+        else:
+            return "Awaiting approval"
+
+
+class JobApplicationDashboard(BaseModel):
+    """"""
+    total_applications: int
+    applications_by_status: dict[str, int]
+    recent_applications: list[dict]
+    average_application_score: float
+    skills_heatmap: dict[str, int]
+    pipeline_metrics: dict[str, float]
+
+
+class TalentPoolReport(BaseModel):
+
+    skills_gap_analysis: dict[str, int]
+    diversity_metrics: dict[str, float]
+    source_effectiveness: dict[str, float]
+    average_time_to_hire: float
+    candidate_comparison: list[dict]
+
+
+class BulkImportResult(BaseModel):
+    batch_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    total_processed: int
+    successful: int
+    failures: int
+    error_details: list[dict]
+
+
