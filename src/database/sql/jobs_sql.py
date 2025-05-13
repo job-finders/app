@@ -5,6 +5,7 @@ from sqlalchemy import Column, String, Text, Date, Float, Integer, Boolean, Fore
 from sqlalchemy.orm import relationship, deferred
 from sqlalchemy.ext.hybrid import hybrid_property
 
+from src.database.models.jobs_model import JobApprovalStatusEnum
 from src.database.constants import ID_LEN, NAME_LEN
 from src.database.sql import Base, engine
 
@@ -45,6 +46,7 @@ class CompanyORM(Base):
 
     # Relationships
     jobs = relationship("JobsORM", back_populates="company")
+    verified = Column(Boolean, default=False)
 
     def to_dict(self) -> dict:
         return {
@@ -66,6 +68,7 @@ class CompanyORM(Base):
             "twitter_handle": self.twitter_handle,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
+            "verified": self.verified,
             "jobs": [job.to_dict() for job in self.jobs] if hasattr(self, 'jobs') else None
         }
 
@@ -161,7 +164,8 @@ class JobsORM(Base):
     # Company Relationships
     company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), index=True)
     company = relationship("CompanyORM", back_populates="jobs")
-
+    approval_request = relationship("JobApprovalRequestORM", uselist=False, back_populates="job")
+    version_history = relationship("JobVersionHistoryORM")
     # Job Details
     title = Column(String(255), index=True)
     description = deferred(Column(Text))  # Large text, loaded only when needed
@@ -286,6 +290,16 @@ class JobsORM(Base):
             "is_active": self.is_active,
             "slug": self.generate_slug()
         }
+
+
+class JobVersionHistoryORM(Base):
+    __tablename__ = 'job_version_history'
+    id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)
+    version = Column(Integer)
+    changes = Column(JSON)  # Stores diff between versions
+    modified_by = Column(String(ID_LEN), ForeignKey('users.user_id'))
+    modified_at = Column(DateTime, default=datetime.utcnow)
 
 class SavedJobORM(Base):
     __tablename__ = 'saved_jobs'
@@ -424,7 +438,7 @@ class ATSReportORM(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
-class JobApprovalRequestORM(Base):
+class   JobApprovalRequestORM(Base):
     """
     SQLAlchemy ORM model representing job approval requests submitted by companies.
 
@@ -469,7 +483,7 @@ class JobApprovalRequestORM(Base):
     requested_at = Column(DateTime, default=datetime.now(timezone.utc))
     requested_by = Column(String(36), ForeignKey('companies.company_id'))
     approvers = Column(ARRAY(String))  # List of user IDs
-    status = Column(String(20), default='pending')  # pending/approved/rejected/expired
+    status = Column(String(20), default=JobApprovalStatusEnum.PENDING.value)  # pending/approved/rejected/expired
     decision_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
     decision_by = Column(String(36), ForeignKey('users.user_id'))
     feedback = Column(Text)

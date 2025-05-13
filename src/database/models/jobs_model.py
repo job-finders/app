@@ -5,6 +5,9 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 
+from sqlalchemy.orm import relationship
+
+
 def format_reference(ref: str) -> str:
     """Sample reference formatter - implement your logic"""
     return ref.upper().replace(" ", "-")
@@ -49,6 +52,76 @@ class Company(BaseModel):
         }
 
 
+class JobApprovalStatusEnum(Enum):
+    PENDING = "Pending"
+    APPROVED = "Approved"
+    REJECTED = "Rejected"
+    FLAGGED = "Flagged"
+
+
+class JobApprovalRequest(BaseModel):
+    """
+    Pydantic model for job approval request data representation.
+
+    Includes utility methods for checking status, token expiry,
+    and interpreting approval decisions.
+    """
+    request_id: str
+    job_id: str
+    token: str
+    token_expires: Optional[datetime]
+    requested_at: Optional[datetime]
+    requested_by: str
+    approvers: list[str]
+    status: str = Field(default=JobApprovalStatusEnum.PENDING.value)  # Values: pending, approved, rejected, expired
+    decision_at: Optional[datetime] = None
+    decision_by: Optional[str] = None
+    feedback: Optional[str] = None
+
+    # ----------- Helper Methods -----------
+
+    def is_token_valid(self) -> bool:
+        """Check if the approval token is still valid."""
+        return bool(self.token_expires and self.token_expires > datetime.now(timezone.utc))
+
+    def is_approved(self) -> bool:
+        """Return True if the job has been approved."""
+        return self.status == "approved"
+
+    def is_pending(self) -> bool:
+        """Return True if the request is still pending."""
+        return self.status == "pending"
+
+    def is_rejected(self) -> bool:
+        """Return True if the job has been explicitly rejected."""
+        return self.status == "rejected"
+
+    def has_expired(self) -> bool:
+        """Return True if the token is expired and not yet approved/rejected."""
+        return self.status == "pending" and not self.is_token_valid()
+
+    def decision_summary(self) -> str:
+        """Provide a human-readable summary of the decision."""
+        if self.is_approved():
+            return "Job approved"
+        elif self.is_rejected():
+            return f"Rejected: {self.feedback or 'No reason given'}"
+        elif self.has_expired():
+            return "Approval request expired"
+        else:
+            return "Awaiting approval"
+
+
+class JobVersionHistory(BaseModel):
+    id: str
+    job_id: str
+    version: int
+    changes: dict[str, any]  # JSON diff between versions
+    modified_by: str
+    modified_at: datetime
+
+
+
 class Job(BaseModel):
     # Core Identification
     job_id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -58,7 +131,8 @@ class Job(BaseModel):
     # Company Relationships
     company_id: Optional[str] = None
     company: Optional[Company] = Field(default=None)
-
+    approval_request: Optional[JobApprovalRequest] = Field(default=None)
+    version_history : Optional[JobVersionHistory]  = Field(default=None)
     # Job Details
     title: str = Field(min_length=5, max_length=255)
     description: str
@@ -107,6 +181,8 @@ class Job(BaseModel):
     # Audit
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+
 
     # --- Computed Fields ---
     @computed_field
@@ -319,58 +395,6 @@ class ApplicationFunnelStats(BaseModel):
 # Update forward references for Pydantic model
 Company.model_rebuild()
 
-
-class JobApprovalRequest(BaseModel):
-    """
-    Pydantic model for job approval request data representation.
-
-    Includes utility methods for checking status, token expiry,
-    and interpreting approval decisions.
-    """
-    request_id: str
-    job_id: str
-    token: str
-    token_expires: Optional[datetime]
-    requested_at: Optional[datetime]
-    requested_by: str
-    approvers: list[str]
-    status: str = Field(default='pending')  # Values: pending, approved, rejected, expired
-    decision_at: Optional[datetime] = None
-    decision_by: Optional[str] = None
-    feedback: Optional[str] = None
-
-    # ----------- Helper Methods -----------
-
-    def is_token_valid(self) -> bool:
-        """Check if the approval token is still valid."""
-        return bool(self.token_expires and self.token_expires > datetime.now(timezone.utc))
-
-    def is_approved(self) -> bool:
-        """Return True if the job has been approved."""
-        return self.status == "approved"
-
-    def is_pending(self) -> bool:
-        """Return True if the request is still pending."""
-        return self.status == "pending"
-
-    def is_rejected(self) -> bool:
-        """Return True if the job has been explicitly rejected."""
-        return self.status == "rejected"
-
-    def has_expired(self) -> bool:
-        """Return True if the token is expired and not yet approved/rejected."""
-        return self.status == "pending" and not self.is_token_valid()
-
-    def decision_summary(self) -> str:
-        """Provide a human-readable summary of the decision."""
-        if self.is_approved():
-            return "Job approved"
-        elif self.is_rejected():
-            return f"Rejected: {self.feedback or 'No reason given'}"
-        elif self.has_expired():
-            return "Approval request expired"
-        else:
-            return "Awaiting approval"
 
 
 class JobApplicationDashboard(BaseModel):

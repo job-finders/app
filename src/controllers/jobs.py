@@ -107,7 +107,7 @@ class JobsController(Controllers):
                 return None
 
             # Set expiration date to yesterday
-            job_orm.status = "activa"
+            job_orm.status = "activate"
             job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
             job_orm.updated_at = datetime.now(timezone.utc)
 
@@ -1966,3 +1966,52 @@ class JobsController(Controllers):
             return float(value.replace("R", "").replace(",", "").strip())
         except ValueError:
             raise ValueError(f"Invalid salary format: {value}")
+
+
+    # Add to JobsController
+    @error_handler
+    async def get_pending_approvals(self) -> list[Job]:
+        """Get jobs needing admin approval"""
+        with self.get_session() as session:
+            jobs = session.query(JobsORM).join(JobApprovalRequestORM).filter(
+                JobApprovalRequestORM.status == 'pending'
+            ).all()
+            return [Job(**job.to_dict()) for job in jobs]
+
+
+    @error_handler
+    async def update_approval_status(self, job_id: str, decision: str, reviewer_id: str) -> Job:
+        """Update job approval status (Admin only)"""
+        with self.get_session() as session:
+            job = session.query(JobsORM).get(job_id)
+            request = session.query(JobApprovalRequestORM).filter_by(job_id=job_id).first()
+
+            if decision.lower() == 'approve':
+                job.status = 'active'
+                request.status = 'approved'
+            elif decision.lower() == 'reject':
+                job.status = 'archived'
+                request.status = 'rejected'
+
+            request.reviewer_id = reviewer_id
+            request.reviewed_at = datetime.utcnow()
+
+            session.commit()
+            return Job(**job.to_dict())
+
+
+    @error_handler
+    async def find_potential_duplicates(self, job: Job) -> list[Job]:
+        """Advanced duplicate detection using multiple criteria"""
+        with self.get_session() as session:
+            duplicates = session.query(JobsORM).filter(
+                and_(
+                    func.similarity(JobsORM.title, job.title) > 0.7,
+                    JobsORM.company_id == job.company_id,
+                    JobsORM.location == job.location,
+                    func.abs(JobsORM.salary_min - job.salary_min) < 5000
+                )
+            ).order_by(JobsORM.posted_at.desc()).limit(10).all()
+
+            return [Job(**j.to_dict()) for j in duplicates]
+

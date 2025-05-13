@@ -1,10 +1,14 @@
 import asyncio
+import json
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
+from statistics import mean
 
 from flask import Flask, render_template
 from sqlalchemy import exists
 
+from src.database.sql.analytics import (UserSearchActivityORM, JobViewActivityORM, ApplicationStepORM,
+                                        RedisActivityClient,ActivityProcessor)
 from src.database.models.jobs_model import Job, JobApplication, JobApplicationStatusEnum
 from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM, CompanyFollowingORM, CompanyORM
 from src.database.models.jobseeker_profile import JobSeekerProfile
@@ -12,7 +16,7 @@ from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.emailer import EmailModel
 from src.controllers.controller import Controllers
 from src.main import jobs_controller, send_mail, job_seeker_profile_controller
-
+from src.config import config_instance
 
 class UserEngagementController(Controllers):
     """
@@ -24,13 +28,16 @@ class UserEngagementController(Controllers):
     """
     def __init__(self):
         super().__init__()
+        self.redis = RedisActivityClient()
+        self.processor = ActivityProcessor(get_session=self.get_session,redis_client=self.redis)
 
     def init_app(self, app: Flask):
         super().init_app(app=app)
+        self.processor.run()
 
-    async def _send_alert(self, email: EmailModel):
+    @staticmethod
+    async def _send_alert(email: EmailModel):
         """
-
         :param email:
         :return:
         """
@@ -103,8 +110,7 @@ class UserEngagementController(Controllers):
             email = EmailModel(
                 to_=profile.email,
                 subject_=f"👋 {profile.first_name.title()}, {len(jobs)} New Job Matches - on Jobfinders.site waiting for you!",
-                html_=html
-            )
+                html_=html)
             await self._send_alert(email)
             return True
 
@@ -186,7 +192,7 @@ class UserEngagementController(Controllers):
             html_=html_content
         )
 
-
+    # noinspection DuplicatedCode
     async def send_deadline_reminders(self) -> dict:
         """
         Send deadline reminders for:
@@ -219,7 +225,6 @@ class UserEngagementController(Controllers):
         try:
             with self.get_session() as session:
                 # Get pending deadlines
-                reminders = []
 
                 # 1. Saved Jobs without applications
                 saved_jobs = session.query(SavedJobORM).filter(
@@ -263,7 +268,8 @@ class UserEngagementController(Controllers):
             self.logger.error(f"Reminder failed for {user_profile_orm.user_uid}: {str(e)}")
             return e
 
-    def _reminder_cutoff(self, profile: JobSeekerProfileORM) -> datetime:
+    @staticmethod
+    def _reminder_cutoff(profile: JobSeekerProfileORM) -> datetime:
         """Calculate deadline cutoff date based on user preference"""
         return datetime.now(timezone.utc) + timedelta(days=profile.reminder_days_before)
 
@@ -281,10 +287,9 @@ class UserEngagementController(Controllers):
             return EmailModel(
                 to_=user_profile.email,
                 subject_=f"⏳ {len(jobs)} Upcoming Job Deadlines - Jobfinders.site",
-                html_=html_content
-            )
+                html_=html_content)
 
-
+    # noinspection DuplicatedCode
     async def send_company_updates(self) -> dict:
         """Notify users about new jobs from followed companies"""
         results = {'sent': 0, 'errors': 0}
@@ -353,7 +358,7 @@ class UserEngagementController(Controllers):
             context= dict(
                 user=profile,
                 companies=company_jobs,
-                utcnow=datetime.utcnow
+                utcnow=datetime.now(timezone.utc)
             )
 
             html_content = render_template('jobseekers/email/company_updates.html', **context)
@@ -362,3 +367,134 @@ class UserEngagementController(Controllers):
                 subject_=f"🏢 New Jobs from Companies You Follow",
                 html_=html_content
             )
+
+    # ANALYTICS
+    def log_search(self, user_id: str, search_term: str, filters: dict, result_count: int):
+        """Log search activity to Redis"""
+        self.redis.log_activity('search', {
+            'user_id': user_id,
+            'search_term': search_term[:255],
+            'filters': json.dumps(filters),
+            'result_count': result_count
+        })
+
+    def log_view(self, user_id: str, job_id: str, duration: int, application_started: bool):
+        """Log job view activity"""
+        self.redis.log_activity('view', {
+            'user_id': user_id,
+            'job_id': job_id,
+            'view_start': (datetime.now(timezone.utc) - timedelta(seconds=duration)).isoformat(),
+            'view_end': datetime.now(timezone.utc).isoformat(),
+            'duration': duration,
+            'application_started': application_started
+        })
+
+    def log_application_step(self, application_id: str, step_name: str):
+        """Log application progress step"""
+        self.redis.log_activity('step', {
+            'application_id': application_id,
+            'step_name': step_name,
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        })
+
+    async def track_job_search_activity(self, user_id: str) -> dict:
+        """
+        use this endpoint in the admin dashboard to track user search terms
+        Get job search metrics with Redis caching
+
+        to log views use the following
+            '''python
+                        # Log a search
+                controller.log_search(
+                    user_id=current_user.id,
+                    search_term="Python Developer",
+                    filters={"remote": True, "salary_min": 50000},
+                    result_count=42
+                )
+
+                # Log a job view
+                controller.log_view(
+                    user_id=current_user.id,
+                    job_id=job.id,
+                    duration=45,  # seconds
+                    application_started=True
+                )
+            '''
+
+        """
+        if cached := self.redis.get_cached_metrics(user_id):
+            return cached
+
+        metrics = await self._calculate_metrics(user_id)
+        self.redis.cache_metrics(user_id, metrics)
+        return metrics
+
+    async def _calculate_metrics(self, user_id: str) -> dict:
+        """Calculate search metrics from MySQL data"""
+        with self.get_session() as session:
+            return {
+                'searches': await self._search_metrics(session, user_id),
+                'views': await self._view_metrics(session, user_id),
+                'applications': await self._application_metrics(session, user_id)
+            }
+
+    async def _search_metrics(self, session, user_id: str):
+        """Calculate search-related metrics"""
+        searches = session.query(UserSearchActivityORM).filter(
+            UserSearchActivityORM.user_id == user_id
+        ).order_by(UserSearchActivityORM.timestamp.desc()).limit(1000).all()
+
+        return {
+            'total': len(searches),
+            'common_terms': self._frequency_count([s.search_term for s in searches]),
+            'popular_filters': self._frequency_count(
+                [list(json.loads(s.filters).keys() for s in searches if s.filters)]
+            ),
+            'avg_results': sum(s.result_count for s in searches) / len(searches) if searches else 0
+        }
+
+    @staticmethod
+    async def _view_metrics(session, user_id: str):
+        """Calculate view-related metrics"""
+        views = session.query(JobViewActivityORM).filter(
+            JobViewActivityORM.user_id == user_id
+        ).limit(1000).all()
+
+        return {
+            'total': len(views),
+            'avg_duration': sum(v.duration for v in views) / len(views) if views else 0,
+            'application_rate': sum(1 for v in views if v.application_started) / len(views) if views else 0
+        }
+
+    async def _application_metrics(self, session, user_id: str):
+        """Calculate application-related metrics"""
+        apps = session.query(JobApplicationORM).filter(
+            JobApplicationORM.user_id == user_id
+        ).all()
+
+        steps = session.query(ApplicationStepORM).filter(
+            ApplicationStepORM.application_id.in_([a.application_id for a in apps])
+        ).all()
+
+        return {
+            'total': len(apps),
+            'completion_rate': sum(1 for a in apps if a.application_stage == 'SUBMITTED') / len(
+                apps) if apps else 0,
+            'dropoff_points': self._frequency_count(
+                [s.step_name for s in steps if s.step_name != 'SUBMITTED']
+            )
+        }
+
+    @staticmethod
+    def _frequency_count(items: list) -> dict:
+        counts = defaultdict(int)
+        for item in items:
+            if isinstance(item, list):
+                for subitem in item:
+                    counts[subitem] += 1
+            else:
+                counts[item] += 1
+        return dict(sorted(counts.items(), key=lambda x: x[1], reverse=True))
+
+
+

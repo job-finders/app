@@ -24,6 +24,9 @@ class JobSeekerProfileORM(Base):
 
     first_name = Column(String(NAME_LEN))
     last_name = Column(String(NAME_LEN))
+    gender = Column(String(24), nullable=True)
+
+    has_disability = Column(Boolean, default=False)
     # Basic info
     bio = Column(Text, nullable=True)
     profile_image_url = Column(String, nullable=True)
@@ -65,6 +68,8 @@ class JobSeekerProfileORM(Base):
             "last_name": self.last_name,
 
             "bio": self.bio,
+            "gender": self.gender,
+            "has_disability": self.has_disability,
 
             "email": self.email,
             "receive_deadline_reminders": self.receive_deadline_reminders,

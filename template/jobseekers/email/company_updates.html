@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .company-section { margin-bottom: 30px; }
+        .job-list { margin-left: 20px; }
+        .job-item { margin: 10px 0; }
+        .new-badge { background: #27ae60; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div style="max-width: 600px; margin: 0 auto;">
+        <h2>New Opportunities from Your Followed Companies</h2>
+
+        {% for company, jobs in companies.items() %}
+        <div class="company-section">
+            <h3>{{ company.name }}</h3>
+            <div class="job-list">
+                {% for job in jobs %}
+                <div class="job-item">
+                    <span class="new-badge">NEW</span>
+                    <strong>{{ job.title }}</strong>
+                    <div class="job-meta">
+                        {{ job.location }} •
+                        {{ job.position_type.replace('_', ' ') | title }} •
+                        Posted {{ (utcnow - job.posted_at).days }} days ago
+                    </div>
+                    {% if job.application_url %}
+                    <a href="{{ job.application_url }}">View Position</a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div style="margin-top: 20px; font-size: 0.9em; color: #7f8c8d;">
+            <p>Manage followed companies:
+                <a href="{{ url_for('jobseeker_profiles.view_profile') }}">Profile Settings</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
