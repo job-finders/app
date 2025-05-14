@@ -157,7 +157,7 @@ class UserEngagementController(Controllers):
         """Process individual status update"""
         try:
             job_application = JobApplication(**application_orm.to_dict())
-            user_profile = await job_seeker_profile_controller.get_profile_by_uid(user_id=job_application.user_id)
+            user_profile = await job_seeker_profile_controller.get_profile_by_uid(user_uid=job_application.user_id)
 
             if not job_application.job:
                 job_application.job = await jobs_controller.get_job_by_id(job_id=job_application.job_id)

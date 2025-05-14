@@ -258,8 +258,10 @@ class ResumeController(Controllers):
                 return False
 
             # Update main CV fields
-            existing_cv.title = data.title
-            existing_cv.professional_summary = data.professional_summary
+            existing_cv.professional_title = data.professional_title
+            existing_cv.summary            = data.summary
+            existing_cv.phone              = data.phone
+
             existing_cv.location = data.location
             existing_cv.contact_number = data.contact_number
             existing_cv.website = data.website
