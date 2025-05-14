@@ -143,7 +143,6 @@ class JobsController(Controllers):
             # Set expiration date to yesterday
             job_orm.status = JobStatusEnum.ACTIVE.value
             job_orm.is_featured = True
-            job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
             job_orm.updated_at = datetime.now(timezone.utc)
 
             return Job(**job_orm.to_dict())

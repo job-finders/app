@@ -28,10 +28,15 @@ class UsersController(Controllers):
 
 
     @error_handler
-    async def create_user(self, user_data: User) -> User:
+    async def create_user(self, user_data: User) -> User | None:
         """Create a new user."""
         with self.get_session() as session:
             # Create a new ORM user object
+            user_exist = session.query(UserORM).filter_by(uid=user_data.uid).first()
+
+            if user_exist:
+                return None
+
             user_orm = UserORM(
                 uid=str(user_data.uid),
                 name=user_data.name,
