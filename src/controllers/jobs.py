@@ -49,7 +49,8 @@ class JobsController(Controllers):
             if not job_orm:
                 return None
             return Job(**job_orm.to_dict())
-
+    
+    @error_handler
     async def get_job_by_reference(self, reference: str) -> Job | None:
         """
 
@@ -91,9 +92,11 @@ class JobsController(Controllers):
             if not job_orm:
                 return None
 
-            # Set expiration date to yesterday
-            job_orm.status = "closed"
-            job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
+            # Set expiration date to yesterday - this will de-activate a job listing
+            job_orm.status = JobStatusEnum.CLOSED.value
+            # Setting Expiration date to yesterday
+            new_expiration = datetime.now(timezone.utc) - timedelta(days=1)
+            job_orm.expiration_date = new_expiration.date()
             job_orm.updated_at = datetime.now(timezone.utc)
 
             return Job(**job_orm.to_dict())
@@ -106,10 +109,12 @@ class JobsController(Controllers):
             if not job_orm:
                 return None
 
-            # Set expiration date to yesterday
-            job_orm.status = "activate"
-            job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
+            job_orm.status = JobStatusEnum.ACTIVE.value  # Corrected typo
+            # Extend expiration by 30 days from now
+            new_expiration = datetime.now(timezone.utc) + timedelta(days=30)
+            job_orm.expiration_date = new_expiration.date()
             job_orm.updated_at = datetime.now(timezone.utc)
+            session.commit()
 
             return Job(**job_orm.to_dict())
 
@@ -122,7 +127,7 @@ class JobsController(Controllers):
             if not job_orm:
                 return None
             # Set expiration date to yesterday
-            job_orm.status = "archive"
+            job_orm.status = JobStatusEnum.ARCHIVE.value
             job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
             job_orm.updated_at = datetime.now(timezone.utc)
 
@@ -136,7 +141,7 @@ class JobsController(Controllers):
             if not job_orm:
                 return None
             # Set expiration date to yesterday
-            job_orm.status = "active"
+            job_orm.status = JobStatusEnum.ACTIVE.value
             job_orm.is_featured = True
             job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
             job_orm.updated_at = datetime.now(timezone.utc)
@@ -155,17 +160,14 @@ class JobsController(Controllers):
             session.add(job_orm)
             return Job(**job_orm.to_dict())
 
-
     @error_handler
     async def get_jobs_by_title(self, title: str) -> list[Job]:
-        """Search for jobs by job title (case-insensitive partial match)"""
         with self.get_session() as session:
-            search_pattern = f"%{title}%"
-            jobs_orm_list = session.query(JobsORM).filter(
-                JobsORM.title.ilike(search_pattern)
-            ).all()
-
-            return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm]
+            stmt = select(JobsORM).where(
+                JobsORM.title.ilike(f"%{escape_like(title)}%")
+            )
+            jobs = session.execute(stmt).scalars().all()
+            return [Job(**job.to_dict()) for job in jobs]
 
 
     @error_handler
@@ -272,7 +274,7 @@ class JobsController(Controllers):
         with self.get_session() as session:
             jobs_orm_list = (
                 session.query(JobsORM)
-                .filter(JobsORM.status == 'active')  # Only non-archived/closed jobs
+                .filter(JobsORM.status == JobStatusEnum.ACTIVE.value)  # Only non-archived/closed jobs
                 .order_by(JobsORM.posted_at.desc())  # Use correct column name from ORM
                 .limit(limit)
                 .all()
@@ -447,14 +449,14 @@ class JobsController(Controllers):
             # Core metrics query
             stats = session.query(
                 func.count(JobsORM.job_id).label('total_jobs'),
-                func.sum(case((JobsORM.status == 'active', 1), else_=0)).label('active_jobs'),
-                func.sum(case((JobsORM.status == 'closed', 1), else_=0)).label('closed_jobs'),
-                func.sum(case((JobsORM.status == 'archived', 1), else_=0)).label('archived_jobs'),
+                func.sum(case((JobsORM.status == JobStatusEnum.ACTIVE.value, 1), else_=0)).label('active_jobs'),
+                func.sum(case((JobsORM.status == JobStatusEnum.CLOSED.value, 1), else_=0)).label('closed_jobs'),
+                func.sum(case((JobsORM.status == JobStatusEnum.ARCHIVED.value, 1), else_=0)).label('archived_jobs'),
                 func.sum(JobsORM.application_count).label('total_applications'),
                 func.sum(case((JobsORM.application_count > 0, 1), else_=0)).label('jobs_with_applications'),
                 func.sum(
                     case(
-                        (JobsORM.status == 'active') & (JobsORM.expires_at > func.now()),  # Changed here
+                        (JobsORM.status == JobStatusEnum.ACTIVE.value) & (JobsORM.expires_at > func.now()),  # Changed here
                         1
                     )
                 ).label('current_active_jobs')
@@ -521,7 +523,7 @@ class JobsController(Controllers):
             validation = await self.validate_application_completeness(job_application)
 
             if validation['score'] < 70:
-                job_application.status = "needs_review"
+                job_application.status = JobApplicationStatusEnum.UNDER_REVIEW.value
 
             # Create and persist application
             applied_job_orm = JobApplicationORM(**job_application.model_dump(),
@@ -568,12 +570,12 @@ class JobsController(Controllers):
                 return False
 
             # Check current state before making changes
-            if job_application.status == "withdrawn":
+            if job_application.application_stage == "withdrawn":
                 self.logger.debug(f"Application {application_id} already withdrawn")
                 return True  # Considered successful as it's in desired state
 
             # Update fields
-            job_application.status = "withdrawn"  # Lowercase for consistency
+            job_application.application_stage = "withdrawn"  # Lowercase for consistency
             job_application.updated_at = datetime.now(timezone.utc)
             # Update job application count
             session.query(JobsORM).filter_by(job_id=job_application.job_id).update({
@@ -618,7 +620,7 @@ class JobsController(Controllers):
 
             # Base query with common filters
             query = session.query(JobsORM).filter(
-                JobsORM.status == 'active',
+                JobsORM.status == JobStatusEnum.ACTIVE.value,
                 JobsORM.expires_at > datetime.now(timezone.utc)
             )
             applied_jobs_orm_list = session.query(JobApplicationORM).filter_by(user_id=user_id).all()
@@ -1280,7 +1282,7 @@ class JobsController(Controllers):
         """Complete job submission workflow"""
         with self.get_session() as session:
             # Step 1: Save as draft
-            job.status = "draft"
+            job.status = JobStatusEnum.DRAFT.value
             draft_orm = JobsORM(**job.model_dump())
             session.add(draft_orm)
             session.flush()  # Get ID without commit
@@ -1304,10 +1306,10 @@ class JobsController(Controllers):
             # Step 5: Approval check
             validation = await self.validate_job_post(Job(**draft_orm.to_dict()))
             if validation['requires_approval']:
-                job.status = "pending_approval"
+                job.status = JobStatusEnum.PENDING_APPROVAL.value
                 self._send_approval_request(draft_orm)
             else:
-                job.status = "active"
+                job.status = JobStatusEnum.ACTIVE.value
                 draft_orm.posted_at = datetime.now(timezone.utc)
 
             return Job(**draft_orm.to_dict())
@@ -1631,8 +1633,8 @@ class JobsController(Controllers):
             session.add(approval_request)
 
             # 4.TODO - APPROVALS MUST BE DEALT WITH ON THE ADMIN DASHBOARD ONLY --
-            approval_link = url_for('jobs.approve_job', approval_token=approval_token, _extarnal=True)
-            rejection_link = url_for('jobs.reject_job', approval_token=approval_token, _extarnal=True)
+            approval_link = url_for('jobs.approve_job', approval_token=approval_token, _external=True)
+            rejection_link = url_for('jobs.reject_job', approval_token=approval_token, _external=True)
 
             email_body = f"""
             <h2>Job Post Approval Required</h2>
@@ -1661,7 +1663,7 @@ class JobsController(Controllers):
             #     self.mail.send(msg)
             #
             # 6. Update job status
-            draft_orm.status = 'pending_approval'
+            draft_orm.status = JobStatusEnum.PENDING_APPROVAL.value
             session.commit()
 
             self.logger.info(f"Sent approval request for job {draft_orm.job_id} to {len(approvers)} approvers")
@@ -1703,7 +1705,7 @@ class JobsController(Controllers):
                     "id": app.application_id,
                     "name": app.candidate.name,  # Assuming relationship
                     "score": app.ats_report.score if app.ats_report else 0,
-                    "status": app.status
+                    "status": app.application_stage
                 }
                 for app in recent_apps.scalars().all()
             ]
@@ -1919,7 +1921,7 @@ class JobsController(Controllers):
                     new_job = JobsORM(
                         **validated,
                         company_id=company_id,
-                        created_at=datetime.utcnow()
+                        created_at=datetime.now(timezone.utc)
                     )
                     session.add(new_job)
                     results["successful"] += 1
@@ -1974,7 +1976,7 @@ class JobsController(Controllers):
         """Get jobs needing admin approval"""
         with self.get_session() as session:
             jobs = session.query(JobsORM).join(JobApprovalRequestORM).filter(
-                JobApprovalRequestORM.status == 'pending'
+                JobApprovalRequestORM.status == JobApprovalStatusEnum.PENDING.value
             ).all()
             return [Job(**job.to_dict()) for job in jobs]
 
@@ -1986,15 +1988,15 @@ class JobsController(Controllers):
             job = session.query(JobsORM).get(job_id)
             request = session.query(JobApprovalRequestORM).filter_by(job_id=job_id).first()
 
-            if decision.lower() == 'approve':
-                job.status = 'active'
-                request.status = 'approved'
-            elif decision.lower() == 'reject':
-                job.status = 'archived'
-                request.status = 'rejected'
+            if decision.lower() == JobApprovalStatusEnum.APPROVED.value:
+                job.status = JobStatusEnum.ACTIVE.value
+                request.status = JobApprovalStatusEnum.APPROVED.value
+            elif decision.lower() == JobStatusEnum.REJECTED.value:
+                job.status = JobStatusEnum.ARCHIVED.value
+                request.status = JobApprovalStatusEnum.REJECTED.value
 
             request.reviewer_id = reviewer_id
-            request.reviewed_at = datetime.utcnow()
+            request.reviewed_at = datetime.now(timezone.utc)
 
             session.commit()
             return Job(**job.to_dict())

@@ -120,7 +120,12 @@ class JobVersionHistory(BaseModel):
     modified_by: str
     modified_at: datetime
 
-
+class JobStatusEnum(str, Enum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    PENDING_APPROVAL = "pending"
+    ARCHIVED = "archived"
+    CLOSED = "closed"
 
 class Job(BaseModel):
     # Core Identification
@@ -175,7 +180,7 @@ class Job(BaseModel):
     application_count: int = Field(ge=0, default=0)
 
     # Status
-    status: str = Field(default="active", pattern="pending|active|closed|archived")
+    status: str = Field(default=JobStatusEnum.DRAFT.value, pattern="darft|pending|active|closed|archived")
     is_featured: Optional[bool] = False
 
     # Audit

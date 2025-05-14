@@ -54,7 +54,7 @@ class UserEngagementController(Controllers):
                 'location': job.location,
                 'type': job.position_type.replace('_', ' ').title(),
                 'remote': job.remote_policy.title(),
-                'salary': self._format_salary(job),
+                'salary': await self._format_salary(job),
                 'description': job.description[:200] + '...' if job.description else "",
                 'url': job.application_url,
                 'deadline': job.application_deadline.strftime('%Y-%m-%d') if job.application_deadline else "ASAP"
@@ -63,14 +63,15 @@ class UserEngagementController(Controllers):
             return render_template('jobseekers/email/job_alert.html', **context)
 
     @staticmethod
-    def _format_salary(job: Job) -> str:
+    async def _format_salary(job: Job) -> str:
         """Helper for salary formatting"""
         if job.salary_confidential:
             return "Competitive Salary"
         if job.salary_min and job.salary_max:
             return f"{job.salary_currency} {job.salary_min:,.0f} - {job.salary_max:,.0f}"
         return "Salary Not Disclosed"
-
+    
+    @error_handler
     async def send_job_alert_notifications(self) -> dict:
         """
         Send personalized job alerts in batches of 50
@@ -83,7 +84,7 @@ class UserEngagementController(Controllers):
 
             for i in range(0, len(profiles), 50):
                 batch = profiles[i:i + 50]
-                tasks = [self._process_user_profile(p) for p in batch]
+                tasks = [await self._process_user_profile(p) for p in batch]
                 batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
                 for res in batch_results:
@@ -118,7 +119,7 @@ class UserEngagementController(Controllers):
             self.logger.error(f"Failed profile {profile_orm.user_uid}: {str(e)}")
             return e
 
-
+    @error_handler
     async def send_application_status_updates(self) -> dict:
         """
         Notify users about changes in their job application statuses
@@ -150,7 +151,8 @@ class UserEngagementController(Controllers):
                 await asyncio.sleep(1)
 
         return results
-
+    
+    @error_handler
     async def _process_status_update(self, application_orm: JobApplicationORM):
         """Process individual status update"""
         try:
@@ -171,7 +173,8 @@ class UserEngagementController(Controllers):
         except Exception as e:
             self.logger.error(f"Status update failed for {application_orm.application_id}: {str(e)}")
             return e
-
+    
+    @error_handler
     async def _compose_status_email(self, application: JobApplication, profile: JobSeekerProfile) -> EmailModel:
         """Create status update email using template"""
         with self.app.app_context():
@@ -193,6 +196,7 @@ class UserEngagementController(Controllers):
         )
 
     # noinspection DuplicatedCode
+    @error_handler
     async def send_deadline_reminders(self) -> dict:
         """
         Send deadline reminders for:
@@ -209,7 +213,7 @@ class UserEngagementController(Controllers):
 
             for i in range(0, len(users), 50):
                 batch = users[i:i + 50]
-                tasks = [self._process_user_reminders(user) for user in batch]
+                tasks = [await self._process_user_reminders(user) for user in batch]
                 batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
                 results['sent'] += sum(1 for res in batch_results if not isinstance(res, Exception))
@@ -220,6 +224,7 @@ class UserEngagementController(Controllers):
 
         return results
 
+    @error_handler
     async def _process_user_reminders(self, user_profile_orm: JobSeekerProfileORM):
         """Process reminders for a single user"""
         try:
@@ -232,7 +237,7 @@ class UserEngagementController(Controllers):
                     ~exists().where(JobApplicationORM.job_id == SavedJobORM.job_id)
                 ).join(JobsORM).filter(
                     JobsORM.application_deadline >= datetime.now(timezone.utc),
-                    JobsORM.application_deadline <= self._reminder_cutoff(user_profile_orm)
+                    JobsORM.application_deadline <= await self._reminder_cutoff(user_profile_orm)
                 ).all()
 
                 # 2. Applications in progress
@@ -244,7 +249,7 @@ class UserEngagementController(Controllers):
                         JobApplicationStatusEnum.INTERVIEWING.value
                     ]),
                     JobsORM.application_deadline >= datetime.now(timezone.utc),
-                    JobsORM.application_deadline <= self._reminder_cutoff(user_profile_orm)
+                    JobsORM.application_deadline <= await self._reminder_cutoff(user_profile_orm)
                 ).join(JobsORM).all()
 
                 # Combine and deduplicate
@@ -269,11 +274,12 @@ class UserEngagementController(Controllers):
             return e
 
     @staticmethod
-    def _reminder_cutoff(profile: JobSeekerProfileORM) -> datetime:
+    async def _reminder_cutoff(profile: JobSeekerProfileORM) -> datetime:
         """Calculate deadline cutoff date based on user preference"""
         return datetime.now(timezone.utc) + timedelta(days=profile.reminder_days_before)
 
-
+    
+    @error_handler
     async def _compose_deadline_email(self, user_profile: JobSeekerProfile, jobs: list[Job]) -> EmailModel:
         """Create deadline reminder email"""
         with self.app.app_context():
@@ -290,6 +296,7 @@ class UserEngagementController(Controllers):
                 html_=html_content)
 
     # noinspection DuplicatedCode
+    @error_handler
     async def send_company_updates(self) -> dict:
         """Notify users about new jobs from followed companies"""
         results = {'sent': 0, 'errors': 0}
@@ -368,8 +375,9 @@ class UserEngagementController(Controllers):
                 html_=html_content
             )
 
-    # ANALYTICS
-    def log_search(self, user_id: str, search_term: str, filters: dict, result_count: int):
+    # ANALYTICS -------------------------------------------------------------------------------------------
+    @error_handler
+    async def log_search(self, user_id: str, search_term: str, filters: dict, result_count: int):
         """Log search activity to Redis"""
         self.redis.log_activity('search', {
             'user_id': user_id,
@@ -378,7 +386,9 @@ class UserEngagementController(Controllers):
             'result_count': result_count
         })
 
-    def log_view(self, user_id: str, job_id: str, duration: int, application_started: bool):
+    
+    @error_handler
+    async def log_view(self, user_id: str, job_id: str, duration: int, application_started: bool):
         """Log job view activity"""
         self.redis.log_activity('view', {
             'user_id': user_id,
@@ -389,7 +399,8 @@ class UserEngagementController(Controllers):
             'application_started': application_started
         })
 
-    def log_application_step(self, application_id: str, step_name: str):
+    @error_handler
+    async def log_application_step(self, application_id: str, step_name: str):
         """Log application progress step"""
         self.redis.log_activity('step', {
             'application_id': application_id,
@@ -397,6 +408,7 @@ class UserEngagementController(Controllers):
             'timestamp': datetime.now(timezone.utc).isoformat()
         })
 
+    @error_handler
     async def track_job_search_activity(self, user_id: str) -> dict:
         """
         use this endpoint in the admin dashboard to track user search terms
@@ -446,8 +458,8 @@ class UserEngagementController(Controllers):
 
         return {
             'total': len(searches),
-            'common_terms': self._frequency_count([s.search_term for s in searches]),
-            'popular_filters': self._frequency_count(
+            'common_terms': await self._frequency_count([s.search_term for s in searches]),
+            'popular_filters': await self._frequency_count(
                 [list(json.loads(s.filters).keys() for s in searches if s.filters)]
             ),
             'avg_results': sum(s.result_count for s in searches) / len(searches) if searches else 0
@@ -480,13 +492,13 @@ class UserEngagementController(Controllers):
             'total': len(apps),
             'completion_rate': sum(1 for a in apps if a.application_stage == 'SUBMITTED') / len(
                 apps) if apps else 0,
-            'dropoff_points': self._frequency_count(
+            'dropoff_points': await self._frequency_count(
                 [s.step_name for s in steps if s.step_name != 'SUBMITTED']
             )
         }
 
     @staticmethod
-    def _frequency_count(items: list) -> dict:
+    async def _frequency_count(items: list) -> dict:
         counts = defaultdict(int)
         for item in items:
             if isinstance(item, list):

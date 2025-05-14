@@ -74,20 +74,28 @@ class RedisCache:
 
 
 # Initialize with default Redis connection (localhost:6379)
-route_cache = RedisCache()
+route_cache = RedisCache(prefix="jobfinders:")
 
-def cached(f):
-    """Decorator to cache async function results in Redis."""
+def cached(f: Callable) -> Callable:
+    """Decorator to cache sync or async function results in Redis."""
     @functools.wraps(f)
-    async def decorated_function(*args, **kwargs):
+    def sync_wrapper(*args, **kwargs):
         cache_key = generate_cache_key(f, *args, **kwargs)
-        print(f"Cache key: {cache_key}")
-        
         if (cached_result := route_cache.get(cache_key)) is not None:
             return cached_result
-            
+        
+        result = f(*args, **kwargs)
+        route_cache.set(cache_key, result)
+        return result
+
+    @functools.wraps(f)
+    async def async_wrapper(*args, **kwargs):
+        cache_key = generate_cache_key(f, *args, **kwargs)
+        if (cached_result := route_cache.get(cache_key)) is not None:
+            return cached_result
+
         result = await f(*args, **kwargs)
         route_cache.set(cache_key, result)
         return result
 
-    return decorated_function
+    return async_wrapper if inspect.iscoroutinefunction(f) else sync_wrapper

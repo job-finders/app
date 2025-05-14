@@ -104,7 +104,8 @@ class AdminController(Controllers):
                     func.count(case((JobSeekerProfileORM.has_disability == True, 1)))
                 ).scalar()
             }
-
+    
+    @error_handler
     def detect_anomalous_job_postings(self) -> list[Job]:
         """
         Identify suspicious jobs using multi-factor analysis
@@ -131,6 +132,7 @@ class AdminController(Controllers):
             # Combine and deduplicate
             return list({j.job_id: j for j in unverified + spam_jobs + salary_anomalies}.values())
 
+    @error_handler
     def approve_job(self, job_id: str, reviewer_id: str) -> Job:
         """Approve a flagged job posting"""
         with self.get_session() as session:
@@ -148,6 +150,7 @@ class AdminController(Controllers):
             session.commit()
             return Job.from_orm(job)
 
+    @error_handler
     def reject_job(self, job_id: str, reviewer_id: str, reason: str) -> Job:
         """Reject a job posting with reason"""
         with self.get_session() as session:
@@ -166,6 +169,7 @@ class AdminController(Controllers):
             session.commit()
             return Job.from_orm(job)
 
+    @error_handler
     def get_pending_approvals(self) -> list[Job]:
         """List all jobs needing moderation"""
         with self.get_session() as session:
@@ -173,6 +177,7 @@ class AdminController(Controllers):
                 JobApprovalRequestORM.status == JobApprovalStatusEnum.PENDING
             ).all()
 
+    @error_handler
     def flag_job(self, job_id: str, reason: str, reporter_id: str):
         """Flag a job for admin review"""
         with self.get_session() as session:
