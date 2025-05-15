@@ -19,8 +19,9 @@ from src.database.sql.users import UserORM
 
 from src.controllers.controller import error_handler
 from src.database.models.jobs_model import (Job, JobApplication, SavedJob, JobStatistics, StatusCounts,
-    ApplicationMetrics, ApplicationFunnelStats, BulkImportResult, TalentPoolReport, JobApplicationDashboard, ATSReport,
-    JobApplicationStatusEnum)
+                                            ApplicationMetrics, ApplicationFunnelStats, BulkImportResult,
+                                            TalentPoolReport, JobApplicationDashboard, ATSReport,
+                                            JobApplicationStatusEnum, JobApprovalStatusEnum, JobStatusEnum)
 from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, CompanyORM, JobApprovalRequestORM,
     ATSReportORM)
 
@@ -1680,13 +1681,13 @@ class JobsController(Controllers):
         # EMPLOYER DASHBOARDS AND RELATED METHODS
 
     @error_handler
-    async def get_application_management_dashboard(self, employer_id: str) -> JobApplicationDashboard:
+    async def get_company_analytics_dashboard(self, company_id: str) -> JobApplicationDashboard:
         """Employer dashboard with advanced hiring analytics"""
         with self.get_session() as session:
             # Get all jobs for this employer
             jobs = session.execute(
                 select(JobsORM.job_id)
-                .where(JobsORM.company_id == employer_id)
+                .where(JobsORM.company_id == company_id)
             )
             job_ids = [j[0] for j in jobs.scalars().all()]
 

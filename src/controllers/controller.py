@@ -146,11 +146,4 @@ def error_handler(view_func):
             # flash("Oops! Something went wrong. Please try again later.", category='danger')
             return None
 
-        # Add this to the except blocks
-        except ATSProcessingError as e:
-            message = f"{view_func.__name__} : ATS processing error: {str(e)}"
-            error_logger.error(message)
-            # flash("Failed to process your resume. Please upload a valid file.", category='danger')
-            return redirect(url_for('home.get_home'))
-
     return wrapped_method

@@ -34,6 +34,8 @@ class EmailSettings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+class RedisSettings(BaseSettings):
+    REDIS_URL:str = Field(...,alias='REDIS_URL')
 
 
 class Settings(BaseSettings):
@@ -45,6 +47,9 @@ class Settings(BaseSettings):
     HOST_ADDRESSES: str
     MYSQL_SETTINGS: MySQLSettings = Field(default_factory=MySQLSettings)
     EMAIL_SETTINGS: EmailSettings = Field(default_factory=EmailSettings)
+    REDIS : RedisSettings = Field(default_factory=RedisSettings)
+    ACTIVITY_RETENTION_DAYS: int = 180
+    ACTIVITY_CACHE_TTL: int = 3600  # 1 hour
 
     model_config = SettingsConfigDict(
         env_file=".env.developer",

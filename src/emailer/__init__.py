@@ -1,6 +1,6 @@
 from flask import Flask
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import resend
 from src.config import config_instance
 
@@ -8,8 +8,8 @@ settings = config_instance().EMAIL_SETTINGS
 
 
 class EmailModel(BaseModel):
-    from_: str | None
-    to_: str | None
+    from_: str | None = Field(default=None)
+    to_: str | None = Field(default=None)
     subject_: str
     html_: str
 

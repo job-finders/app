@@ -45,7 +45,7 @@ class CompanyORM(Base):
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     # Relationships
-    jobs = relationship("JobsORM", back_populates="company")
+    jobs = relationship("JobsORM", back_populates="company", lazy="dynamic")
     verified = Column(Boolean, default=False)
 
     def to_dict(self) -> dict:
