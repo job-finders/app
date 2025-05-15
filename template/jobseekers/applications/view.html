@@ -1,0 +1,30 @@
+{% extends "jobseekers/layout/page.html" %}
+
+{% block content %}
+<h2>Job Application Summary</h2>
+
+<h3>{{ job.title }}</h3>
+<p><strong>Company:</strong> {{ job.company_name }}</p>
+<p><strong>Status:</strong> {{ application.status|capitalize }}</p>
+<p><strong>Submitted On:</strong> {{ application.created_at.strftime('%Y-%m-%d') }}</p>
+
+<hr>
+<h4>Submitted CV:</h4>
+<p>{{ cv.filename }}</p>
+<a href="{{ url_for('jobseeker_cv.view_cv', cv_id=cv.cv_id) }}">View CV</a>
+
+<hr>
+<h4>Cover Letter:</h4>
+<pre style="white-space: pre-wrap;">{{ application.cover_letter }}</pre>
+
+{% if ats_report %}
+    <hr>
+    <h4>ATS Feedback</h4>
+    <p><strong>Score:</strong> {{ ats_report.score }}%</p>
+    <p><strong>Matched Keywords:</strong> {{ ats_report.matched_keywords }}</p>
+    <p><strong>Missing Keywords:</strong> {{ ats_report.missing_keywords }}</p>
+    <p><strong>Feedback:</strong> {{ ats_report.feedback }}</p>
+{% endif %}
+
+<a class="btn btn-secondary" href="{{ url_for('jobseeker_applications.list_applications') }}">Back to Applications</a>
+{% endblock %}

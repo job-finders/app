@@ -16,6 +16,17 @@ jobseeker_applications_route = Blueprint("jobseeker_applications", __name__, url
 applications_logger = init_logger("Job-Applications")
 
 async def get_location_options(user_id: str, cv_ids: list[str]) -> list[str]:
+    """
+    Aggregates location options from various jobseeker data sources.
+
+    This combines locations from the jobseeker's profile, their CVs,
+    and available job locations to assist in tailoring applications.
+
+    :param user_id: Unique ID of the current jobseeker.
+    :param cv_ids: List of CV IDs associated with the jobseeker.
+    :return: A deduplicated list of all relevant location strings.
+    """
+
     profile_locations = await resume_controller.get_preferred_locations_from_profile(user_id)
     cv_locations = await resume_controller.get_locations_from_cvs(cv_ids)
     job_locations = await jobs_controller.get_job_location()
@@ -26,6 +37,23 @@ async def get_location_options(user_id: str, cv_ids: list[str]) -> list[str]:
 @jobseeker_applications_route.route('/api/ats-check', methods=['POST'])
 @login_required
 async def api_ats_check(user: User):
+    """
+    Perform an ATS (Applicant Tracking System) compatibility check.
+
+    This endpoint is used to evaluate how well a specific CV and optional
+    cover letter match a job description. Returns structured ATS analysis.
+
+    Required POST Parameters:
+    - cv_id: ID of the CV to evaluate.
+    - cover_letter: (optional) Cover letter text to include in evaluation.
+
+    Query Params:
+    - job_id: The job the user is applying for.
+
+    :param user: Authenticated user via @login_required.
+    :return: JSON ATS score report or error message.
+    """
+
     try:
         data = request.form
         job_id = request.args.get("job_id")
@@ -51,6 +79,22 @@ async def api_ats_check(user: User):
 @jobseeker_applications_route.route('/api/cover-draft', methods=['POST'])
 @login_required
 async def api_cover_draft(user: User):
+    """
+    Generate a cover letter draft using AI tools based on CV and job data.
+
+    This endpoint fetches job and CV information to automatically create
+    a tailored draft cover letter for the jobseeker.
+
+    Required POST Parameters:
+    - cv_id: ID of the selected CV.
+
+    Query Params:
+    - job_id: The job to tailor the cover letter for.
+
+    :param user: Authenticated jobseeker.
+    :return: JSON response with AI-generated cover letter draft or error.
+    """
+
     try:
         data = request.form
         job_id = request.args.get("job_id")
@@ -70,16 +114,23 @@ async def api_cover_draft(user: User):
 @login_required
 async def apply_for_job(user: User, job_id: str):
     """
-        landing page for job applications when a jobseeker click on APPLY Button on our portal they come here
-        this is where we use our tools to assist on the job application process.
-        1. Create Cover Letter
-        2. Help Select the Best CV For the Application
-        3. Suggest Improvements on CV if the CV Falls short
-        4. all the while USE AI Based Tools and ATS Tools to improve the likelihood of a successful application
-    :param user:
-    :param job_id:
-    :return:
+    Job application landing page (GET).
+
+    This is triggered when a jobseeker clicks "Apply" on a job post.
+    It gathers and displays all data needed for a successful application:
+      - Suggested CV
+      - ATS scores
+      - AI-generated cover letter
+      - Salary recommendation
+      - Location preferences
+
+    This process uses ATS tools and AI to maximize chances of success.
+
+    :param user: Authenticated jobseeker.
+    :param job_id: The job ID for the application.
+    :return: Rendered application page template.
     """
+
     job_details: Job = await jobs_controller.get_job_by_id(job_id)
     if not job_details:
         flash("Job not found", "danger")
@@ -150,6 +201,27 @@ async def apply_for_job(user: User, job_id: str):
 @flask_error_handler
 @login_required
 async def submit_application(job_id: str, user: User):
+    """
+    Finalizes and submits a job application.
+
+    Accepts form data including selected CV, cover letter, salary expectations,
+    and other metadata, and persists the application record.
+
+    Form Parameters:
+    - cv_id: Selected CV ID
+    - cover_letter: Cover letter text
+    - notes: Optional jobseeker notes
+    - expected_salary: Desired salary
+    - preferred_start_date: Availability to start
+    - preferred_location: Preferred work location
+    - ats_score: ATS score of this application
+    - ats_report_id: Related ATS report ID
+
+    :param job_id: Job being applied to.
+    :param user: Authenticated jobseeker.
+    :return: Redirect to application list or error page.
+    """
+
     try:
         application_data = {
             "user_uid": user.uid,
@@ -183,6 +255,17 @@ async def submit_application(job_id: str, user: User):
 @flask_error_handler
 @login_required
 async def withdraw_application(user: User, application_id: str):
+    """
+    Withdraw a submitted job application.
+
+    Ensures the user is authorized to withdraw their application and handles
+    application status updates accordingly.
+
+    :param user: Authenticated user from decorator.
+    :param application_id: UUID of the job application to withdraw.
+    :return: Redirect to application list with appropriate flash message.
+    """
+
     """
     Handle job application withdrawal with proper authorization and state management
     :param user: Authenticated user from decorator
@@ -221,6 +304,108 @@ async def withdraw_application(user: User, application_id: str):
 @flask_error_handler
 @login_required
 async def list_applications(user: User):
+    """
+    Display a list of all jobs the user has applied to.
+
+    This view shows application history, statuses, and allows further
+    interactions like withdrawal or review.
+
+    :param user: Authenticated jobseeker.
+    :return: Rendered application history template.
+    """
+
     applications = await jobs_controller.get_applied_jobs_for_user(user.uid)
     context = dict(current_user=user, applications=applications)
     return render_template("jobseekers/applications/list.html", **context)
+
+@jobseeker_applications_route.route("/<string:application_id>", methods=["GET"])
+@flask_error_handler
+@login_required
+async def view_application(application_id: str, user: User):
+    """
+    View a specific job application by its ID. Shows job details, submitted CV, cover letter,
+    ATS feedback, and current status.
+
+    :param application_id: UUID of the job application
+    :param user: Logged-in jobseeker
+    """
+    # Fetch application
+    application: JobApplication = await jobs_controller.get_job_application_by_id(application_id)
+
+    if not application:
+        flash("Application not found", "danger")
+        return redirect(url_for("jobseeker_applications.list_applications"))
+
+    # Authorization check
+    if application.user_uid != user.uid:
+        flash("You are not authorized to view this application", "danger")
+        return redirect(url_for("jobseeker_applications.list_applications"))
+
+    # Fetch related data
+    job: Job = await jobs_controller.get_job_by_id(application.job_id)
+    ats_report: ATSReport | None = await ats_controller.get_ats_report_by_id(application.ats_report_id)
+    submitted_cv: JobSeekerCV | None = await resume_controller.get_cv_by_id(application.cv_id)
+
+    context = {
+        "application": application,
+        "job": job,
+        "ats_report": ats_report,
+        "cv": submitted_cv,
+        "current_user": user,
+    }
+
+    return render_template("jobseekers/applications/view.html", **context)
+
+
+@jobseeker_applications_route.route("/<string:application_id>/edit", methods=["GET"])
+@flask_error_handler
+@login_required
+async def edit_application(application_id: str, user: User):
+    application = await jobs_controller.get_job_application_by_id(application_id)
+
+    if not application or application.user_uid != user.uid:
+        flash("Application not found or not authorized", "danger")
+        return redirect(url_for("jobseeker_applications.list_applications"))
+
+    if application.status != "draft":
+        flash("Only draft applications can be edited", "warning")
+        return redirect(url_for("jobseeker_applications.view_application", application_id=application.application_id))
+
+    job = await jobs_controller.get_job_by_id(application.job_id)
+    cvs = await resume_controller.get_user_cvs(user.uid)
+
+    context = {
+        "application": application,
+        "job": job,
+        "cv_options": cvs,
+        "selected_cv_id": application.cv_id,
+        "cover_letter": application.cover_letter or "",
+    }
+    return render_template("jobseekers/applications/edit.html", **context)
+
+
+@jobseeker_applications_route.route("/<string:application_id>/edit", methods=["POST"])
+@flask_error_handler
+@login_required
+async def submit_edited_application(application_id: str, user: User):
+    form = await request.form
+    selected_cv_id = form.get("cv_id")
+    cover_letter = form.get("cover_letter")
+
+    application = await jobs_controller.get_job_application_by_id(application_id)
+
+    if not application or application.user_uid != user.uid or application.status != "draft":
+        flash("Unauthorized or invalid application", "danger")
+        return redirect(url_for("jobseeker_applications.list_applications"))
+
+    await jobs_controller.update_draft_application(
+        application_id=application.application_id,
+        updated_data={
+            "cv_id": selected_cv_id,
+            "cover_letter": cover_letter,
+        }
+    )
+
+    flash("Application updated successfully", "success")
+    return redirect(url_for("jobseeker_applications.view_application", application_id=application.application_id))
+

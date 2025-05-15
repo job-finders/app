@@ -2016,3 +2016,15 @@ class JobsController(Controllers):
 
             return [Job(**j.to_dict()) for j in duplicates]
 
+@error_handler
+async def update_draft_application(self, application_id: str, updated_data: dict) -> None:
+    with self.get_session() as session:
+        application_orm: JobApplicationORM = (
+            session.query(JobApplicationORM)
+            .filter_by(application_id=application_id)
+            .first()
+        )
+
+        if application_orm and application_orm.status == "draft":
+            for key, value in updated_data.items():
+                setattr(application_orm, key, value)

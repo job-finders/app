@@ -516,3 +516,16 @@ class ResumeController(Controllers):
 
             # Return the full CV details for each CV ID
             return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids]
+
+
+    async def get_resume_versions(self, cv_id: int):
+        """Return all versions for a given resume ID."""
+        pass
+
+    async def set_default_resume(self, user_id: int, cv_id: int):
+        """Mark one resume as default for the user."""
+        pass
+
+    async def download_resume_pdf(self, cv_id: int):
+        """Generate and return the PDF download of a resume."""
+        pass

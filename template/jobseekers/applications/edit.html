@@ -1,0 +1,26 @@
+{% extends "jobseekers/layout/page.html" %}
+
+{% block content %}
+<h2>Edit Job Application (Draft)</h2>
+
+<form method="post">
+    <div class="mb-3">
+        <label for="cv_id">Select CV</label>
+        <select name="cv_id" class="form-control" required>
+            {% for cv in cv_options %}
+                <option value="{{ cv.cv_id }}" {% if selected_cv_id == cv.cv_id %}selected{% endif %}>
+                    {{ cv.filename }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="cover_letter">Cover Letter</label>
+        <textarea name="cover_letter" class="form-control" rows="8" required>{{ cover_letter }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update Application</button>
+    <a href="{{ url_for('jobseeker_applications.list_applications') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}
