@@ -78,36 +78,52 @@ async def view_company(user: User):
     return render_template("company/view_profile.html", **context)
 
 
-@company_bp.route("/employer/profile", methods=["GET", "PUT"])
+@company_bp.route("/employer/profile", methods=["GET", "POST"])
 @login_required
 async def employer_profile(user: User):
     """Employer profile management (web interface)"""
     if request.method == "GET":
         context = dict(current_user=user)
-        return render_template("company/profile.html", **context)
+        return render_template("company/employer_profile.html", **context)
+
+    # creating new employer profile method is POST
     try:
         employer_data = Employer(**request.form)
     except ValidationError as e:
         logger.error(str(e))
+        return redirect(url_for("company.employer_profile"))
+
 
     employer: Employer = await company_controller.register_employer(employer_data=employer_data)
     if not employer:
-        logger.error(f"Profile update failed: {str(e)}")
-        flash("Failed to update profile", "danger")
-        return render_template("company/profile.html", error=str(e))
+        err = "Employer profile already exists"
+        logger.error(f"Profile creation failed: {err}")
+        flash("Profile creation failed: {err}", "danger")
+        return redirect(url_for("company.employer_profile"))
 
     flash("Profile updated successfully", "success")
     return redirect(url_for("company.employer_profile"))
 
 
 @company_bp.route("/jobs", methods=["GET", "POST"])
-async def manage_jobs():
+@login_required
+async def manage_jobs(user: User):
     """Job post management (mirrors ATS tool pattern)"""
     if request.method == "GET":
-        jobs = await company_controller.get_company_jobs(
-            user_uid=request.user_uid
-        )
-        return render_template("company/jobs.html", jobs=jobs)
+        company_data: Company = await company_controller.get_employer_by_uid(user_id=user.uid)
+
+        if not company_data:
+            flash("There could be an error accessing the database or your account is not associated with a company", "danger")
+            return redirect(url_for('company.create_company'))
+        company_id=company_data.company_id
+        if not company_data.jobs:
+            jobs = await company_controller.get_company_jobs(company_id=company_id)
+        else:
+            jobs = company_data.jobs
+
+        context = dict(current_user=user, company=company_data,jobs=jobs)
+
+        return render_template("company/jobs.html", **context)
     
     # POST - Create new job
     job_data = {
