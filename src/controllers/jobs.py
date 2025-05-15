@@ -159,6 +159,15 @@ class JobsController(Controllers):
             session.add(job_orm)
             return Job(**job_orm.to_dict())
 
+    # In JobsController
+    @error_handler
+    async def post_job_employer(self, employer: Employer, job_data: Job) -> Job:
+        if not employer.is_verified:
+            return None
+
+        return await self._create_job(job_data | {"employer_id": employer.employer_id})
+
+
     @error_handler
     async def get_jobs_by_title(self, title: str) -> list[Job]:
         with self.get_session() as session:

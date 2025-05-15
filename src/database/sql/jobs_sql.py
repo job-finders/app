@@ -162,6 +162,7 @@ class JobsORM(Base):
     external_source = Column(String(NAME_LEN))  # e.g., "LinkedIn", "CompanyWebsite"
 
     # Company Relationships
+    employer_id= Column(String(ID_LEN), ForeignKey('employer_details.employer_id'), index=True)
     company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), index=True)
     company = relationship("CompanyORM", back_populates="jobs")
     approval_request = relationship("JobApprovalRequestORM", uselist=False, back_populates="job")

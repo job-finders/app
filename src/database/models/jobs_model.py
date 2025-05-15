@@ -134,6 +134,7 @@ class Job(BaseModel):
     external_source: Optional[str] = None
 
     # Company Relationships
+    employer_id: Optional[str] = Field(default=None, description="The Employee Rep for Company who made the Job Posting")
     company_id: Optional[str] = None
     company: Optional[Company] = Field(default=None)
     approval_request: Optional[JobApprovalRequest] = Field(default=None)
