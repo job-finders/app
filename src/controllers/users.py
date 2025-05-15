@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from flask import Flask, flash
 
 from src.controllers.controller import error_handler
@@ -85,8 +87,10 @@ class UsersController(Controllers):
             if user_orm is None:
                 return None
             user = User(**user_orm.to_dict())
-            return user if user.check_password(password=password) else None
-
+            if not user.check_password(password=password):
+                return None
+            user_orm.last_login = datetime.now(timezone.utc)
+            return user
 
     @error_handler
     async def update_user(self, uid: str, data: dict) -> User | None:

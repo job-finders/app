@@ -14,7 +14,7 @@ from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM, C
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.emailer import EmailModel
-from src.controllers.controller import Controllers
+from src.controllers.controller import Controllers, error_handler
 from src.main import jobs_controller, send_mail, job_seeker_profile_controller
 from src.config import config_instance
 

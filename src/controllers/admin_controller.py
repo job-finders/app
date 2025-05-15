@@ -5,10 +5,13 @@ from typing import List, Dict, Optional
 from flask import Flask
 from sqlalchemy import func, case, or_
 
-from database.sql.jobseeker_profile import JobSeekerProfileORM
+from src.database.sql.analytics import UserSearchActivityORM
+from src.database.sql.users import UserORM
+from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.controllers.controller import error_handler, Controllers
 from src.database.models.jobs_model import Job, Company, JobApplication, JobApprovalStatusEnum
-from src.database.sql.jobs_sql import JobsORM, CompanyORM, JobApprovalRequestORM, JobVersionHistoryORM
+from src.database.sql.jobs_sql import JobsORM, CompanyORM, JobApprovalRequestORM, JobVersionHistoryORM, \
+    JobApplicationORM
 
 
 class AdminController(Controllers):
@@ -238,7 +241,7 @@ class AdminController(Controllers):
             }
 
     @error_handler
-    def review_company_verifications(self) -> List[Company]:
+    async def review_company_verifications(self) -> List[Company]:
         """
         Identify companies needing verification checks
         """
@@ -251,33 +254,30 @@ class AdminController(Controllers):
                         .join(JobApprovalRequestORM)
                         .filter(JobApprovalRequestORM.status == JobApprovalStatusEnum.FLAGGED)
                         .group_by(JobsORM.company_id)
-                        .having(func.count(JobsORM.id) > 3)
+                        .having(func.count(JobsORM.job_id) > 3)
                     )
                 )
             ).all()
 
     @error_handler
-    def analyze_application_biases(self, job_id: str) -> Dict:
+    async def analyze_application_biases(self, job_id: str) -> Dict:
         """
-        Detect potential discrimination patterns in hiring process
+            Detect potential discrimination patterns in hiring process
         """
         with self.get_session() as session:
             demographics = session.query(
                 JobSeekerProfileORM.gender,
-                JobSeekerProfileORM.population_group,
                 func.count(JobApplicationORM.application_id),
                 func.avg(case((JobApplicationORM.application_stage == 'REJECTED', 1), else_=0))
             ).join(JobApplicationORM).filter(
                 JobApplicationORM.job_id == job_id
             ).group_by(
                 JobSeekerProfileORM.gender,
-                JobSeekerProfileORM.population_group
             ).all()
 
             return {
                 "demographic_breakdown": [{
                     "gender": d[0],
-                    "population_group": d[1],
                     "applications": d[2],
                     "rejection_rate": d[3]
                 } for d in demographics]
@@ -291,12 +291,12 @@ class AdminController(Controllers):
         with self.get_session() as session:
             return {
                 "job_stats": {
-                    "total": session.query(func.count(JobsORM.id)).scalar(),
-                    "active": session.query(func.count(JobsORM.id)).filter_by(status='active').scalar()
+                    "total": session.query(func.count(JobsORM.job_id)).scalar(),
+                    "active": session.query(func.count(JobsORM.job_id)).filter_by(status='active').scalar()
                 },
                 "user_stats": {
-                    "total": session.query(func.count(UserORM.id)).scalar(),
-                    "active": session.query(func.count(UserORM.id)).filter(
+                    "total": session.query(func.count(UserORM.uid)).scalar(),
+                    "active": session.query(func.count(UserORM.uid)).filter(
                         UserORM.last_login > datetime.now(timezone.utc) - timedelta(days=30)).scalar()
                 },
                 "performance_metrics": {
@@ -433,25 +433,31 @@ class AdminController(Controllers):
         """Placeholder for error rate calculation"""
         return 0.01
 
+    from sqlalchemy import case, text
+
     def _calculate_retention(self):
-        """Calculate weekly user retention rate"""
+        """Calculate weekly user retention rate using database timestamps"""
         with self.get_session() as session:
-            signups = session.query(func.count(UserORM.id)).filter(
+            # Single query to get both metrics using conditional aggregation
+            retention_data = session.query(
+                func.count().label('signups'),
+                func.sum(
+                    case(
+                        (UserORM.last_login >= func.now() - text("INTERVAL '7 DAYS'"), 1),
+                        else_=0
+                    )
+                ).label('active')
+            ).filter(
                 UserORM.created_at.between(
-                    datetime.now(timezone.utc) - timedelta(days=14),
-                    datetime.now(timezone.utc) - timedelta(days=7)
+                    func.now() - text("INTERVAL '14 DAYS'"),
+                    func.now() - text("INTERVAL '7 DAYS'")
                 )
-            ).scalar()
+            ).first()
 
-            active = session.query(func.count(UserORM.id)).filter(
-                UserORM.last_login > datetime.now(timezone.utc) - timedelta(days=7),
-                UserORM.created_at.between(
-                    datetime.now(timezone.utc) - timedelta(days=14),
-                    datetime.now(timezone.utc) - timedelta(days=7)
-                )
-            ).scalar()
+            signups = retention_data.signups if retention_data else 0
+            active_users = retention_data.active if retention_data else 0
 
-            return active / signups if signups > 0 else 0
+            return active_users / signups if signups > 0 else 0
 
     def _get_user_documents(self, user_id):
         """Retrieve user documents from storage"""

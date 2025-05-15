@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, UTC, timezone
 from flask import Flask, url_for
 from src.database.sql.users import UserORM
 from src.main import send_mail
@@ -466,7 +466,7 @@ class ResumeController(Controllers):
             verified_cvs = session.query(JobSeekerCVORM).filter_by(is_verified=True).count()
 
             # Number of recent CVs (e.g., CVs created in the last 30 days)
-            recent_cvs = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.created_at > datetime.utcnow() - timedelta(days=30)).count()
+            recent_cvs = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.created_at > datetime.now(timezone.utc) - timedelta(days=30)).count()
 
             # You can also add other stats like the number of CVs in each category or skill, etc.
 

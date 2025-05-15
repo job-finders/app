@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, EmailStr, field_validator
@@ -49,7 +49,8 @@ class User(BaseModel):
     password_hash: str
     role: str
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_login: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     def __bool__(self):
         return bool(self.password_hash)

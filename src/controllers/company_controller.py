@@ -3,9 +3,9 @@ from typing import Optional, List, Dict
 from flask import Flask
 from sqlalchemy.orm import Session, joinedload
 
-from database.models.employer_models import Employer
-from database.models.jobs_model import Job, Company, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
-from database.sql.employer import EmployerORM
+from src.database.models.employer_models import Employer
+from src.database.models.jobs_model import Job, Company, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
+from src.database.sql.employer import EmployerORM
 from src.logger import init_logger
 from src.controllers.controller import Controllers, error_handler
 from src.database.sql.jobs_sql import JobsORM, CompanyORM  # Added based on model convention

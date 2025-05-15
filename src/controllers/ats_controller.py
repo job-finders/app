@@ -388,22 +388,22 @@ class ATSToolController(Controllers):
 
     # ─── Text assembly ────────────────────────────────────────────────────────
 
-@staticmethod
-def _combine_cv_text(cv: JobSeekerCV) -> str:
-    parts = [
-        cv.professional_title or "",
-        cv.summary or "",
-        " ".join(cv.skills or []),
-        " ".join(
-            f"{e.title or ''} {e.company_name or ''} {e.description or ''} {e.location or ''}"
-            for e in cv.experience or []
-        ),
-        " ".join(
-            f"{edu.degree or ''} {edu.field_of_study or ''} {edu.institution_name or ''} {edu.description or ''}"
-            for edu in cv.education or []
-        ),
-        " ".join(cert.name for cert in getattr(cv, "certifications", []) or []),
-        " ".join(lang for lang in getattr(cv, "languages", []) or []),
-        " ".join(proj.description for proj in getattr(cv, "projects", []) or []),
-    ]
-    return " ".join(filter(None, parts))
+    @staticmethod
+    def _combine_cv_text(cv: JobSeekerCV) -> str:
+        parts = [
+            cv.professional_title or "",
+            cv.summary or "",
+            " ".join(cv.skills or []),
+            " ".join(
+                f"{e.title or ''} {e.company_name or ''} {e.description or ''} {e.location or ''}"
+                for e in cv.experience or []
+            ),
+            " ".join(
+                f"{edu.degree or ''} {edu.field_of_study or ''} {edu.institution_name or ''} {edu.description or ''}"
+                for edu in cv.education or []
+            ),
+            " ".join(cert.name for cert in getattr(cv, "certifications", []) or []),
+            " ".join(lang for lang in getattr(cv, "languages", []) or []),
+            " ".join(proj.description for proj in getattr(cv, "projects", []) or []),
+        ]
+        return " ".join(filter(None, parts))

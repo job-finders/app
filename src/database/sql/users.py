@@ -1,8 +1,11 @@
-from sqlalchemy import Column, String, inspect, Boolean, DateTime
+from sqlalchemy import Column, String, inspect, Boolean, DateTime, Index
 
 from src.database.constants import NAME_LEN, ID_LEN
 from src.database.sql import Base, engine
 
+
+from sqlalchemy import Column, String, Boolean, DateTime, func
+from sqlalchemy.sql import expression
 
 class UserORM(Base):
     __tablename__ = 'users'
@@ -10,10 +13,15 @@ class UserORM(Base):
     name = Column(String(NAME_LEN), nullable=False, index=True)
     email = Column(String(255))
     password_hash = Column(String(255))
-    role = Column(String(12),default="seeker")
+    role = Column(String(12), default="seeker")
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.now())  # Auto-set on creation
+    last_login = Column(DateTime, onupdate=func.now())  # Auto-update on modification
 
+    # Optional: Add an index for faster login time queries
+    __table_args__ = (
+        Index('ix_users_last_login', 'last_login'),
+    )
 
     @classmethod
     def create_if_not_table(cls):
@@ -36,5 +44,6 @@ class UserORM(Base):
             "password_hash": self.password_hash,
             "role": self.role,
             "is_active": self.is_active,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_login": self.last_login.isoformat() if self.last_login else None
         }
