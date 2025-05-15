@@ -3,11 +3,11 @@ import uuid
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError
 
-from authentication import login_required
-from database.models.employer_models import Employer
-from database.models.jobs_model import Company
-from database.models.users import User
-from main import users_controller, jobs_controller
+from src.authentication import login_required
+from src.database.models.employer_models import Employer
+from src.database.models.jobs_model import Company
+from src.database.models.users import User
+from src.main import users_controller, jobs_controller
 from src.main import company_controller
 from src.logger import init_logger
 
@@ -136,7 +136,7 @@ async def manage_jobs(user: User):
     
     try:
         job = await company_controller.post_job(
-            user_uid=request.user_uid,
+            user_uid=user.uid,
             job_data=job_data
         )
         flash("Job created successfully", "success")
