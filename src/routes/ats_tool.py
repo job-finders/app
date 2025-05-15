@@ -1,5 +1,7 @@
 from flask import Blueprint, request, render_template
 
+from authentication import login_required
+from database.models.users import User
 from src.logger import init_logger
 from src.main import ats_controller  # Assuming ats_controller is an instance of ATSToolController
 
@@ -87,7 +89,8 @@ async def keyword_extract(user: User):
 
 
 @ats_tool_route.route("/categorize-keywords", methods=["POST"])
-async def categorize_keywords():
+@login_required
+async def categorize_keywords(user: User):
     """
     Categorize extracted resume keywords into logical groups (e.g., technical, soft skills).
 
@@ -112,7 +115,8 @@ async def categorize_keywords():
 
 
 @ats_tool_route.route("/ats-tools", methods=["GET", "POST"])
-async def ats_tools():
+@login_required
+async def ats_tools(user: User):
     """
     Unified endpoint for multiple ATS tools including match scoring, quality check,
     keyword extraction, and categorization — all from a single resume upload.
@@ -150,7 +154,8 @@ async def ats_tools():
 
 
 @ats_tool_route.route("/summary-generator", methods=["POST"])
-async def summary_generator():
+@login_required
+async def summary_generator(user: User):
     """
     Generates a professional resume summary from an uploaded resume.
 
@@ -172,7 +177,8 @@ async def summary_generator():
 
 
 @ats_tool_route.route("/top-skills", methods=["POST"])
-async def top_skills():
+@login_required
+async def top_skills(user: User):
     """
     Extracts and returns top skills from a resume.
 
@@ -194,7 +200,8 @@ async def top_skills():
 
 
 @ats_tool_route.route("/api/ats-score", methods=["POST"])
-async def ats_score_api():
+@login_required
+async def ats_score_api(user: User):
     """
     API endpoint that returns raw ATS score (non-HTML) based on resume and job description.
 
@@ -216,7 +223,8 @@ async def ats_score_api():
 
 
 @ats_tool_route.route("/api/ats-score-json", methods=["POST"])
-async def ats_score_api_json():
+@login_required
+async def ats_score_api_json(user: User):
     """
     Identical to `/api/ats-score`. Returns structured ATS score from resume and job description.
 
@@ -236,7 +244,8 @@ async def ats_score_api_json():
 
 
 @ats_tool_route.route("/parse-metadata", methods=["POST"])
-async def parse_metadata():
+@login_required
+async def parse_metadata(user: User):
     """
     Extracts metadata (e.g. name, email, phone) from uploaded resume.
 
@@ -253,7 +262,8 @@ async def parse_metadata():
 
 
 @ats_tool_route.route("/improvement-suggestions", methods=["POST"])
-async def improvement_suggestions():
+@login_required
+async def improvement_suggestions(user: User):
     """
     Provides improvement recommendations for a resume based on common ATS weaknesses.
 

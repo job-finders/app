@@ -11,6 +11,8 @@ encryptor = Encryptor()
 
 from src.controllers.jobs import JobsController
 jobs_controller = JobsController()
+from src.controllers.company_controller import CompanyController
+company_controller = CompanyController(jobs_controller=jobs_controller)
 
 from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
 
@@ -67,6 +69,8 @@ def create_app(config):
 
         encryptor.init_app(app=app)
         jobs_controller.init_app(app=app)
+        company_controller.init_app(app=app)
+
         junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
         # junction_scrapper.reload()
         job_seeker_profile_controller.init_app(app=app)

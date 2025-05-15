@@ -25,6 +25,22 @@ class CompanyController(Controllers):
             self.jobs_controller = jobs_controller
 
     @error_handler
+    async def create_company(self, company_data: Company) -> Company:
+        """
+
+        :param company_data:
+        :return:
+        """
+        with self.get_session() as session:
+            _name = company_data.name.casefold()
+            company_orm = session.query(CompanyORM).filter_by(name=_name).first()
+            if company_orm:
+                raise ValueError(f"Company with this name already exists {_name.title()}")
+
+            session.add(CompanyORM(**company_data.model_dump()))
+            return company_data
+
+    @error_handler
     async def register_employer(self, employer_data: Employer) -> Employer:
         """Create new employer profile with company association
         Links employer to Auth0/Firebase UID and initial company metadata
@@ -33,10 +49,32 @@ class CompanyController(Controllers):
             if session.query(EmployerORM).filter_by(user_uid=employer_data.user_uid).first():
                 raise ValueError("Employer profile exists for this user")
                 
-            employer = EmployerORM(**employer_data.model_dump())
-            session.add(employer)
+            employer_orm = EmployerORM(**employer_data.model_dump())
+            session.add(employer_orm)
 
-            return Employer.from_orm(employer)
+            return Employer(**employer_orm.to_dict())
+
+    @error_handler
+    async def get_company_by_id(self, company_id: str) -> Company:
+        """
+        Return a company complete with its job listings
+        :param company_id: UUID of the company to retrieve
+        :return: Company object with nested jobs
+        """
+        with self.get_session() as session:
+            # Get company with eager-loaded jobs in single query
+            company_orm = (
+                session.query(CompanyORM)
+                .options(joinedload(CompanyORM.jobs))
+                .filter_by(id=company_id)
+                .first()
+            )
+
+            if not company_orm:
+                raise ValueError(f"Company with ID {company_id} not found")
+
+            # Convert ORM to Pydantic model
+            return Company(**company_orm.to_dict())
 
 
     @error_handler
@@ -46,6 +84,19 @@ class CompanyController(Controllers):
             if isinstance(employer_orm, EmployerORM):
                 return employer_orm
             raise ValueError("Employer does not exist")
+
+    @error_handler
+    async def get_employer_by_uid(self, user_id: str) -> Employer:
+        """
+
+        :param user_id:
+        :return:
+        """
+        with self.get_session() as session:
+            employer_orm = session.query(EmployerORM).filter_by(user_id==user_id).first()
+            if not employer_orm:
+                raise ValueError("The User is not already an Employer")
+            return Employer(**employer_orm.to_dict())
 
     @error_handler
     async def get_company_jobs(self, company_id: str, status: Optional[JobStatusEnum] = None) -> List[Job]:

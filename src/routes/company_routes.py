@@ -1,40 +1,106 @@
+import uuid
+
 from flask import Blueprint, request, render_template, redirect, url_for, flash
-from src.controllers import CompanyController
-from src.database.models.employer import Employer
+from pydantic import ValidationError
+
+from authentication import login_required
+from database.models.employer_models import Employer
+from database.models.jobs_model import Company
+from database.models.users import User
+from main import users_controller, jobs_controller
+from src.main import company_controller
 from src.logger import init_logger
 
-company_bp = Blueprint('company', __name__)
-company_controller = CompanyController()
+company_bp = Blueprint('company', __name__, url_prefix='/company')
+
 logger = init_logger("company_routes")
 
-@company_bp.route("/company/profile", methods=["GET", "PUT"])
-async def employer_profile():
+
+@company_bp.route("/create-company", methods=["GET", "POST"])
+@login_required
+async def create_company_profile(user: User):
+    """Company profile creation endpoint"""
+    if request.method == "GET":
+        context = dict(current_user=user)
+        return render_template("company/create_company.html", **context)
+
+    try:
+        # Validate incoming data using Pydantic model
+        company_data = Company(**request.form)
+    except ValidationError as e:
+        logger.error(f"Company validation error: {str(e)}")
+        flash("Invalid company data. Please check all fields.", "danger")
+        return render_template("company/create_company.html",
+                            error=e.errors(),
+                            current_user=user)
+
+    try:
+        # Attempt company creation through controller
+        created_company = await company_controller.create_company(company_data)
+    except ValueError as e:
+        logger.error(f"Company creation conflict: {str(e)}")
+        flash(str(e), "danger")
+        return render_template("company/create_company.html",
+                            error=str(e),
+                            current_user=user,
+                            form_data=request.form)
+
+    # Update user role if needed (assuming employers need company association)
+    if user.role != "employer":
+        await users_controller.update_user_role(user.uid, "employer")
+
+    flash("Company profile created successfully!", "success")
+    return redirect(url_for("company.view_company"))
+
+
+@company_bp.route("/profile", methods=["GET"])
+@login_required
+async def view_company(user: User):
+    """Company profile viewing endpoint"""
+    employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
+
+    if not employer_details:
+        logger.error(f"Company lookup error: User is not an Employer at any company")
+        return redirect(url_for("company.create_company_profile"))
+
+    company_id = employer_details.company_id
+    company: Company = await company_controller.get_company_by_id(company_id)
+    if not company:
+        err = f"Company lookup error: Please try again or inform admin"
+        logger.error(err)
+        flash(err, "danger")
+        return redirect(url_for("company.employer_profile"))
+
+    context = {
+        "current_user": user,
+        "company": company}
+
+    return render_template("company/view_profile.html", **context)
+
+
+@company_bp.route("/employer/profile", methods=["GET", "PUT"])
+@login_required
+async def employer_profile(user: User):
     """Employer profile management (web interface)"""
     if request.method == "GET":
-        return render_template("company/profile.html")
-    
-    # PUT - Update profile
-    updates = {
-        "company_name": request.form.get("company_name"),
-        "industry": request.form.get("industry"),
-        "website": request.form.get("website"),
-        "location": request.form.get("location")
-    }
-    
+        context = dict(current_user=user)
+        return render_template("company/profile.html", **context)
     try:
-        employer = await company_controller.update_employer_profile(
-            user_uid=request.user_uid,  # Assume auth middleware adds this
-            updates=updates
-        )
-        flash("Profile updated successfully", "success")
-        return redirect(url_for("company.employer_profile"))
-    
-    except Exception as e:
+        employer_data = Employer(**request.form)
+    except ValidationError as e:
+        logger.error(str(e))
+
+    employer: Employer = await company_controller.register_employer(employer_data=employer_data)
+    if not employer:
         logger.error(f"Profile update failed: {str(e)}")
         flash("Failed to update profile", "danger")
         return render_template("company/profile.html", error=str(e))
 
-@company_bp.route("/company/jobs", methods=["GET", "POST"])
+    flash("Profile updated successfully", "success")
+    return redirect(url_for("company.employer_profile"))
+
+
+@company_bp.route("/jobs", methods=["GET", "POST"])
 async def manage_jobs():
     """Job post management (mirrors ATS tool pattern)"""
     if request.method == "GET":
@@ -64,7 +130,7 @@ async def manage_jobs():
         logger.error(f"Job creation failed: {str(e)}")
         return render_template("company/jobs.html", error=str(e))
 
-@company_bp.route("/company/candidates", methods=["GET", "POST"])
+@company_bp.route("/candidates", methods=["GET", "POST"])
 async def candidate_management():
     """Candidate shortlisting (extends ATS functionality)"""
     if request.method == "GET":
@@ -87,7 +153,7 @@ async def candidate_management():
         logger.error(f"Candidate save failed: {str(e)}")
         return render_template("company/candidates.html", error=str(e))
 
-@company_bp.route("/company/analytics/applications", methods=["GET"])
+@company_bp.route("/analytics/applications", methods=["GET"])
 async def application_analytics():
     """Hiring analytics dashboard (integrates with ATS reports)"""
     try:
@@ -101,7 +167,7 @@ async def application_analytics():
         flash("Failed to load analytics", "danger")
         return redirect(url_for("company.employer_profile"))
 
-@company_bp.route("/company/verify", methods=["POST"])
+@company_bp.route("/verify", methods=["POST"])
 async def initiate_verification():
     """Start company verification process"""
     try:

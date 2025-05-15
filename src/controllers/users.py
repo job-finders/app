@@ -108,6 +108,35 @@ class UsersController(Controllers):
             # Return the updated user (commit handled in controller)
             return User(**user_orm.to_dict())
 
+    @error_handler
+    async def update_user_role(self, user_id: str, role: str) -> User:
+        """
+        Update a user's role with validation
+        :param user_id: UUID of the user to update
+        :param role: New role to assign
+        :return: Updated User object
+        """
+        with self.get_session() as session:
+            # Validate allowed roles
+            valid_roles = ["seeker", "employer", "admin"]  # Adjust based on your Enum
+            if role.lower() not in valid_roles:
+                raise ValueError(f"Invalid role: {role}. Valid roles are {', '.join(valid_roles)}")
+
+            # Get and validate user exists
+            user_orm = session.query(UserORM).filter_by(uid=user_id).first()
+            if not user_orm:
+                raise ValueError(f"User with ID {user_id} not found")
+
+            # Skip update if role hasn't changed
+            if user_orm.role.lower() == role.lower():
+                return User(**user_orm.to_dict())
+
+            # Update and commit
+            user_orm.role = role.lower()
+            # session.commit()
+
+            # Return fresh user object
+            return User(**user_orm.to_dict())
 
     @error_handler
     async def delete_user(self, uid: str):
