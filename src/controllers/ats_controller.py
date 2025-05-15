@@ -177,7 +177,11 @@ class ATSToolController(Controllers):
         return " ".join(fb) or "Looking good! Keep these suggestions in mind."
 
     async def generate_industry_ats_report(self, cv: JobSeekerCV) -> dict:
-        """Industry keyword–based ATS analysis."""
+        """
+        ATS Analysis for Internal Resumes
+        Industry keyword–based ATS analysis.
+        
+        """
         text = " ".join([
             cv.professional_title or "",
             cv.summary or "",
@@ -198,6 +202,31 @@ class ATSToolController(Controllers):
             "quality_metrics": quality,
             "feedback": feedback,
         }
+
+    @error_handler
+    async def get_resume_quality_insights(self, resume_text: str) -> Dict:
+        """
+            This is for uploaded CV
+        Generate resume quality metrics (readability, verb usage, section checks).
+        
+        """
+        readability = await self._calculate_readability(resume_text)
+        verb_analysis = await self._analyze_action_verbs(resume_text)
+        doc = _NLP(resume_text)
+        section_check = {
+            "has_experience": any(token.lemma_ == "experience" for token in doc),
+            "has_education": any(token.lemma_ == "education" for token in doc),
+        }
+        return {
+            "readability_score": readability,
+            "action_verbs": verb_analysis,
+            "section_check": section_check,
+            "suggestions": [
+                "Use bullet points for achievements",
+                "Quantify results with metrics",
+            ]  # AI-generated
+        }
+
 
     # ─── File/Text Extraction ──────────────────────────────────────────────────
 
