@@ -65,11 +65,12 @@ class AdminController(Controllers):
     def audit_job_post_evolution(self, job_id: str) -> dict:
         """Track historical changes to a job post"""
         with self.get_session() as session:
-            versions = session.query(JobVersionHistoryORM).filter_by(job_id=job_id) \
-                .order_by(JobVersionHistoryORM.version.desc()).all()
+            versions = session.query(JobVersionHistoryORM).filter_by(job_id=job_id).order_by(
+                JobVersionHistoryORM.version.desc()).all()
 
+            job_orm = session.query(JobsORM).get(job_id)
             return {
-                "current": Job.from_orm(session.query(JobsORM).get(job_id)),
+                "current": Job(**job_orm.to_dict()),
                 "history": [{
                     "version": v.version,
                     "modified_at": v.modified_at,

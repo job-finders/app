@@ -101,9 +101,7 @@ class ATSToolController(Controllers):
         return self._clean_text_sync(text)
 
     @error_handler
-    async def extract_keywords(
-        self, text: str, top_n: Optional[int] = None, vectorizer_type: str = "count"
-    ) -> List[str]:
+    async def extract_keywords(self, text: str, top_n: Optional[int] = None, vectorizer_type: str = "count"):
         clean = self._clean_text_sync(text)
         n = top_n or self.top_n_keywords
         if vectorizer_type == "tfidf":
@@ -132,7 +130,8 @@ class ATSToolController(Controllers):
 
     # ─── Readability & Feedback ────────────────────────────────────────────────
 
-    async def _calculate_readability(self, text: str) -> float:
+    @staticmethod
+    async def _calculate_readability(text: str) -> float:
         doc = _NLP(text)
         sentences = list(doc.sents)
         words = [t for t in doc if t.is_alpha]
@@ -143,7 +142,8 @@ class ATSToolController(Controllers):
         # simplified Flesch: 100 − (SentenceLen + 3×WordLen)
         return max(0.0, min(100.0, 100 - (avg_sent + 3 * avg_word)))
 
-    async def _analyze_action_verbs(self, text: str) -> Dict[str, object]:
+    @staticmethod
+    async def _analyze_action_verbs(text: str) -> Dict[str, object]:
         doc = _NLP(text.lower())
         found = [tok.lemma_ for tok in doc if tok.lemma_ in ACTION_VERBS]
         total = len(list(doc))
@@ -154,7 +154,8 @@ class ATSToolController(Controllers):
             "suggestions": list(ACTION_VERBS - set(found))[:3],
         }
 
-    def _analyze_sections(self, cv: JobSeekerCV) -> Dict[str, bool]:
+    @staticmethod
+    def _analyze_sections(cv: JobSeekerCV) -> dict[str, bool]:
         return {
             "experience": bool(cv.experience),
             "education": bool(cv.education),
@@ -163,9 +164,8 @@ class ATSToolController(Controllers):
             "languages": bool(cv.languages),
         }
 
-    def _generate_human_readable_feedback(
-        self, match_result: Dict, sections: Dict, quality: Dict
-    ) -> str:
+    @staticmethod
+    def _generate_human_readable_feedback(match_result: dict, sections: dict, quality: dict) -> str:
         fb = []
         if match_result["score"] < 50:
             fb.append("Your CV is missing many industry-standard keywords.")
@@ -204,7 +204,7 @@ class ATSToolController(Controllers):
         }
 
     @error_handler
-    async def get_resume_quality_insights(self, resume_text: str) -> Dict:
+    async def get_resume_quality_insights(self, resume_text: str) -> dict:
         """
             This is for uploaded CV
         Generate resume quality metrics (readability, verb usage, section checks).
@@ -248,7 +248,8 @@ class ATSToolController(Controllers):
 
     # ─── AI‑Driven Cover & Salary (GPT / Deepseek) ──────────────────────────────
 
-    async def _generate_basic_cover_letter(self, job: Job, cv: JobSeekerCV) -> str:
+    @staticmethod
+    async def _generate_basic_cover_letter(job: Job, cv: JobSeekerCV) -> str:
         """Simple template fallback."""
         return (
             f"Dear Hiring Manager,\n\n"
@@ -269,8 +270,9 @@ class ATSToolController(Controllers):
         )
         return "\n".join(line.strip() for line in response.splitlines() if line.strip())
 
+    @staticmethod
     def _create_ai_professional_cover_letter_prompt(
-        self, job: Job, cv: JobSeekerCV
+            job: Job, cv: JobSeekerCV
     ) -> str:
         return (
             f"Write a concise cover letter for {job.title} at {job.company}.\n"
@@ -278,9 +280,8 @@ class ATSToolController(Controllers):
             f"Applicant: {cv.first_name} {cv.last_name}, expertise in {', '.join(cv.skills[:5])}."
         )
 
-    async def _call_ai_api(
-        self, prompt: str, api_key: str, model: str = "deepseek-chat"
-    ) -> str:
+    @staticmethod
+    async def _call_ai_api(prompt: str, api_key: str, model: str = "deepseek-chat") -> str:
         url = "https://api.deepseek.com/v1/chat/completions"
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {

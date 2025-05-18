@@ -203,6 +203,7 @@ class CompanyController(Controllers):
             # creating job with jobs controller then return the results
             return await self.jobs_controller.create_job(job=job_data)
 
+    @error_handler
     async def get_saved_candidates(self, user_uid: str) -> list[JobSeekerCV]:
         """
             using user_uid will retrieve a list of candidates
@@ -213,16 +214,16 @@ class CompanyController(Controllers):
             employer_profile_orm = session.query(EmployerORM).filter_by(user_uid=user_uid).first()
 
             if not employer_profile_orm:
-                return None
+                return []
 
             employer_details: Employer = Employer(**employer_profile_orm.to_dict())
             if not (employer_details.is_valid and employer_details.is_verified):
-                return None
+                return []
 
             return await self.resume_controller.employer_saved_cvs(employer_id=employer_details.employer_id)
 
-
-    async def save_candidate(self, user_uid: str, save_cv_model:SavedCV) -> SavedCV:
+    @error_handler
+    async def save_candidate(self, user_uid: str, save_cv_model:SavedCV) -> SavedCV| None:
         """
 
         :param save_cv_model:
@@ -250,7 +251,8 @@ class CompanyController(Controllers):
         user_orm = session.query(UserORM).filter_by(uid=uid).first()
         return User(**user_orm.to_dict())
 
-    async def initiate_employer_profile_verification(self, employer_id: str ):
+    @error_handler
+    async def initiate_employer_profile_verification(self, employer_id: str ) -> None:
         """
 
         :param employer_id:
@@ -269,7 +271,7 @@ class CompanyController(Controllers):
             employer_orm.verification_token = token
             employer_orm.verification_token_expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
 
-            verification_link  = f"https://jobfinders.site/verify-employer?token={token}&id={employer.employer_id}"
+
             verification_link = url_for('company.verify_employer_profile', token=token, employer_id=employer_id)
 
 
@@ -281,7 +283,8 @@ class CompanyController(Controllers):
             email = EmailModel(to_=str(employer.contact_email), subject_=_subject, html_=email_body)
             response = await send_mail.send_mail_resend(email=email)
 
-    async def mark_employer_as_verified(self, employer_id: str) -> Employer:
+    @error_handler
+    async def mark_employer_as_verified(self, employer_id: str) -> bool:
 
         with self.get_session() as session:
             employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
@@ -290,3 +293,4 @@ class CompanyController(Controllers):
             employer_orm.verification_token = None
             employer_orm.verification_token_expires_at = None
             return True
+

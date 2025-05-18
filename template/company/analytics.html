@@ -1,77 +1,161 @@
-{% extends "employers/layout/page.html" %}
-
-{% block title %}Application Analytics{% endblock %}
-
+{% extends "base.html" %}
 {% block content %}
-<div class="max-w-6xl mx-auto p-6 bg-white shadow rounded-xl mt-6">
-    <h1 class="text-2xl font-semibold text-gray-800 mb-6">📊 Application Analytics</h1>
+<div class="container my-4">
+    <h1 class="mb-4">Hiring Analytics Dashboard</h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div class="bg-blue-100 text-blue-800 rounded-lg p-4 text-center">
-            <div class="text-3xl font-bold">{{ analytics.total_applications }}</div>
-            <div class="text-sm mt-2">Total Applications</div>
-        </div>
-        <div class="bg-green-100 text-green-800 rounded-lg p-4 text-center">
-            <div class="text-3xl font-bold">{{ analytics.average_application_score | round(2) }}</div>
-            <div class="text-sm mt-2">Avg. ATS Score</div>
-        </div>
-        <div class="bg-yellow-100 text-yellow-800 rounded-lg p-4 text-center">
-            <div class="text-3xl font-bold">{{ analytics.applications_by_status.get('interview', 0) }}</div>
-            <div class="text-sm mt-2">Interviews Scheduled</div>
-        </div>
-    </div>
-
-    <h2 class="text-xl font-semibold text-gray-700 mt-6 mb-2">📈 Applications by Status</h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {% for status, count in analytics.applications_by_status.items() %}
-            <div class="bg-gray-100 rounded p-3 text-center">
-                <p class="text-lg font-semibold">{{ count }}</p>
-                <p class="text-sm text-gray-600 capitalize">{{ status.replace('_', ' ') }}</p>
-            </div>
-        {% endfor %}
-    </div>
-
-    <h2 class="text-xl font-semibold text-gray-700 mt-8 mb-2">🔥 Top Skills from ATS Reports</h2>
-    {% if analytics.skills_heatmap %}
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {% for skill, count in analytics.skills_heatmap.items() %}
-                <div class="bg-purple-100 text-purple-800 rounded p-2 text-sm text-center">
-                    {{ skill }} ({{ count }})
+    <!-- Summary Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 shadow">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Total Applications</h5>
+                    <p class="display-4 text-primary">{{ analytics.total_applications }}</p>
                 </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p class="text-gray-500">No skills data available.</p>
-    {% endif %}
-
-    <h2 class="text-xl font-semibold text-gray-700 mt-8 mb-2">🕒 Pipeline Metrics</h2>
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {% for metric, value in analytics.pipeline_metrics.items() %}
-            <div class="bg-indigo-100 text-indigo-800 rounded p-2 text-center">
-                <p class="text-lg font-bold">{{ value | round(2) }}</p>
-                <p class="text-sm text-gray-600 capitalize">{{ metric.replace('_', ' ') }}</p>
             </div>
-        {% endfor %}
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 shadow">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Average Score</h5>
+                    <p class="display-4 text-info">
+                        {{ "%.1f"|format(analytics.average_application_score) }}
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <h2 class="text-xl font-semibold text-gray-700 mt-8 mb-2">🕵️ Recent Applications</h2>
-    {% if analytics.recent_applications %}
-        <div class="space-y-4">
-            {% for app in analytics.recent_applications %}
-                <div class="flex items-center justify-between bg-gray-50 rounded p-4 shadow-sm">
-                    <div>
-                        <p class="font-semibold text-gray-800">{{ app.name }}</p>
-                        <p class="text-sm text-gray-600">Status: <span class="capitalize">{{ app.status.replace('_', ' ') }}</span></p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm text-gray-600">ATS Score:</p>
-                        <p class="text-lg font-bold text-blue-600">{{ app.score }}</p>
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <!-- Applications by Status -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Applications by Status</h5>
+                    <canvas id="statusChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills Heatmap -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Skill Frequency</h5>
+                    <canvas id="skillsChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Applications -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Applications</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Candidate</th>
+                                    <th>Score</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in analytics.recent_applications %}
+                                <tr>
+                                    <td>{{ app.name }}</td>
+                                    <td>{{ "%.1f"|format(app.score) }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            {{ app.status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            {% endfor %}
+            </div>
         </div>
-    {% else %}
-        <p class="text-gray-500">No recent applications.</p>
-    {% endif %}
+    </div>
+
+    <!-- Pipeline Metrics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Pipeline Efficiency</h5>
+                    <div class="row">
+                        {% for metric, value in analytics.pipeline_metrics.items() %}
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-uppercase text-muted small mb-1">
+                                        {{ metric|replace('_', ' ')|title }}
+                                    </h6>
+                                    <h3 class="text-success">{{ "%.1f"|format(value * 100) }}%</h3>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Chart.js Implementation -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+// Applications by Status Chart
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ analytics.applications_by_status.keys()|list|tojson }},
+        datasets: [{
+            data: {{ analytics.applications_by_status.values()|list|tojson }},
+            backgroundColor: [
+                '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'
+            ],
+            hoverOffset: 10
+        }]
+    },
+    options: {
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    }
+});
+
+// Skills Heatmap Chart
+const skillsCtx = document.getElementById('skillsChart').getContext('2d');
+new Chart(skillsCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ analytics.skills_heatmap.keys()|list|tojson }},
+        datasets: [{
+            label: 'Mentions',
+            data: {{ analytics.skills_heatmap.values()|list|tojson }},
+            backgroundColor: '#2e59d9',
+            barThickness: 20
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            x: { beginAtZero: true, grid: { display: false } },
+            y: { grid: { display: false } }
+        }
+    }
+});
+</script>
 {% endblock %}
