@@ -1,0 +1,72 @@
+{% extends "employers/layout/page.html" %}
+
+
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white shadow-md rounded-xl p-6 mt-6">
+    <h1 class="text-2xl font-semibold text-gray-800 mb-6">👤 Employer Profile</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Employer Details -->
+        <section>
+            <h2 class="text-lg font-medium text-gray-700 mb-3">Employer Details</h2>
+            <p><strong>Industry:</strong> {{ employer_profile.industry or 'Not Provided' }}</p>
+            <p><strong>Email:</strong>
+                {% if employer_profile.contact_email %}
+                    <a href="mailto:{{ employer_profile.contact_email }}" class="text-blue-600 hover:underline">
+                        {{ employer_profile.contact_email }}
+                    </a>
+                {% else %}
+                    Not Provided
+                {% endif %}
+            </p>
+            <p><strong>Phone:</strong> {{ employer_profile.phone or 'Not Provided' }}</p>
+            <p><strong>Location:</strong> {{ employer_profile.location or 'Not Provided' }}</p>
+            <p><strong>Verified:</strong>
+                {% if employer_profile.is_verified %}
+                    <span class="text-green-600 font-semibold">Yes</span>
+                {% else %}
+                    <span class="text-red-600 font-semibold">No</span>
+                {% endif %}
+            </p>
+            {% if employer_profile.created_at %}
+                <p><strong>Joined:</strong> {{ employer_profile.created_at.strftime('%d %b %Y') }}</p>
+            {% endif %}
+        </section>
+
+        <!-- Company Details -->
+        <section>
+            <h2 class="text-lg font-medium text-gray-700 mb-3">Company Details</h2>
+
+            {% if company_data.logo_url %}
+                <img src="{{ company_data.logo_url }}" alt="{{ company_data.name }} logo" class="mb-4 w-32 h-auto rounded" />
+            {% endif %}
+
+            <p><strong>Name:</strong> {{ company_data.name or 'Not Provided' }}</p>
+            <p><strong>Industry:</strong> {{ company_data.industry or 'Not Provided' }}</p>
+            <p><strong>Website:</strong>
+                {% if company_data.website %}
+                    <a href="{{ company_data.website }}" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                        {{ company_data.website }}
+                    </a>
+                {% else %}
+                    Not Provided
+                {% endif %}
+            </p>
+            <p><strong>Headquarters:</strong> {{ company_data.location or 'Not Provided' }}</p>
+        </section>
+    </div>
+
+    <!-- Edit Buttons -->
+    <div class="mt-8 flex flex-wrap gap-4">
+        <a href="{{ url_for('company.update_company_profile') }}"
+           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+           ✏️ Edit Company
+        </a>
+        <a href="{{ url_for('company.update_employer_profile') }}"
+           class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition">
+           ✏️ Edit Employer
+        </a>
+    </div>
+</div>
+{% endblock %}

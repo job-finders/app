@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Tag Manager -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-TD3XXFCQ46"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-TD3XXFCQ46');
+  </script>
+
+  {% block css %}
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+    <link href="https://unpkg.com/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet">
+
+      <link rel="preload" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/lib/bootstrap.min.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+
+    <link rel="preload" href="{{ url_for('static', filename='css/style.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='css/jobfinder.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+    <noscript>
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}">
+
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/bootstrap.min.css') }}">
+
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/jobfinder.css') }}">
+    </noscript>
+  {% endblock %}
+
+  <link rel="preconnect" href="https://www.googletagmanager.com">
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+  <link rel="preconnect" href="https://pagead2.googlesyndication.com">
+  <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
+  <link rel="preconnect" href="https://platform.twitter.com">
+  <link rel="dns-prefetch" href="https://platform.twitter.com">
+  <link rel="preconnect" href="https://connect.facebook.net">
+  <link rel="dns-prefetch" href="https://connect.facebook.net">
+
+  {% if seo %}
+    <link rel="canonical" href="{{ seo.url | default(request.url) }}">
+    <title>JobFinders - {% if seo %}{{ seo.title | default('JobFinders') }}{% else %}Page Not Found{% endif %}</title>
+  {% endif %}
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="ir-site-verification-token" content="503288039">
+  <meta name="theme-name" content="focus">
+
+  {% if seo %}
+    <meta name="description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">
+    <meta name="keywords" content="{{ seo.keywords | default('jobs, careers, employment, jobfinders') }}">
+    <meta property="og:title" content="{{ seo.title | default('JobFinders') }}">
+    <meta property="og:description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">
+    <meta property="og:url" content="{{ seo.url | default(request.url) }}">
+    <meta property="og:image" content="{{ seo.image | default(url_for('static', filename='images/jobfinder.jpg', _external=True)) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title | default('JobFinders') }}">
+    <meta name="twitter:description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">
+    <meta name="twitter:image" content="{{ seo.image | default(url_for('static', filename='images/jobfinder.jpg', _external=True)) }}">
+  {% endif %}
+
+  <style>
+    /* Responsive adjustments */
+    .desktop-buttons { display: none; }
+    @media (min-width: 768px) {
+      .desktop-buttons { display: block; }
+    }
+    /* Pagination styling */
+    .pagination {
+      display: flex;
+      list-style: none;
+      padding: 0;
+    }
+    .page-item { margin: 0 5px; }
+    .page-link {
+      text-decoration: none;
+      background-color: #e9e9e9;
+      color: #333;
+      padding: 5px 10px;
+      border: 1px solid #ccc;
+    }
+    .page-link:hover {
+      background-color: #333;
+      color: #fff;
+    }
+    .page-link[aria-label="Previous"],
+    .page-link[aria-label="Next"] {
+      font-weight: bold;
+    }
+
+
+    /* Optional custom styles for better mobile appearance */
+    @media (max-width: 991px) {
+        .dropdown-menu {
+            border: 1px solid rgba(0,0,0,.15);
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,.175);
+        }
+        .dropdown-item {
+            padding: 0.75rem 1.5rem;
+        }
+    }
+
+
+
+  /* Optional: Consistent icon sizing */
+  .card .ti {
+    font-size: 2.5rem;
+  }
+  .btn .ti {
+    font-size: 1rem;
+    vertical-align: middle;
+  }
+  .card-title .ti {
+    margin-bottom: 1rem;
+  }
+
+  /* Mobile-first responsive styles */
+  .quick-action-btn {
+    min-height: 80px;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+  }
+
+  .quick-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  }
+
+  @media (max-width: 768px) {
+    .quick-action-btn span {
+      font-size: 0.85rem;
+    }
+    .card-header h5 {
+      font-size: 1.1rem;
+    }
+    .display-4 {
+      font-size: 2.5rem;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .quick-action-btn {
+      min-height: 100px;
+    }
+  }
+
+
+      /* Mobile-first styling */
+  .card {
+    border-radius: 0.8rem;
+  }
+  .form-control {
+    border-radius: 0.5rem;
+  }
+  .custom-file-label::after {
+    border-radius: 0 0.5rem 0.5rem 0;
+  }
+  @media (max-width: 768px) {
+    .card-header h5 {
+      font-size: 1.1rem;
+    }
+    .form-control {
+      font-size: 0.9rem;
+    }
+  }
+
+  </style>
+
+
+{% block styles %}
+    <!-- Page Specific Style Sheets -->
+{% endblock %}
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269" crossorigin="anonymous"></script>
+</head>
+<body class="sidebar-hide">
+  {% include "jobseekers/layout/sidebar.html" %}
+  {% include "jobseekers/layout/header.html" %}
+  <div class="content-wrap">
+    <div class="main">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-8 p-r-0 title-margin-right">
+            <div class="page-header">
+              <h1 class="page-title font-weight-bold text-info">
+                {% if term %}{{ term }}{% endif %}
+              </h1>
+              {% include "layouts/flash.html" %}
+              <span class="card-content font-weight-bold">
+                We find Jobs, so you can get employed
+              </span>
+            </div>
+          </div>
+        </div>
+        {% block content %}
+          <!-- MAIN Content Section -->
+        {% endblock %}
+      </div>
+      {% include "layouts/footer.html" %}
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/lib/jquery.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/lib/jquery.nanoscroller.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/lib/menubar/sidebar.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/lib/preloader/pace.min.js') }}" defer></script>
+  {% block scripts %}
+    <!-- Page Custom Scripts -->
+  {% endblock %}
+  <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/scripts.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/interface/interface.js') }}" defer></script>
+
+  <!-- Cookie Consent -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js"></script>
+  <script>
+    window.addEventListener("load", function () {
+      window.cookieconsent.initialise({
+        palette: {
+          popup: { background: "#343a40" },
+          button: { background: "#28a745" }
+        },
+        theme: "classic",
+        position: "bottom-right",
+        content: {
+          message: "We use cookies to improve your experience. By continuing, you accept our cookie policy.",
+          dismiss: "Got it!",
+          link: "Learn more",
+          href: "{{ url_for('home.terms') }}"
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

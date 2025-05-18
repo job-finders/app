@@ -32,7 +32,6 @@ async def create_company_profile(user: User):
         # with user data & employer profile we can now create a company profile
         context = dict(current_user=user, employer_profile=_employer_profile)
         return render_template("company/create_company.html", **context)
-
     try:
         # Validate incoming data using Pydantic model
         company_data = Company(**request.form)
@@ -89,7 +88,6 @@ async def view_company(user: User):
         logger.error(f"Error looking up Company with Company ID: {_employer_profile.company_id}")
         flash(message="looks like you have not yet created a company associated with your employer profile, please create it", category='danger')
         return redirect(url_for('company.create_company_profile'))
-
     context = {
         "current_user": user,
         "employer_profile": _employer_profile,

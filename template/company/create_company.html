@@ -1,0 +1,336 @@
+{% extends "employers/layout/page.html" %}
+{% block styles %}
+    <style>
+      .company-creation-card {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .section-header {
+        border-left: 4px solid #17a2b8;
+        padding-left: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      .logo-preview {
+        max-width: 150px;
+        height: auto;
+        border: 2px dashed #dee2e6;
+        padding: 0.5rem;
+      }
+      .tech-stack-pill {
+        display: inline-block;
+        margin: 0.2rem;
+        padding: 0.2rem 0.8rem;
+        background-color: #e9ecef;
+        border-radius: 20px;
+        font-size: 0.9em;
+      }
+      .custom-file-input:lang(en)~.custom-file-label::after {
+        content: "Browse";
+      }
+      @media (max-width: 768px) {
+        .form-group input, .form-group textarea {
+          font-size: 0.9rem;
+        }
+        .logo-preview {
+          max-width: 100px;
+        }
+      }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm company-creation-card">
+        <div class="card-header bg-light">
+          <h2 class="font-weight-bold text-info mb-0">
+            <i class="ti-briefcase mr-2"></i>Create Company Profile
+          </h2>
+        </div>
+
+        <div class="card-body">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert">
+                  <span>&times;</span>
+                </button>
+              </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+
+          <form action="{{ url_for('company_bp.create_company_profile') }}" method="post" enctype="multipart/form-data">
+            {{ csrf_token() }}
+
+            <!-- Company Details -->
+            <div class="mb-4">
+              <h4 class="section-header">Company Information</h4>
+
+              <div class="form-group">
+                <label class="font-weight-bold">Company Logo</label>
+                <div class="custom-file">
+                  <input type="file" class="custom-file-input" name="logo_url" accept="image/*">
+                  <label class="custom-file-label">Choose logo file...</label>
+                </div>
+                <small class="text-muted">URL will be generated after upload</small>
+              </div>
+
+              <div class="form-group">
+                <label class="font-weight-bold">Company Name *</label>
+                <input type="text" class="form-control" name="name"
+                       value="{{ form_data.name if form_data }}" required
+                       minlength="2" maxlength="255">
+                {% if error and 'name' in error %}
+                <div class="text-danger small">{{ error.name }}</div>
+                {% endif %}
+              </div>
+
+              <div class="form-group">
+                <label class="font-weight-bold">Description</label>
+                <textarea class="form-control" name="description" rows="3"
+                          maxlength="2000">{{ form_data.description if form_data }}</textarea>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="font-weight-bold">Industry</label>
+                    <select class="form-control" name="industry" maxlength="255">
+                      <option value="">Select Industry</option>
+                      {% for industry in industries %}
+                      <option value="{{ industry }}" {% if form_data.industry == industry %}selected{% endif %}>
+                        {{ industry }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="font-weight-bold">Website</label>
+                    <input type="url" class="form-control" name="website"
+                           value="{{ form_data.website if form_data }}">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Location Section -->
+            <div class="mb-4">
+              <h4 class="section-header">Location</h4>
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label class="font-weight-bold">City</label>
+                    <input type="text" class="form-control" name="city"
+                           value="{{ form_data.city if form_data }}" maxlength="255">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label class="font-weight-bold">Province/State</label>
+                    <input type="text" class="form-control" name="province"
+                           value="{{ form_data.province if form_data }}" maxlength="255">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label class="font-weight-bold">Country</label>
+                    <select class="form-control" name="country" maxlength="255">
+                      <option value="">Select Country</option>
+                      {% for country in countries %}
+                      <option value="{{ country }}" {% if form_data.country == country %}selected{% endif %}>
+                        {{ country }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="mb-4">
+              <h4 class="section-header">Contact Details</h4>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="font-weight-bold">Contact Email</label>
+                    <input type="email" class="form-control" name="contact_email"
+                           value="{{ form_data.contact_email if form_data }}">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="font-weight-bold">Phone Number</label>
+                    <input type="tel" class="form-control" name="phone_number"
+                           value="{{ form_data.phone_number if form_data }}"
+                           pattern="^\+?[\d\s\-()]{7,20}$"
+                           title="International format: +[country code] [number]"
+                           maxlength="20">
+                    <small class="text-muted">Example: +27 21 123 4567</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Additional Details -->
+            <div class="mb-4">
+              <h4 class="section-header">Additional Information</h4>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="font-weight-bold">Employee Count</label>
+                    <input type="number" class="form-control" name="employee_count"
+                           value="{{ form_data.employee_count if form_data }}" min="1">
+                  </div>
+                  <div class="form-group">
+                    <label class="font-weight-bold">Founded Year</label>
+                    <input type="number" class="form-control" name="founded_year"
+                           value="{{ form_data.founded_year if form_data }}"
+                           min="1800" max="{{ datetime.now().year }}">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="font-weight-bold">Tech Stack</label>
+                    <div id="techStackContainer">
+                      <div class="input-group mb-2">
+                        <input type="text" class="form-control tech-stack-input"
+                               placeholder="Add technology (e.g. Python)">
+                        <div class="input-group-append">
+                          <button class="btn btn-outline-secondary" type="button" id="addTech">
+                            <i class="ti-plus"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <input type="hidden" name="tech_stack" id="techStackValues"
+                           value="{{ form_data.tech_stack|tojson if form_data.tech_stack }}">
+                    <div id="techStackDisplay" class="mt-2">
+                      {% if form_data.tech_stack %}
+                        {% for tech in form_data.tech_stack %}
+                        <span class="tech-stack-pill badge badge-secondary">
+                          {{ tech }} <i class="ti-close ml-1" onclick="removeTech(this)"></i>
+                        </span>
+                        {% endfor %}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Social Media -->
+            <div class="mb-4">
+              <h4 class="section-header">Social Media</h4>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="font-weight-bold">LinkedIn URL</label>
+                    <input type="url" class="form-control" name="linkedin_url"
+                           value="{{ form_data.linkedin_url if form_data }}">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label class="font-weight-bold">Twitter Handle</label>
+                    <input type="text" class="form-control" name="twitter_handle"
+                           value="{{ form_data.twitter_handle if form_data }}"
+                           maxlength="15" placeholder="@username">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-right mt-4">
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="ti-save mr-2"></i>Create Company Profile
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize form validation
+  $('form').on('submit', function(e) {
+    const requiredFields = document.querySelectorAll('[required]');
+    let isValid = true;
+
+    requiredFields.forEach(field => {
+      if (!field.value.trim()) {
+        isValid = false;
+        field.classList.add('is-invalid');
+      } else {
+        field.classList.remove('is-invalid');
+      }
+    });
+
+    if (!isValid) {
+      e.preventDefault();
+      showAlert('Please fill in all required fields', 'danger');
+    }
+  });
+
+  // Tech Stack Handling
+  document.getElementById('addTech').addEventListener('click', () => {
+    const input = document.querySelector('.tech-stack-input');
+    const display = document.getElementById('techStackDisplay');
+    const hiddenInput = document.getElementById('techStackValues');
+
+    if (input.value.trim()) {
+      const tech = input.value.trim();
+      const badge = document.createElement('span');
+      badge.className = 'tech-stack-pill badge badge-secondary';
+      badge.innerHTML = `${tech} <i class="ti-close ml-1" onclick="removeTech(this)"></i>`;
+
+      display.appendChild(badge);
+      hiddenInput.value = JSON.stringify(
+        [...document.querySelectorAll('.tech-stack-pill')]
+          .map(badge => badge.firstChild.textContent.trim())
+      );
+      input.value = '';
+    }
+  });
+
+  // File input label update
+  document.querySelector('.custom-file-input').addEventListener('change', function(e) {
+    const fileName = e.target.files[0] ? e.target.files[0].name : 'Choose file...';
+    e.target.nextElementSibling.textContent = fileName;
+  });
+});
+
+window.removeTech = (el) => {
+  el.parentElement.remove();
+  document.getElementById('techStackValues').value = JSON.stringify(
+    [...document.querySelectorAll('.tech-stack-pill')]
+      .map(badge => badge.firstChild.textContent.trim())
+  );
+};
+
+function showAlert(message, type = 'danger') {
+  const alert = document.createElement('div');
+  alert.className = `alert alert-${type} alert-dismissible fade show`;
+  alert.style.position = 'fixed';
+  alert.style.top = '20px';
+  alert.style.right = '20px';
+  alert.style.zIndex = '2000';
+  alert.innerHTML = `
+    ${message}
+    <button type="button" class="close" data-dismiss="alert">
+      <span>&times;</span>
+    </button>
+  `;
+  document.body.prepend(alert);
+  setTimeout(() => alert.remove(), 5000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+<nav class="sidebar sidebar-hide-to-small sidebar-shrink sidebar-gestures">
+  <div class="nano">
+    <div class="nano-content">
+      <ul>
+        <li class="label">JobSeeker Dashboard</li>
+        <li>
+          <a href="{{ url_for('jobseekers.dashboard') }}">
+            <i class="ti-home"></i> Dashboard
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('jobs.categories') }}">
+            <i class="ti-briefcase"></i> Find Jobs
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('jobseeker_applications.list_applications') }}">
+            <i class="ti-check-box"></i> My Applications
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('jobseeker_cv.list_cvs') }}">
+            <i class="ti-files"></i> My CV's
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('jobseeker_profiles.view_profile') }}">
+            <i class="ti-user"></i> My Profile
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('jobseekers.notifications') }}">
+            <i class="ti-bell"></i> Notifications
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('auth.logout') }}">
+            <i class="ti-power-off"></i> Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
