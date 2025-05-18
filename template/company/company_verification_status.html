@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2>Verification Status</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ company.name }} Verification</h5>
+
+            <div class="alert alert-{{ 'success' if status_info.status == 'verified'
+                else 'warning' if status_info.status == 'pending'
+                else 'danger' }}">
+                Current Status: <strong>{{ status_info.status|title }}</strong>
+            </div>
+
+            {% if status_info.message %}
+            <div class="alert alert-info">
+                {{ status_info.message }}
+            </div>
+            {% endif %}
+
+            {% if status_info.needs_action %}
+            <div class="alert alert-warning">
+                {{ status_info.needs_action }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

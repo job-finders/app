@@ -21,11 +21,6 @@ class AdminController(Controllers):
     def init_app(self, app: Flask):
         super().init_app(app=app)
 
-    # Add permission checks to critical methods
-    def _admin_only(self):
-        if not current_user.has_role('admin'):
-            raise PermissionError("Admin privileges required")
-
     def cleanup_old_approvals(self):
         """
             will cleanup job approvals older than 30 days
@@ -87,12 +82,8 @@ class AdminController(Controllers):
             valid_statuses = ['active', 'archived', 'pending_review']
             if new_status not in valid_statuses:
                 raise ValueError(f"Invalid status. Allowed: {valid_statuses}")
+            updated = session.query(JobsORM).filter(JobsORM.job_id.in_(job_ids)).update({JobsORM.status: new_status})
 
-            updated = session.query(JobsORM) \
-                .filter(JobsORM.job_id.in_(job_ids)) \
-                .update({JobsORM.status: new_status})
-
-            session.commit()
             return {'updated_count': updated}
 
     @error_handler
@@ -249,7 +240,7 @@ class AdminController(Controllers):
         with self.get_session() as session:
             return session.query(CompanyORM).filter(
                 or_(
-                    CompanyORM.verified == False,
+                    CompanyORM.is_verified == False,
                     CompanyORM.id.in_(
                         session.query(JobsORM.company_id)
                         .join(JobApprovalRequestORM)

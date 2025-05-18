@@ -17,6 +17,10 @@ company_bp = Blueprint('company', __name__, url_prefix='/company')
 
 logger = init_logger("company_routes")
 
+# Configure these in your settings
+ALLOWED_EXTENSIONS = {'pdf'}
+UPLOAD_FOLDER = 'company_documents'
+
 
 @company_bp.route("/create-company", methods=["GET", "POST"])
 @login_required
@@ -263,6 +267,90 @@ async def verify_employer_profile(token: str, employer_id: str):
 
     return render_template("employers/employer_verification_success.html", **context)
 
+@company_bp.route('/submit-company-documentations', methods=['GET', 'POST'])
+@login_required
+async def initiate_company_verification(user: User):
+    """Endpoint for company verification document submission"""
+    if not user.role == "employer":
+        flash("Only employers can verify companies", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    # Get employer and company info
+    employer = await company_controller.get_employer_by_uid(user.uid)
+    if not employer or not employer.company_id:
+        flash("Complete your employer profile first", "danger")
+        return redirect(url_for('company.employer_profile'))
+
+    company = await company_controller.get_company_profile(employer.company_id)
+
+    # Check current verification status
+    if company.verification_status == CompanyVerificationStatus.VERIFIED:
+        flash("Company is already verified", "info")
+        return redirect(url_for('company.dashboard'))
+    if company.verification_status == CompanyVerificationStatus.PENDING:
+        flash("Verification is already in progress", "warning")
+        return redirect(url_for('company.verification_status'))
+
+    # Handle document submission
+    if request.method == 'POST':
+        if 'documents' not in request.files:
+            flash("No files selected", "danger")
+            return redirect(request.url)
+
+        files = request.files.getlist('documents')
+        if len(files) == 0 or all(file.filename == '' for file in files):
+            flash("No valid files selected", "danger")
+            return redirect(request.url)
+
+        # Process and save documents
+        saved_files = []
+        for file in files:
+            if file and allowed_file(file.filename):
+                filename = secure_filename(f"{company.company_id}_{file.filename}")
+                file_path = os.path.join(UPLOAD_FOLDER, filename)
+                await file.save(file_path)
+                saved_files.append(file_path)
+
+        if not saved_files:
+            flash("No valid documents uploaded", "danger")
+            return redirect(request.url)
+
+        # Initiate verification process
+        verification_result = await company_controller.initiate_verification_process(
+            company_id=company.company_id,
+            document_paths=saved_files,
+            user_id=user.uid
+        )
+
+        if verification_result.get('needs_human_review'):
+            flash("Documents received - verification under review", "warning")
+        else:
+            flash("Documents received - AI verification in progress", "info")
+
+        return redirect(url_for('company.verification_status'))
+
+    # GET request - show upload form
+    return render_template('company/initiate_verification.html',
+                           company=company,
+                           allowed_extensions=ALLOWED_EXTENSIONS)
 
 
+@company_bp.route('/verification-status')
+@login_required
+async def verification_status(user: User):
+    """Show current verification status"""
+    employer = await company_controller.get_employer_by_uid(user.uid)
+    if not employer or not employer.company_id:
+        return redirect(url_for('company.create_company_profile'))
 
+    company = await company_controller.get_company_profile(employer.company_id)
+    status_info = await company_controller.get_verification_status(company.company_id)
+
+    return render_template('company/verification_status.html',
+                           company=company,
+                           status_info=status_info)
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

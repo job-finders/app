@@ -294,3 +294,31 @@ class CompanyController(Controllers):
             employer_orm.verification_token_expires_at = None
             return True
 
+
+    async def initiate_verification_process(self, company_id: str, document_paths: list, user_id: str):
+        """Handle verification workflow"""
+        # Store documents in database
+        verification_id = await self._store_verification_documents(
+            company_id,
+            document_paths,
+            user_id
+        )
+
+        # Run initial AI screening
+        ai_result = await self._analyze_documents_with_ai(document_paths)
+
+        if ai_result['is_valid']:
+            await self._mark_company_verified(company_id)
+            return {'status': 'verified', 'verification_id': verification_id}
+
+        if ai_result['needs_human_review']:
+            await self._flag_for_human_review(company_id, verification_id)
+            await self._notify_admins(company_id, verification_id)
+            return {'status': 'pending_review', 'verification_id': verification_id}
+
+        await self._reject_verification(company_id, ai_result['reason'])
+        return {'status': 'rejected', 'reason': ai_result['reason']}
+
+
+    async def get_verification_status(self, company_id: str):
+        return await self._get_verification_status_from_db(company_id)

@@ -1,0 +1,25 @@
+{% extends "employers/layout/page.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Company Verification</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Upload Documents</h5>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label">
+                        Upload required documents ({{ allowed_extensions|join(', ') }})
+                    </label>
+                    <input type="file" class="form-control"
+                           name="documents" multiple
+                           accept=".{{ allowed_extensions|join(',.') }}">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Submit for Verification
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
