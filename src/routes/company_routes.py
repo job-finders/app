@@ -133,45 +133,41 @@ async def employer_profile(user: User):
 @login_required
 async def manage_jobs(user: User):
     """Job post management (mirrors ATS tool pattern)"""
+
     if not user.role == "employer":
         flash(message="You are not associated with any company please create a company in order to continue",
               category="danger")
-        return redirect(url_for('company.create_company_profile'))
+        return redirect(url_for('company.employer_profile'))
+
+    _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+    if not _employer_profile:
+        flash("Please create your employer profile before posting or viewing jobs", "danger")
+        return redirect(url_for('company.employer_profile'))
+
+    if not (_employer_profile.is_valid and _employer_profile.is_verified):
+        flash("Please verify your employer profile before posting or viewing jobs", "danger")
+        return redirect(url_for('company.employer_profile'))
 
     if request.method == "GET":
-        _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
-
-
-        if not _employer_profile:
-            flash("There could be an error accessing the database or your account is not associated with a company", "danger")
-            return redirect(url_for('company.create_company'))
+        # get methods allows employer to view jobs
         company_id=_employer_profile.company_id
         jobs:list[Job] = await company_controller.get_company_jobs(company_id=company_id)
         company_data = await company_controller.get_company_by_id(company_id=company_id)
         context = dict(current_user=user,employer_profile=_employer_profile, company=company_data,jobs=jobs)
 
         return render_template("company/jobs.html", **context)
-    
-    # POST - Create new job
-    job_data = {
-        "title": request.form.get("title"),
-        "description": request.form.get("description"),
-        "location": request.form.get("location"),
-        "salary": request.form.get("salary"),
-        "status": "DRAFT"
-    }
-    
+
+    # POST - Create new jobs for employers
     try:
-        job:Job = await company_controller.post_job(
-            user_uid=user.uid,
-            job_data=job_data
-        )
-        flash("Job created successfully", "success")
-        return redirect(url_for("company.manage_jobs"))
-    
-    except Exception as e:
-        logger.error(f"Job creation failed: {str(e)}")
-        return render_template("company/jobs.html", error=str(e))
+        job_data = Job(**request.form)
+    except ValidationError as e:
+        logger.error(str(e))
+        flash(message='please complete fully the job post form')
+        return redirect(url_for('company.manage_jobs'))
+
+    job:Job = await company_controller.post_job(user_uid=user.uid, job_data=job_data)
+    flash("Job created successfully", "success")
+    return redirect(url_for("company.manage_jobs"))
 
 @company_bp.route("/candidates", methods=["GET", "POST"])
 @login_required
