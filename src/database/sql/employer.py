@@ -18,6 +18,8 @@ class EmployerORM(Base):
     company_id = Column(UUID(as_uuid=False), ForeignKey('companies.id'), nullable=False, index=True)
     is_verified = Column(Boolean, default=False)
     verification_token = Column(String(NAME_LEN), nullable=True)
+    verification_token_expires_at = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationship to CompanyORM
@@ -30,6 +32,7 @@ class EmployerORM(Base):
             "company_id": self.company_id,
             "is_verified": self.is_verified,
             "verification_token": self.verification_token,
+            "verification_token_expires_at": self.verification_token_expires_at,
             "created_at": self.created_at,
         }
         # Include company details if loaded

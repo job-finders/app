@@ -1,9 +1,14 @@
+import secrets
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict
 
-from flask import Flask
+from flask import Flask, render_template, url_for
 from sqlalchemy.orm import Session, joinedload
 
-from routes.company_routes import employer_profile
+from emailer import EmailModel
+from src.database.models.users import User
+from src.database.sql.users import UserORM
+from src.main import send_mail
 from src.database.models.resume import JobSeekerCV, SavedCV
 from src.controllers.resume_controller import ResumeController
 from src.controllers.jobs import JobsController
@@ -83,11 +88,11 @@ class CompanyController(Controllers):
 
     @error_handler
     async def _get_employer(self, employer_id: str, session) -> EmployerORM| None:
-        with session:
-            employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
-            if isinstance(employer_orm, EmployerORM):
-                return employer_orm
-            raise ValueError("Employer does not exist")
+
+        employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
+        if isinstance(employer_orm, EmployerORM):
+            return employer_orm
+        raise ValueError("Employer does not exist")
 
     @error_handler
     async def get_employer_by_uid(self, user_id: str) -> Employer:
@@ -100,6 +105,19 @@ class CompanyController(Controllers):
             if not employer_orm:
                 raise ValueError("The User is not already an Employer")
             return Employer(**employer_orm.to_dict())
+
+    @error_handler
+    async def get_employer_by_employer_id(self, employer_id: str) -> Employer:
+        """
+        :param employer_id:
+        :return:
+        """
+        with self.get_session() as session:
+            employer_orm = session.query(EmployerORM).filter_by(employer_id==employer_id).first()
+            if not employer_orm:
+                raise ValueError("The User is not already an Employer")
+            return Employer(**employer_orm.to_dict())
+
 
     @error_handler
     async def get_company_jobs(self, company_id: str, status: Optional[JobStatusEnum] = None) -> List[Job]:
@@ -168,15 +186,15 @@ class CompanyController(Controllers):
             if not employer_orm:
                 raise ValueError("No Valid Employer with this User ID")
 
-            employer_profile = Employer(**employer_orm.to_dict())
-            company_orm = session.query(CompanyORM).filter_by(company_id=employer_profile.company_id).first()
+            _employer_profile = Employer(**employer_orm.to_dict())
+            company_orm = session.query(CompanyORM).filter_by(company_id=_employer_profile.company_id).first()
 
             if not company_orm:
                 raise ValueError("Unable to load your company details")
 
             company_profile = Company(**company_orm.to_dict())
 
-            if not (employer_profile.is_valid and employer_profile.is_verified):
+            if not (_employer_profile.is_valid and _employer_profile.is_verified):
                 raise ValueError('Your Employer Profile is not yet verified (or its incomplete)')
 
             if not (company_profile.is_valid and company_profile.is_verified):
@@ -223,12 +241,52 @@ class CompanyController(Controllers):
             is_saved = await self.resume_controller.employer_save_cv(employer_id=_employer_profile.employer_id, save_cv_model=save_cv_model)
             return save_cv_model if is_saved else None
 
+    @staticmethod
+    async def _get_user_by_uid(session, uid: str) -> User:
+        """
+            :param uid:
+            :return:
+        """
+        user_orm = session.query(UserORM).filter_by(uid=uid).first()
+        return User(**user_orm.to_dict())
 
-    async def initiate_employer_profile_verification(self, user_uid: str ):
+    async def initiate_employer_profile_verification(self, employer_id: str ):
         """
 
-        :param user_uid:
+        :param employer_id:
         :return:
         """
-        pass
+        with self.get_session() as session:
+            employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
+            employer = Employer(**employer_orm.to_dict())
 
+            if not employer:
+                raise ValueError("Employer not found")
+
+            if not employer.contact_email:
+                raise ValueError("Employer does not have a contact email")
+            token = secrets.token_urlsafe(32)
+            employer_orm.verification_token = token
+            employer_orm.verification_token_expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+
+            verification_link  = f"https://jobfinders.site/verify-employer?token={token}&id={employer.employer_id}"
+            verification_link = url_for('company.verify_employer_profile', token=token, employer_id=employer_id)
+
+
+            subject = "Employer Profile Verification"
+            user = await self._get_user_by_uid(session=session, uid=employer.user_uid)
+            context = dict(current_user=user, verification_link=verification_link)
+            email_body = render_template('email/employer_profile_verification.html', **context)
+            _subject = f"{user.name.title()} Please Verify your Employer Profile | jobfinders.site"
+            email = EmailModel(to_=str(employer.contact_email), subject_=_subject, html_=email_body)
+            response = await send_mail.send_mail_resend(email=email)
+
+    async def mark_employer_as_verified(self, employer_id: str) -> Employer:
+
+        with self.get_session() as session:
+            employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
+
+            employer_orm.is_verified = True
+            employer_orm.verification_token = None
+            employer_orm.verification_token_expires_at = None
+            return True

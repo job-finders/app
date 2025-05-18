@@ -17,6 +17,7 @@ class Employer(BaseModel):
     location: str = Field(..., min_length=2, max_length=255, description="City/Province")
     is_verified: bool = Field(default=False, description="Admin-approved status")
     verification_token: Optional[str] = Field(default=None, max_length=255)
+    verification_token_expires_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
@@ -44,3 +45,10 @@ class Employer(BaseModel):
         has_location = bool(self.location and len(self.location.strip()) >= 2)
 
         return has_basic_info and has_contact_info and has_location
+
+    def is_token_valid(self, token: str) -> bool:
+        """Checks if a token is valid and not expired."""
+        return (
+            self.verification_token == token and
+            self.verification_token_expires_at is not None and
+            self.verification_token_expires_at > datetime.utcnow())

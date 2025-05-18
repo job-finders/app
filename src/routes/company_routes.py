@@ -224,11 +224,47 @@ async def application_analytics(user: User):
 
 @company_bp.route("/verify-employer-profile", methods=["POST"])
 @login_required
-async def initiate_verification(user: User):
+async def initiate_employer_verification(user: User):
     """Start company verification process"""
-    token = await company_controller.initiate_employer_profile_verification(user_uid=user.user_uid)
+    employer_orm = await company_controller.get_employer_by_uid(user_uid=user.uid)
+    if not employer_orm:
+        flash(message="please create the employer profile first", category='danger')
+        return redirect(url_for("company.employer_profile"))
+
+    employer = Employer(**employer_orm.to_dict())
+
+    if not employer.is_valid:
+        flash(message="please ensure your employer profile is complete before attemmpting verification", category="danger")
+        return redirect(url_for("company.employer_profile"))
+
+    response = await company_controller.initiate_employer_profile_verification(employer_id=employer.employer_id)
     # Send verification email (pseudo-code)
     # await send_verification_email(request.user_email, token)
     flash("Verification initiated - check your email", "success")
 
     return redirect(url_for("company.employer_profile"))
+
+@company_bp.route("/do-verify-employer-profile/<string:token>/<string:employer_id>", methods=["GET"])
+async def verify_employer_profile(token: str, employer_id: str):
+    """
+    The employer lands here after clicking the verification link in the email.
+    """
+    employer = await company_controller.get_employer_by_employer_id(employer_id=employer_id)
+
+    if not employer:
+        flash("Invalid employer ID or the profile does not exist.", "danger")
+        return render_template("employers/employer_verification_failed.html")
+
+    if not employer.is_token_valid(token):
+        flash("The verification link is invalid or has expired.", "danger")
+        return render_template("employers/employer_verification_failed.html")
+
+    # Mark as verified and remove token
+    _ = await company_controller.mark_employer_as_verified(employer_id=employer_id)
+
+    flash("Your profile has been successfully verified!", "success")
+    return render_template("employers/employer_verification_success.html")
+
+
+
+

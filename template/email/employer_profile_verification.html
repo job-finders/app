@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>jobfinders.site | Verify Your Employer Profile</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4; font-family: Arial, sans-serif;">
+  <div style="max-width:600px; margin:30px auto; background-color:#ffffff; border:1px solid #dddddd; border-radius:4px; overflow:hidden;">
+
+    <!-- Header -->
+    <div style="background-color:#007bff; color:#ffffff; padding:20px; text-align:center;">
+      <h2 style="margin:0; font-size:24px;">Employer Profile Verification</h2>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:20px; color:#333333; font-size:16px; line-height:1.5;">
+      <p style="margin:0 0 15px;">Dear {{ current_user.name }},</p>
+      <p style="margin:0 0 15px;">Thank you for registering your company on <strong>JobFinders.site</strong>. To complete your employer profile, please verify your email by clicking the button below.</p>
+      <p style="margin:0 0 15px;">This link is valid for <strong>30 minutes</strong> and is part of our effort to ensure only verified employers can post jobs.</p>
+    </div>
+    <!-- CTA Button -->
+    <div style="padding:20px; text-align:center;">
+      <a href="{{ verification_link }}" style="display:inline-block; padding:15px 25px; font-size:16px; color:#ffffff; background-color:#28a745; text-decoration:none; border-radius:4px;">Verify Now</a>
+    </div>
+
+    <!-- Fallback Text -->
+    <div style="padding:20px; color:#777777; font-size:14px;">
+      <p style="margin:0;">If the button above doesn't work, copy and paste the following link into your browser:</p>
+      <p style="word-break:break-all;"><a href="{{ verification_link }}" style="color:#007bff;">{{ verification_link }}</a></p>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:20px; color:#777777; font-size:12px; text-align:center;">
+      <p style="margin:0;">© 2025 JobFinders.site. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
