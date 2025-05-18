@@ -3,9 +3,10 @@ import uuid
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError
 
+from database.models.resume import JobSeekerCV, SavedCV
 from src.authentication import login_required
 from src.database.models.employer_models import Employer
-from src.database.models.jobs_model import Company
+from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
 from src.database.models.users import User
 from src.main import users_controller, jobs_controller
 from src.main import company_controller
@@ -20,8 +21,15 @@ logger = init_logger("company_routes")
 @login_required
 async def create_company_profile(user: User):
     """Company profile creation endpoint"""
+    _employer_profile: Employer = await company_controller.get_employer_by_uid(uid=user.uid)
+
     if request.method == "GET":
-        context = dict(current_user=user)
+        if not _employer_profile:
+            flash(message="You do not already have an employer profile please create your employer profile first",
+                  category="success")
+            return redirect(url_for('company.employer_profile'))
+        # with user data & employer profile we can now create a company profile
+        context = dict(current_user=user, employer_profile=_employer_profile)
         return render_template("company/create_company.html", **context)
 
     try:
@@ -36,7 +44,7 @@ async def create_company_profile(user: User):
 
     try:
         # Attempt company creation through controller
-        created_company = await company_controller.create_company(company_data)
+        created_company: Company = await company_controller.create_company(company_data=company_data)
     except ValueError as e:
         logger.error(f"Company creation conflict: {str(e)}")
         flash(str(e), "danger")
@@ -44,10 +52,18 @@ async def create_company_profile(user: User):
                             error=str(e),
                             current_user=user,
                             form_data=request.form)
+    if not created_company:
+        logger.error(f'Error creating company using company data : {company_data}')
+        flash(message="there was an problem creating your company please try again", category="danger")
+
+        return redirect(url_for("company.view_company"))
 
     # Update user role if needed (assuming employers need company association)
     if user.role != "employer":
         await users_controller.update_user_role(user.uid, "employer")
+
+    _add_company_employer_profile = await company_controller.update_employer_profile(
+        employer_id=_employer_profile.employer_id, company_data=company_data)
 
     flash("Company profile created successfully!", "success")
     return redirect(url_for("company.view_company"))
@@ -57,23 +73,26 @@ async def create_company_profile(user: User):
 @login_required
 async def view_company(user: User):
     """Company profile viewing endpoint"""
-    employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
-
-    if not employer_details:
+    if user.role != "employer":
         logger.error(f"Company lookup error: User is not an Employer at any company")
-        return redirect(url_for("company.create_company_profile"))
+        return redirect(url_for("company.employer_profile"))
 
-    company_id = employer_details.company_id
-    company: Company = await company_controller.get_company_by_id(company_id)
-    if not company:
-        err = f"Company lookup error: Please try again or inform admin"
+    _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+    if not _employer_profile:
+        err = f"Employer lookup error: Please try again or inform admin"
         logger.error(err)
         flash(err, "danger")
         return redirect(url_for("company.employer_profile"))
+    company_data: Company = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
+    if not company_data:
+        logger.error(f"Error looking up Company with Company ID: {_employer_profile.company_id}")
+        flash(message="looks like you have not yet created a company associated with your employer profile, please create it", category='danger')
+        return redirect(url_for('company.create_company_profile'))
 
     context = {
         "current_user": user,
-        "company": company}
+        "employer_profile": _employer_profile,
+        "company_data": company_data}
 
     return render_template("company/view_profile.html", **context)
 
@@ -83,7 +102,12 @@ async def view_company(user: User):
 async def employer_profile(user: User):
     """Employer profile management (web interface)"""
     if request.method == "GET":
-        context = dict(current_user=user)
+        _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+        if _employer_profile and _employer_profile.company_id:
+            company_data = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
+        else:
+            company_data = {}
+        context = dict(current_user=user, employer_profile=_employer_profile, company_data=company_data)
         return render_template("company/employer_profile.html", **context)
 
     # creating new employer profile method is POST
@@ -92,7 +116,6 @@ async def employer_profile(user: User):
     except ValidationError as e:
         logger.error(str(e))
         return redirect(url_for("company.employer_profile"))
-
 
     employer: Employer = await company_controller.register_employer(employer_data=employer_data)
     if not employer:
@@ -109,19 +132,22 @@ async def employer_profile(user: User):
 @login_required
 async def manage_jobs(user: User):
     """Job post management (mirrors ATS tool pattern)"""
-    if request.method == "GET":
-        company_data: Company = await company_controller.get_employer_by_uid(user_id=user.uid)
+    if not user.role == "employer":
+        flash(message="You are not associated with any company please create a company in order to continue",
+              category="danger")
+        return redirect(url_for('company.create_company_profile'))
 
-        if not company_data:
+    if request.method == "GET":
+        _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+
+
+        if not _employer_profile:
             flash("There could be an error accessing the database or your account is not associated with a company", "danger")
             return redirect(url_for('company.create_company'))
-        company_id=company_data.company_id
-        if not company_data.jobs:
-            jobs = await company_controller.get_company_jobs(company_id=company_id)
-        else:
-            jobs = company_data.jobs
-
-        context = dict(current_user=user, company=company_data,jobs=jobs)
+        company_id=_employer_profile.company_id
+        jobs:list[Job] = await company_controller.get_company_jobs(company_id=company_id)
+        company_data = await company_controller.get_company_by_id(company_id=company_id)
+        context = dict(current_user=user,employer_profile=_employer_profile, company=company_data,jobs=jobs)
 
         return render_template("company/jobs.html", **context)
     
@@ -135,7 +161,7 @@ async def manage_jobs(user: User):
     }
     
     try:
-        job = await company_controller.post_job(
+        job:Job = await company_controller.post_job(
             user_uid=user.uid,
             job_data=job_data
         )
@@ -147,55 +173,62 @@ async def manage_jobs(user: User):
         return render_template("company/jobs.html", error=str(e))
 
 @company_bp.route("/candidates", methods=["GET", "POST"])
-async def candidate_management():
+@login_required
+async def candidate_management(user: User):
     """Candidate shortlisting (extends ATS functionality)"""
+
+    if not user.role == "employer":
+        flash(message="You are not associated with any company please create a company in order to continue",
+              category="danger")
+        return redirect(url_for('company.create_company_profile'))
+
     if request.method == "GET":
-        candidates = await company_controller.get_saved_candidates(
-            user_uid=request.user_uid
-        )
-        return render_template("company/candidates.html", candidates=candidates)
+        candidates: list[JobSeekerCV] = await company_controller.get_saved_candidates(user_uid=user.uid)
+        context = dict(current_user=user, candidates=candidates)
+        return render_template("company/candidates.html", **context)
     
-    # POST - Save candidate
-    try:
-        candidate = await company_controller.save_candidate(
-            user_uid=request.user_uid,
-            cv_id=request.form.get("cv_id"),
-            notes=request.form.get("notes")
-        )
-        flash("Candidate saved to shortlist", "success")
+    # POST - Save candidate - when user clicks save show a dialog and gather notes
+    cv_id = request.form.get('cv_id')
+    notes = request.form.get('notes')
+
+    employer_details: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+
+    save_cv_model= SavedCV(notes=notes, employer_id=employer_details.employer_id, cv_id=cv_id)
+    candidate_saved = await company_controller.save_candidate(user_uid=user.uid, save_cv_model=save_cv_model)
+
+    if not candidate_saved:
+        flash("Unable to save candidate please try again later", "danger")
         return redirect(url_for("company.candidate_management"))
+
+    flash("Candidate saved to shortlist", "success")
+    return redirect(url_for("company.candidate_management"))
     
-    except Exception as e:
-        logger.error(f"Candidate save failed: {str(e)}")
-        return render_template("company/candidates.html", error=str(e))
 
 @company_bp.route("/analytics/applications", methods=["GET"])
-async def application_analytics():
+@login_required
+async def application_analytics(user: User):
     """Hiring analytics dashboard (integrates with ATS reports)"""
-    try:
-        metrics = await company_controller.get_application_analytics(
-            user_uid=request.user_uid
-        )
-        return render_template("company/analytics.html", metrics=metrics)
-    
-    except Exception as e:
-        logger.error(f"Analytics load failed: {str(e)}")
-        flash("Failed to load analytics", "danger")
-        return redirect(url_for("company.employer_profile"))
 
-@company_bp.route("/verify", methods=["POST"])
-async def initiate_verification():
+    if not user.role == "employer":
+        flash(message="You are not associated with any company please create a company in order to continue", category="danger")
+        return redirect(url_for('company.create_company_profile'))
+
+    _employer_profile: Employer = await company_controller.get_employer_by_uid(user_uid=user.uid)
+    if not (_employer_profile.is_valid and _employer_profile.is_verified):
+        flash(message="Your Employer Profile is either not complete or not verified", category="danger")
+        return redirect(url_for('company.employer_profile'))
+
+    analytics: JobApplicationDashboard = await company_controller.get_application_analytics(company_id=_employer_profile.company_id)
+    context = dict(current_user=user, analytics=analytics)
+    return render_template("company/analytics.html", **context)
+
+@company_bp.route("/verify-employer-profile", methods=["POST"])
+@login_required
+async def initiate_verification(user: User):
     """Start company verification process"""
-    try:
-        token = await company_controller.initiate_verification(
-            user_uid=request.user_uid
-        )
-        # Send verification email (pseudo-code)
-        # await send_verification_email(request.user_email, token)
-        flash("Verification initiated - check your email", "success")
-    
-    except Exception as e:
-        logger.error(f"Verification failed: {str(e)}")
-        flash("Verification initiation failed", "danger")
-    
+    token = await company_controller.initiate_employer_profile_verification(user_uid=user.user_uid)
+    # Send verification email (pseudo-code)
+    # await send_verification_email(request.user_email, token)
+    flash("Verification initiated - check your email", "success")
+
     return redirect(url_for("company.employer_profile"))

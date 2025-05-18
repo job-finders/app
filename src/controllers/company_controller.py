@@ -3,6 +3,10 @@ from typing import Optional, List, Dict
 from flask import Flask
 from sqlalchemy.orm import Session, joinedload
 
+from routes.company_routes import employer_profile
+from src.database.models.resume import JobSeekerCV, SavedCV
+from src.controllers.resume_controller import ResumeController
+from src.controllers.jobs import JobsController
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Job, Company, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
 from src.database.sql.employer import EmployerORM
@@ -13,16 +17,15 @@ from src.database.sql.jobs_sql import JobsORM, CompanyORM  # Added based on mode
 class CompanyController(Controllers):
     """Handles employer profiles and company-related operations"""
     
-    def __init__(self, jobs_controller=None):
+    def __init__(self, jobs_controller=None, resume_controller=None):
         super().__init__()
         self.logger = init_logger("CompanyController")
-        self.jobs_controller = jobs_controller  # Injected dependency
+        self.jobs_controller: JobsController = jobs_controller  # Injected dependency
+        self.resume_controller: ResumeController = resume_controller
+
 
     def init_app(self, app: Flask):
         super().init_app(app=app)
-        if not self.jobs_controller:
-            from src.main import jobs_controller
-            self.jobs_controller = jobs_controller
 
     @error_handler
     async def create_company(self, company_data: Company) -> Company:
@@ -38,6 +41,7 @@ class CompanyController(Controllers):
                 raise ValueError(f"Company with this name already exists {_name.title()}")
 
             session.add(CompanyORM(**company_data.model_dump()))
+
             return company_data
 
     @error_handler
@@ -88,7 +92,6 @@ class CompanyController(Controllers):
     @error_handler
     async def get_employer_by_uid(self, user_id: str) -> Employer:
         """
-
         :param user_id:
         :return:
         """
@@ -124,6 +127,7 @@ class CompanyController(Controllers):
         """
         return await self.jobs_controller.get_company_analytics_dashboard(company_id=company_id)
 
+    @error_handler
     async def generate_talent_pool_report(self, company_id: str) -> TalentPoolReport:
         """
 
@@ -131,4 +135,100 @@ class CompanyController(Controllers):
         :return:
         """
         return await self.jobs_controller.generate_talent_pool_report(company_id=company_id)
+
+    @error_handler
+    async def update_employer_profile(self, employer_id: str, company_data: Company) -> Employer:
+        """
+
+        :param employer_id:
+        :param company_data:
+        :return:
+        """
+        with self.get_session() as session:
+            employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
+            if not employer_orm:
+                return  None
+            employer_orm.company_id = company_data.company_id
+            session.commit()
+            return Employer(**employer_orm.to_dict())
+
+    @error_handler
+    async def post_job(self, user_uid: str, job_data: Job) -> Job:
+        """
+            ensure jobs could be posted under this company -
+            check verification status of employer profile
+            check verification status of company_profile
+        :param user_uid:
+        :param job_data:
+        :return:
+        """
+        with self.get_session() as session:
+
+            employer_orm = session.query(EmployerORM).filter_by(user_uid=user_uid).first()
+            if not employer_orm:
+                raise ValueError("No Valid Employer with this User ID")
+
+            employer_profile = Employer(**employer_orm.to_dict())
+            company_orm = session.query(CompanyORM).filter_by(company_id=employer_profile.company_id).first()
+
+            if not company_orm:
+                raise ValueError("Unable to load your company details")
+
+            company_profile = Company(**company_orm.to_dict())
+
+            if not (employer_profile.is_valid and employer_profile.is_verified):
+                raise ValueError('Your Employer Profile is not yet verified (or its incomplete)')
+
+            if not (company_profile.is_valid and company_profile.is_verified):
+                raise ValueError('Your Company Profile is not yet verified (or its incomplete)')
+            # TODO - once subscriptions are added please check the status of the subscription here
+            # creating job with jobs controller then return the results
+            return await self.jobs_controller.create_job(job=job_data)
+
+    async def get_saved_candidates(self, user_uid: str) -> list[JobSeekerCV]:
+        """
+            using user_uid will retrieve a list of candidates
+        :param user_uid:
+        :return:
+        """
+        with self.get_session() as session:
+            employer_profile_orm = session.query(EmployerORM).filter_by(user_uid=user_uid).first()
+
+            if not employer_profile_orm:
+                return None
+
+            employer_details: Employer = Employer(**employer_profile_orm.to_dict())
+            if not (employer_details.is_valid and employer_details.is_verified):
+                return None
+
+            return await self.resume_controller.employer_saved_cvs(employer_id=employer_details.employer_id)
+
+
+    async def save_candidate(self, user_uid: str, save_cv_model:SavedCV) -> SavedCV:
+        """
+
+        :param save_cv_model:
+        :param user_uid:
+        :return:
+        """
+        with self.get_session() as session:
+            employer_orm = session.query(EmployerORM).filter_by(user_uid=user_uid).first()
+            if not employer_orm:
+                return None
+
+            _employer_profile: Employer = Employer(**employer_orm.to_dict())
+            if not (_employer_profile.is_valid and _employer_profile.is_verified):
+                return None
+
+            is_saved = await self.resume_controller.employer_save_cv(employer_id=_employer_profile.employer_id, save_cv_model=save_cv_model)
+            return save_cv_model if is_saved else None
+
+
+    async def initiate_employer_profile_verification(self, user_uid: str ):
+        """
+
+        :param user_uid:
+        :return:
+        """
+        pass
 

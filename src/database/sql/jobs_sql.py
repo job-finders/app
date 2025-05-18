@@ -1,13 +1,14 @@
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import Column, String, Text, Date, Float, Integer, Boolean, ForeignKey, JSON, Index, DateTime, inspect, \
-    ARRAY
+    ARRAY, UUID
 from sqlalchemy.orm import relationship, deferred
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from src.database.models.jobs_model import JobApprovalStatusEnum
 from src.database.constants import ID_LEN, NAME_LEN
 from src.database.sql import Base, engine
+
 
 
 
@@ -46,7 +47,18 @@ class CompanyORM(Base):
 
     # Relationships
     jobs = relationship("JobsORM", back_populates="company", lazy="dynamic")
-    verified = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
 
     def to_dict(self) -> dict:
         return {
@@ -68,10 +80,85 @@ class CompanyORM(Base):
             "twitter_handle": self.twitter_handle,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
-            "verified": self.verified,
+            "is_verified": self.is_verified,
             "jobs": [job.to_dict() for job in self.jobs] if hasattr(self, 'jobs') else None
         }
 
+class CompanyVerificationDocumentORM(Base):
+    """
+        Company Documents for the Purposes of Verification
+    """
+    __tablename__ = "company_verification_documents"
+
+    document_id = Column(String(ID_LEN), primary_key=True, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.company_id"), nullable=False)
+    document_type = Column(String, nullable=False)  # e.g. "CIPC_CERT", "TAX_CLEARANCE", "BEE_CERT"
+    file_url = Column(String, nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String, default="pending")  # pending, approved, rejected
+    reviewed_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    notes = Column(String, nullable=True)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            "document_id": self.document_id,
+            "company_id": str(self.company_id) if self.company_id else None,
+            "document_type": self.document_type,
+            "file_url": self.file_url,
+            "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
+            "status": self.status,
+            "reviewed_by": str(self.reviewed_by) if self.reviewed_by else None,
+            "reviewed_at": self.reviewed_at.isoformat() if self.reviewed_at else None,
+            "notes": self.notes
+        }
+
+
+class CompanyCIPCORM(Base):
+    """
+        Companies with this Information will be indicated by a Blue Tick - Verified Companies
+        this class holds company registration details as created by the CIPC
+    """
+    __tablename__ = "cipc_companies"
+
+    cipc_id = Column(String(ID_LEN), primary_key=True, index=True)
+    company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), index=True)
+    name = Column(String, nullable=False)
+    registration_number = Column(String, nullable=True)
+    tax_pin = Column(String, nullable=True)
+    bee_status = Column(String, nullable=True)
+    is_verified = Column(Boolean, default=False)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            "cipc_id": self.cipc_id,
+            "company_id": self.company_id,
+            "name": self.name,
+            "registration_number": self.registration_number,
+            "tax_pin": self.tax_pin,
+            "bee_status": self.bee_status,
+            "is_verified": self.is_verified
+        }
 
 # Add new ORM model for tracking followed companies
 class CompanyFollowingORM(Base):
@@ -81,6 +168,15 @@ class CompanyFollowingORM(Base):
     company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), primary_key=True)
     followed_at = Column(DateTime, default=datetime.utcnow)
     last_notified_at = Column(DateTime)
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
 
 
 class JobsORM(Base):

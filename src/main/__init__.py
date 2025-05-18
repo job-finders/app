@@ -11,8 +11,10 @@ encryptor = Encryptor()
 
 from src.controllers.jobs import JobsController
 jobs_controller = JobsController()
+from src.controllers.resume_controller import ResumeController
+resume_controller = ResumeController()
 from src.controllers.company_controller import CompanyController
-company_controller = CompanyController(jobs_controller=jobs_controller)
+company_controller = CompanyController(jobs_controller=jobs_controller, resume_controller=resume_controller)
 
 from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
 
@@ -25,14 +27,14 @@ from src.controllers.notifications_controller import NotificationsController
 
 notifications_controller = NotificationsController()
 from src.controllers.ats_controller import ATSToolController
-from src.controllers.resume_controller import ResumeController
+
 
 # initializing models and controllers
 
 storage_controller = StorageController()
 scrapper = Scrapper()
 users_controller = UsersController()
-resume_controller = ResumeController()
+
 ats_controller = ATSToolController()
 
 junction_scrapper = JunctionScrapper(scrapper=scrapper)

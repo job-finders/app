@@ -6,7 +6,7 @@ from src.emailer import EmailModel, settings
 from src.database.sql.resume import (JobSeekerCVORM, ExperienceORM, EducationORM, CertificationORM, LanguageORM,
                                      ProjectORM, PublicationORM, AwardORM, CustomSectionORM, SavedCVORM)
 from src.database.models.resume import (Experience, Education, Certification, Language, Publication, Project,
-                                        Award, CustomSection, JobSeekerCV)
+                                        Award, CustomSection, JobSeekerCV, SavedCV)
 from src.controllers.controller import Controllers, error_handler
 import uuid
 
@@ -390,49 +390,50 @@ class ResumeController(Controllers):
             return True
 
     @error_handler
-    async def employer_save_cv(self, employer_uid: str, cv_id: str) -> bool:
+    async def employer_save_cv(self, employer_id: str, save_cv_model: SavedCV) -> bool:
         """
         Allows an employer to bookmark or save a specific CV for later viewing.
 
         This creates a record linking the employer to the CV they are interested in,
         preventing duplicate saves if already bookmarked.
 
-        :param employer_uid: The unique identifier of the employer.
-        :param cv_id: The unique identifier of the CV to be saved.
+        :param save_cv_model:
+        :param employer_id: The unique identifier of the employer.
         :return: True if saved successfully or already exists, False if CV does not exist.
         """
         with self.get_session() as session:
             # Ensure the CV exists
-            cv = session.query(JobSeekerCVORM).filter_by(id=cv_id).first()
+
+            cv = session.query(JobSeekerCVORM).filter_by(cv_id=save_cv_model.cv_id).first()
             if not cv:
                 return False
 
             # Check if already saved
             exists = session.query(SavedCVORM).filter_by(
-                employer_uid=employer_uid,
-                cv_id=cv_id
+                employer_id=save_cv_model.employer_id,
+                cv_id=save_cv_model.cv_id
             ).first()
             if exists:
                 return True
 
             # Create new save record
-            save = SavedCVORM(employer_uid=employer_uid, cv_id=cv_id)
-            session.add(save)
+            saved_cv_orm = SavedCVORM(**save_cv_model.model_dump())
+            session.add(saved_cv_orm)
             return True
 
     @error_handler
-    async def employer_saved_cvs(self, employer_uid: str) -> list[JobSeekerCV]:
+    async def employer_saved_cvs(self, employer_id: str) -> list[JobSeekerCV]:
         """
         Get a list of CVs saved/bookmarked by a specific employer.
 
         This method retrieves the full CV details that the given employer has saved for later review.
 
-        :param employer_uid: The unique identifier of the employer.
+        :param employer_id: The unique identifier of the employer.
         :return: A list of JobSeekerCV Pydantic models representing the saved CVs.
         """
         with self.get_session() as session:
             # Get the saved CV records for the employer
-            saved_cvs = session.query(SavedCVORM).filter_by(employer_uid=employer_uid).all()
+            saved_cvs = session.query(SavedCVORM).filter_by(employer_uid=employer_id).all()
             cv_ids = [saved_cv.cv_id for saved_cv in saved_cvs]
 
             # Fetch the actual CV details using get_cv_by_id method, which should also handle ORM conversion

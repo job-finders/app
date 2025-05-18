@@ -81,10 +81,11 @@ class CustomSection(BaseModel):
     content: Union[str, List[str]]  # Supports plain text or bullet lists
 
 class SavedCV(BaseModel):
-    id: str
-    employer_uid: str
+    save_id: str = Field(default_factory= lambda : str(uuid.uuid4()))
+    employer_id: str
     cv_id: str
     saved_at: datetime = Field(default_factory=datetime.utcnow)
+    notes: Optional[str] = Field(default=None)
 
     class Config:
         orm_mode = True

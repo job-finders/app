@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, timezone
-from pydantic import BaseModel, Field, field_validator, computed_field
+from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -12,44 +12,99 @@ def format_reference(ref: str) -> str:
     """Sample reference formatter - implement your logic"""
     return ref.upper().replace(" ", "-")
 
-
-
-
 class Company(BaseModel):
     """Pydantic model for company data"""
     company_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(..., min_length=2, max_length=255)
-    description: Optional[str] = None
-    industry: Optional[str] = None
-    website: Optional[str] = None
-    logo_url: Optional[str] = None
+    description: Optional[str] = Field(default=None, max_length=2000)
+    industry: Optional[str] = Field(default=None, max_length=255)
+    website: Optional[HttpUrl] = Field(default=None)
+    logo_url: Optional[HttpUrl] = Field(default=None)
 
     # Location
-    city: Optional[str] = None
-    province: Optional[str] = None
-    country: Optional[str] = None
+    city: Optional[str] = Field(default=None, max_length=255)
+    province: Optional[str] = Field(default=None, max_length=255)
+    country: Optional[str] = Field(default=None, max_length=255)
 
     # Contact Info
-    contact_email: Optional[str] = None
-    phone_number: Optional[str] = None
+    contact_email: Optional[EmailStr] = Field(default=None)
+    phone_number: Optional[str] = Field(default=None, max_length=20)
 
     # Company Details
-    employee_count: Optional[int] = None
-    founded_year: Optional[int] = None
-    tech_stack: Optional[list[str]] = None
+    employee_count: Optional[int] = Field(default=None, ge=1)
+    founded_year: Optional[int] = Field(default=None, ge=1800, le=datetime.now().year)
+    tech_stack: Optional[List[str]] = Field(default=None)
 
     # Social Media
-    linkedin_url: Optional[str] = None
-    twitter_handle: Optional[str] = None
+    linkedin_url: Optional[HttpUrl] = Field(default=None)
+    twitter_handle: Optional[str] = Field(default=None, max_length=15)
 
     # Relationships
-    jobs: Optional[list['Job']] = None  # Forward reference
+    jobs: Optional[List['Job']] = None  # Forward reference
+    is_verified: Optional[bool] = Field(default=False)
 
     class Config:
         orm_mode = True
         json_encoders = {
             datetime: lambda v: v.isoformat(),
         }
+
+    @field_validator("phone_number")
+    def validate_phone_number(cls, v):
+        if v and not re.match(r"^\+?[\d\s\-()]{7,20}$", v):
+            raise ValueError("Invalid phone number format")
+        return v
+
+    @field_validator("twitter_handle")
+    def validate_twitter_handle(cls, v):
+        if v and not re.match(r"^@?(\w){1,15}$", v):
+            raise ValueError("Invalid Twitter handle")
+        return v
+
+    @property
+    def is_valid(self) -> bool:
+        """
+        Checks whether the company has enough meaningful data to be considered valid.
+        :return: True if valid, False otherwise.
+        """
+        # Validate company name
+        if not self.name or len(self.name.strip()) < 2:
+            return False
+
+        # At least one form of online/contact presence
+        has_contact_info = any([
+            self.contact_email,
+            self.phone_number,
+            self.website,
+            self.linkedin_url,
+            self.twitter_handle
+        ])
+
+        # At least partial location details
+        has_location_info = any([
+            self.city,
+            self.province,
+            self.country
+        ])
+
+        # Descriptive data
+        has_descriptive_info = any([
+            self.description,
+            self.industry
+        ])
+
+        return has_contact_info and has_location_info and has_descriptive_info
+
+
+class CompanyVerificationDocument(BaseModel):
+    document_type: str  # You can use Enum here for safety
+    file_url: HttpUrl
+    status: Optional[str] = "pending"
+    uploaded_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+
 
 
 class JobApprovalStatusEnum(Enum):
@@ -136,15 +191,16 @@ class Job(BaseModel):
     # Company Relationships
     employer_id: Optional[str] = Field(default=None, description="The Employee Rep for Company who made the Job Posting")
     company_id: Optional[str] = None
-    company: Optional[Company] = Field(default=None)
-    approval_request: Optional[JobApprovalRequest] = Field(default=None)
-    version_history : Optional[JobVersionHistory]  = Field(default=None)
+    company: Optional[Company] = None
+    approval_request: Optional[JobApprovalRequest] = None
+    version_history: Optional[JobVersionHistory] = None
+
     # Job Details
     title: str = Field(min_length=5, max_length=255)
     description: str
     position_type: str = Field(pattern="FULL_TIME|PART_TIME|CONTRACT")
     remote_policy: str = Field(pattern="ONSITE|HYBRID|REMOTE")
-    category: Optional[str] = Field(default=None)
+    category: Optional[str] = None
 
     # Compensation
     salary_min: Optional[float] = Field(ge=0, default=None)
@@ -166,11 +222,10 @@ class Job(BaseModel):
     # Requirements
     experience_level: str = Field(pattern="ENTRY|MID|SENIOR")
     education_requirements: Optional[dict] = None
-    required_skills: list[str] = Field(default_factory=list)
+    required_skills: List[str] = Field(default_factory=list)
     preferred_skills: list[str] = Field(default_factory=list)
-
     required_documents: list[str] = Field(default_factory=list)
-    required_questionnaire: list[str] = Field()
+    required_questionnaire: list[str]
 
     # Application Process
     application_url: Optional[str] = None
@@ -181,16 +236,14 @@ class Job(BaseModel):
     application_count: int = Field(ge=0, default=0)
 
     # Status
-    status: str = Field(default=JobStatusEnum.DRAFT.value, pattern="darft|pending|active|closed|archived")
+    status: str = Field(default=JobStatusEnum.DRAFT.value, pattern="draft|pending|active|closed|archived")
     is_featured: Optional[bool] = False
 
     # Audit
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-
-
-    # --- Computed Fields ---
+    # Computed Properties
     @computed_field
     @property
     def is_active(self) -> bool:
@@ -209,37 +262,42 @@ class Job(BaseModel):
     @computed_field
     @property
     def posted_by(self) -> str:
-        return f"{self.company.name}"
-
-    @field_validator("job_ref")
-    def format_job_ref(cls, value: str) -> str:
-        # Replace with your actual format_reference logic
-        return value.replace(" ", "").upper()
-
-    @field_validator("salary_max")
-    def validate_salary_range(cls, v, values):
-        min_salary = values.data.get("salary_min")
-        if v is not None and min_salary is not None and v < min_salary:
-            raise ValueError("salary_max must be greater than salary_min")
-        return v
+        return self.company.name if self.company else "Unknown"
 
     @property
     def ats_description(self) -> str:
         skill_text = f"Desired skills include: {', '.join(self.preferred_skills)}." if self.preferred_skills else ""
         summary_parts = [
             f"Job Title: {self.title}",
-            f"Company: {self.company_name or ''}",
+            f"Company: {self.company.name if self.company else ''}",
             f"Location: {self.location}",
             f"Position Type: {self.position_type}",
             f"Salary: {self.salary_currency} {self.salary_min} - {self.salary_max}",
             skill_text,
             f"Job Description: {self.description or ''}"
         ]
-        return "\n".join([part for part in summary_parts if part.strip()])
+        return "\n".join(part for part in summary_parts if part.strip())
 
-    class Config:
-        orm_mode = True
+    # Validators
+    @field_validator("job_ref")
+    @classmethod
+    def format_job_ref(cls, value: str) -> str:
+        return value.replace(" ", "").upper()
 
+    @field_validator("salary_max")
+    @classmethod
+    def validate_salary_range(cls, v: Optional[float], info) -> Optional[float]:
+        min_salary = info.data.get("salary_min")
+        if v is not None and min_salary is not None and v < min_salary:
+            raise ValueError("salary_max must be greater than salary_min")
+        return v
+
+    model_config = ConfigDict(
+        orm_mode=True,
+        populate_by_name=True,
+        str_strip_whitespace=True,
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 class SavedJob(BaseModel):
     saved_job_id: str = Field(default_factory=lambda: str(uuid.uuid4()))

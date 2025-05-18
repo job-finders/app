@@ -36,3 +36,5 @@ class EmployerORM(Base):
         if self.company:
             employer_dict["company"] = self.company.to_dict()
         return employer_dict
+
+

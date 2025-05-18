@@ -351,9 +351,10 @@ class SavedCVORM(Base):
     __tablename__ = "saved_cvs"
 
     id = Column(String(ID_LEN), primary_key=True)
-    employer_uid = Column(String(ID_LEN), ForeignKey("users.uid"), nullable=False, index=True)
+    employer_id = Column(String(ID_LEN), ForeignKey("users.uid"), nullable=False, index=True)
     cv_id = Column(String(ID_LEN), ForeignKey("jobseeker_cvs.cv_id"), nullable=False, index=True)
     saved_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    notes = Column(Text)
 
     __table_args__ = (
         UniqueConstraint("employer_uid", "cv_id", name="uq_employer_cv"),
@@ -384,5 +385,6 @@ class SavedCVORM(Base):
             'id': self.id,
             'employer_uid': self.employer_uid,
             'cv_id': self.cv_id,
+            'notes': self.notes,
             'saved_at': self.saved_at.isoformat() if self.saved_at else None
         }
