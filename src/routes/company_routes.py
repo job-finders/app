@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError
@@ -250,20 +251,23 @@ async def verify_employer_profile(token: str, employer_id: str):
     The employer lands here after clicking the verification link in the email.
     """
     employer = await company_controller.get_employer_by_employer_id(employer_id=employer_id)
+    context = {'current_year': datetime.now().year}
 
     if not employer:
         flash("Invalid employer ID or the profile does not exist.", "danger")
-        return render_template("employers/employer_verification_failed.html")
+        return render_template("employers/employer_verification_failed.html", **context)
 
     if not employer.is_token_valid(token):
         flash("The verification link is invalid or has expired.", "danger")
-        return render_template("employers/employer_verification_failed.html")
+        return render_template("employers/employer_verification_failed.html", **context)
 
     # Mark as verified and remove token
     _ = await company_controller.mark_employer_as_verified(employer_id=employer_id)
 
     flash("Your profile has been successfully verified!", "success")
-    return render_template("employers/employer_verification_success.html")
+
+
+    return render_template("employers/employer_verification_success.html", **context)
 
 
 
