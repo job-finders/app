@@ -47,6 +47,7 @@ class CompanyORM(Base):
 
     # Relationships
     jobs = relationship("JobsORM", back_populates="company", lazy="dynamic")
+    employers = relationship("EmployerORM", lazy="dynamic")
     is_verified = Column(Boolean, default=False)
 
     @classmethod
@@ -123,7 +124,6 @@ class CompanyVerificationDocumentORM(Base):
             "notes": self.notes
         }
 
-
 class CompanyCIPCORM(Base):
     """
         Companies with this Information will be indicated by a Blue Tick - Verified Companies
@@ -159,7 +159,6 @@ class CompanyCIPCORM(Base):
             "bee_status": self.bee_status,
             "is_verified": self.is_verified
         }
-
 # Add new ORM model for tracking followed companies
 class CompanyFollowingORM(Base):
     __tablename__ = 'company_following'
@@ -388,7 +387,6 @@ class JobsORM(Base):
             "slug": self.generate_slug()
         }
 
-
 class JobVersionHistoryORM(Base):
     __tablename__ = 'job_version_history'
     id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -427,7 +425,6 @@ class SavedJobORM(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
 
-
 class JobApplicationORM(Base):
     __tablename__ = 'job_applications'
 
@@ -438,7 +435,6 @@ class JobApplicationORM(Base):
 
     # Relationship to Job
     job = relationship("JobsORM", back_populates="applications")  # New relationship
-    approval_requests = relationship("JobApprovalRequestORM", back_populates="job")
 
     # Rest of the existing columns...
     applied_date = Column(DateTime, default=datetime.now(timezone.utc))
@@ -498,8 +494,6 @@ class JobApplicationORM(Base):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-
-
 class ATSReportORM(Base):
     __tablename__ = "ats_reports"
 
@@ -535,7 +529,7 @@ class ATSReportORM(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
-class   JobApprovalRequestORM(Base):
+class JobApprovalRequestORM(Base):
     """
     SQLAlchemy ORM model representing job approval requests submitted by companies.
 
@@ -585,7 +579,7 @@ class   JobApprovalRequestORM(Base):
     decision_by = Column(String(36), ForeignKey('users.user_id'))
     feedback = Column(Text)
 
-    job = relationship("JobsORM", back_populates="approval_requests")
+    job = relationship("JobsORM", back_populates="approval_request")
 
     @classmethod
     def create_if_not_table(cls):
@@ -612,7 +606,6 @@ class   JobApprovalRequestORM(Base):
             "feedback": self.feedback,
         }
 
-
 class ApplicationDashboardORM(Base):
     """Cached dashboard data for quick access"""
     __tablename__ = "application_dashboards"
@@ -623,7 +616,6 @@ class ApplicationDashboardORM(Base):
     data = Column(JSON)
     metrics = Column(JSON)
 
-
 class TalentPoolReportORM(Base):
     """Historical talent pool reports"""
     __tablename__ = "talent_pool_reports"
@@ -633,7 +625,6 @@ class TalentPoolReportORM(Base):
     generated_at = Column(DateTime)
     report_data = Column(JSON)
     insights = Column(JSON)
-
 
 class ImportJobBatchORM(Base):
     """Track bulk import operations"""

@@ -3,8 +3,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 class MySQLSettings(BaseSettings):
-    PRODUCTION_DB: str = Field(..., alias="production_sql_db")
-    DEVELOPMENT_DB: str = Field(..., alias="dev_sql_db")
+    PRODUCTION_DB: str = Field(..., alias="PRODUCTION_SQL_DB")
+    DEVELOPMENT_DB: str = Field(..., alias="DEV_SQL_DB")
 
     model_config = SettingsConfigDict(
         env_file=".env.developer",

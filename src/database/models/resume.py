@@ -88,7 +88,7 @@ class SavedCV(BaseModel):
     notes: Optional[str] = Field(default=None)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class JobSeekerCV(BaseModel):

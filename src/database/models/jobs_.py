@@ -123,7 +123,7 @@ class JobApplication(BaseModel):
     ats_score: float = Field(default=0)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ATSReport(BaseModel):

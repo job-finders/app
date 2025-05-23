@@ -45,7 +45,7 @@ class Company(BaseModel):
     is_verified: Optional[bool] = Field(default=False)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_encoders = {
             datetime: lambda v: v.isoformat(),
         }
@@ -104,7 +104,7 @@ class CompanyVerificationDocument(BaseModel):
     uploaded_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 
@@ -350,7 +350,7 @@ class JobApplication(BaseModel):
     review_summary: Optional[str] = Field(default=None)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_encoders = {
             datetime: lambda v: v.isoformat(),
             date: lambda v: v.isoformat()
