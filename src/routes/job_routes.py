@@ -1,9 +1,8 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for
 
-from authentication import login_required, admin_login
-from routes.utils import gone
-from src.authentication import user_details
+from src.routes.utils import gone
+from src.authentication import user_details, login_required, admin_login
 from src.routes import flask_error_handler
 from src.main import jobs_controller
 from src.database.models.users import User

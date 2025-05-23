@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, abort
 from pydantic import BaseModel, ValidationError
 from typing import List, Optional
 from datetime import datetime
+
 from src.database.models import Job, SEO
 from src.logger import init_logger
 from src.main import scrapper
