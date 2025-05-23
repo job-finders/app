@@ -226,13 +226,13 @@ async def ats_score_api(user: User):
 @login_required
 async def ats_score_api_json(user: User):
     """
-    Identical to `/api/ats-score`. Returns structured ATS score from resume and job description.
+        Identical to `/api/ats-score`. Returns structured ATS score from resume and job description.
 
-    Intended for JSON-consuming clients.
+        Intended for JSON-consuming clients.
 
-    Example usage:
-        POST /api/ats-score-json
-        FormData: { resume: <file>, job_description: <text> }
+        Example usage:
+            POST /api/ats-score-json
+            FormData: { resume: <file>, job_description: <text> }
     """
     uploaded_file = request.files.get("resume")
     job_desc = request.form.get("job_description")
