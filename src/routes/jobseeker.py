@@ -9,6 +9,12 @@ from src.routes import flask_error_handler
 
 jobseeker_route = Blueprint('jobseekers', __name__,  url_prefix="/jobseeker")
 
+@jobseeker_route.route("/ai/cv/optimize", methods=["POST"])
+@login_required
+async def optimize_cv(user: User):
+    cv_data = await get_user_cv(user.uid)
+    response = await agent_controller.cv_optimizer(cv=cv_data, user_uid=user.uid)
+    return jsonify(response.dict())
 
 
 @jobseeker_route.route('/dashboard', methods=['GET'])
