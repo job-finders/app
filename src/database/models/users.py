@@ -59,6 +59,7 @@ class User(BaseModel):
     def is_authenticated(self):
         return self.is_active
 
+    # noinspection PyMethodParameters
     @field_validator('name')
     def name_must_be_valid(cls, v):
         if not v.strip():
@@ -80,10 +81,11 @@ class User(BaseModel):
         return encryptor.compare_hashes(hash=self.password_hash, password=password)
 
     @classmethod
-    def create(cls, name: str, email: EmailStr, password: str, role: str) -> "User":
+    def create(cls, name: str, email: str, password: str, role: str) -> "User":
         """
         Create a new User instance with a hashed password.
         """
         hashed = encryptor.create_hash(password)
+        # noinspection PyTypeChecker
         return cls(name=name, email=email, password_hash=hashed, role=role)
 

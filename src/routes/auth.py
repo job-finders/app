@@ -1,8 +1,5 @@
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Response, make_response
-from pydantic.v1 import EmailStr
-
 from src.logger import init_logger
 from src.authentication import login_required, user_details
 from src.database.models.users import User
@@ -36,7 +33,7 @@ async def login(user: User):
         thirty_minutes = 30
         thirty_days = 30 * 24 * 60  # 30 days × 24 hours × 60 minutes
 
-        REMEMBER_ME_DELAY = thirty_days if remember_me else thirty_minutes
+        remember_me_delay = thirty_days if remember_me else thirty_minutes
 
         user = await users_controller.login_user(email=email, password=password)
         if not user:
@@ -45,7 +42,7 @@ async def login(user: User):
 
         response = await create_response(url_for('home.get_home'))
 
-        expiration = datetime.utcnow() + timedelta(minutes=REMEMBER_ME_DELAY)
+        expiration = datetime.utcnow() + timedelta(minutes=remember_me_delay)
 
         response.set_cookie('auth', value=user.uid, expires=expiration, httponly=True)
 
@@ -95,7 +92,7 @@ async def subscribe():
         return redirect(request.referrer or url_for("home.get_home"))
 
     # Create and store the user
-    email = EmailStr(email)
+
     user_data = User.create(
         name='John Doe',
         email=email,
@@ -107,7 +104,7 @@ async def subscribe():
     auth_logger.info(f"User: {user}")
     # Automatically log the user in
     response = make_response(redirect(url_for("home.get_home")))
-    expiration = datetime.utcnow() + timedelta(minutes=30)
+    expiration = datetime.now(timezone.utc) + timedelta(minutes=30)
 
     response.set_cookie("auth", value=user.uid, expires=expiration, httponly=True)
 
