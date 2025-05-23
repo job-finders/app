@@ -20,7 +20,7 @@ async def get_user_details(uid: str) -> User:
     with Session() as session:
         # Perform the query to retrieve the user based on the uid
         user = session.query(UserORM).filter(UserORM.uid == uid).first()
-        auth_logger.info(f"Is the Authericator able to get user details : {user.to_dict()}")
+        auth_logger.info(f"Is the Authenticator able to get user details : {user.to_dict()}")
         return User(**user.to_dict()) if user else None
 
 
