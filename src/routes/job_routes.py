@@ -7,7 +7,6 @@ from src.routes import flask_error_handler
 from src.main import jobs_controller
 from src.database.models.users import User
 
-
 # Blueprint definition
 jobs_route = Blueprint('jobs', __name__, url_prefix='/jobs')
 

@@ -35,8 +35,6 @@ async def jobs_by_location(user: User,location: str):
         if job.location and province.lower() in job.location.lower()
     ]
 
-
-
     if not jobs_filtered:
         return await not_found(location)
 
