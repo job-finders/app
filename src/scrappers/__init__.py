@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from requests_cache import CachedSession
 
 from src.cache import cached
-from src.database.models.jobs import Job
+from src.database.models.jobs_model import Job
 from src.logger import init_logger
 from src.utils import format_reference
 from src.main import jobs_controller

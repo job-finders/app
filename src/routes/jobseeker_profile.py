@@ -210,7 +210,6 @@ async def list_profiles_by_role(user: User, role: str):
 @jobseeker_profiles_bp.route('/activity/metrics')
 @login_required
 async def get_activity_metrics(user: User):
-    controller = UserEngagementController()
     return await controller.track_job_search_activity(user.user_id)
 
 

@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from database.constants import ID_LEN, NAME_LEN
+from src.database.constants import ID_LEN, NAME_LEN
 from src.database.sql import Base  # Assuming your Base declarative is here
 
 

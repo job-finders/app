@@ -2,11 +2,9 @@ import asyncio
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from pydantic import ValidationError
-
-from src.database.models.jobs import ATSReport
 from src.database.models.resume import JobSeekerCV
 from src.logger import init_logger
-from src.database.models.jobs import JobApplication, Job
+from src.database.models.jobs_model import JobApplication, Job, ATSReport
 from src.routes import flask_error_handler
 from src.main import resume_controller, ats_controller, jobs_controller
 from src.database.models.users import User

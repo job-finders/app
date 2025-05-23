@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from flask import Flask, flash
 
+from src.emailer import EmailModel
 from src.controllers.controller import error_handler
 from src.database.models.users import User
 from src.database.sql.users import UserORM
@@ -179,7 +180,7 @@ class UsersController(Controllers):
             users_orm_list = session.query(UserORM).filter_by(role=role).all()
             return [User(**user.to_dict()) for user in users_orm_list]
 
-    async def send_reset_link(self, email: EnailModel):
+    async def send_reset_link(self, email: EmailModel):
 
         """
 

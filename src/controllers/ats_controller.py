@@ -13,7 +13,7 @@ from flask import Request, Flask
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
 from src.controllers.controller import Controllers, error_handler
-from src.database.models.jobs import Job, ATSReport
+from src.database.models.jobs_model import Job, ATSReport
 from src.database.sql.config import ConfigurationORM
 from src.database.models.resume import JobSeekerCV
 from src.controllers.resume_controller import ResumeController

@@ -357,12 +357,7 @@ class SavedCVORM(Base):
     notes = Column(Text)
 
     __table_args__ = (
-        UniqueConstraint("employer_uid", "cv_id", name="uq_employer_cv"),
-    )
-
-    # ... rest of the class remains the same
-    __table_args__ = (
-        UniqueConstraint("employer_uid", "cv_id", name="uq_employer_cv"),
+        UniqueConstraint("employer_id", "cv_id", name="uq_employer_cv"),
     )
 
     def __bool__(self):

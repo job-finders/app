@@ -5,7 +5,7 @@ from typing import Optional, List, Dict
 from flask import Flask, render_template, url_for
 from sqlalchemy.orm import Session, joinedload
 
-from emailer import EmailModel
+from src.emailer import EmailModel
 from src.database.models.users import User
 from src.database.sql.users import UserORM
 from src.main import send_mail

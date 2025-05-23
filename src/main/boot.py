@@ -2,7 +2,7 @@ import time
 
 def boot():
     # Import ORM classes for jobs, users, and resumes
-    from src.database.sql.jobs import JobsORM, SavedJobORM,  JobApplicationORM
+    from src.database.sql.jobs_sql import JobsORM, SavedJobORM,  JobApplicationORM
     from src.database.sql.users import UserORM
     from src.database.sql.resume import (JobSeekerCVORM, ExperienceORM, EducationORM, CertificationORM, LanguageORM,
                                          ProjectORM, PublicationORM, AwardORM, CustomSectionORM, SavedCVORM)

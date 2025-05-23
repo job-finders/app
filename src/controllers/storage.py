@@ -1,7 +1,7 @@
 from flask import Flask
 
-from src.database.models import Job
-from src.database.sql.jobs import JobsORM
+from src.database.models.jobs_model import Job
+from src.database.sql.jobs_sql import JobsORM
 from src.controllers.controller import Controllers
 
 

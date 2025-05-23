@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect, Integer
 from sqlalchemy.dialects.postgresql import ARRAY
 
-from database.constants import ID_LEN, NAME_LEN
+from src.database.constants import ID_LEN, NAME_LEN
 from src.database.sql import Base, engine  # Assuming this is your declarative base
 
 
@@ -13,7 +13,7 @@ class JobSeekerProfileORM(Base):
 
     user_uid = Column(String(ID_LEN), ForeignKey("users.uid"), primary_key=True)
 
-    email : str = Column(String(NAME_LEN), indexed=True)
+    email : str = Column(String(NAME_LEN), index=True)
     # Job Seeker need to enable Job Alerts in order to get alerts based on their preferences
     alerts_enabled: bool = Column(Boolean, default=False)
 

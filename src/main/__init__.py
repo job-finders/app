@@ -57,6 +57,7 @@ def create_app(config):
     app.config['SECRET_KEY'] = config.SECRET_KEY
     app.config['BASE_URL'] = "https://jobfinders.site"
 
+
     with app.app_context():
         # initialization
         # storage_controller.init_app(app=app)

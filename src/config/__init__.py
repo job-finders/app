@@ -2,7 +2,6 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
-# updated for version 2 pydantic
 class MySQLSettings(BaseSettings):
     PRODUCTION_DB: str = Field(..., alias="production_sql_db")
     DEVELOPMENT_DB: str = Field(..., alias="dev_sql_db")
@@ -16,7 +15,7 @@ class MySQLSettings(BaseSettings):
 
 class ResendSettings(BaseSettings):
     API_KEY: str = Field(..., alias="RESEND_API_KEY")
-    from_: str = "norespond@jobfinders.site"
+    from_: str = Field("norespond@jobfinders.site", alias="RESEND_FROM_EMAIL")
 
     model_config = SettingsConfigDict(
         env_file=".env.developer",
@@ -34,8 +33,16 @@ class EmailSettings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+
+
 class RedisSettings(BaseSettings):
-    REDIS_URL:str = Field(...,alias='REDIS_URL')
+    REDIS_URL: str = Field(..., alias="REDIS_URL")
+
+    model_config = SettingsConfigDict(
+        env_file=".env.developer",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 
 class Settings(BaseSettings):
@@ -47,7 +54,7 @@ class Settings(BaseSettings):
     HOST_ADDRESSES: str
     MYSQL_SETTINGS: MySQLSettings = Field(default_factory=MySQLSettings)
     EMAIL_SETTINGS: EmailSettings = Field(default_factory=EmailSettings)
-    REDIS : RedisSettings = Field(default_factory=RedisSettings)
+    REDIS: RedisSettings = Field(default_factory=RedisSettings)
     ACTIVITY_RETENTION_DAYS: int = 180
     ACTIVITY_CACHE_TTL: int = 3600  # 1 hour
 

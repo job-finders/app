@@ -1,7 +1,7 @@
 from flask import Blueprint, request, render_template
 
-from authentication import login_required
-from database.models.users import User
+from src.authentication import login_required
+from src.database.models.users import User
 from src.logger import init_logger
 from src.main import ats_controller  # Assuming ats_controller is an instance of ATSToolController
 

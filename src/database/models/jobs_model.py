@@ -1,7 +1,8 @@
+import re
 import uuid
 from datetime import date, timezone
-from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict
-from typing import Optional
+from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict, HttpUrl, EmailStr
+from typing import Optional, Any
 from datetime import datetime
 from enum import Enum
 
@@ -33,14 +34,14 @@ class Company(BaseModel):
     # Company Details
     employee_count: Optional[int] = Field(default=None, ge=1)
     founded_year: Optional[int] = Field(default=None, ge=1800, le=datetime.now().year)
-    tech_stack: Optional[List[str]] = Field(default=None)
+    tech_stack: Optional[list[str]] = Field(default=None)
 
     # Social Media
     linkedin_url: Optional[HttpUrl] = Field(default=None)
     twitter_handle: Optional[str] = Field(default=None, max_length=15)
 
     # Relationships
-    jobs: Optional[List['Job']] = None  # Forward reference
+    jobs: Optional[list['Job']] = None  # Forward reference
     is_verified: Optional[bool] = Field(default=False)
 
     class Config:
@@ -171,7 +172,7 @@ class JobVersionHistory(BaseModel):
     id: str
     job_id: str
     version: int
-    changes: dict[str, any]  # JSON diff between versions
+    changes: dict[str,Any]  # JSON diff between versions
     modified_by: str
     modified_at: datetime
 
@@ -222,7 +223,7 @@ class Job(BaseModel):
     # Requirements
     experience_level: str = Field(pattern="ENTRY|MID|SENIOR")
     education_requirements: Optional[dict] = None
-    required_skills: List[str] = Field(default_factory=list)
+    required_skills: list[str] = Field(default_factory=list)
     preferred_skills: list[str] = Field(default_factory=list)
     required_documents: list[str] = Field(default_factory=list)
     required_questionnaire: list[str]
@@ -293,7 +294,6 @@ class Job(BaseModel):
         return v
 
     model_config = ConfigDict(
-        orm_mode=True,
         populate_by_name=True,
         str_strip_whitespace=True,
         json_encoders={datetime: lambda v: v.isoformat()}

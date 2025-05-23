@@ -10,6 +10,8 @@ from requests import RequestException
 from sqlalchemy import or_, select, func, and_, case
 from sqlalchemy.orm import joinedload
 from Levenshtein import ratio as levenstein_ratio
+
+from src.database.models.employer_models import Employer
 from src.controllers.controller import Controllers
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.models.resume import JobSeekerCV
