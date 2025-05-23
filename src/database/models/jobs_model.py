@@ -105,7 +105,9 @@ class CompanyVerificationDocument(BaseModel):
 
     class Config:
         from_attributes = True
-
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
 
 
 class JobApprovalStatusEnum(Enum):
@@ -166,6 +168,11 @@ class JobApprovalRequest(BaseModel):
             return "Approval request expired"
         else:
             return "Awaiting approval"
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
 
 
 class JobVersionHistory(BaseModel):
@@ -175,6 +182,12 @@ class JobVersionHistory(BaseModel):
     changes: dict[str,Any]  # JSON diff between versions
     modified_by: str
     modified_at: datetime
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
 
 class JobStatusEnum(str, Enum):
     DRAFT = "draft"
@@ -307,6 +320,9 @@ class SavedJob(BaseModel):
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
 
 
 
@@ -366,6 +382,11 @@ class ATSReport(BaseModel):
     feedback: str = Field(..., description="Feedback based on the ATS evaluation")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp when the report was generated")
 
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
 
 
 # Pydantic Models

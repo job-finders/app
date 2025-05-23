@@ -16,6 +16,12 @@ class Roles(BaseModel):
     permissions: List[str] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
+
     @field_validator('id')
     def format_id(cls, v):
         return format_reference("role") if v is None else v
@@ -89,3 +95,8 @@ class User(BaseModel):
         # noinspection PyTypeChecker
         return cls(name=name, email=email, password_hash=hashed, role=role)
 
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }

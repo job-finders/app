@@ -9,6 +9,9 @@ class PlanType(str, Enum):
     PREMIUM = "premium"
     EMPLOYER = "employer"
 
+    class Config:
+        from_attributes = True
+
 
 class SubscriptionPlan(BaseModel):
     id: str
@@ -51,8 +54,9 @@ class PaymentTransaction(BaseModel):
     reference: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-    model_config = {
-        "from_attributes": True
-    }
-
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
 

@@ -13,6 +13,8 @@ class SEO(BaseModel):
     twitter_title: str | None = None
     twitter_description: str | None = None
 
+    class Config:
+        from_attributes = True
 
 async def create_tags(search_term: str) -> SEO:
     """

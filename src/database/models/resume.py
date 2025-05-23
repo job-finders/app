@@ -13,6 +13,12 @@ class Experience(BaseModel):
     location: Optional[str] = None
     description: Optional[str] = None
 
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            date: lambda v: v.isoformat(),
+        }
+
     @validator('job_title', 'company')
     def not_empty(cls, v):
         if not v.strip():
@@ -29,6 +35,12 @@ class Education(BaseModel):
     end_date: Optional[date] = None
     description: Optional[str] = None
 
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            date: lambda v: v.isoformat(),
+        }
+
     @validator('institution', 'qualification', 'field_of_study')
     def not_empty(cls, v):
         if not v.strip():
@@ -44,11 +56,19 @@ class Certification(BaseModel):
     expiry_date: Optional[date] = None
     credential_url: Optional[HttpUrl] = None
 
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            date: lambda v: v.isoformat(),
+        }
 
 # Language
 class Language(BaseModel):
     name: str
     proficiency: str  # e.g., Beginner, Intermediate, Fluent, Native
+
+    class Config:
+        from_attributes = True
 
 
 # Publication (for academics)
@@ -58,6 +78,11 @@ class Publication(BaseModel):
     date: Optional[date]
     link: Optional[HttpUrl]
 
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            date: lambda v: v.isoformat(),
+        }
 
 # Project (for technical/creative fields)
 class Project(BaseModel):
@@ -66,6 +91,8 @@ class Project(BaseModel):
     technologies: Optional[List[str]] = []
     link: Optional[HttpUrl] = None
 
+    class Config:
+        from_attributes = True
 
 # Award or Honor
 class Award(BaseModel):
@@ -74,11 +101,23 @@ class Award(BaseModel):
     date: Optional[date]
     description: Optional[str] = None
 
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            date: lambda v: v.isoformat(),
+        }
 
 # Custom Section for extra content
 class CustomSection(BaseModel):
     title: str
     content: Union[str, List[str]]  # Supports plain text or bullet lists
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
+
 
 class SavedCV(BaseModel):
     save_id: str = Field(default_factory= lambda : str(uuid.uuid4()))
@@ -89,6 +128,9 @@ class SavedCV(BaseModel):
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
 
 
 class JobSeekerCV(BaseModel):
