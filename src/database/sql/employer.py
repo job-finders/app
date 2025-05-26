@@ -12,10 +12,10 @@ from src.database.sql import Base  # Assuming your Base declarative is here
 class EmployerORM(Base):
     __tablename__ = "employers"
 
-    employer_id = Column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()),
+    employer_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()),
                          unique=True, index=True)
     user_uid = Column(String(ID_LEN), nullable=False, unique=True, index=True)
-    company_id = Column(UUID(as_uuid=False), ForeignKey('companies.company_id'), nullable=False, index=True)
+    company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), nullable=False, index=True)
     is_verified = Column(Boolean, default=False)
     verification_token = Column(String(NAME_LEN), nullable=True)
     verification_token_expires_at = Column(DateTime(timezone=True), nullable=True)

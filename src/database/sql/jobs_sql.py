@@ -92,14 +92,14 @@ class CompanyVerificationDocumentORM(Base):
     __tablename__ = "company_verification_documents"
 
     document_id = Column(String(ID_LEN), primary_key=True, index=True)
-    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.company_id"), nullable=False)
-    document_type = Column(String, nullable=False)  # e.g. "CIPC_CERT", "TAX_CLEARANCE", "BEE_CERT"
-    file_url = Column(String, nullable=False)
+    company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"), nullable=False)
+    document_type = Column(String(36), nullable=False)  # e.g. "CIPC_CERT", "TAX_CLEARANCE", "BEE_CERT"
+    file_url = Column(String(255), nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
-    status = Column(String, default="pending")  # pending, approved, rejected
-    reviewed_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    status = Column(String(36), default="pending")  # pending, approved, rejected
+    reviewed_by = Column(String(ID_LEN), ForeignKey("users.uid"), nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
-    notes = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
 
     @classmethod
     def create_if_not_table(cls):
@@ -133,10 +133,10 @@ class CompanyCIPCORM(Base):
 
     cipc_id = Column(String(ID_LEN), primary_key=True, index=True)
     company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), index=True)
-    name = Column(String, nullable=False)
-    registration_number = Column(String, nullable=True)
-    tax_pin = Column(String, nullable=True)
-    bee_status = Column(String, nullable=True)
+    name = Column(String(NAME_LEN), nullable=False)
+    registration_number = Column(String(36), nullable=True)
+    tax_pin = Column(String(36), nullable=True)
+    bee_status = Column(String(36), nullable=True)
     is_verified = Column(Boolean, default=False)
 
     @classmethod
@@ -163,7 +163,7 @@ class CompanyCIPCORM(Base):
 class CompanyFollowingORM(Base):
     __tablename__ = 'company_following'
     follow_id = Column(String(ID_LEN), primary_key=True, index=True)
-    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_id'), primary_key=True)
+    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_uid'), primary_key=True)
     company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), primary_key=True)
     followed_at = Column(DateTime, default=datetime.utcnow)
     last_notified_at = Column(DateTime)
@@ -257,7 +257,7 @@ class JobsORM(Base):
     external_source = Column(String(NAME_LEN))  # e.g., "LinkedIn", "CompanyWebsite"
 
     # Company Relationships
-    employer_id= Column(String(ID_LEN), ForeignKey('employer_details.employer_id'), index=True)
+    employer_id= Column(String(ID_LEN), ForeignKey('employers.employer_id'), index=True)
     company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), index=True)
     company = relationship("CompanyORM", back_populates="jobs")
     approval_request = relationship("JobApprovalRequestORM", uselist=False, back_populates="job")
@@ -393,7 +393,7 @@ class JobVersionHistoryORM(Base):
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)
     version = Column(Integer)
     changes = Column(JSON)  # Stores diff between versions
-    modified_by = Column(String(ID_LEN), ForeignKey('users.user_id'))
+    modified_by = Column(String(ID_LEN), ForeignKey('users.uid'))
     modified_at = Column(DateTime, default=datetime.utcnow)
 
 class SavedJobORM(Base):
@@ -450,7 +450,7 @@ class JobApplicationORM(Base):
     preferred_location = Column(String(255), nullable=True)
 
     required_documents = Column(JSON, default=[])  # ["CV", "ID Copy", "Certificates"]
-    questionnaire_answers = Column(JSON)  # {"questions": ["Why this role?", "Availability dat
+    questionnaire_answers = Column(JSON, default=[])  # {"questions": ["Why this role?", "Availability dat
     # See Job Application Stage Enum - the Default Stage is Applied
     last_application_stage = Column(String(50), nullable=True)
     application_stage = Column(String(50))
@@ -497,13 +497,13 @@ class JobApplicationORM(Base):
 class ATSReportORM(Base):
     __tablename__ = "ats_reports"
 
-    ats_report_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    job_id = Column(String, nullable=False)
-    cv_id = Column(String, nullable=False)
+    ats_report_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id = Column(String(ID_LEN), nullable=False)
+    cv_id = Column(String(ID_LEN), nullable=False)
     score = Column(Integer, nullable=False)
     matched_keywords = Column(JSON, nullable=False, default=list)
     missing_keywords = Column(JSON, nullable=False, default=list)
-    feedback = Column(String, nullable=False)
+    feedback = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
@@ -567,16 +567,16 @@ class JobApprovalRequestORM(Base):
 
     __tablename__ = 'job_approval_requests'
 
-    request_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    job_id = Column(String(36), ForeignKey('jobs.job_id'), unique=True)
+    request_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), unique=True)
     token = Column(String(36), unique=True, index=True)
     token_expires = Column(DateTime)
     requested_at = Column(DateTime, default=datetime.now(timezone.utc))
-    requested_by = Column(String(36), ForeignKey('companies.company_id'))
-    approvers = Column(ARRAY(String))  # List of user IDs
+    requested_by = Column(String(ID_LEN), ForeignKey('companies.company_id'))
+    approvers = Column(JSON, default=[])  # List of user IDs
     status = Column(String(20), default=JobApprovalStatusEnum.PENDING.value)  # pending/approved/rejected/expired
     decision_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
-    decision_by = Column(String(36), ForeignKey('users.user_id'))
+    decision_by = Column(String(ID_LEN), ForeignKey('users.uid'))
     feedback = Column(Text)
 
     job = relationship("JobsORM", back_populates="approval_request")

@@ -1,7 +1,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect, Integer
+from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect, Integer, JSON
 from sqlalchemy.dialects.postgresql import ARRAY
 
 from src.database.constants import ID_LEN, NAME_LEN
@@ -9,7 +9,7 @@ from src.database.sql import Base, engine  # Assuming this is your declarative b
 
 
 class JobSeekerProfileORM(Base):
-    __tablename__ = "job_seeker_profiles"
+    __tablename__ = "jobseeker_profiles"
 
     user_uid = Column(String(ID_LEN), ForeignKey("users.uid"), primary_key=True)
 
@@ -29,7 +29,7 @@ class JobSeekerProfileORM(Base):
     has_disability = Column(Boolean, default=False)
     # Basic info
     bio = Column(Text, nullable=True)
-    profile_image_url = Column(String, nullable=True)
+    profile_image_url = Column(String(NAME_LEN), nullable=True)
     location = Column(String(NAME_LEN), nullable=True)
     phone = Column(String(36), nullable=True)
     website = Column(String(NAME_LEN), nullable=True)
@@ -37,9 +37,9 @@ class JobSeekerProfileORM(Base):
     github = Column(String(NAME_LEN), nullable=True)
 
     # Job preferences
-    job_titles_of_interest = Column(ARRAY(String), default=[])
-    industries_of_interest = Column(ARRAY(String), default=[])
-    locations_of_interest = Column(ARRAY(String), default=[])
+    job_titles_of_interest = Column(JSON, default=[])
+    industries_of_interest = Column(JSON, default=[])
+    locations_of_interest = Column(JSON, default=[])
     remote_preference = Column(Boolean, default=False)
     availability = Column(String(NAME_LEN), nullable=True)
     expected_salary = Column(Integer, nullable=True)

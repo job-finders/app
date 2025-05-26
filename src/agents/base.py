@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Type
 from pydantic import BaseModel
 from src.agents.openrouter_client import call_openrouter
-from src.agents.memory.local_memory import AgentMemoryStore
 
 class BaseAgent(ABC):
     def __init__(self, user_id: str):
