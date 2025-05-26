@@ -1,26 +1,59 @@
-# /controllers/blog_feedback_controller.py
-from flask import Blueprint, request, redirect, url_for, render_template
-from src.database.models.blog_insight_models import BlogFeedback
-from src.services.image_selector import get_suggested_images
+from datetime import datetime
 
-blog_feedback_bp = Blueprint('blog_feedback', __name__)
+from src.controllers.controller import Controllers, error_handler
+from src.logger import init_logger
+from src.database.sql.blog_learning import BlogFeedback, BlogPrompt
+from src.database.models.feedback_analysis import BlogFeedbackInput, BlogFeedbackOutput
 
-@blog_feedback_bp.route("/blog-dashboard", methods=["GET"])
-def dashboard():
-    images = get_suggested_images()
-    return render_template("blog_dashboard/index.html", suggested_images=images)
 
-@blog_feedback_bp.route("/blog-feedback", methods=["POST"])
-def submit_feedback():
-    article_id = request.form["article_id"]
-    feedback_score = int(request.form["feedback_score"])
-    comments = request.form.get("comments")
+class BlogFeedbackController(Controllers):
+    def __init__(self):
+        super().__init__()
+        self.logger = init_logger("BlogFeedbackController")
 
-    feedback = BlogFeedback(
-        article_id=article_id,
-        feedback_score=feedback_score,
-        comments=comments
-    )
-    db_session.add(feedback)
-    db_session.commit()
-    return redirect(url_for("blog_feedback.dashboard"))
+    @staticmethod
+    def calculate_feedback_score(views: int, likes: int, comments: int) -> float:
+        if views == 0:
+            return 0.0
+        return round((likes * 2 + comments * 3) / views, 4)
+
+    @error_handler
+    async def submit_feedback(self, feedback_in: BlogFeedbackInput) -> BlogFeedbackOutput:
+        with self.get_session() as session:
+            feedback = session.query(BlogFeedback).filter(
+                BlogFeedback.prompt_id == feedback_in.prompt_id
+            ).first()
+
+            if feedback is None:
+                feedback = BlogFeedback(
+                    prompt_id=feedback_in.prompt_id,
+                    views=feedback_in.views,
+                    likes=feedback_in.likes,
+                    comments=feedback_in.comments,
+                    submitted_at=datetime.utcnow()
+                )
+                session.add(feedback)
+            else:
+                feedback.views = feedback_in.views
+                feedback.likes = feedback_in.likes
+                feedback.comments = feedback_in.comments
+                feedback.submitted_at = datetime.utcnow()
+
+            feedback.feedback_score = self.calculate_feedback_score(
+                feedback.views, feedback.likes, feedback.comments
+            )
+
+            prompt = session.query(BlogPrompt).filter(BlogPrompt.id == feedback_in.prompt_id).first()
+            if prompt:
+                prompt.feedback_score = feedback.feedback_score
+
+            session.commit()
+
+            return BlogFeedbackOutput(
+                prompt_id=feedback.prompt_id,
+                feedback_score=feedback.feedback_score,
+                views=feedback.views,
+                likes=feedback.likes,
+                comments=feedback.comments,
+                submitted_at=feedback.submitted_at.isoformat()
+            )

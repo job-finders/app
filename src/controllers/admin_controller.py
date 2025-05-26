@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Optional
 
 from flask import Flask
-from sqlalchemy import func, case, or_
+from sqlalchemy import func, case, or_, text
 
 from src.database.sql.analytics import UserSearchActivityORM
 from src.database.sql.users import UserORM

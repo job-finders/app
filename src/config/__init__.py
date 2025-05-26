@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     CLIENT_SECRET: str
     IS_DEVELOPMENT_SERVER: bool = Field(..., alias="IS_DEVELOPMENT_SERVER")
     HOST_ADDRESSES: str
+    HASHNODE_TOKEN: str = Field(..., alias='HASHNODE_TOKEN')
     MYSQL_SETTINGS: MySQLSettings = Field(default_factory=MySQLSettings)
     EMAIL_SETTINGS: EmailSettings = Field(default_factory=EmailSettings)
     REDIS: RedisSettings = Field(default_factory=RedisSettings)

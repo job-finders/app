@@ -1,13 +1,17 @@
 # agents/base.py
 from abc import ABC, abstractmethod
 from typing import Any, Type
+
+from src.config import config_instance
 from pydantic import BaseModel
 from src.agents.openrouter_client import call_openrouter
+
 
 class BaseAgent(ABC):
     def __init__(self, user_id: str):
         self.user_id = user_id
         self.memory = AgentMemoryStore(user_id)
+        self.hashnode_token = config_instance().HASHNODE_TOKEN
 
 
     @abstractmethod

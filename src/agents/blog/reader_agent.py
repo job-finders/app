@@ -18,6 +18,6 @@ class BlogPostReaderAgent(BaseAgent):
           }
         }
         """
-        client = HashnodeClient(token="HASHNODE_API_TOKEN")
+        client = HashnodeClient(token=self.hashnode_token)
         data = await client.query(query)
         return data["data"]["me"]["publication"]["posts"]

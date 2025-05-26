@@ -23,5 +23,5 @@ class BlogPostSubmitterAgent(BaseAgent):
                 "publicationId": "YOUR_PUBLICATION_ID"
             }
         }
-        client = HashnodeClient(token="HASHNODE_API_TOKEN")
+        client = HashnodeClient(token=self.hashnode_token)
         await client.query(mutation, variables=input_data)
