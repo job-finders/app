@@ -1,7 +1,7 @@
 import requests
 from flask import Blueprint, url_for
 
-from src.agents.adaptive_topic_agent import enhance_prompt_strategy
+# from src.agents.adaptive_topic_agent import enhance_prompt_strategy
 from src.routes.seo import get_site_job_links
 from src.logger import init_logger
 
@@ -37,7 +37,7 @@ async def cron_ping_index_now():
     return result
 
 
-@cron_route.route("/_cron/adapt-blog-strategy", methods=["GET"])
-def adapt_blog_strategy():
-    prompts = enhance_prompt_strategy()
-    return {"next_prompts": prompts}
+# @cron_route.route("/_cron/adapt-blog-strategy", methods=["GET"])
+# def adapt_blog_strategy():
+#     prompts = enhance_prompt_strategy()
+#     return {"next_prompts": prompts}

@@ -56,7 +56,7 @@ class User(BaseModel):
     role: str
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_login: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_login: Optional[datetime]  = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     def __bool__(self):
         return bool(self.password_hash)

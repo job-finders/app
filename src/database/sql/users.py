@@ -16,7 +16,7 @@ class UserORM(Base):
     role = Column(String(12), default="seeker")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())  # Auto-set on creation
-    last_login = Column(DateTime, onupdate=func.now())  # Auto-update on modification
+    last_login = Column(DateTime, onupdate=func.now(), nullable=True)  # Auto-update on modification
 
     # Optional: Add an index for faster login time queries
     __table_args__ = (
