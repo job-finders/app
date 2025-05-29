@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError
 
+from database.models.company_models import CompanyVerificationStatus
 from database.models.resume import JobSeekerCV, SavedCV
 from src.authentication import login_required
 from src.database.models.employer_models import Employer

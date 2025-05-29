@@ -61,6 +61,7 @@ class Company(BaseModel):
     jobs: Optional[list['Job']] = None  # Forward reference
     is_verified: Optional[bool] = Field(default=False)
     time_verification_request_sent : Optional[datetime] = Field(default=None)
+    verification_status : str = Field(default=CompanyVerificationStatus.PENDING.value)
 
     class Config:
         from_attributes = True

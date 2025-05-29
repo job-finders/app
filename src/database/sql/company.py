@@ -49,6 +49,7 @@ class CompanyORM(Base):
     employers = relationship("EmployerORM", lazy="dynamic")
     is_verified = Column(Boolean, default=False)
     time_verification_request_sent = Column(DateTime, nullable=True)
+    verification_status = Column(String(16), default="pending")
 
     @classmethod
     def create_if_not_table(cls):
@@ -62,6 +63,13 @@ class CompanyORM(Base):
 
 
     def to_dict(self) -> dict:
+        """
+            time_verification_request_sent = Column(DateTime, nullable=True)
+            verification_status = Column(String(16), default="pending")
+
+        :return:
+        """
+
         return {
             "company_id": self.company_id,
             "name": self.name,
@@ -82,7 +90,9 @@ class CompanyORM(Base):
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "is_verified": self.is_verified,
-            "jobs": [job.to_dict() for job in self.jobs] if hasattr(self, 'jobs') else None
+            "jobs": [job.to_dict() for job in self.jobs] if hasattr(self, 'jobs') else None,
+            "time_verification_request_sent": self.time_verification_request_sent.isoformat(),
+            "verification_status": self.verification_status
         }
 
 class CompanyVerificationDocumentORM(Base):
