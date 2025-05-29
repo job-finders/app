@@ -1,24 +1,25 @@
 import secrets
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict
+from typing import Optional, List
 
 from flask import Flask, render_template, url_for
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import joinedload
 
-
-from src.emailer import EmailModel
-from src.database.models.users import User
-from src.database.sql.users import UserORM
-from src.main import send_mail
-from src.database.models.resume import JobSeekerCV, SavedCV
-from src.controllers.resumes import ResumeController
-from src.controllers.jobs import JobsWorkflowController
-from src.database.models.employer_models import Employer
-from src.database.models.jobs_model import Job, Company, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
-from src.database.sql.employer import EmployerORM
-from src.logger import init_logger
 from src.controllers.controller import Controllers, error_handler
-from src.database.sql.jobs_sql import JobsORM, CompanyORM  # Added based on model convention
+from src.controllers.jobs import JobsWorkflowController
+from src.controllers.resumes import ResumeController
+from src.database.models.company_models import Company
+from src.database.models.employer_models import Employer
+from src.database.models.jobs_model import Job, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
+from src.database.models.resume import JobSeekerCV, SavedCV
+from src.database.models.users import User
+from src.database.sql.company import CompanyORM
+from src.database.sql.employer import EmployerORM
+from src.database.sql.users import UserORM
+from src.emailer import EmailModel
+from src.logger import init_logger
+from src.main import send_mail
+
 
 class CompanyController(Controllers):
     """Handles employer profiles and company-related operations"""

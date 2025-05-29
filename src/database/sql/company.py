@@ -1,12 +1,9 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, Date, Float, Integer, Boolean, ForeignKey, JSON, Index, DateTime, inspect, \
-    ARRAY, UUID, event
-from sqlalchemy.orm import relationship, deferred
-from sqlalchemy.ext.hybrid import hybrid_property
 
+from sqlalchemy import Column, String, Text, Integer, Boolean, ForeignKey, JSON, DateTime, inspect
+from sqlalchemy.orm import relationship
 
-from src.database.models.jobs_model import JobApprovalStatusEnum
 from src.database.constants import ID_LEN, NAME_LEN
 from src.database.sql import Base, engine
 

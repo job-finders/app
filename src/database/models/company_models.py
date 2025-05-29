@@ -1,12 +1,10 @@
 import re
 import uuid
-from datetime import date, timezone
-from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict, HttpUrl, EmailStr
-from typing import Optional, Any
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 
-from sqlalchemy.orm import relationship
+from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr
 
 
 def format_reference(ref: str) -> str:
