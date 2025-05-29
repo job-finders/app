@@ -876,53 +876,66 @@ class JobsController(Controllers):
     @error_handler
     async def get_similar_jobs(self, job_id: str, limit: int = 12) -> List[Job]:
         """
-        Find similar jobs based on the current job's title and category.
-        Uses database queries instead of in-memory cache.
-        
+        Retrieve a list of jobs similar to the given job by analyzing title, category,
+        job description, and required skills. The method uses keyword matching via SQL
+        ILIKE filters and prioritizes jobs in the same category.
+
         Args:
-            job_id: ID of the job to find similar jobs for
-            limit: Maximum number of results to return
-            
+            job_id (str): The ID of the job for which similar jobs are being retrieved.
+            limit (int): The maximum number of similar jobs to return.
+
         Returns:
-            List of similar Job objects
+            List[Job]: A list of Job objects deemed similar to the target job.
         """
         with self.get_session() as session:
-            # Get the target job first
+            # Retrieve the target job
             target_job = session.query(JobsORM).get(job_id)
             if not target_job:
                 return []
-                
-            # Split title into keywords for matching
-            title_keywords = [f"%{word}%" for word in target_job.title.split() if len(word) > 3]
-            
-            # Build OR conditions for title keywords
-            title_conditions = [
-                JobsORM.title.ilike(keyword) 
-                for keyword in title_keywords[:3]  # Use top 3 keywords
+
+            # Extract significant keywords from title, description, and skills
+            def extract_keywords(text: str) -> List[str]:
+                words = re.findall(r"\b\w+\b", text.lower())
+                return [word for word in words if len(word) > 3][:10]  # Limit to top 10 useful words
+
+            title_keywords = extract_keywords(target_job.title)
+            description_keywords = extract_keywords(target_job.description or "")
+            skills_keywords = extract_keywords(" ".join(target_job.skills or []))
+
+            combined_keywords = list(set(title_keywords + description_keywords + skills_keywords))
+
+            # Build ILIKE conditions for keyword matching
+            keyword_conditions = [
+                or_(
+                    JobsORM.title.ilike(f"%{kw}%"),
+                    JobsORM.description.ilike(f"%{kw}%"),
+                    JobsORM.skills.ilike(f"%{kw}%"),
+                )
+                for kw in combined_keywords[:8]  # Limit number of keyword ORs for performance
             ]
-            
-            # Query similar jobs
-            similar_jobs = (
+
+            # Query similar jobs based on category and keyword overlap
+            similar_jobs_query = (
                 session.query(JobsORM)
                 .filter(
-                    JobsORM.job_id != job_id,  # Exclude current job
+                    JobsORM.job_id != job_id,
                     JobsORM.status == JobStatusEnum.ACTIVE.value,
                     or_(
                         JobsORM.category == target_job.category,
-                        *title_conditions
+                        *keyword_conditions
                     )
                 )
                 .order_by(
                     case(
                         (JobsORM.category == target_job.category, 0),
                         else_=1
-                    ),  # Prioritize same category
-                    func.random()  # Then randomize
+                    ),
+                    func.random()
                 )
                 .limit(limit)
-                .all()
             )
-            
+
+            similar_jobs = similar_jobs_query.all()
             return [Job(**job.to_dict()) for job in similar_jobs]
 
 

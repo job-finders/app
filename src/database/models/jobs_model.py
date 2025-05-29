@@ -196,25 +196,33 @@ class JobStatusEnum(str, Enum):
     ARCHIVED = "archived"
     CLOSED = "closed"
 
+def generate_job_ref() -> str:
+    ts = datetime.utcnow().strftime('%Y%m%d%H%M%S')  # e.g., 20250529143000
+    rand = uuid.uuid4().hex[:6].upper()              # e.g., B6FA9C
+    return f"JB-{ts}-{rand}"                         # e.g., JB-20250529143000-B6FA9C
+
 class Job(BaseModel):
     # Core Identification
     job_id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
-    job_ref: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    external_source: Optional[str] = None
+    # This new job reference is only used when job reference is not passed during creation of class so the old reference will still work
+    job_ref: str = Field(default_factory=generate_job_ref)
+
+    slug: Optional[str] = Field(default=None)
+    external_source: Optional[str] = Field(default=None)
 
     # Company Relationships
     employer_id: Optional[str] = Field(default=None, description="The Employee Rep for Company who made the Job Posting")
-    company_id: Optional[str] = None
-    company: Optional[Company] = None
-    approval_request: Optional[JobApprovalRequest] = None
-    version_history: Optional[JobVersionHistory] = None
+    company_id: Optional[str] = Field(default=None)
+    company: Optional[Company] = Field(default=None)
+    approval_request: Optional[JobApprovalRequest] = Field(default=None)
+    version_history: Optional[JobVersionHistory] = Field(default=None)
 
     # Job Details
     title: str = Field(min_length=5, max_length=255)
     description: str
     position_type: str = Field(pattern="FULL_TIME|PART_TIME|CONTRACT")
     remote_policy: str = Field(pattern="ONSITE|HYBRID|REMOTE")
-    category: Optional[str] = None
+    category: Optional[str] = Field(default=None)
 
     # Compensation
     salary_min: Optional[float] = Field(ge=0, default=None)
@@ -231,18 +239,18 @@ class Job(BaseModel):
     # Timeline
     posted_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: datetime
-    application_deadline: Optional[datetime] = None
+    application_deadline: Optional[datetime] = Field(default=None)
 
     # Requirements
     experience_level: str = Field(pattern="ENTRY|MID|SENIOR")
-    education_requirements: Optional[dict] = None
+    education_requirements: Optional[dict] = Field(default=None)
     required_skills: list[str] = Field(default_factory=list)
     preferred_skills: list[str] = Field(default_factory=list)
     required_documents: list[str] = Field(default_factory=list)
     required_questionnaire: list[str]
 
     # Application Process
-    application_url: Optional[str] = None
+    application_url: Optional[str] = Field(default=None)
     application_instructions: str = Field(min_length=10)
 
     # Statistics
@@ -254,8 +262,8 @@ class Job(BaseModel):
     is_featured: Optional[bool] = False
 
     # Audit
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: Optional[datetime] = Field(default=None)
+    updated_at: Optional[datetime] = Field(default=None)
 
     # Computed Properties
     @computed_field
@@ -267,11 +275,6 @@ class Job(BaseModel):
     @property
     def location(self) -> str:
         return f"{self.city}, {self.province}, {self.country}"
-
-    @computed_field
-    @property
-    def slug(self) -> str:
-        return f"{self.title.lower().replace(' ', '-')}-{self.job_ref}"
 
     @computed_field
     @property

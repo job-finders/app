@@ -1,9 +1,12 @@
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import Column, String, Text, Date, Float, Integer, Boolean, ForeignKey, JSON, Index, DateTime, inspect, \
-    ARRAY, UUID
+    ARRAY, UUID, event
 from sqlalchemy.orm import relationship, deferred
 from sqlalchemy.ext.hybrid import hybrid_property
+
+# install pip install python-slugify
+from slugify import slugify
 
 from src.database.models.jobs_model import JobApprovalStatusEnum
 from src.database.constants import ID_LEN, NAME_LEN
@@ -178,6 +181,7 @@ class CompanyFollowingORM(Base):
             cls.__table__.drop(bind=engine)
 
 
+
 class JobsORM(Base):
     """
     JobsORM represents a job posting in the system and contains comprehensive metadata
@@ -254,6 +258,7 @@ class JobsORM(Base):
     # Core Identification
     job_id = Column(String(ID_LEN), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     job_ref = Column(String(NAME_LEN), unique=True, index=True)
+    slug = Column(String(NAME_LEN), unique=True, index=True)
     external_source = Column(String(NAME_LEN))  # e.g., "LinkedIn", "CompanyWebsite"
 
     # Company Relationships
@@ -349,6 +354,7 @@ class JobsORM(Base):
         return {
             "job_id": self.job_id,
             "job_ref": self.job_ref,
+            "slug": self.slug,
             "external_source": self.external_source,
             "company_id": self.company_id,
             "company": self.company.to_dict() if self.company else None,  # assumes CompanyORM has to_dict
@@ -386,6 +392,35 @@ class JobsORM(Base):
             "is_active": self.is_active,
             "slug": self.generate_slug()
         }
+
+
+
+def generate_slug(job):
+    """
+    Generates a slug based on the job title and job_ref.
+    """
+    if job.title and job.job_ref:
+        base_slug = slugify(job.title)
+        return f"{base_slug}-{job.job_ref.lower()}"
+    return None
+
+@event.listens_for(JobsORM, 'before_insert')
+def before_insert_generate_slug(mapper, connection, target):
+    """
+    Automatically generate slug before a job is inserted.
+    """
+    if not target.slug:
+        target.slug = generate_slug(target)
+
+
+@event.listens_for(JobsORM, 'before_update')
+def before_update_generate_slug(mapper, connection, target):
+    """
+    Automatically update slug if title or job_ref changes.
+    """
+    if not target.slug or not target.slug.endswith(target.job_ref.lower()):
+        target.slug = generate_slug(target)
+
 
 class JobVersionHistoryORM(Base):
     __tablename__ = 'job_version_history'
