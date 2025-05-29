@@ -4,8 +4,6 @@
 # from pydantic import ValidationError
 #
 # from src.database.models import Job
-
-
 # async def scrape_careers24(keyword):
 #     base_url = f"https://www.careers24.com/jobs/kw-{keyword}/"
 #     response = requests.get(base_url)

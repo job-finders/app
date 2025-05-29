@@ -9,7 +9,7 @@ from src.authentication import login_required
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
 from src.database.models.users import User
-from src.main import users_controller, jobs_controller
+from src.main import users_controller
 from src.main import company_controller
 from src.logger import init_logger
 
@@ -284,10 +284,10 @@ async def initiate_company_verification(user: User):
     company = await company_controller.get_company_profile(employer.company_id)
 
     # Check current verification status
-    if company.verification_status == CompanyVerificationStatus.VERIFIED:
+    if company.verification_status == CompanyVerificationStatus.VERIFIED.value:
         flash("Company is already verified", "info")
         return redirect(url_for('company.dashboard'))
-    if company.verification_status == CompanyVerificationStatus.PENDING:
+    if company.verification_status == CompanyVerificationStatus.PENDING.value:
         flash("Verification is already in progress", "warning")
         return redirect(url_for('company.verification_status'))
 

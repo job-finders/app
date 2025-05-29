@@ -5,13 +5,14 @@ from typing import Optional, List, Dict
 from flask import Flask, render_template, url_for
 from sqlalchemy.orm import Session, joinedload
 
+
 from src.emailer import EmailModel
 from src.database.models.users import User
 from src.database.sql.users import UserORM
 from src.main import send_mail
 from src.database.models.resume import JobSeekerCV, SavedCV
-from src.controllers.resume_controller import ResumeController
-from src.controllers.jobs import JobsController
+from src.controllers.resumes import ResumeController
+from src.controllers.jobs import JobsWorkflowController
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Job, Company, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
 from src.database.sql.employer import EmployerORM
@@ -25,12 +26,22 @@ class CompanyController(Controllers):
     def __init__(self, jobs_controller=None, resume_controller=None):
         super().__init__()
         self.logger = init_logger("CompanyController")
-        self.jobs_controller: JobsController = jobs_controller  # Injected dependency
+        self.jobs_workflow_controller: JobsWorkflowController = jobs_controller  # Injected dependency
         self.resume_controller: ResumeController = resume_controller
 
 
     def init_app(self, app: Flask):
         super().init_app(app=app)
+
+
+    async def get_all_companies(self) -> list[Company]:
+        """
+        :return:
+        """
+        with self.get_session() as session:
+            company_orm_list = session.query(CompanyORM).all()
+            return [Company(**company_orm.to_dict()) for company_orm in company_orm_list]
+
 
     @error_handler
     async def create_company(self, company_data: Company) -> Company:
@@ -143,7 +154,7 @@ class CompanyController(Controllers):
         """Get hiring metrics using JobsController's analytics engine
         Combines company-specific filtering with core analytics logic
         """
-        return await self.jobs_controller.get_company_analytics_dashboard(company_id=company_id)
+        return await self.jobs_workflow_controller.get_company_analytics_dashboard(company_id=company_id)
 
     @error_handler
     async def generate_talent_pool_report(self, company_id: str) -> TalentPoolReport:
@@ -152,7 +163,7 @@ class CompanyController(Controllers):
         :param company_id:
         :return:
         """
-        return await self.jobs_controller.generate_talent_pool_report(company_id=company_id)
+        return await self.jobs_workflow_controller.generate_talent_pool_report(company_id=company_id)
 
     @error_handler
     async def update_employer_profile(self, employer_id: str, company_data: Company) -> Employer:
@@ -201,7 +212,7 @@ class CompanyController(Controllers):
                 raise ValueError('Your Company Profile is not yet verified (or its incomplete)')
             # TODO - once subscriptions are added please check the status of the subscription here
             # creating job with jobs controller then return the results
-            return await self.jobs_controller.create_job(job=job_data)
+            return await self.jobs_workflow_controller.create_job(job=job_data)
 
     @error_handler
     async def get_saved_candidates(self, user_uid: str) -> list[JobSeekerCV]:

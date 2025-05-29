@@ -12,7 +12,7 @@ from requests_cache import CachedSession
 # Import your models
 from src.database.models.jobs_model import Company, Job, JobStatusEnum
 from src.logger import init_logger
-from src.main import company_controller, jobs_controller
+from src.main import company_controller, jobs_workflow_controller, job_search_controller
 
 
 class ScrapedCompanyDTO:
@@ -80,6 +80,7 @@ class ScrapedJobDTO:
         self.external_source = external_source
 
 
+# noinspection PyBroadException
 class Scraper:
     """
     Base scraper class providing core functionality for web scraping jobs.
@@ -137,13 +138,14 @@ class Scraper:
         self.company_cache.clear()
         
         # Load all jobs from database
-        jobs = await jobs_controller.get_all_jobs()
+        jobs: list[Job] = await job_search_controller.get_all_jobs()
+
         for job in jobs:
             # Cache jobs by reference ID
             self.job_cache[job.job_ref] = job
         
         # Load all companies from database
-        companies = await company_controller.get_all_companies()
+        companies: list[Company] = await company_controller.get_all_companies()
         for company in companies:
             # Cache companies by normalized name
             self.company_cache[company.name.lower()] = company
@@ -213,7 +215,8 @@ class Scraper:
         self.company_cache[cache_key] = created
         return created
 
-    def parse_salary(self, salary_text: str) -> Tuple[Optional[float], Optional[float]]:
+    @staticmethod
+    def parse_salary(salary_text: str) -> Tuple[Optional[float], Optional[float]]:
         """
         Parse salary range from text.
         Handles various formats like "R20,000 - R30,000" or "R50000".
@@ -240,15 +243,16 @@ class Scraper:
         except Exception:
             return None, None
 
-    def parse_location(self, location: str) -> Tuple[str, str, str]:
+    @staticmethod
+    def parse_location(location: str) -> Tuple[str, str, str]:
         """
-        Parse location string into city, province, and country components.
-        Uses simple comma-based splitting with fallbacks.
-        
-        Args:
-            location: Raw location string from source
-            
-        Returns:
+            Parse location string into city, province, and country components.
+            Uses simple comma-based splitting with fallbacks.
+
+            Args:
+                location: Raw location string from source
+
+            Returns:
             Tuple of (city, province, country)
         """
         # Split and clean parts
@@ -263,7 +267,8 @@ class Scraper:
             return parts[0], parts[1], "South Africa"
         return parts[0], parts[1], parts[2]
 
-    def parse_expiry(self, expires_text: str) -> datetime:
+    @staticmethod
+    def parse_expiry(expires_text: str) -> datetime:
         """
         Parse expiration date text into datetime object.
         Tries multiple formats before falling back to 30 days from now.
@@ -391,10 +396,10 @@ class JunctionScraper(Scraper):
                 job_model = self.convert_to_job_model(dto, company)
                 
                 # Check if job already exists
-                existing = await jobs_controller.get_job_by_reference(job_model.job_ref)
+                existing = await jobs_workflow_controller.get_job_by_reference(job_model.job_ref)
                 if not existing:
                     # Create new job in database
-                    await jobs_controller.create_job(job_model)
+                    await jobs_workflow_controller.create_job(job_model)
             
             self.logger.info(f"Processed {len(job_dtos)} jobs for {term}")
 
@@ -488,15 +493,15 @@ class JunctionScraper(Scraper):
 
     def parse_job_page(self, soup: BeautifulSoup, url: str, term: str) -> Optional[ScrapedJobDTO]:
         """
-        Parse detailed job page into ScrapedJobDTO.
-        
-        Args:
-            soup: BeautifulSoup instance of job detail page
-            url: Job detail URL
-            term: Current search term
-            
-        Returns:
-            ScrapedJobDTO or None if parsing fails
+            Parse detailed job page into ScrapedJobDTO.
+
+            Args:
+                soup: BeautifulSoup instance of job detail page
+                url: Job detail URL
+                term: Current search term
+
+            Returns:
+                ScrapedJobDTO or None if parsing fails
         """
         # Find main job description container
         container = soup.find("div", class_="job-description")
@@ -546,10 +551,11 @@ class JunctionScraper(Scraper):
             position_type=position_elem.text.strip() if position_elem else "",
             expires=expires_elem.text.strip() if expires_elem else "",
             skills=skills,
-            external_source="careerjunction"
+            external_source="career_junction"
         )
 
-    def get_job_description(self, soup: BeautifulSoup) -> str:
+    @staticmethod
+    def get_job_description(soup: BeautifulSoup) -> str:
         """
         Extract job description from page.
         
@@ -586,138 +592,138 @@ class JunctionScraper(Scraper):
 
 
 
-# ---- Needs to Update Career Scrapper to make it compatible with other Scrappers
-class CareerScrapper:
-    def __init__(self, scrapper: Scrapper):
-        super().__init__()
-        self.scrapper = scrapper
-        self.logger = init_logger(self.__class__.__name__)
-
-    async def init_loader(self):
-        searches = []
-        for search_term in self.scrapper.search_terms:
-            jobs_list = await self.career_scrape(search_term=search_term)
-            await self.scrapper.manage_jobs(jobs=jobs_list)
-
-    def init_app(self, app: Flask):
-        asyncio.run(self.init_loader())
-
-    # noinspection PyBroadException
-    @cached
-    async def career_scrape(self, search_term: str) -> list[Job]:
-        base_url = f"https://www.careers24.com/jobs/kw-{search_term}/"
-        response = await self.scrapper.fetch_url(url=base_url)
-        if response is None:
-            return []
-
-        soup = BeautifulSoup(response, 'html.parser')
-        job_listings = soup.find_all("div", class_="job-card")
-        jobs = []
-        for job in job_listings:
-            title = job.find("h2").text.strip()
-            image_tag = job.find("img")
-
-            if image_tag:
-                company_name = job.find("img")["alt"]
-                logo_link = job.find("img")["src"]
-            else:
-                company_name = None
-                logo_link = None
-
-            extra_data = job.find_all("li")
-            # self.logger.info(f"Extra Data: {extra_data}")
-
-            expires, job_type, location, updated_time = await self.extra_data_(extra_data)
-
-            # /self.logger.info(f"JOB PRINTER: {job}")
-            job_link_data = job.find("i")
-            job_link = job_link_data.get('data-url')
-
-            # Now, let's navigate to the apply_link and extract more details about the job
-            job_details_response = await self.scrapper.fetch_url(job_link)
-
-            if job_details_response:
-                company_name, description, job_ref, salary = await self.extract_job_details(
-                    company_name=company_name, job_details_response=job_details_response)
-                self.logger.info(f""" 
-                Company Name : {company_name} 
-                description: {description} 
-                salary : {salary}
-                """)
-
-                if salary is None and job_ref is None:
-                    continue
-
-                jobs.append(Job(**dict(search_term=search_term,
-                                       title=title,
-                                       logo_link=logo_link,
-                                       job_link=job_link,
-                                       company_name=company_name,
-                                       salary=salary, position=job_type, location=location,
-                                       updated_time=updated_time,
-                                       expires=expires, job_ref=job_ref, description=description)))
-
-        self.logger.info(
-            f"Found {len(jobs)} Jobs with {str(self.__class__.__name__)} using search term : {search_term}")
-        return jobs
-
-    async def extra_data_(self, extra_data):
-        if len(extra_data) >= 3:
-            location = extra_data[0].get_text(strip=True)
-            job_type = extra_data[1].get_text(strip=True)
-            job_type = job_type.split(":")[1]
-            posted_date_line = extra_data[2].get_text(strip=False)
-            updated_time, expires = await self.parse_posted_date(date_line=posted_date_line.strip())
-        else:
-            location = "N/A"
-            job_type = "N/A"
-            updated_time = "N/A"
-            expires = "N/A"
-        return expires, job_type, location, updated_time
-
-    async def extract_job_details(self, company_name, job_details_response):
-        job_details_soup = BeautifulSoup(job_details_response, 'html.parser')
-        vacancy_details = job_details_soup.find("div", class_="c24-vacancy-deatils-container")
-
-        async def find_text_or_default_async(element, default="N/A"):
-            return element.text.strip() if element else default
-
-        async def extract_sectors_async(vacancy_details):
-            sectors_tag = vacancy_details.find("li", class_="c24-sectr")
-            sectors = [sector.text.strip() for sector in sectors_tag.find_all("a")] if sectors_tag else []
-            return sectors
-
-        salary_tag = vacancy_details.find("li", string="Salary:")
-        self.logger.info(f"SALARY : {salary_tag}")
-        if salary_tag:
-            salary = (await find_text_or_default_async(salary_tag.find_next("li", class_="elipses"))).split(":")[1]
-        else:
-            salary = "Undisclosed"
-
-        sectors = await extract_sectors_async(vacancy_details)
-
-        reference_tags = vacancy_details.find("ul", class_="small-text").find_all("li")
-        job_ref = (await find_text_or_default_async(reference_tags[-1]))
-        if not job_ref:
-            job_ref = str(uuid.uuid4())
-        if "/" in job_ref:
-            job_ref = job_ref.split("/")[0]
-
-        description = (await find_text_or_default_async(vacancy_details.find("div", class_="v-descrip")))
-        if not company_name:
-            company_name = (
-                await find_text_or_default_async(vacancy_details.find("p", class_="mb-15"), default="N/A"))
-
-        return company_name, description, job_ref, salary
-
-    @staticmethod
-    async def parse_posted_date(date_line: str):
-        separators = ["\n61", "<br\>", "<br>"]
-
-        for separator in separators:
-            if separator in date_line:
-                parts = date_line.split(separator)
-                if len(parts) == 2:
-                    return parts[0].strip(), parts[1].strip()
-
-        return "N/A", "N/A"
+# # ---- Needs to Update Career Scrapper to make it compatible with other Scrappers
+# class CareerScrapper:
+#     def __init__(self, scrapper: Scrapper):
+#         super().__init__()
+#         self.scrapper = scrapper
+#         self.logger = init_logger(self.__class__.__name__)
+#
+#     async def init_loader(self):
+#         searches = []
+#         for search_term in self.scrapper.search_terms:
+#             jobs_list = await self.career_scrape(search_term=search_term)
+#             await self.scrapper.manage_jobs(jobs=jobs_list)
+#
+#     def init_app(self, app: Flask):
+#         asyncio.run(self.init_loader())
+#
+#     # noinspection PyBroadException
+#     @cached
+#     async def career_scrape(self, search_term: str) -> list[Job]:
+#         base_url = f"https://www.careers24.com/jobs/kw-{search_term}/"
+#         response = await self.scrapper.fetch_url(url=base_url)
+#         if response is None:
+#             return []
+#
+#         soup = BeautifulSoup(response, 'html.parser')
+#         job_listings = soup.find_all("div", class_="job-card")
+#         jobs = []
+#         for job in job_listings:
+#             title = job.find("h2").text.strip()
+#             image_tag = job.find("img")
+#
+#             if image_tag:
+#                 company_name = job.find("img")["alt"]
+#                 logo_link = job.find("img")["src"]
+#             else:
+#                 company_name = None
+#                 logo_link = None
+#
+#             extra_data = job.find_all("li")
+#             # self.logger.info(f"Extra Data: {extra_data}")
+#
+#             expires, job_type, location, updated_time = await self.extra_data_(extra_data)
+#
+#             # /self.logger.info(f"JOB PRINTER: {job}")
+#             job_link_data = job.find("i")
+#             job_link = job_link_data.get('data-url')
+#
+#             # Now, let's navigate to the apply_link and extract more details about the job
+#             job_details_response = await self.scrapper.fetch_url(job_link)
+#
+#             if job_details_response:
+#                 company_name, description, job_ref, salary = await self.extract_job_details(
+#                     company_name=company_name, job_details_response=job_details_response)
+#                 self.logger.info(f"""
+#                 Company Name : {company_name}
+#                 description: {description}
+#                 salary : {salary}
+#                 """)
+#
+#                 if salary is None and job_ref is None:
+#                     continue
+#
+#                 jobs.append(Job(**dict(search_term=search_term,
+#                                        title=title,
+#                                        logo_link=logo_link,
+#                                        job_link=job_link,
+#                                        company_name=company_name,
+#                                        salary=salary, position=job_type, location=location,
+#                                        updated_time=updated_time,
+#                                        expires=expires, job_ref=job_ref, description=description)))
+#
+#         self.logger.info(
+#             f"Found {len(jobs)} Jobs with {str(self.__class__.__name__)} using search term : {search_term}")
+#         return jobs
+#
+#     async def extra_data_(self, extra_data):
+#         if len(extra_data) >= 3:
+#             location = extra_data[0].get_text(strip=True)
+#             job_type = extra_data[1].get_text(strip=True)
+#             job_type = job_type.split(":")[1]
+#             posted_date_line = extra_data[2].get_text(strip=False)
+#             updated_time, expires = await self.parse_posted_date(date_line=posted_date_line.strip())
+#         else:
+#             location = "N/A"
+#             job_type = "N/A"
+#             updated_time = "N/A"
+#             expires = "N/A"
+#         return expires, job_type, location, updated_time
+#
+#     async def extract_job_details(self, company_name, job_details_response):
+#         job_details_soup = BeautifulSoup(job_details_response, 'html.parser')
+#         vacancy_details = job_details_soup.find("div", class_="c24-vacancy-deatils-container")
+#
+#         async def find_text_or_default_async(element, default="N/A"):
+#             return element.text.strip() if element else default
+#
+#         async def extract_sectors_async(vacancy_details):
+#             sectors_tag = vacancy_details.find("li", class_="c24-sectr")
+#             sectors = [sector.text.strip() for sector in sectors_tag.find_all("a")] if sectors_tag else []
+#             return sectors
+#
+#         salary_tag = vacancy_details.find("li", string="Salary:")
+#         self.logger.info(f"SALARY : {salary_tag}")
+#         if salary_tag:
+#             salary = (await find_text_or_default_async(salary_tag.find_next("li", class_="elipses"))).split(":")[1]
+#         else:
+#             salary = "Undisclosed"
+#
+#         sectors = await extract_sectors_async(vacancy_details)
+#
+#         reference_tags = vacancy_details.find("ul", class_="small-text").find_all("li")
+#         job_ref = (await find_text_or_default_async(reference_tags[-1]))
+#         if not job_ref:
+#             job_ref = str(uuid.uuid4())
+#         if "/" in job_ref:
+#             job_ref = job_ref.split("/")[0]
+#
+#         description = (await find_text_or_default_async(vacancy_details.find("div", class_="v-descrip")))
+#         if not company_name:
+#             company_name = (
+#                 await find_text_or_default_async(vacancy_details.find("p", class_="mb-15"), default="N/A"))
+#
+#         return company_name, description, job_ref, salary
+#
+#     @staticmethod
+#     async def parse_posted_date(date_line: str):
+#         separators = ["\n61", "<br\>", "<br>"]
+#
+#         for separator in separators:
+#             if separator in date_line:
+#                 parts = date_line.split(separator)
+#                 if len(parts) == 2:
+#                     return parts[0].strip(), parts[1].strip()
+#
+#         return "N/A", "N/A"

@@ -9,34 +9,36 @@ from src.controllers.encryptor import Encryptor
 send_mail = SendMail()
 encryptor = Encryptor()
 
-from src.controllers.jobs import JobsController
-jobs_controller = JobsController()
-from src.controllers.resume_controller import ResumeController
+from src.controllers.jobs import JobsSearchController, JobsWorkflowController
+
+job_search_controller = JobsSearchController()
+jobs_workflow_controller = JobsWorkflowController()
+
+from src.controllers.resumes import ResumeController
 resume_controller = ResumeController()
-from src.controllers.company_controller import CompanyController
-company_controller = CompanyController(jobs_controller=jobs_controller, resume_controller=resume_controller)
-from src.scrappers import JunctionScrapper, CareerScrapper, Scrapper
+from src.controllers.company import CompanyController
+company_controller = CompanyController(jobs_controller=jobs_workflow_controller, resume_controller=resume_controller)
+from src.scrappers import JunctionScraper
 
 from src.controllers.users import UsersController
-from src.controllers.storage import StorageController
-from src.controllers.notifications_controller import NotificationsController
+from src.controllers.notifications import NotificationsController
 
 notifications_controller = NotificationsController()
-from src.controllers.ats_controller import ATSToolController
+from src.controllers.ats import ATSToolController
 
 
 # initializing models and controllers
 
-storage_controller = StorageController()
-scrapper = Scrapper()
+
+
 users_controller = UsersController()
 
 ats_controller = ATSToolController()
 
-junction_scrapper = JunctionScrapper(scrapper=scrapper)
-career_scrapper = CareerScrapper(scrapper=scrapper)
+junction_scrapper = JunctionScraper()
 
-from src.controllers.profile_controller import JobSeekerProfilesController
+
+from src.controllers.jobseekers import JobSeekerProfilesController
 job_seeker_profile_controller = JobSeekerProfilesController()
 
 
@@ -67,7 +69,10 @@ def create_app(config):
         ats_controller.init_app(app=app, resume=resume_controller)
 
         encryptor.init_app(app=app)
-        jobs_controller.init_app(app=app)
+
+        job_search_controller.init_app(app=app)
+        jobs_workflow_controller.init_app(app=app)
+
         company_controller.init_app(app=app)
 
         junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)

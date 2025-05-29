@@ -1,3 +1,3 @@
 
 
-from src.controllers.notification.notifications_controller import NotificationsController
+from src.controllers.notifications.notifications_controller import NotificationsController
