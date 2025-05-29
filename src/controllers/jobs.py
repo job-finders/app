@@ -940,6 +940,25 @@ class JobsController(Controllers):
 
 
     @error_handler
+    async def get_job_by_slug(self, slug: str) -> Optional[Job]:
+        """
+        Retrieve a job by its slug.
+
+        Args:
+            slug: The slug string to search for (must be exact match).
+
+        Returns:
+            A Job Pydantic model instance or None if not found.
+        """
+        with self.get_session() as session:
+            try:
+                stmt = select(JobsORM).where(JobsORM.slug == slug)
+                result = session.execute(stmt).scalar_one()
+                return Job(**result.to_dict())
+            except NoResultFound:
+                return None
+
+    @error_handler
     async def advanced_job_search(self, filters: dict) -> list[Job]:
         """
         Perform an advanced job search using a combination of keyword, location, profile-based defaults, and job-specific filters.
