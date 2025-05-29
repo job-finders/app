@@ -164,7 +164,6 @@ class JobsSearchController(Controllers):
             return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm]
 
 
-
     @error_handler
     async def get_jobs_by_category(
             self,
