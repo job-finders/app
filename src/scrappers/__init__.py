@@ -12,7 +12,7 @@ from requests_cache import CachedSession
 # Import your models
 from src.database.models.jobs_model import Company, Job, JobStatusEnum
 from src.logger import init_logger
-from src.main import companies_controller, jobs_controller
+from src.main import company_controller, jobs_controller
 
 
 class ScrapedCompanyDTO:
@@ -143,7 +143,7 @@ class Scraper:
             self.job_cache[job.job_ref] = job
         
         # Load all companies from database
-        companies = await companies_controller.get_all_companies()
+        companies = await company_controller.get_all_companies()
         for company in companies:
             # Cache companies by normalized name
             self.company_cache[company.name.lower()] = company
@@ -191,7 +191,7 @@ class Scraper:
             return self.company_cache[cache_key]
         
         # Check database if not in cache
-        existing = await companies_controller.get_company_by_name(dto.name)
+        existing = await company_controller.get_company_by_name(dto.name)
         if existing:
             # Add to cache for future access
             self.company_cache[cache_key] = existing
@@ -208,7 +208,7 @@ class Scraper:
         )
         
         # Save to database
-        created = await companies_controller.create_company(new_company)
+        created = await company_controller.create_company(new_company)
         # Add to cache for future access
         self.company_cache[cache_key] = created
         return created
