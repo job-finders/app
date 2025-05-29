@@ -874,6 +874,59 @@ class JobsController(Controllers):
         return suggestions
 
     @error_handler
+    async def get_similar_jobs(self, job_id: str, limit: int = 12) -> List[Job]:
+        """
+        Find similar jobs based on the current job's title and category.
+        Uses database queries instead of in-memory cache.
+        
+        Args:
+            job_id: ID of the job to find similar jobs for
+            limit: Maximum number of results to return
+            
+        Returns:
+            List of similar Job objects
+        """
+        with self.get_session() as session:
+            # Get the target job first
+            target_job = session.query(JobsORM).get(job_id)
+            if not target_job:
+                return []
+                
+            # Split title into keywords for matching
+            title_keywords = [f"%{word}%" for word in target_job.title.split() if len(word) > 3]
+            
+            # Build OR conditions for title keywords
+            title_conditions = [
+                JobsORM.title.ilike(keyword) 
+                for keyword in title_keywords[:3]  # Use top 3 keywords
+            ]
+            
+            # Query similar jobs
+            similar_jobs = (
+                session.query(JobsORM)
+                .filter(
+                    JobsORM.job_id != job_id,  # Exclude current job
+                    JobsORM.status == JobStatusEnum.ACTIVE.value,
+                    or_(
+                        JobsORM.category == target_job.category,
+                        *title_conditions
+                    )
+                )
+                .order_by(
+                    case(
+                        (JobsORM.category == target_job.category, 0),
+                        else_=1
+                    ),  # Prioritize same category
+                    func.random()  # Then randomize
+                )
+                .limit(limit)
+                .all()
+            )
+            
+            return [Job(**job.to_dict()) for job in similar_jobs]
+
+
+    @error_handler
     async def advanced_job_search(self, filters: dict) -> list[Job]:
         """
         Perform an advanced job search using a combination of keyword, location, profile-based defaults, and job-specific filters.
