@@ -1,34 +1,109 @@
 import asyncio
-import random
-import uuid
-from datetime import timedelta
+import re
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple
+from urllib.parse import urljoin
+import uuid  # Added for UUID generation
 
 from bs4 import BeautifulSoup
-from flask import Flask
-from pydantic import ValidationError
+from pydantic import HttpUrl, ValidationError
 from requests_cache import CachedSession
 
-from src.cache import cached
-from src.database.models.jobs_model import Job
+# Import your models
+from src.database.models.jobs_model import Company, Job, JobStatusEnum
 from src.logger import init_logger
-from src.utils import format_reference
-from src.main import jobs_controller
+from src.main import companies_controller, jobs_controller
 
-class Scrapper:
+
+class ScrapedCompanyDTO:
+    """
+    Data Transfer Object (DTO) for holding scraped company information.
+    Acts as an intermediate representation before conversion to the Company model.
+    
+    Attributes:
+        name (str): Company name (required)
+        logo_url (Optional[HttpUrl]): URL to company logo
+        industry (Optional[str]): Industry sector the company operates in
+        website (Optional[HttpUrl]): Company website URL
+    """
+    def __init__(self, 
+                 name: str, 
+                 logo_url: Optional[HttpUrl] = None,
+                 industry: Optional[str] = None,
+                 website: Optional[HttpUrl] = None):
+        self.name = name
+        self.logo_url = logo_url
+        self.industry = industry
+        self.website = website
+
+
+class ScrapedJobDTO:
+    """
+    Data Transfer Object (DTO) for holding scraped job information.
+    Acts as an intermediate representation before conversion to the Job model.
+    
+    Attributes:
+        source_id (str): Unique identifier from the source platform
+        title (str): Job title
+        description (str): Full job description
+        company (ScrapedCompanyDTO): Company DTO associated with the job
+        job_url (HttpUrl): URL to the job posting
+        salary_text (str): Raw salary information text
+        location (str): Job location string
+        position_type (str): Employment type (e.g., Full-time, Part-time)
+        expires (str): Expiration date text
+        skills (List[str]): List of required skills
+        external_source (str): Source platform name (default: "careerjunction")
+    """
+    def __init__(self,
+                 source_id: str,
+                 title: str,
+                 description: str,
+                 company: ScrapedCompanyDTO,
+                 job_url: HttpUrl,
+                 salary_text: str,
+                 location: str,
+                 position_type: str,
+                 expires: str,
+                 skills: List[str],
+                 external_source: str = "careerjunction"):
+        self.source_id = source_id
+        self.title = title
+        self.description = description
+        self.company = company
+        self.job_url = job_url
+        self.salary_text = salary_text
+        self.location = location
+        self.position_type = position_type
+        self.expires = expires
+        self.skills = skills
+        self.external_source = external_source
+
+
+class Scraper:
+    """
+    Base scraper class providing core functionality for web scraping jobs.
+    Implements caching, HTTP requests, and data transformation using DTO pattern.
+    
+    Attributes:
+        search_terms (List[str]): Job categories to scrape
+        headers (Dict[str, str]): HTTP headers for requests
+        request_session (CachedSession): Cached HTTP session
+        logger: Logger instance
+        job_cache (Dict[str, Job]): In-memory cache of Job objects
+        company_cache (Dict[str, Company]): In-memory cache of Company objects
+    """
+    
     def __init__(self):
+        # Job categories to scrape
         self.search_terms = [
-            'information-technology',
-            'office-admin',
-            'agriculture',
-            'engineering',
-            'building-construction',
-            'business-management',
-            'cleaning-maintenance',
-            'community-social-welfare',
-            'education',
-            'nursing',
-            'finance',
-            'programming']
+            'information-technology', 'office-admin', 'agriculture',
+            'engineering', 'building-construction', 'business-management',
+            'cleaning-maintenance', 'community-social-welfare', 'education',
+            'nursing', 'finance', 'programming'
+        ]
+        
+        # HTTP headers to mimic browser behavior
         self.headers: dict[str, str] = {
             'user-agent': "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727; .NET CLR 3.0.04506.30)",
             'Accept-Language': 'en-US,en;q=0.9',
@@ -38,229 +113,480 @@ class Scrapper:
             'Cache-Control': 'max-age=0',
             'Accept': '*/*'
         }
-        self.request_sessions = CachedSession('jobs.cache', use_cache_dir=False,
-                                              cache_control=True,
-                                              # Use Cache-Control response headers for expiration, if available
-                                              expire_after=timedelta(hours=24),
-                                              # Otherwise expire responses after one day
-                                              allowable_codes=[200, 400],
-                                              # Cache 400 responses as a solemn reminder of your failures
-                                              allowable_methods=['GET', 'POST'],
-                                              match_headers=['Accept-Language'],
-                                              # Cache a different response per language
-                                              stale_if_error=True
-                                              # In case of request errors, use stale cache data if possible
-                                              )
 
-        self.jobs: dict[str, Job] = {}
+        # Configure cached HTTP session
+        self.request_session = CachedSession(
+            'jobs_cache',
+            expire_after=timedelta(hours=24),  # Cache duration
+            allowable_codes=[200, 400],        # Status codes to cache
+            allowable_methods=['GET'],          # HTTP methods to cache
+            stale_if_error=True                 # Use cache on request errors
+        )
         self.logger = init_logger(self.__class__.__name__)
+        
+        # Initialize in-memory caches
+        self.job_cache: Dict[str, Job] = {}
+        self.company_cache: Dict[str, Company] = {}
 
-    async def manage_jobs(self, jobs: list[Job]):
-
+    async def update_cache(self) -> None:
+        """
+        Refresh in-memory caches from database.
+        Loads all jobs and companies into memory for quick access.
+        """
+        self.job_cache.clear()
+        self.company_cache.clear()
+        
+        # Load all jobs from database
+        jobs = await jobs_controller.get_all_jobs()
         for job in jobs:
-            ref = format_reference(ref=job.job_ref)
-            self.jobs[ref] = job
+            # Cache jobs by reference ID
+            self.job_cache[job.job_ref] = job
+        
+        # Load all companies from database
+        companies = await companies_controller.get_all_companies()
+        for company in companies:
+            # Cache companies by normalized name
+            self.company_cache[company.name.lower()] = company
 
-    # noinspection PyBroadException
-    async def fetch_url(self, url: str) -> bytes | None:
+    async def fetch_url(self, url: str) -> Optional[bytes]:
+        """
+        Fetch URL content with caching and error handling.
+        
+        Args:
+            url: URL to fetch
+            
+        Returns:
+            Response content as bytes or None if request fails
+        """
         try:
-            return self.request_sessions.get(url=url, headers=self.headers).content
+            # Make HTTP GET request with timeout
+            response = self.request_session.get(
+                url, 
+                headers=self.headers,
+                timeout=10  # 10-second timeout
+            )
+            # Raise exception for HTTP errors
+            response.raise_for_status()
+            return response.content
         except Exception as e:
+            self.logger.error(f"Request failed for {url}: {str(e)}")
             return None
 
-
-    async def job_search(self, job_reference: str):
+    async def find_or_create_company(self, dto: ScrapedCompanyDTO) -> Company:
         """
-        :param job_reference: The job reference string to search for.
-        :return: A job from self.jobs.
+        Find existing company or create new one from DTO.
+        Checks cache and database before creating new company.
+        
+        Args:
+            dto: ScrapedCompanyDTO with company information
+            
+        Returns:
+            Company instance (existing or newly created)
         """
-        ref = format_reference(ref=job_reference)
+        # Normalize name for cache key
+        cache_key = dto.name.lower()
+        
+        # Check in-memory cache first
+        if cache_key in self.company_cache:
+            return self.company_cache[cache_key]
+        
+        # Check database if not in cache
+        existing = await companies_controller.get_company_by_name(dto.name)
+        if existing:
+            # Add to cache for future access
+            self.company_cache[cache_key] = existing
+            return existing
+        
+        # Create new company with minimal validation
+        new_company = Company(
+            company_id=str(uuid.uuid4()),  # Generate unique ID
+            name=dto.name,
+            logo_url=dto.logo_url,
+            industry=dto.industry,
+            website=dto.website,
+            is_verified=False  # Scraped companies are not verified
+        )
+        
+        # Save to database
+        created = await companies_controller.create_company(new_company)
+        # Add to cache for future access
+        self.company_cache[cache_key] = created
+        return created
 
-        if ref in self.jobs:
-            return self.jobs[ref]
-
-        jobs_list = list(self.jobs.values())
-        if jobs_list:
-            return random.choice(jobs_list)
-
-        # Fallback: return None or raise an exception if no jobs are available
-        return None
-
-    async def search_by_slug(self, slug: str):
+    def parse_salary(self, salary_text: str) -> Tuple[Optional[float], Optional[float]]:
         """
-
-        :param slug:
-        :return:
+        Parse salary range from text.
+        Handles various formats like "R20,000 - R30,000" or "R50000".
+        
+        Args:
+            salary_text: Raw salary string from source
+            
+        Returns:
+            Tuple of (min_salary, max_salary) or (None, None) if unparseable
         """
-        for job in self.jobs.values():
-            if job.slug == slug:
-                return job
+        try:
+            # Extract all numeric values preceded by 'R'
+            numbers = re.findall(r'R\s*([\d,]+)', salary_text)
+            if not numbers:
+                return None, None
+                
+            # Convert to floats (remove commas)
+            salaries = [float(num.replace(',', '')) for num in numbers]
+            
+            # Handle single value vs range
+            if len(salaries) == 1:
+                return salaries[0], salaries[0]  # min = max
+            return min(salaries), max(salaries)  # min and max
+        except Exception:
+            return None, None
 
-        jobs_list = list(self.jobs.values())
-        if jobs_list:
-            return random.choice(jobs_list)
-
-        return None
-
-    async def similar_jobs(self, search_term: str, title: str) -> list[Job]:
+    def parse_location(self, location: str) -> Tuple[str, str, str]:
         """
-        Find similar jobs based on common keywords in the title of the job from self.jobs.
-        Return a list of similar jobs, not more than 8.
-
-        :param search_term:
-        :param title: The title of the job to find similar jobs for.
-        :return: A list of similar Job instances.
+        Parse location string into city, province, and country components.
+        Uses simple comma-based splitting with fallbacks.
+        
+        Args:
+            location: Raw location string from source
+            
+        Returns:
+            Tuple of (city, province, country)
         """
-        similar_jobs = []
-        title_lower = title.lower().split()  # Convert and split the provided title to lowercase for comparison
-        # self.logger.info(f"similarity search: search_term: {search_term} title: {title_lower}")
-        for job in [job for job in self.jobs.values() if job.search_term.casefold() == search_term.casefold()]:
-            # self.logger.info(f"finding similarity in job : {job.title}")
-            job_title_lower = job.title.lower().split()  # Convert and split the job's title
+        # Split and clean parts
+        parts = [p.strip() for p in location.split(',') if p.strip()]
+        
+        # Handle different part counts with fallbacks
+        if len(parts) == 0:
+            return "Unknown", "Unknown", "South Africa"
+        if len(parts) == 1:
+            return parts[0], "Unknown", "South Africa"
+        if len(parts) == 2:
+            return parts[0], parts[1], "South Africa"
+        return parts[0], parts[1], parts[2]
 
-            # Calculate the intersection (common keywords) between the provided title and the job title
-            common_keywords = set(title_lower).intersection(job_title_lower)
-
-            # If there are common keywords and the list of similar_jobs has fewer than 8 entries
-            if common_keywords and len(similar_jobs) < 8:
-                if title.casefold() != job.title.casefold():
-                    similar_jobs.append(job)
-
-        return similar_jobs
-
-
-class JunctionScrapper:
-    """
-    Junction Job Scrapper
-    """
-
-    def __init__(self, scrapper: Scrapper):
-        self._jobs_base_url: str = "https://www.careerjunction.co.za/jobs/"
-        self._junction_base_url: str = "https://www.careerjunction.co.za/"
-        self.scrapper = scrapper
-        self.logger = init_logger(self.__class__.__name__)
-        self.loop = asyncio.get_event_loop()
-
-    async def reload(self):
-        self.logger.info(f"Inside Reload")
-        self.scrapper.jobs = {}
-        jobs_list: list[Job] = await jobs_controller.get_all_jobs()
-        self.logger.info(f"JOB : {jobs_list[-1]}")
-        await self.scrapper.manage_jobs(jobs=jobs_list)
-
-    async def scrape_endpoint(self):
+    def parse_expiry(self, expires_text: str) -> datetime:
         """
-            use this to launch the job scrapper manually.
-            using a cron job will be great for this task
-        :return:
+        Parse expiration date text into datetime object.
+        Tries multiple formats before falling back to 30 days from now.
+        
+        Args:
+            expires_text: Raw expiration date string
+            
+        Returns:
+            Parsed datetime or 30 days from now as fallback
         """
-        for search_term in self.scrapper.search_terms:
-            self.logger.info(f"Searching for : {search_term}")
-
-            jobs_list: list[Job] = await self.junction_scrape(term=search_term)
-
-            self.logger.info(jobs_list[-1])
-            for job in jobs_list:
-                job_exists = await jobs_controller.get_job_by_reference(reference=job.job_ref)
-                if not job_exists:
-                    job_ = await jobs_controller.create_job(job=job)
-
-            await self.scrapper.manage_jobs(jobs=jobs_list)
-
-
-    async def init_loader(self):
-        # searches = []
-        await self.reload()
-
-    def init_app(self, app: Flask, timer_multiplier: int = 1):
-        # asyncio.run(self.init_loader())
-        self.loop.create_task(self.jobs_loader(timer_multiplier=timer_multiplier))
-
-    @cached
-    async def junction_scrape(self, term: str, page_limit: int = 1) -> list[Job]:
-        """
-            given one search term scrape jobs
-        :param term:
-        :param page_limit:
-        :return:
-        """
-        jobs = []
-        for page in range(page_limit + 1):
-            if page == 0:
-                continue
-
-            url = f"{self._jobs_base_url}{term}?page={page}"
-            response: bytes | None = await self.scrapper.fetch_url(url=url)
-
-            if not response:
-                self.logger.info(f"response : not OK")
-                continue
-
-            soup = BeautifulSoup(response, "html.parser")
-            job_elements = soup.find_all("div", class_="job-result")
-
-            for job_element in job_elements:
-                show_more_link: str = job_element.find("a", class_="show-more")["href"]
-                link = f"{self._junction_base_url}{show_more_link.replace('/', '')}"
-                job_details: bytes | None = await self.scrapper.fetch_url(link)
-                if job_details is None:
-                    self.logger.info("Job details not being fetched")
+        try:
+            # Try common date formats
+            for fmt in ("%d %B %Y", "%d/%m/%Y", "%Y-%m-%d"):  # e.g., "15 January 2023"
+                try:
+                    return datetime.strptime(expires_text, fmt)
+                except ValueError:
                     continue
-                job_soup = BeautifulSoup(job_details, "html.parser")
-                jobs.append(self.more_details(job_soup=job_soup, job_link=link, search_term=term))
+        except Exception:
+            pass
+        # Fallback: 30 days from current time
+        return datetime.utcnow() + timedelta(days=30)
 
-        jobs_results = await asyncio.gather(*jobs)
+    def convert_to_job_model(self, dto: ScrapedJobDTO, company: Company) -> Job:
+        """
+        Convert ScrapedJobDTO to validated Job model.
+        Applies business rules and fallbacks for missing data.
+        
+        Args:
+            dto: ScrapedJobDTO with job information
+            company: Associated Company model instance
+            
+        Returns:
+            Validated Job model instance
+        """
+        # Parse salary and location
+        salary_min, salary_max = self.parse_salary(dto.salary_text)
+        city, province, country = self.parse_location(dto.location)
+        
+        # Determine position type from text
+        position_type = "FULL_TIME"
+        lower_position = dto.position_type.lower()
+        if "part" in lower_position:
+            position_type = "PART_TIME"
+        elif "contract" in lower_position:
+            position_type = "CONTRACT"
+        
+        # Determine experience level from text
+        experience_level = "MID"
+        if "junior" in lower_position or "entry" in lower_position:
+            experience_level = "ENTRY"
+        elif "senior" in lower_position:
+            experience_level = "SENIOR"
+        
+        # Create and return Job model instance
+        return Job(
+            job_id=str(uuid.uuid4()),  # Generate unique ID
+            job_ref=dto.source_id,
+            external_source=dto.external_source,
+            company_id=company.company_id,
+            title=dto.title,
+            description=dto.description,
+            position_type=position_type,
+            remote_policy="ONSITE",  # Default assumption
+            category=dto.external_source,
+            salary_min=salary_min,
+            salary_max=salary_max,
+            salary_currency="ZAR",  # Default to South African Rand
+            salary_confidential=salary_min is None,  # Confidential if no salary
+            city=city,
+            province=province,
+            country=country,
+            posted_at=datetime.utcnow(),  # Use current time as posted
+            expires_at=self.parse_expiry(dto.expires),
+            experience_level=experience_level,
+            required_skills=dto.skills,
+            application_url=dto.job_url,
+            application_instructions=f"Apply via {dto.external_source}",
+            required_questionnaire=[],
+            status=JobStatusEnum.ACTIVE.value  # Default to active status
+        )
+
+
+class JunctionScraper(Scraper):
+    """
+    CareerJunction-specific scraper implementation.
+    Extends base Scraper with platform-specific extraction logic.
+    
+    Attributes:
+        BASE_URL (str): CareerJunction base URL
+        JOBS_PATH (str): Path segment for job listings
+        semaphore (asyncio.Semaphore): Concurrency limiter
+    """
+    
+    BASE_URL = "https://www.careerjunction.co.za"
+    JOBS_PATH = "/jobs/"
+
+    def __init__(self):
+        super().__init__()
+        # Limit concurrent requests to 10
+        self.semaphore = asyncio.Semaphore(10)
+
+    async def scrape_and_store_jobs(self) -> None:
+        """
+        Main scraping workflow: 
+        1. Updates caches
+        2. Processes each search term
+        3. Scrapes jobs for each term
+        4. Creates companies and jobs in database
+        """
+        # Refresh from database
+        await self.update_cache()
+        
+        # Process each job category
+        for term in self.search_terms:
+            self.logger.info(f"Scraping term: {term}")
+            # Scrape job DTOs for this category
+            job_dtos = await self.scrape_term_jobs(term)
+            
+            # Process each scraped job
+            for dto in job_dtos:
+                # Find or create associated company
+                company = await self.find_or_create_company(dto.company)
+                
+                # Convert to Job model
+                job_model = self.convert_to_job_model(dto, company)
+                
+                # Check if job already exists
+                existing = await jobs_controller.get_job_by_reference(job_model.job_ref)
+                if not existing:
+                    # Create new job in database
+                    await jobs_controller.create_job(job_model)
+            
+            self.logger.info(f"Processed {len(job_dtos)} jobs for {term}")
+
+    async def scrape_term_jobs(self, term: str, max_pages: int = 5) -> List[ScrapedJobDTO]:
+        """
+        Scrape all jobs for a specific search term.
+        
+        Args:
+            term: Job category to scrape
+            max_pages: Maximum number of listing pages to process
+            
+        Returns:
+            List of ScrapedJobDTO objects
+        """
+        # Generate listing page URLs
+        listing_urls = [
+            f"{self.BASE_URL}{self.JOBS_PATH}{term}?page={page}"
+            for page in range(1, max_pages + 1)
+        ]
+        
+        # Process all listing pages concurrently
+        all_jobs = []
+        results = await asyncio.gather(*[
+            self.process_listing_page(url, term)
+            for url in listing_urls
+        ])
+        
+        # Flatten results
+        for jobs in results:
+            all_jobs.extend(jobs)
+            
+        return all_jobs
+
+    async def process_listing_page(self, url: str, term: str) -> List[ScrapedJobDTO]:
+        """
+        Process a single listing page and extract job previews.
+        
+        Args:
+            url: Listing page URL
+            term: Current search term
+            
+        Returns:
+            List of ScrapedJobDTO objects from this page
+        """
+        # Limit concurrency with semaphore
+        async with self.semaphore:
+            # Fetch page content
+            content = await self.fetch_url(url)
+            if not content:
+                return []
+            
+            # Parse HTML
+            soup = BeautifulSoup(content, "html.parser")
+            # Find all job elements on page
+            job_elements = soup.find_all("div", class_="job-result")
+            
+            # Process each job element concurrently
+            return await asyncio.gather(*[
+                self.extract_job_dto(element, term)
+                for element in job_elements
+            ])
+
+    async def extract_job_dto(self, element, term: str) -> Optional[ScrapedJobDTO]:
+        """
+        Extract job DTO from a listing element.
+        
+        Args:
+            element: BeautifulSoup element containing job preview
+            term: Current search term
+            
+        Returns:
+            ScrapedJobDTO or None if extraction fails
+        """
         try:
-            jobs = [Job(**job) for job in jobs_results if job]
-            self.logger.info(
-                f"Gathered a total of {len(jobs)} jobs using {str(self.__class__.__name__)} using search term: {term}")
-            return jobs
-        except ValidationError as e:
-            self.logger.info(f"Error creating Job Model: {str(e)}")
-            return []
+            # Extract detail page URL
+            detail_path = element.find("a", class_="show-more")["href"].strip("/")
+            detail_url = urljoin(self.BASE_URL, detail_path)
+            
+            # Fetch detail page
+            content = await self.fetch_url(detail_url)
+            if not content:
+                return None
+                
+            # Parse detail page
+            soup = BeautifulSoup(content, "html.parser")
+            # Extract full job details
+            return self.parse_job_page(soup, detail_url, term)
+        except (TypeError, KeyError, AttributeError) as e:
+            self.logger.error(f"Element parsing error: {str(e)}")
+            return None
 
-    @staticmethod
-    async def more_details(job_soup, job_link: str, search_term: str):
-        try:
-            job_element = job_soup.find("div", class_="job-description")
-
-            job_dict = {"search_term": search_term,
-                        "logo_link": job_element.find("img")["src"],
-                        "title": job_element.find("h1").text.strip(),
-                        "job_link": job_link,
-                        "company_name": job_element.find("h2").text.strip(),
-                        "salary": job_element.find("li", class_="salary").text.strip(),
-                        "position": job_element.find("li", class_="position").text.strip(),
-                        "location": job_element.find("li", class_="location").text.strip(),
-                        "updated_time": job_element.find("li", class_="updated-time").text.strip(),
-                        "expires": job_element.find("li", class_="expires").text.strip(),
-                        "job_ref": job_element.find("li", class_="cjun-job-ref").text.strip()}
-
-            description_element = job_soup.find("div", class_="job-desc-on-expired")
-            job_description = description_element.find("div", class_="job-details").text.strip()
-
-            # Extract and print the desired skills
+    def parse_job_page(self, soup: BeautifulSoup, url: str, term: str) -> Optional[ScrapedJobDTO]:
+        """
+        Parse detailed job page into ScrapedJobDTO.
+        
+        Args:
+            soup: BeautifulSoup instance of job detail page
+            url: Job detail URL
+            term: Current search term
+            
+        Returns:
+            ScrapedJobDTO or None if parsing fails
+        """
+        # Find main job description container
+        container = soup.find("div", class_="job-description")
+        if not container:
+            return None
+            
+        # --- Extract company information ---
+        company_name = container.find("h2").text.strip()
+        logo_elem = container.find("img")
+        # Build absolute URL for logo
+        logo_url = urljoin(self.BASE_URL, logo_elem["src"]) if logo_elem else None
+        
+        # Create company DTO
+        company_dto = ScrapedCompanyDTO(
+            name=company_name,
+            logo_url=logo_url
+        )
+        
+        # --- Extract job information ---
+        # Find various job attributes
+        salary_elem = container.find("li", class_="salary")
+        location_elem = container.find("li", class_="location")
+        position_elem = container.find("li", class_="position")
+        expires_elem = container.find("li", class_="expires")
+        ref_elem = container.find("li", class_="cjun-job-ref")
+        
+        # --- Extract skills ---
+        skills_container = soup.find("div", class_="job-desc-on-expired")
+        skills = []
+        if skills_container:
             try:
-                desired_skills_element = description_element.find_all("ul")[0]
-                desired_skills = [skill.text.strip() for skill in desired_skills_element.find_all("li") if skill]
+                # First unordered list is assumed to be skills
+                skills_list = skills_container.find_all("ul")[0]
+                skills = [li.text.strip() for li in skills_list.find_all("li")]
+            except (IndexError, AttributeError):
+                pass
+        
+        # Create and return job DTO
+        return ScrapedJobDTO(
+            source_id=ref_elem.text.strip() if ref_elem else str(uuid.uuid4()),
+            title=container.find("h1").text.strip(),
+            description=self.get_job_description(soup),
+            company=company_dto,
+            job_url=url,
+            salary_text=salary_elem.text.strip() if salary_elem else "",
+            location=location_elem.text.strip() if location_elem else "",
+            position_type=position_elem.text.strip() if position_elem else "",
+            expires=expires_elem.text.strip() if expires_elem else "",
+            skills=skills,
+            external_source="careerjunction"
+        )
 
-            except IndexError:
-                desired_skills = []
+    def get_job_description(self, soup: BeautifulSoup) -> str:
+        """
+        Extract job description from page.
+        
+        Args:
+            soup: BeautifulSoup instance of job detail page
+            
+        Returns:
+            Cleaned description text or empty string
+        """
+        container = soup.find("div", class_="job-desc-on-expired")
+        if not container:
+            return ""
+            
+        details = container.find("div", class_="job-details")
+        return details.text.strip() if details else ""
 
-            job_dict['description'] = job_description
-            job_dict['desired_skills'] = desired_skills
-
-            return job_dict
-        except AttributeError as e:
-            return
-
-    async def jobs_loader(self, timer_multiplier: int = 1):
-        """load jobs to Memory"""
+    async def periodic_loader(self, interval_minutes: int = 60) -> None:
+        """
+        Background task for periodic job loading.
+        Runs indefinitely with specified interval.
+        
+        Args:
+            interval_minutes: Minutes between scraping cycles
+        """
         while True:
-            await self.reload()
-            await asyncio.sleep(60 * timer_multiplier)
+            try:
+                # Run main scraping workflow
+                await self.scrape_and_store_jobs()
+            except Exception as e:
+                self.logger.error(f"Scraping failed: {str(e)}")
+            # Wait before next cycle
+            await asyncio.sleep(interval_minutes * 60)
 
 
+
+
+# ---- Needs to Update Career Scrapper to make it compatible with other Scrappers
 class CareerScrapper:
     def __init__(self, scrapper: Scrapper):
         super().__init__()

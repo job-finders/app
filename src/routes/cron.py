@@ -36,6 +36,18 @@ async def cron_ping_index_now():
     result = ping_indexnow(url_list=jobs_links, key=key, key_location=url_for('seo.get_indexnow_key', _external=True))
     return result
 
+@cron_route.get('/_cron/scrape-junction')
+async def scrape_junction():
+    """sumary_line
+        Need to Actual scrape online for jobs     
+        Keyword arguments:
+        argument -- description
+        Return: return_description
+    """
+    pass
+    
+
+    
 
 # @cron_route.route("/_cron/adapt-blog-strategy", methods=["GET"])
 # def adapt_blog_strategy():
