@@ -197,13 +197,78 @@ class JobsSearchController(Controllers):
             }
 
     @error_handler
-    async def get_jobs_by_title(self, title: str) -> list[Job]:
+    async def get_jobs_by_title(
+        self,
+        title: str,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> dict:
         with self.get_session() as session:
             stmt = select(JobsORM).where(
-                JobsORM.title.ilike(f"%{escape_like(title)}%")
+                JobsORM.title.ilike(f"%{escape_like(title)}%"),
+                JobsORM.status == JobStatusEnum.ACTIVE.value
             )
-            jobs = session.execute(stmt).scalars().all()
-            return [Job(**job.to_dict()) for job in jobs]
+
+
+            stmt = stmt.order_by(JobsORM.is_featured.desc(), JobsORM.posted_at.desc())
+            total_jobs = session.scalar(select(func.count()).select_from(stmt.subquery()))
+
+            jobs = session.execute(
+                stmt.offset((page - 1) * page_size).limit(page_size)
+            ).scalars().all()
+            total_pages = math.ceil(total_jobs / page_size)
+            return dict(
+                jobs=[Job(**job.to_dict()) for job in jobs],
+                total_jobs=total_jobs,
+                page=page,
+                page_size=page_size,
+                total_pages=total_pages)
+
+
+    @error_handler
+    async def get_jobs_by_qualification(
+        self,
+        qualification: str,
+        qualification_types: Optional[list[str]] = None,
+        page: int = 1,
+        page_size: int = 10,        
+    ) -> dict:
+
+        if qualification_types is None:
+            qualification_types = [
+                "matric", "diploma", "bachelor", "honours", "masters", "phd",
+                "certificate", "trade_certificate"
+            ]
+
+        search_pattern = f"%{qualification}%"
+        with self.get_session() as session:
+            conditions = [
+                JobsORM.education_requirements[q_type].astext.ilike(search_pattern)
+                for q_type in qualification_types
+            ]
+            stmt = select(JobsORM).where(
+                or_(*conditions),
+                JobsORM.status == JobStatusEnum.ACTIVE.value
+            )
+
+            stmt = stmt.order_by(JobsORM.is_featured.desc(), JobsORM.posted_at.desc())
+            total_jobs = session.scalar(select(func.count()).select_from(stmt.subquery()))
+
+            jobs = session.execute(
+                stmt.offset((page - 1) * page_size).limit(page_size)
+            ).scalars().all()
+
+            total_pages = math.ceil(total_jobs / page_size)
+            
+            return dict(
+                jobs=[Job(**job.to_dict()) for job in jobs],
+                total_jobs=total_jobs,
+                page=page,
+                page_size=page_size,
+                total_pages=total_pages
+            )
+
+
 
     @error_handler
     async def get_jobs_by_qualification(

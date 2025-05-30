@@ -318,3 +318,65 @@ async def jobs_by_company(user: User, company_slug: str):
         'total_jobs': search_result.get('total_jobs', 0),
         'company': search_result.get('company_name', company_slug.replace('-', ' ').title())
     })
+
+
+@jobs_route.get('/title')
+@flask_error_handler
+@user_details
+async def jobs_by_title(user: User):
+    """Search jobs by title.   
+        return dict(
+            jobs=[Job(**job.to_dict()) for job in jobs],
+            total_jobs=total_jobs,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages)    
+    """
+    page = int(request.args.get('page', 1))
+    title = request.args.get('q', '')
+
+    result = await jobs_controller.get_jobs_by_title(title=title,page=page)
+
+    return render_template('jobs/title.html', **{
+        'jobs': result.get('jobs',[]),
+        'total_jobs': result.get('total_jobs', 0),
+        'page': result.get('page',page),
+        'title': result.get('title', title),
+        'total_jobs': result.get('total_jobs',0)})
+
+
+@jobs_route.get('/qualification')
+@flask_error_handler
+@user_details
+async def jobs_by_qualification(user: User):
+    """Search jobs by qualification (e.g. Matric, Bachelor's)."""
+    page = int(request.args.get('page', 1))
+    qualification = request.args.get('q', '')
+    types = request.args.getlist('type') or None  # Optional filter by types
+
+    search_result = await jobs_controller.get_jobs_by_qualification(
+        qualification=qualification,
+        qualification_types=types
+    )
+
+    return render_template('jobs/qualification.html', {
+        'jobs': search_result.jobs,
+        'page': page,
+        'qualification': qualification,
+        'total_jobs': search_result.total
+    })
+
+@jobs_route.get('/reference/<string:reference>')
+@flask_error_handler
+@user_details
+async def job_by_reference(user: User, reference: str):
+    """Retrieve a job by its reference number."""
+    job = await jobs_controller.get_job_by_reference(reference=reference)
+
+    if not job:
+        return render_template('errors/404.html'), 404
+
+    return render_template('jobs/reference.html', {
+        'job': job
+    })
+
