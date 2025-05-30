@@ -43,14 +43,72 @@ class JobsSearchController(Controllers):
     def init_app(self, app: Flask):
         super().init_app(app=app)
 
-    @error_handler
-    async def get_all_jobs(self) -> list[Job]:
-        """Complete listings of all jobs in database"""
-        with self.get_session() as session:
-            jobs_orm_list = session.query(JobsORM).all()
-            self.logger.info(f"Loaded a total of {len(jobs_orm_list)} Jobs")
-            return [Job(**job.to_dict()) for job in jobs_orm_list if job]
 
+    @error_handler
+    async def get_all_jobs(self, page: int = 1, page_size: int = 20) -> dict:
+        """Paginated list of active jobs, with featured jobs preferred"""
+        with self.get_session() as session:
+            query = session.query(JobsORM).filter(JobsORM.status == 'active')
+
+            total_jobs = query.count()
+
+            offset = (page - 1) * page_size
+            jobs_orm_list = (
+                query.order_by(JobsORM.is_featured.desc(), JobsORM.created_at.desc())
+                    .offset(offset)
+                    .limit(page_size)
+                    .all()
+            )
+
+            jobs = [Job(**job.to_dict()) for job in jobs_orm_list if job]
+
+            return {
+                "page": page,
+                "page_size": page_size,
+                "total_jobs": total_jobs,
+                "total_pages": (total_jobs + page_size - 1) // page_size,
+                "jobs": jobs,
+            }
+
+
+
+    @error_handler
+    async def search_jobs(self, keyword: str = '', page: int = 1, page_size: int = 10) -> list[Job]:
+        """Search jobs by keyword in title or description with pagination."""
+        with self.get_session() as session:
+            query = session.query(JobsORM).filter(
+                JobsORM.status == 'active',
+                or_(
+                    JobsORM.title.ilike(f'%{keyword}%'),
+                    JobsORM.description.ilike(f'%{keyword}%')
+                )
+            )
+            
+            total_jobs = query.count()
+
+            offset = (page - 1) * page_size
+
+            jobs_orm_list = (
+                query.order_by(JobsORM.is_featured.desc(), JobsORM.created_at.desc())
+                    .offset(offset)
+                    .limit(page_size)
+                    .all()
+            )
+
+            jobs: list[Jobs] =  [Job(**job.to_dict()) for job in jobs_orm_list if job]
+
+
+            return {
+                "page": page,
+                "page_size": page_size,
+                "total_jobs": total_jobs,
+                "total_pages": (total_jobs + page_size - 1) // page_size,
+                "jobs": jobs
+                }
+
+
+
+        
     @error_handler
     async def get_job_by_id(self, job_id: str) -> Job | None:
         """Find a job matching the job_id from database"""

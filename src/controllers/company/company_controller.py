@@ -290,9 +290,13 @@ class CompanyController(Controllers):
             subject = "Employer Profile Verification"
             user = await self._get_user_by_uid(session=session, uid=employer.user_uid)
             context = dict(current_user=user, verification_link=verification_link)
+            
+            # Rendering verification email on its template
             email_body = render_template('email/employer_profile_verification.html', **context)
             _subject = f"{user.name.title()} Please Verify your Employer Profile | jobfinders.site"
+
             email = EmailModel(to_=str(employer.contact_email), subject_=_subject, html_=email_body)
+            # Sending Email then obtaining a response
             response = await send_mail.send_mail_resend(email=email)
 
     @error_handler

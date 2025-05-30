@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for
 from src.routes.utils import gone
 from src.authentication import user_details, login_required, admin_login
 from src.routes import flask_error_handler
-from src.main import jobs_controller
+from src.main import jobs
 from src.database.models.users import User
 
 # Blueprint definition
@@ -30,14 +30,17 @@ async def list_jobs(user: User):
     Example:
         GET /jobs?page=2
     """
-    page = int(request.args.get('page', 1))
-    jobs = await jobs_controller.get_all_jobs(page)
+    page: int = int(request.args.get('page', 1))
+    search_result: dict[str, str| int|list[jobs]] = await job_search_controller.get_all_jobs(page=page)
+
     context = {
-        'jobs': jobs,
-        'page': page,
-        'per_page': 10,
-        'total_jobs': await jobs_controller.get_total_jobs(),
+        'jobs': search_result.get('jobs',[]),
+        'page': search_result.get('page', page),
+        'per_page': search_result.get('page_size',25),
+        'total_pages': search_result.get('total_pages', 0),
+        'total_jobs': search_result.get('total_jobs', 0)
     }
+
     return render_template('jobs/list.html', **context)
 
 
@@ -61,6 +64,39 @@ async def search_jobs(user: User):
         GET /jobs/search?keyword=engineer&page=1
     """
     keyword = request.args.get('keyword', '')
+    page = int(request.args.get('page', 1))
+    search_result: dict[str, str| int|list[jobs]] = await jobs_controller.search_jobs(keyword=keyword, page=page)
+
+    context = {
+        'jobs': search_result.get('jobs',[]),
+        'page': search_result.get('page', page),
+        'per_page': search_result.get('page_size',25),
+        'total_pages': search_result.get('total_pages', 0),
+        'total_jobs': search_result.get('total_jobs', 0),
+        'search_keyword': keyword
+        }
+
+    return render_template('jobs/search.html', **context)
+
+
+@jobs_route.get('/category/<string:category>')
+@flask_error_handler
+@user_details
+async def jobs_by_category(user: User, category: str):
+    """
+    returns jobs under a certain category.
+
+        This route retrieves job listings filtered by the given 'keyword' query parameter.
+        It supports pagination and renders the results using the `jobs/search.html` template.
+
+        Args:
+            user (User): The currently authenticated user.
+        Returns:
+            HTML template with search results.
+        Example:
+            GET /jobs/category?=engineering&page=1
+    """
+        
     page = int(request.args.get('page', 1))
     jobs = await jobs_controller.search_jobs(keyword, page)
     context = {
