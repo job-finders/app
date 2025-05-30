@@ -259,7 +259,7 @@ class JobsSearchController(Controllers):
             ).scalars().all()
 
             total_pages = math.ceil(total_jobs / page_size)
-            
+
             return dict(
                 jobs=[Job(**job.to_dict()) for job in jobs],
                 total_jobs=total_jobs,
@@ -267,45 +267,6 @@ class JobsSearchController(Controllers):
                 page_size=page_size,
                 total_pages=total_pages
             )
-
-
-
-    @error_handler
-    async def get_jobs_by_qualification(
-            self,
-            qualification: str,
-            qualification_types: Optional[list[str]] = None
-    ) -> list[Job]:
-        """Filter jobs by educational qualification(s) with case-insensitive matching.
-
-        Searches across specified keys in education_requirements JSON field.
-        Default South African qualification types:
-        - matric: National Senior Certificate (Grade 12)
-        - diploma: National Diploma
-        - bachelor: Bachelor's Degree (e.g., BA, BSc, BCom)
-        - honours: Honours Degree
-        - masters: Master's Degree
-        - phd: Doctoral Degree
-        - certificate: Industry Certificates
-        - trade_certificate: Artisan Trade Certificates
-        """
-        # Set default SA qualification types if none provided
-        if qualification_types is None:
-            qualification_types = ["matric","diploma","bachelor","honours","masters","phd","certificate",
-                "trade_certificate"]
-
-        search_pattern = f"%{qualification}%"
-
-        with self.get_session() as session:
-            # Build OR conditions for all specified qualification types
-            conditions = [
-                JobsORM.education_requirements[q_type].astext.ilike(search_pattern)
-                for q_type in qualification_types
-            ]
-
-            jobs_orm_list = session.query(JobsORM).filter(or_(*conditions)).all()
-
-            return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm]
 
     @error_handler
     async def get_jobs_by_location(self, location: str, page: int = 1, page_size: int = 25) -> dict:
