@@ -8,7 +8,7 @@ from src.logger import init_logger
 from src.main import scrapper
 from src.utils import static_folder, format_title
 
-jobs_api = Blueprint('jobs_api', __name__, url_prefix='/api/v1/jobs')
+jobs_api = Blueprint('jobs_api', __name__, url_prefix='/api/v1/job')
 jobs_logger = init_logger("jobs_api_logger")
 
 

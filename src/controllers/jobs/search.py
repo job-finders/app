@@ -9,6 +9,9 @@ from pydantic import ValidationError
 from requests import RequestException
 from sqlalchemy import or_, select, func, and_, case
 from sqlalchemy.orm import joinedload
+from sqlalchemy import or_, desc
+from math import ceil
+
 from Levenshtein import ratio as levenstein_ratio
 
 from src.database.models.employer_models import Employer
@@ -70,8 +73,6 @@ class JobsSearchController(Controllers):
                 "jobs": jobs,
             }
 
-
-
     @error_handler
     async def search_jobs(self, keyword: str = '', page: int = 1, page_size: int = 10) -> list[Job]:
         """Search jobs by keyword in title or description with pagination."""
@@ -106,7 +107,6 @@ class JobsSearchController(Controllers):
                 "jobs": jobs
                 }
 
-
     @error_handler
     async def search_jobs_by_category(self, category: str, page: int = 1, page_size: int = 25) -> dict:
         """Search jobs by category with pagination, filtered to active and featured preferred."""
@@ -134,16 +134,16 @@ class JobsSearchController(Controllers):
                 "page": page,
                 "page_size": page_size
             }
-
-        
+            
     @error_handler
     async def get_job_by_id(self, job_id: str) -> Job | None:
-        """Find a job matching the job_id from database"""
+        """Retrieve a single active job by its ID."""
         with self.get_session() as session:
-            job_orm: JobsORM = session.get(JobsORM, job_id)
-            if not job_orm:
-                return None
-            return Job(**job_orm.to_dict())
+            job_orm = session.query(JobsORM).filter(
+                JobsORM.id == job_id,
+                JobsORM.status == 'active'
+            ).first()
+            return Job(**job_orm.to_dict()) if job_orm else None
     
     @error_handler
     async def get_job_by_reference(self, reference: str) -> Job | None:
@@ -174,18 +174,28 @@ class JobsSearchController(Controllers):
             return Job(**job_orm.to_dict())
 
     @error_handler
-    async def feature_job_listing(self, job_id: str) -> Job | None:
-        """Archive job listing """
+    async def get_featured_jobs(self, page: int = 1, page_size: int = 25) -> dict:
+        """Retrieve paginated featured job listings."""
         with self.get_session() as session:
-            job_orm = session.get(JobsORM, job_id)
-            if not job_orm:
-                return None
-            # Set expiration date to yesterday
-            job_orm.status = JobStatusEnum.ACTIVE.value
-            job_orm.is_featured = True
-            job_orm.updated_at = datetime.now(timezone.utc)
+            query = session.query(JobsORM).filter(
+                JobsORM.is_featured.is_(True),
+                JobsORM.status == JobStatusEnum.ACTIVE.value
+            ).order_by(JobsORM.updated_at.desc())
 
-            return Job(**job_orm.to_dict())
+            total_jobs = query.count()
+            total_pages = math.ceil(total_jobs / page_size)
+            jobs_orm_list = query.offset((page - 1) * page_size).limit(page_size).all()
+
+            jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list]
+
+            return {
+                'jobs': jobs,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages,
+                'total_jobs': total_jobs
+            }
+
 
     @error_handler
     async def get_jobs_by_title(self, title: str) -> list[Job]:
@@ -195,7 +205,6 @@ class JobsSearchController(Controllers):
             )
             jobs = session.execute(stmt).scalars().all()
             return [Job(**job.to_dict()) for job in jobs]
-
 
     @error_handler
     async def get_jobs_by_qualification(
@@ -235,82 +244,120 @@ class JobsSearchController(Controllers):
             return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm]
 
     @error_handler
-    async def get_jobs_by_location(self, location: str) -> list[Job]:
-        """Filter jobs by city, province, or country components (case-insensitive match)"""
+    async def get_jobs_by_location(self, location: str, page: int = 1, page_size: int = 25) -> dict:
+        """
+        Search for jobs by location with featured and recent sorting, plus pagination.
+
+        Args:
+            location (str): Partial match for city/province/country.
+            page (int): Page number.
+            page_size (int): Number of items per page.
+
+        Returns:
+            dict: Paginated search results including jobs list, total count, and pagination metadata.
+        """
         with self.get_session() as session:
             search_pattern = f"%{location}%"
-            jobs_orm_list = session.query(JobsORM).filter(
+
+            base_query = session.query(JobsORM).filter(
+                JobsORM.status == 'active',
                 or_(
                     JobsORM.city.ilike(search_pattern),
                     JobsORM.province.ilike(search_pattern),
                     JobsORM.country.ilike(search_pattern)
                 )
-            ).all()
-            return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm]
+            )
 
+            total_jobs = base_query.count()
+            total_pages = ceil(total_jobs / page_size)
 
-    @error_handler
-    async def get_jobs_by_category(
-            self,
-            category: str,
-            subcategories: Optional[list[str]] = None
-    ) -> list[Job]:
-        """
-        Filter jobs by category with optional subcategories.
-
-        Common South African Categories:
-        - IT & Tech
-        - Finance & Accounting
-        - Healthcare & Nursing
-        - Engineering
-        - Education & Training
-        - Retail & Sales
-        - Hospitality & Tourism
-        - Construction & Trades
-        - Government & Public Sector
-        - Logistics & Supply Chain
-        """
-        with self.get_session() as session:
-            query = session.query(JobsORM)
-
-            # Base category filter
-            filters = [JobsORM.category.ilike(f"%{category}%")]
-
-            # Handle subcategories if provided
-            if subcategories:
-                sub_filters = [JobsORM.category.ilike(f"%{sub}%") for sub in subcategories]
-                filters.append(or_(*sub_filters))
-
-            jobs_orm_list = query.filter(and_(*filters)).all()
-
-            return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm]
-
-    @error_handler
-    async def get_recent_jobs(self, limit: int = 100) -> list[Job]:
-        """Retrieve most recently posted active jobs, ordered by posting date
-        Args:
-            limit: Maximum number of jobs to return (capped at 100 for performance)
-        Returns:
-            list of Job objects sorted by newest first, excluding expired/archived jobs
-        Example:  >>> await api.get_recent_jobs(5)  # Get 5 newest active postings
-        """
-        # Enforce sensible upper limit for performance
-        limit = min(limit, 100)
-
-        with self.get_session() as session:
             jobs_orm_list = (
-                session.query(JobsORM)
-                .filter(JobsORM.status == JobStatusEnum.ACTIVE.value)  # Only non-archived/closed jobs
-                .order_by(JobsORM.posted_at.desc())  # Use correct column name from ORM
-                .limit(limit)
+                base_query
+                .order_by(desc(JobsORM.is_featured), desc(JobsORM.created_at))
+                .offset((page - 1) * page_size)
+                .limit(page_size)
                 .all()
             )
 
-            return [
-                Job(**job_orm.to_dict())  # Use ORM's native serialization
+            return {
+                'jobs': [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list],
+                'page': page,
+                'page_size': page_size,
+                'total_jobs': total_jobs,
+                'total_pages': total_pages
+            }
+
+    @error_handler
+    async def search_by_type(self, job_type: str, page: int = 1, page_size: int = 25) -> dict:
+        """
+        Search for jobs filtered by job type (e.g., full-time, part-time).
+
+        Args:
+            job_type (str): The job type to filter on.
+            page (int): Page number.
+            page_size (int): Number of jobs per page.
+
+        Returns:
+            dict: Paginated results with jobs list and metadata.
+        """
+        with self.get_session() as session:
+            query = session.query(JobsORM).filter(
+                JobsORM.status == 'active',
+                JobsORM.type.ilike(job_type)  # case-insensitive match
+            ).order_by(JobsORM.is_featured.desc(), JobsORM.created_at.desc())
+
+            total_jobs = query.count()
+            jobs_orm_list = query.offset((page - 1) * page_size).limit(page_size).all()
+
+            jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm]
+
+            return {
+                "jobs": jobs,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total_jobs + page_size - 1) // page_size,
+                "total_jobs": total_jobs,
+            }
+
+
+    @error_handler
+    async def get_recent_jobs(self, page: int = 1, page_size: int = 25) -> dict:
+        """
+        Retrieve paginated list of most recently posted active jobs.
+
+        Args:
+            page (int): The page number for pagination.
+            page_size (int): Number of jobs per page (max 100).
+
+        Returns:
+            dict: Paginated search results containing jobs and metadata.
+        """
+        page_size = min(page_size, 100)
+
+        with self.get_session() as session:
+            query = session.query(JobsORM).filter(
+                JobsORM.status == JobStatusEnum.ACTIVE.value
+            ).order_by(JobsORM.posted_at.desc())
+
+            total_jobs = query.count()
+            total_pages = math.ceil(total_jobs / page_size)
+
+            jobs_orm_list = query.offset((page - 1) * page_size).limit(page_size).all()
+
+            jobs = [
+                Job(**job_orm.to_dict())
                 for job_orm in jobs_orm_list
-                if job_orm and job_orm.is_active  # Double-check active status
+                if job_orm and job_orm.is_active
             ]
+
+            return {
+                'jobs': jobs,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages,
+                'total_jobs': total_jobs
+            }
+
 
     @error_handler
     async def get_active_jobs(self) -> list[Job]:
@@ -397,7 +444,6 @@ class JobsSearchController(Controllers):
             jobs = result.unique().scalars().all()
 
             return [Job(**job.to_dict()) for job in jobs]
-
 
     @error_handler
     async def get_personalized_job_recommendations(self, user_id: str) -> list[Job]:
@@ -646,7 +692,6 @@ class JobsSearchController(Controllers):
         else:
             return "⚠️ Low Match - Limited alignment with position requirements"
 
-
     @error_handler
     async def get_similar_jobs(self, job_id: str, limit: int = 12) -> List[Job]:
         """
@@ -711,7 +756,6 @@ class JobsSearchController(Controllers):
 
             similar_jobs = similar_jobs_query.all()
             return [Job(**job.to_dict()) for job in similar_jobs]
-
 
     @error_handler
     async def get_job_by_slug(self, slug: str) -> Optional[Job]:
