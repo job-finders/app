@@ -226,13 +226,10 @@ class JobsSearchController(Controllers):
 
 
     @error_handler
-    async def get_jobs_by_qualification(
-        self,
-        qualification: str,
+    async def get_jobs_by_qualification(self,qualification: str,
         qualification_types: Optional[list[str]] = None,
         page: int = 1,
-        page_size: int = 10,        
-    ) -> dict:
+        page_size: int = 10) -> dict:
 
         if qualification_types is None:
             qualification_types = [
