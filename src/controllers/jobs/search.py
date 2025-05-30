@@ -107,6 +107,33 @@ class JobsSearchController(Controllers):
                 }
 
 
+    @error_handler
+    async def search_jobs_by_category(self, category: str, page: int = 1, page_size: int = 25) -> dict:
+        """Search jobs by category with pagination, filtered to active and featured preferred."""
+        with self.get_session() as session:
+            base_query = session.query(JobsORM).filter(
+                JobsORM.status == 'active',
+                JobsORM.category.ilike(f'%{category}%')  # match flexible category terms
+            )
+
+            total_jobs = base_query.count()
+            total_pages = math.ceil(total_jobs / page_size)
+            offset = (page - 1) * page_size
+
+            jobs_orm_list = (
+                base_query.order_by(JobsORM.is_featured.desc(), JobsORM.created_at.desc())
+                        .offset(offset)
+                        .limit(page_size)
+                        .all()
+            )
+
+            return {
+                "jobs": [Job(**job.to_dict()) for job in jobs_orm_list if job],
+                "total_jobs": total_jobs,
+                "total_pages": total_pages,
+                "page": page,
+                "page_size": page_size
+            }
 
         
     @error_handler

@@ -84,29 +84,34 @@ async def search_jobs(user: User):
 @user_details
 async def jobs_by_category(user: User, category: str):
     """
-    returns jobs under a certain category.
+    Display a paginated list of jobs filtered by category.
 
-        This route retrieves job listings filtered by the given 'keyword' query parameter.
-        It supports pagination and renders the results using the `jobs/search.html` template.
+    Args:
+        user (User): The currently authenticated user.
+        category (str): The category to filter jobs by.
 
-        Args:
-            user (User): The currently authenticated user.
-        Returns:
-            HTML template with search results.
-        Example:
-            GET /jobs/category?=engineering&page=1
+    Returns:
+        HTML template rendering the filtered job listings.
+
+    Example:
+        GET /jobs/category/engineering?page=1
     """
-        
     page = int(request.args.get('page', 1))
-    jobs = await jobs_controller.search_jobs(keyword, page)
+    search_result: dict[str, str | int | list[jobs]] = await jobs_controller.search_jobs_by_category(
+        category=category, page=page
+    )
+
     context = {
-        'jobs': jobs,
-        'page': page,
-        'per_page': 10,
-        'total_jobs': await jobs_controller.get_total_jobs(),
-        'search_keyword': keyword,
+        'jobs': search_result.get('jobs', []),
+        'page': search_result.get('page', page),
+        'per_page': search_result.get('page_size', 25),
+        'total_pages': search_result.get('total_pages', 0),
+        'total_jobs': search_result.get('total_jobs', 0),
+        'category': category.replace('-', ' ').title()
     }
-    return render_template('jobs/search.html', **context)
+
+    return render_template('jobs/category.html', **context)
+
 
 
 @jobs_route.get('/<string:job_id>')
@@ -129,9 +134,10 @@ async def job_details(user: User, job_id: str):
     Example:
         GET /jobs/123e4567-e89b-12d3-a456-426614174000
     """
-    job = await jobs_controller.get_job_by_id(job_id)
+    job: Job = await jobs_controller.get_job_by_id(job_id)
     if not job:
         return await gone(search_term=job_id)
+
     context = {'job': job}
     return render_template('jobs/detail.html', **context)
 
