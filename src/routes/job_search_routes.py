@@ -252,31 +252,69 @@ async def recent_jobs(user: User):
 @flask_error_handler
 @user_details
 async def jobs_by_salary_range(user: User):
-    """Search jobs by salary range."""
+    """
+    Display jobs filtered by salary range (monthly or yearly).
+
+    Query Params:
+        min (int): Minimum salary.
+        max (int): Maximum salary.
+        unit (str): 'monthly' or 'yearly'. Defaults to 'yearly'.
+        page (int): Page number.
+
+    Returns:
+        Rendered HTML with filtered job listings.
+    """
     page = int(request.args.get('page', 1))
     min_salary = request.args.get('min', type=int)
     max_salary = request.args.get('max', type=int)
-    # Stub: await jobs_controller.search_by_salary_range(min_salary, max_salary, page)
-    return render_template('jobs/salary.html', {
-        'jobs': [],
-        'page': page,
-        'min_salary': min_salary,
-        'max_salary': max_salary,
-        'total_jobs': 0
-    })
+    unit = request.args.get('unit', 'yearly').lower()
+
+    if unit not in ['monthly', 'yearly']:
+        unit = 'yearly'  # fallback to default if invalid
+
+    search_result = await jobs_controller.search_by_salary_range(
+        min_salary=min_salary,
+        max_salary=max_salary,
+        page=page,
+        unit=unit
+    )
+    context = {
+        'jobs': search_result.get('jobs', []),
+        'page': search_result.get('page', page),
+        'per_page': search_result.get('page_size', 25),
+        'total_pages': search_result.get('total_pages', 0),
+        'total_jobs': search_result.get('total_jobs', 0),
+        'min_salary': request.args.get('min'),
+        'max_salary': request.args.get('max'),
+        'salary_unit': unit}
+
+    return render_template('jobs/salary.html', **context)
 
 
 @jobs_route.get('/company/<string:company_slug>')
 @flask_error_handler
 @user_details
 async def jobs_by_company(user: User, company_slug: str):
-    """List jobs from a specific company."""
-    page = int(request.args.get('page', 1))
-    # Stub: await jobs_controller.search_by_company(company_slug, page)
-    return render_template('jobs/company.html', {
-        'jobs': [],
-        'page': page,
-        'company': company_slug.replace('-', ' ').title(),
-        'total_jobs': 0
-    })
+    """
+    List active jobs for a given company.
+    
+    Args:
+        company_slug (str): Slugified company name (e.g., 'microsoft-south-africa')
 
+    Query Params:
+        page (int): Page number
+
+    Returns:
+        Rendered company job listing template.
+    """
+    page = int(request.args.get('page', 1))
+    search_result = await jobs_controller.search_by_company(company_slug=company_slug, page=page)
+    
+    return render_template('jobs/company.html', {
+        'jobs': search_result.get('jobs', []),
+        'page': search_result.get('page', page),
+        'per_page': search_result.get('page_size', 25),
+        'total_pages': search_result.get('total_pages', 0),
+        'total_jobs': search_result.get('total_jobs', 0),
+        'company': search_result.get('company_name', company_slug.replace('-', ' ').title())
+    })
