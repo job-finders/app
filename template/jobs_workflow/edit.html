@@ -1,0 +1,47 @@
+{% extends "employers/layout/page.html" %}
+
+{% block title %}Edit Job Posting{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-sm">
+    <div class="card-header bg-light">
+      <h2 class="mb-0 text-info"><i class="ti-pencil mr-2"></i>Edit Job</h2>
+    </div>
+    <div class="card-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for cat,msg in messages %}
+            <div class="alert alert-{{cat}} alert-dismissible fade show">
+              {{ msg }}
+              <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" action="{{ url_for('jobs_workflow.edit_job', job_id=job.job_id) }}">
+        {{ csrf_token() }}
+
+        <!-- same sections as create, but pre-populated with `job` fields -->
+        <div class="form-group">
+          <label class="font-weight-bold">Title *</label>
+          <input type="text" name="title" class="form-control" required
+                 value="{{ job.title }}">
+        </div>
+        <div class="form-group">
+          <label class="font-weight-bold">Description *</label>
+          <textarea name="description" class="form-control" rows="6">{{ job.description }}</textarea>
+        </div>
+        <!-- ... include all other form inputs, using job.xxx as value ... -->
+
+        <div class="text-right mt-4">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="ti-save mr-2"></i>Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

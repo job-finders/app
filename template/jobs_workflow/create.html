@@ -1,0 +1,137 @@
+{% extends "employers/layout/page.html" %}
+
+{% block title %}Create Job Posting{% endblock %}
+
+{% block styles %}
+<style>
+  .section-header {
+    border-left: 4px solid #17a2b8;
+    padding-left: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 768px) {
+    .form-group input, .form-group textarea {
+      font-size: 0.9rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-sm">
+    <div class="card-header bg-light">
+      <h2 class="mb-0 text-info"><i class="ti-briefcase mr-2"></i>Create Job Posting</h2>
+    </div>
+    <div class="card-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for cat,msg in messages %}
+            <div class="alert alert-{{cat}} alert-dismissible fade show">
+              {{ msg }}
+              <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" action="{{ url_for('jobs_workflow.create_job') }}">
+        {{ csrf_token() }}
+
+        <div class="section-header"><h5>Basic Details</h5></div>
+        <div class="form-group">
+          <label class="font-weight-bold">Title *</label>
+          <input type="text" name="title" class="form-control" required minlength="5" maxlength="255"
+                 value="{{ form_data.title if form_data }}">
+        </div>
+        <div class="form-group">
+          <label class="font-weight-bold">Description *</label>
+          <textarea name="description" class="form-control" rows="6" required>{{ form_data.description if form_data }}</textarea>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <label class="font-weight-bold">Position Type *</label>
+            <select name="position_type" class="form-control" required>
+              <option value="">Select</option>
+              {% for opt in ['FULL_TIME','PART_TIME','CONTRACT'] %}
+                <option value="{{opt}}" {% if form_data.position_type==opt %}selected{% endif %}>{{opt.replace('_',' ').title()}}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="font-weight-bold">Remote Policy *</label>
+            <select name="remote_policy" class="form-control" required>
+              <option value="">Select</option>
+              {% for opt in ['ONSITE','HYBRID','REMOTE'] %}
+                <option value="{{opt}}" {% if form_data.remote_policy==opt %}selected{% endif %}>{{opt.title()}}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="section-header"><h5>Compensation & Location</h5></div>
+        <div class="row">
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="font-weight-bold">Min Salary</label>
+              <input type="number" name="salary_min" class="form-control" min="0"
+                     value="{{ form_data.salary_min if form_data }}">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="font-weight-bold">Max Salary</label>
+              <input type="number" name="salary_max" class="form-control" min="0"
+                     value="{{ form_data.salary_max if form_data }}">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="font-weight-bold">Currency</label>
+              <input type="text" name="salary_currency" class="form-control" maxlength="3"
+                     value="{{ form_data.salary_currency or 'ZAR' }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="font-weight-bold">City *</label>
+              <input type="text" name="city" class="form-control" required
+                     value="{{ form_data.city if form_data }}">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="font-weight-bold">Province *</label>
+              <input type="text" name="province" class="form-control" required
+                     value="{{ form_data.province if form_data }}">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="font-weight-bold">Country *</label>
+              <input type="text" name="country" class="form-control" required
+                     value="{{ form_data.country if form_data }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="font-weight-bold">Application Deadline</label>
+          <input type="date" name="application_deadline" class="form-control"
+                 value="{{ form_data.application_deadline if form_data }}">
+        </div>
+
+        <div class="text-right mt-4">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="ti-save mr-2"></i>Create Job
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

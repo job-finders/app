@@ -1,0 +1,14 @@
+{% extends "employers/layout/page.html" %}
+{% block title %}Job Approved{% endblock %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+  <div class="alert alert-success shadow-sm">
+    <h3><i class="ti-check mr-2"></i>Job Approved!</h3>
+    <p>Your approval is live. Job <strong>{{ job.title }}</strong> is now active.</p>
+    <a href="{{ url_for('jobs.job_details', job_id=job.job_id) }}" class="btn btn-info mt-3">
+      View Job Listing
+    </a>
+  </div>
+</div>
+{% endblock %}

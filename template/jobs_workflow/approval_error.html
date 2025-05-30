@@ -1,0 +1,14 @@
+{% extends "employers/layout/page.html" %}
+{% block title %}Approval Error{% endblock %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+  <div class="alert alert-danger shadow-sm">
+    <h3><i class="ti-alert mr-2"></i>Something Went Wrong</h3>
+    <p>{{ message }}</p>
+    <a href="{{ url_for('jobs.list_jobs') }}" class="btn btn-primary mt-3">
+      Back to Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

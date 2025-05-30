@@ -1,0 +1,9 @@
+{% extends "layout/page.html" %}
+{% block title %}Category: {{ category }} — Page {{ page }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1 class="mb-3">Category: {{ category }}</h1>
+  {% include 'jobs/_jobs_list.html' %}
+</div>
+{% endblock %}
