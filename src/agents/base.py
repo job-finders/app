@@ -1,18 +1,10 @@
-# agents/base.py
-from abc import ABC, abstractmethod
-from typing import Any, Type
-
-from src.config import config_instance
-from pydantic import BaseModel
-from src.agents.openrouter_client import call_openrouter
-
+# src/agents/base.py
 
 class BaseAgent(ABC):
     def __init__(self, user_id: str):
         self.user_id = user_id
         self.memory = AgentMemoryStore(user_id)
         self.hashnode_token = config_instance().HASHNODE_TOKEN
-
 
     @abstractmethod
     def prompt(self, *args, **kwargs) -> str:
@@ -22,7 +14,12 @@ class BaseAgent(ABC):
     def output_model(self) -> Type[BaseModel]:
         ...
 
+    def system_prompt(self) -> str:
+        """Override in agents to define custom system behavior."""
+        return "You are a helpful assistant."
+
     async def run(self, *args, **kwargs) -> BaseModel:
         prompt = self.prompt(*args, **kwargs)
-        output = await call_openrouter(prompt, self.output_model())
+        system_prompt = self.system_prompt()
+        output = await call_openrouter(prompt, self.output_model(), system_prompt)
         return output

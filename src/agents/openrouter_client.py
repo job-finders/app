@@ -1,30 +1,35 @@
-# openrouter_client.py
-import os
-import httpx
-from pydantic import BaseModel
+# src/agents/openrouter_client.py
+
 from typing import Type
+from pydantic import BaseModel
+import httpx
+from src.config import config_instance
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+# src/agents/openrouter_client.py
 
-HEADERS = {
-    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "Content-Type": "application/json"
-}
-
-async def call_openrouter(prompt: str, output_model: Type[BaseModel]) -> BaseModel:
-    """
-    Calls DeepSeek via OpenRouter and parses response into structured Pydantic output.
-    """
-    payload = {
-        "model": "deepseek-chat",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7
+async def call_openrouter(prompt: str, output_model: Type[BaseModel], system_prompt: str) -> BaseModel:
+    OPENROUTER_API_KEY = config_instance().OPENROUTER_API_KEY
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
     }
 
-    async with httpx.AsyncClient(timeout=60) as client:
-        response = await client.post(OPENROUTER_API_URL, headers=HEADERS, json=payload)
+    data = {
+        "model": "deepseek-chat",  # or your preferred default
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 1024
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://openrouter.ai/api/v1/chat/completions", json=data, headers=headers
+        )
         response.raise_for_status()
-        result = response.json()
-        content = result["choices"][0]["message"]["content"]
-        return output_model.parse_raw(content)
+        message = response.json()["choices"][0]["message"]["content"]
+
+    return output_model.parse_raw(message)
+

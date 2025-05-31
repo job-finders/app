@@ -5,7 +5,7 @@ from src.database.models.users import User
 from src.logger import init_logger
 from src.main import ats_controller  # Assuming ats_controller is an instance of ATSToolController
 
-ats_tool_route = Blueprint('ats', __name__)
+ats_tool_route = Blueprint('ats', __name__,  url_prefix='/ats-tool')
 ats_logger = init_logger("ats_tool")
 
 @ats_tool_route.route("/ats-match", methods=["POST"])
