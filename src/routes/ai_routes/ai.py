@@ -6,13 +6,13 @@ from src.database.models.users import User
 from src.logger import init_logger
 from src.controllers.agents_controller import AgentsController
 
-api_route = Blueprint('agents', __name__, url_prefix='/agents/v1')
+agents_route = Blueprint('agents', __name__, url_prefix='/agents/v1')
 agents_logger = init_logger("agents_tool")
 
 agents_controller = AgentsController()
 
 
-@api_route.route("/jobs/enhance-job-post", methods=["POST"])
+@agents_route.route("/jobs/enhance-job-post", methods=["POST"])
 @login_required
 async def enhance_job_post(user: User):
     try:
