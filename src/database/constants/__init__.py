@@ -1,5 +1,9 @@
 
-
+from datetime import datetime, timezone
 ID_LEN: int = 64
 NAME_LEN: int = 255
 SHORT_DESCRIPTION_lEN: int = 128
+
+
+def utc_time():
+    return datetime.now(timezone.utc)

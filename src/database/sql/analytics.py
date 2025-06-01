@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from config import config_instance
 from controllers.controller import Controllers
 from src.database.sql import Base
-from src.database.constants import ID_LEN
+from src.database.constants import ID_LEN, utc_time
 # ----------- Activity Processor -----------
 from threading import Thread
 from queue import Queue
@@ -27,7 +27,7 @@ class UserSearchActivityORM(Base):
     search_term = Column(String(255))
     filters = Column(JSON)
     result_count = Column(Integer)
-    timestamp = Column(DateTime, default=datetime.now(timezone.utc), index=True)
+    timestamp = Column(DateTime, default=utc_time(), index=True)
 
 
 class JobViewActivityORM(Base):
@@ -46,7 +46,7 @@ class ApplicationStepORM(Base):
     id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
     application_id = Column(String(ID_LEN), ForeignKey('job_applications.application_id'), index=True)
     step_name = Column(String(50))
-    timestamp = Column(DateTime, default=datetime.now(timezone.utc), index=True)
+    timestamp = Column(DateTime, default=utc_time(), index=True)
 
 # ----------- Data Retention -----------
 class ArchivedActivityORM(Base):
@@ -56,7 +56,7 @@ class ArchivedActivityORM(Base):
     user_id = Column(String(ID_LEN), index=True)
     activity_type = Column(String(20))
     data = Column(JSON)
-    archived_at = Column(DateTime, default=datetime.now(timezone.utc))
+    archived_at = Column(DateTime, default=utc_time())
 
 
 # Create indexes
@@ -175,7 +175,7 @@ class RetentionManager(Controllers):
 
     async def archive_old_activities(self):
         """Archive activities older than retention period"""
-        cutoff = datetime.now(timezone.utc) - timedelta(days=self.cleanup_days)
+        cutoff = utc_time() - timedelta(days=self.cleanup_days)
 
         with self.get_session() as session:
             # Archive searches

@@ -4,6 +4,8 @@ from enum import Enum
 from typing import Optional, Any
 
 from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict
+
+from src.database.constants import utc_time
 from src.database.models.company_models import Company
 
 
@@ -41,7 +43,7 @@ class JobApprovalRequest(BaseModel):
 
     def is_token_valid(self) -> bool:
         """Check if the approval token is still valid."""
-        return bool(self.token_expires and self.token_expires > datetime.now(timezone.utc))
+        return bool(self.token_expires and self.token_expires > utc_time())
 
     def is_approved(self) -> bool:
         """Return True if the job has been approved."""
@@ -98,7 +100,7 @@ class JobStatusEnum(str, Enum):
     CLOSED = "closed"
 
 def generate_job_ref() -> str:
-    ts = datetime.utcnow().strftime('%Y%m%d%H%M%S')  # e.g., 20250529143000
+    ts = utc_time().strftime('%Y%m%d%H%M%S')  # e.g., 20250529143000
     rand = uuid.uuid4().hex[:6].upper()              # e.g., B6FA9C
     return f"JB-{ts}-{rand}"                         # e.g., JB-20250529143000-B6FA9C
 
@@ -138,7 +140,7 @@ class Job(BaseModel):
     geo_location: Optional[str] = None
 
     # Timeline
-    posted_at: datetime = Field(default_factory=datetime.utcnow)
+    posted_at: datetime = Field(default_factory=lambda: utc_time())
     expires_at: datetime
     application_deadline: Optional[datetime] = Field(default=None)
 
@@ -170,7 +172,7 @@ class Job(BaseModel):
     @computed_field
     @property
     def is_active(self) -> bool:
-        return self.status == "active" and self.expires_at > datetime.utcnow()
+        return self.status == "active" and self.expires_at > utc_time()
 
     @computed_field
     @property
@@ -241,7 +243,7 @@ class Job(BaseModel):
 
         # Set default expiration if not provided
         if not expires_at:
-            expires_at = datetime.utcnow() + timedelta(days=60)
+            expires_at = utc_time() + timedelta(days=60)
 
         # Create job data dictionary
         job_data = {
@@ -273,9 +275,9 @@ class Job(BaseModel):
             'is_featured': agent_output.is_featured,
             'employer_id': employer_id,
             'company_id': company_id,
-            'posted_at': datetime.utcnow(),
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
+            'posted_at': utc_time(),
+            'created_at': utc_time(),
+            'updated_at': utc_time()
         }
 
         # Add any additional fields passed via kwargs
@@ -308,7 +310,7 @@ class SavedJob(BaseModel):
     saved_job_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     job_id: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: utc_time())
 
     class Config:
         from_attributes = True
@@ -338,7 +340,7 @@ class JobApplication(BaseModel):
     job: Optional[Job] = Field(None)  # Relationship to Job model
     cv_id: Optional[str] = None
 
-    applied_date: datetime = Field(default_factory=datetime.utcnow)
+    applied_date: datetime = Field(default_factory=lambda : utc_time())
     updated_at: Optional[datetime] = Field(default=None)  # Changed from date to datetime
 
     cover_letter: Optional[str] = None
@@ -372,7 +374,7 @@ class ATSReport(BaseModel):
     matched_keywords: list[str] = Field(default_factory=list, description="list of matched keywords found in CV")
     missing_keywords: list[str] = Field(default_factory=list, description="list of important keywords not found in CV")
     feedback: str = Field(..., description="Feedback based on the ATS evaluation")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp when the report was generated")
+    created_at: datetime = Field(default_factory=lambda: utc_time(), description="Timestamp when the report was generated")
 
     class Config:
         from_attributes = True
@@ -398,7 +400,7 @@ class JobStatistics(BaseModel):
     application_metrics: ApplicationMetrics
     categories: dict[str, int] = Field(..., description="Job count per category")
     recent_jobs_30d: int = Field(..., description="Jobs posted in last 30 days")
-    calculated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    calculated_at: datetime = Field(default_factory=lambda: utc_time())
 
     class Config:
         json_encoders = {

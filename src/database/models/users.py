@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, EmailStr, field_validator
 
+from src.database.constants import utc_time
 from src.main import encryptor
 from src.utils import format_reference  # assuming this is your own utility function
 
@@ -55,8 +56,8 @@ class User(BaseModel):
     password_hash: str
     role: str
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    last_login: Optional[datetime]  = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: utc_time())
+    last_login: Optional[datetime]  = Field(default_factory=lambda: utc_time())
 
     def __bool__(self):
         return bool(self.password_hash)

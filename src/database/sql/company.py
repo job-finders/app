@@ -38,8 +38,8 @@ class CompanyORM(Base):
     twitter_handle = Column(String(50), nullable=True)
 
     # Audit Fields
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_time())
+    updated_at = Column(DateTime, default=utc_time(), onupdate=utc_time())
 
     # Relationships
     jobs = relationship("JobsORM", back_populates="company", lazy="dynamic")
