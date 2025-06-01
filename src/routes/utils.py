@@ -10,7 +10,7 @@ from src.database.models.users import User
 from src.database.models import Job
 from src.database.models.seo import create_seo_tags_for_job, create_tags
 from src.logger import init_logger
-from src.main import junction_scrapper
+from src.main import junction_scrapper, job_search_controller
 
 utils_logger = init_logger("utils_logger")
 
@@ -230,7 +230,7 @@ async def create_search_context(user: User, search_term: str, page: int = 1, per
     :param per_page: Number of jobs per page.
     :return: Rendered template response.
     """
-    jobs_filtered = [job for job in junction_scrapper.jobs.values() if search_term_matches_any_field(job, search_term)]
+    jobs_filtered = [job for job in junction_scrapper.job_cache.values() if search_term_matches_any_field(job, search_term)]
     context = await create_common_context(search_term, jobs_filtered, page, per_page)
     context.update(current_user=user)
     return render_template('job_listing.html', **context)
@@ -244,7 +244,7 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
     search_terms: list[str] = junction_scrapper.search_terms
 
     # Count job postings by category
-    job_counts = count_jobs_per_category(list(junction_scrapper.jobs.values()))
+    job_counts = count_jobs_per_category(list(junction_scrapper.job_cache.values()))
 
     # Enrich categories with job_count
     enriched_categories = []
@@ -299,19 +299,20 @@ async def create_context(user:User, search_term: str, page: int = 1, per_page: i
     if search_term not in junction_scrapper.search_terms and search_term is not "home":
         return None
 
-    jobs_filtered = [job for job in junction_scrapper.jobs.values() if job.search_term.casefold() == search_term.casefold()]
-    context = await create_common_context(search_term=search_term, job_list=jobs_filtered,
+    category_search = await job_search_controller.search_jobs_by_category(category=search_term, page=page, page_size=per_page)
+    jobs_list = category_search.get('jobs') if category_search else []
+    context = await create_common_context(search_term=search_term, job_list=jobs_list,
                                           page=page, per_page=per_page)
     if user:
         context.update(current_user=user)
     else:
         context.update(current_user=None)
 
-
     if search_term == "home":
         return render_template('index.html', **context)
     elif search_term in junction_scrapper.search_terms:
         return render_template('job_listing.html', **context)
+    return None
 
 
 async def not_found(search_term: str):

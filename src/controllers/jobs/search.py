@@ -74,7 +74,7 @@ class JobsSearchController(Controllers):
     async def search_jobs(self,
                           keyword: str = '',
                           page: int = 1,
-                          page_size: int = 10) -> dict[str, str | int | list[Job]]:
+                          page_size: int = 25) -> dict[str, str | int | list[Job]]:
 
         """Search jobs by keyword in title or description with pagination."""
         with self.get_session() as session:
@@ -127,6 +127,7 @@ class JobsSearchController(Controllers):
                         .limit(page_size)
                         .all()
             )
+            # 172.29.77.10: 8084
 
             return {
                 "jobs": [Job(**job.to_dict()) for job in jobs_orm_list if job],

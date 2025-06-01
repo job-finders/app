@@ -18,7 +18,7 @@
                     <ul>
                     {% for term in search_terms %}
                         <li>
-                        <a href="{{ url_for('jobs.job_search', search_term=term) }}">
+                        <a href="{{ url_for('jobs.category_jobs', category=term) }}">
                             <i class="ti-briefcase"> </i>
                             {{ term|title }}
                         </a>
@@ -39,7 +39,6 @@
                             <i class="ti-file"> </i>
                             Blog</a>
                         </li>
-
                         <li> <a href="{{ url_for('blog.get_blog', topic='resume-writing-tips') }}">
                             <i class="ti-file"> </i>
                             Resume Writing Tips</a>

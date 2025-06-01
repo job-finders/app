@@ -81,6 +81,9 @@ def create_app(config):
 
         # junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
         # junction_scrapper.reload()
+        junction_scrapper.init_app(app=app)
+
+
         job_seeker_profile_controller.init_app(app=app)
         # career_scrapper.init_app(app=app)
 
@@ -119,4 +122,4 @@ def create_app(config):
         # registering filters
         app.jinja_env.filters['title'] = format_title
         app.jinja_env.filters['description'] = format_description
-    return app, junction_scrapper
+    return app

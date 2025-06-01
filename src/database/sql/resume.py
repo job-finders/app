@@ -1,14 +1,13 @@
 import uuid
+
 from sqlalchemy import Column, String, Date, DateTime, Boolean, ForeignKey, Text, UniqueConstraint, JSON
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import inspect
 from sqlalchemy.orm import relationship
 
-from database.constants import utc_time
 from src.database.constants import ID_LEN, NAME_LEN
+from src.database.constants import utc_time
 from src.database.sql import Base, engine
-from sqlalchemy import inspect
-from datetime import datetime
-from datetime import datetime, timezone
+
 
 class JobSeekerCVORM(Base):
     __tablename__ = 'jobseeker_cvs'

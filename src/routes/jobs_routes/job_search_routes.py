@@ -11,7 +11,7 @@ from src.routes.utils import gone
 
 
 class JobSearchContext(TypedDict):
-    user: User
+    current_user: User
     jobs: List[Job]
     page: int
     per_page: int
@@ -49,7 +49,7 @@ async def list_jobs(user: User):
     search_result = await job_search_controller.get_all_jobs(page=page)
 
     context: JobSearchContext = {
-        'user': user,
+        'current_user': user,
         'jobs': search_result.get('jobs',[]),
         'page': search_result.get('page', page),
         'per_page': search_result.get('page_size',25),
@@ -80,12 +80,12 @@ async def search_jobs(user: User):
     Example:
         GET /jobs/search?keyword=engineer&page=1
     """
-    keyword = request.args.get('keyword', '')
+    keyword = request.args.get('search_term', '')
     page = int(request.args.get('page', 1))
     search_result = await job_search_controller.search_jobs(keyword=keyword, page=page)
 
     context: JobSearchContext = {
-        'user': user,
+        'current_user': user,
         'jobs': search_result.get('jobs',[]),
         'page': search_result.get('page', page),
         'per_page': search_result.get('page_size',25),
@@ -101,7 +101,7 @@ async def search_jobs(user: User):
 @jobs_search_route.get('/category/<string:category>')
 @flask_error_handler
 @user_details
-async def jobs_by_category(user: User, category: str):
+async def category_jobs(user: User, category: str):
     """
     Display a paginated list of jobs filtered by category.
 
@@ -119,7 +119,7 @@ async def jobs_by_category(user: User, category: str):
     search_result = await job_search_controller.search_jobs_by_category(category=category, page=page)
 
     context: JobSearchContext = {
-        'user': user,
+        'current_user': user,
         'jobs': search_result.get('jobs', []),
         'page': search_result.get('page', page),
         'per_page': search_result.get('page_size', 25),
@@ -154,13 +154,12 @@ async def job_details(user: User, job_id: str):
     related_jobs: list[Job] = await job_search_controller.get_similar_jobs(job_id=job.job_id)
 
     context = {
-        'user': user,
+        'current_user': user,
         'job': job,
         'related_jobs': related_jobs,
         'meta_title': job.title,
         'meta_description': job.short_description,
     }
-
     return render_template('jobs/job_detail.html', **context)
 
 @jobs_search_route.get('/location/<string:location>')
@@ -173,7 +172,7 @@ async def jobs_by_location(user: User, location: str):
     # Stub: await jobs_controller.search_by_location(location, page)
     search_result = await job_search_controller.get_jobs_by_location(location=location, page=page)
     context = {
-        'user': user,
+        'current_user': user,
         'jobs': search_result.get('jobs', []),
         'page': search_result.get('page', page),
         'total_jobs': search_result.get('total_jobs', 0),
@@ -203,7 +202,7 @@ async def jobs_by_type(user: User, job_type: str):
     search_result: dict = await job_search_controller.search_by_type(job_type=job_type, page=page)
 
     context : JobSearchContext = {
-        'user': user,
+        'current_user': user,
         'jobs': search_result.get('jobs', []),
         'page': search_result.get('page', page),
         'per_page': search_result.get('page_size', 25),
@@ -236,7 +235,7 @@ async def featured_jobs(user: User):
     search_result = await job_search_controller.get_featured_jobs(page=page)
 
     context: JobSearchContext = {
-        'user': user,
+        'current_user': user,
         'jobs': search_result.get('jobs', []),
         'page': search_result.get('page', page),
         'per_page': search_result.get('page_size', 25),
@@ -266,7 +265,7 @@ async def recent_jobs(user: User):
     search_result = await job_search_controller.get_recent_jobs(page=page)
 
     context: JobSearchContext = {
-        'user': user,
+        'current_user': user,
         'jobs': search_result.get('jobs', []),
         'page': search_result.get('page', page),
         'per_page': search_result.get('page_size', 25),
@@ -309,7 +308,7 @@ async def jobs_by_salary_range(user: User):
         unit=unit
     )
     context: JobSearchContext = {
-        'user': user,
+        'current_user': user,
         'jobs': search_result.get('jobs', []),
         'page': search_result.get('page', page),
         'per_page': search_result.get('page_size', 25),
@@ -345,7 +344,7 @@ async def jobs_by_company(user: User, company_slug: str):
     page = int(request.args.get('page', 1))
     search_result = await job_search_controller.search_by_company(company_slug=company_slug, page=page)
     context: JobSearchContext = {
-        'user': user,
+        'current_user': user,
         'jobs': search_result.get('jobs', []),
         'page': search_result.get('page', page),
         'per_page': search_result.get('page_size', 25),
@@ -374,7 +373,7 @@ async def jobs_by_title(user: User):
 
     result = await job_search_controller.get_jobs_by_title(title=title,page=page)
     context: JobSearchContext = {
-        'user': user,
+        'current_user': user,
         'jobs': result.get('jobs',[]),
         'total_jobs': result.get('total_jobs', 0),
         'page': result.get('page',page),
@@ -409,7 +408,7 @@ async def jobs_by_qualification(user: User):
                                                                    qualification_types=types,
                                                                    page=page)
     context : JobSearchContext = {
-        'user': user,
+        'current_user': user,
         'jobs': result.get('jobs', []),
         'total_jobs': result.get('total_jobs', 0),
         'page': result.get('page', page),
@@ -428,6 +427,127 @@ async def job_by_reference(user: User, reference: str):
 
     if not job:
         return render_template('jobs/error_404.html'), 404
-    context = {'user': user,'job': job}
+    context = {'current_user': user,'job': job}
     return render_template('jobs/reference.html', **context)
 
+
+##############################################################################################################
+# @jobs_route.get('/jobs-in/<string:location>')
+# @flask_error_handler
+# @user_details
+# async def jobs_by_location(user: User,location: str):
+#     """
+#     Handles jobs by province or town.
+#     If the location is a known town, replace it with its parent province for consistent filtering.
+#     """
+#
+#     page = int(request.args.get('page', 1))
+#     location_lower = location.lower()
+#
+#     # If user typed a town, convert to province
+#     if location_lower in TOWN_TO_PROVINCE:
+#         province = TOWN_TO_PROVINCE[location_lower]
+#     else:
+#         province = location  # Assume it's already a province or partial match
+#
+#     jobs_filtered = [
+#         job for job in scrapper.jobs.values()
+#         if job.location and province.lower() in job.location.lower()
+#     ]
+#
+#
+#
+#     if not jobs_filtered:
+#         return await not_found(location)
+#
+#     # Slug for SEO
+#     search_term = f"jobs-in-{location_lower.replace(' ', '-')}"
+#
+#     context = await create_common_context(
+#         search_term=search_term,
+#         job_list=jobs_filtered,
+#         page=page,
+#         per_page=10
+#     )
+#     context.update(current_user=user)
+#
+#     return render_template('location.html', **context)
+
+
+# @jobs_route.get('/jobs/category/<string:category>')
+# @flask_error_handler
+# @user_details
+# async def category_jobs(user: User,category: str):
+#     """Render job search results by search term."""
+#     page = int(request.args.get('page', 1))
+#     response = await create_search_context(user=user, search_term=category, page=page)
+#     if response is None:
+#         return await not_found(category)
+#     return response
+#
+#
+# @jobs_route.get('/jobs/<string:search_term>')
+# @flask_error_handler
+# @user_details
+# async def job_search(user: User,search_term: str):
+#     """Render job search results by search term."""
+#     page = int(request.args.get('page', 1))
+#     response = await create_search_context(user=user, search_term=search_term, page=page)
+#     if response is None:
+#         return await not_found(search_term)
+#     return response
+#
+#
+# @jobs_route.get('/search')
+# @flask_error_handler
+# @user_details
+# async def search_bar(user: User):
+#     """Render search results from a query submitted via search bar."""
+#     search_term = request.args.get('search_term')
+#     if not search_term:
+#         return redirect(url_for('home.get_home'), code=302)
+#     page = int(request.args.get('page', 1))
+#     response = await create_search_context(user=user, search_term=search_term, page=page)
+#     if response is None:
+#         return await not_found(search_term)
+#     return response
+#
+#
+# @jobs_route.get('/job/<string:reference>')
+# @flask_error_handler
+# @user_details
+# async def job_detail(user: User, reference: str):
+#     """Display job details identified by job reference."""
+#     if user and user.role == Role.SEEKER:
+#         # Obtain Job Seeker Resume
+#         pass
+#
+#     job: Job = await scrapper.job_search(job_reference=reference)
+#
+#     if isinstance(job, Job) and job.title.strip():
+#         return await sub_job_detail(user=user, job=job)
+#     return await gone(user=user, search_term=reference)
+#
+# @jobs_route.get('/search/job/<string:slug>')
+# @flask_error_handler
+# @user_details
+# async def job_slug(user: User,slug: str):
+#     """Display job details identified by its slug."""
+#     job: Job = await scrapper.search_by_slug(slug=slug)
+#     if isinstance(job, Job) and job.title.strip():
+#         return await sub_job_detail(user=user, job=job)
+#     return await gone(search_term=slug)
+#
+#
+# @jobs_route.get('/jobs/categories')
+# @flask_error_handler
+# @user_details
+# async def categories(user: User):
+#     pass
+#
+#
+# @jobs_route.get('/jobs/ai-based-search')
+# @flask_error_handler
+# @user_details
+# async def assisted_search(user: User):
+#     pass

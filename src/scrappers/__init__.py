@@ -6,6 +6,7 @@ from urllib.parse import urljoin
 import uuid  # Added for UUID generation
 
 from bs4 import BeautifulSoup
+from flask import Flask
 from pydantic import HttpUrl, ValidationError
 from requests_cache import CachedSession
 
@@ -138,7 +139,8 @@ class Scraper:
         self.company_cache.clear()
         
         # Load all jobs from database
-        jobs: list[Job] = await job_search_controller.get_all_jobs()
+        search_result: dict = await job_search_controller.get_all_jobs()
+        jobs = search_result.get('jobs', []) if search_result else []
 
         for job in jobs:
             # Cache jobs by reference ID
@@ -369,6 +371,13 @@ class JunctionScraper(Scraper):
         super().__init__()
         # Limit concurrent requests to 10
         self.semaphore = asyncio.Semaphore(10)
+    def init_app(self, app: Flask):
+        """
+
+        :param app:
+        :return:
+        """
+        asyncio.run(self.update_cache())
 
     async def scrape_and_store_jobs(self) -> None:
         """

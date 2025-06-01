@@ -152,10 +152,3 @@ async def verify_email(user: User, verification_id: str):
     return redirect(url_for('home.get_home'), code=302)
 
 
-@home_route.get('/apply/<string:job_ref>')
-@flask_error_handler
-@user_details
-async def apply_for_job(user: User, job_ref: str):
-    """Redirect to external job application page."""
-    job = scrapper.jobs.get(job_ref)
-    return redirect_apply_page(job)
