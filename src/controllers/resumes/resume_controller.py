@@ -122,6 +122,55 @@ class ResumeController(Controllers):
             return result
 
     @error_handler
+    async def get_primary_resume(self, user_id: str) -> JobSeekerCV:
+        """
+        Retrieves the primary resume for a given user using ORM to_dict() methods
+
+        Args:
+            user_id: The ID of the user to retrieve the resume for
+
+        Returns:
+            JobSeekerCV: The primary resume for the user
+
+        Raises:
+            ValueError: If no primary resume is found for the user
+        """
+        with self.get_session() as session:
+            # Query for the primary resume with eager loading
+            resume_orm = session.query(JobSeekerCVORM).filter(
+                JobSeekerCVORM.user_uid == user_id,
+                JobSeekerCVORM.is_primary == True
+            ).options(
+                joinedload(JobSeekerCVORM.experience),
+                joinedload(JobSeekerCVORM.education),
+                joinedload(JobSeekerCVORM.certifications),
+                joinedload(JobSeekerCVORM.languages),
+                joinedload(JobSeekerCVORM.projects),
+                joinedload(JobSeekerCVORM.publications),
+                joinedload(JobSeekerCVORM.awards),
+                joinedload(JobSeekerCVORM.custom_sections)
+            ).first()
+
+            if not resume_orm:
+                raise ValueError(f"No primary resume found for user {user_id}")
+
+            # Convert main resume using its to_dict method
+            resume_data = resume_orm.to_dict()
+
+            # Convert relationships using their to_dict methods
+            resume_data["experience"] = [exp.to_dict() for exp in resume_orm.experience]
+            resume_data["education"] = [edu.to_dict() for edu in resume_orm.education]
+            resume_data["certifications"] = [cert.to_dict() for cert in resume_orm.certifications]
+            resume_data["languages"] = [lang.to_dict() for lang in resume_orm.languages]
+            resume_data["projects"] = [proj.to_dict() for proj in resume_orm.projects]
+            resume_data["publications"] = [pub.to_dict() for pub in resume_orm.publications]
+            resume_data["awards"] = [award.to_dict() for award in resume_orm.awards]
+            resume_data["custom_sections"] = [cs.to_dict() for cs in resume_orm.custom_sections]
+
+            # Create the Pydantic model from the combined dictionary
+            return JobSeekerCV(**resume_data)
+
+    @error_handler
     async def list_cvs_for_user(self, user_uid: str) -> list[JobSeekerCV]:
         # Get all resumes for a specific job seeker
         with self.get_session() as session:

@@ -51,6 +51,7 @@ class JobSeekerCVORM(Base):
         return {
             "cv_id": self.cv_id,
             "user_uid": self.user_uid,
+            "is_primary": self.is_primary,
             "professional_title": self.professional_title,
             "summary": self.summary,
             "skills": self.skills,

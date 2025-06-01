@@ -1,6 +1,6 @@
 from flask import Flask
 
-from controllers.agents import EmployerAgentsController
+from controllers.agents import EmployerAgentsController, EmployeeAgentsController
 from src.utils import template_folder, static_folder, format_title, format_description
 from src.emailer import SendMail
 from src.controllers.encryptor import Encryptor
@@ -42,6 +42,7 @@ from src.controllers.jobseekers import JobSeekerProfilesController
 job_seeker_profile_controller = JobSeekerProfilesController()
 
 employer_agents_controller = EmployerAgentsController()
+employee_agents_controller = EmployeeAgentsController()
 
 def create_app(config):
     """

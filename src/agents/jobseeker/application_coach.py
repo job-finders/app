@@ -3,6 +3,42 @@
 from typing import List, Optional, Type
 from pydantic import BaseModel, Field
 from src.agents.base import BaseAgent
+from src.database.models.resume import JobSeekerCV  # Import your full resume model
+from datetime import datetime
+
+
+class ApplicationCoachInput(BaseModel):
+    """
+    Comprehensive input model for job application coaching agent.
+    Contains all necessary information to analyze a candidate's fit for a specific job.
+
+    Attributes:
+        job_post: The full text of the job posting being analyzed, including all relevant details.
+        resume: Complete professional profile of the candidate, including work history, education, and skills.
+        cover_letter: Optional tailored letter explaining the candidate's interest and qualifications.
+    """
+    job_post: str = Field(
+        ...,
+        description="Full job description text including requirements, responsibilities, and company information. "
+                    "Should contain all relevant details for accurate matching analysis."
+    )
+
+    cv_text: str = Field(
+        ...,
+        description="Candidate's complete professional profile with detailed work history, education, skills, "
+                    "and other qualifications. Provides comprehensive context for matching analysis."
+    )
+
+    cover_letter: Optional[str] = Field(
+        None,
+        description="Personalized application letter highlighting candidate's fit for this specific position. "
+                    "Optional but provides additional context about motivation and communication skills."
+    )
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()  # Ensure proper datetime serialization
+        }
 
 
 class JobMatchInsights(BaseModel):
@@ -33,11 +69,6 @@ class ApplicationCoachAgent(BaseAgent):
     name = "application_coach"
     description = "Evaluates how well a candidate matches a job and provides actionable feedback."
 
-    class Input(BaseModel):
-        job_post: str
-        cv_text: str
-        cover_letter: Optional[str] = None
-
     def system_prompt(self) -> str:
         return (
             "You are a smart career advisor. Analyze job descriptions against a candidate's CV and cover letter.\n"
@@ -55,7 +86,7 @@ class ApplicationCoachAgent(BaseAgent):
             "6. motivational_note"
         )
 
-    def prompt(self, input: Input) -> str:
+    def prompt(self, input: ApplicationCoachInput) -> str:
         prompt = (
             f"Job Posting:\n{input.job_post.strip()}\n\n"
             f"Candidate CV:\n{input.cv_text.strip()}\n\n"
@@ -72,7 +103,6 @@ class ApplicationCoachAgent(BaseAgent):
                 f"- Also analyze tone and alignment of the cover letter\n"
             )
         prompt += "\nFinish with a short motivational note."
-
         return prompt
 
     def output_model(self) -> Type[BaseModel]:

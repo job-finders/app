@@ -3,6 +3,8 @@ from typing import List, Optional, Union
 from datetime import date, datetime
 import uuid
 
+from rich.table import Column
+
 
 # Experience
 class Experience(BaseModel):
@@ -136,6 +138,7 @@ class SavedCV(BaseModel):
 class JobSeekerCV(BaseModel):
     cv_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_uid: str  # FK to User.uid
+    is_primary: bool = Field(default=False)
     professional_title: str
     summary: Optional[str] = None
     location: Optional[str] = None  # New field for location
@@ -172,6 +175,108 @@ class JobSeekerCV(BaseModel):
         if not v or not all(s.strip() for s in v):
             raise ValueError("At least one valid skill must be provided")
         return v
+
+    @property
+    def ats_description(self) -> str:
+        """
+        Generates an ATS-friendly text representation of the resume.
+        Structured for optimal parsing by applicant tracking systems and LLM agents.
+        """
+        sections = []
+
+        # Header section
+        header = [
+            f"Professional Title: {self.professional_title}",
+            f"Summary: {self.summary}" if self.summary else "",
+            f"Location: {self.location}" if self.location else "",
+            f"Contact: {self.phone} | {self.website}" if self.phone or self.website else "",
+            f"LinkedIn: {self.linkedin}" if self.linkedin else "",
+            f"GitHub: {self.github}" if self.github else ""
+        ]
+        sections.append("\n".join([line for line in header if line]))
+
+        # Skills section
+        if self.skills:
+            skills_section = [
+                "Skills:",
+                ", ".join(self.skills)
+            ]
+            sections.append("\n".join(skills_section))
+
+        # Experience section
+        if self.experience:
+            exp_section = ["Work Experience:"]
+            for exp in self.experience:
+                exp_entry = [
+                    f"- {exp.job_title} at {exp.company}",
+                    f"  {exp.start_date} to {exp.end_date or 'Present'}",
+                    f"  Location: {exp.location}" if exp.location else "",
+                    f"  Description: {exp.description}" if exp.description else ""
+                ]
+                exp_section.append("\n".join([line for line in exp_entry if line]))
+            sections.append("\n".join(exp_section))
+
+        # Education section
+        if self.education:
+            edu_section = ["Education:"]
+            for edu in self.education:
+                edu_entry = [
+                    f"- {edu.qualification} in {edu.field_of_study}",
+                    f"  Institution: {edu.institution}",
+                    f"  {edu.start_date} to {edu.end_date or 'Present'}",
+                    f"  Description: {edu.description}" if edu.description else ""
+                ]
+                edu_section.append("\n".join([line for line in edu_entry if line]))
+            sections.append("\n".join(edu_section))
+
+        # Projects section
+        if self.projects:
+            project_section = ["Projects:"]
+            for project in self.projects:
+                project_entry = [
+                    f"- {project.title}",
+                    f"  Technologies: {', '.join(project.technologies)}" if project.technologies else "",
+                    f"  Link: {project.link}" if project.link else "",
+                    f"  Description: {project.description}" if project.description else ""
+                ]
+                project_section.append("\n".join([line for line in project_entry if line]))
+            sections.append("\n".join(project_section))
+
+        # Additional sections
+        additional = []
+        if self.certifications:
+            certs = [f"- {cert.name} ({cert.issuer})" for cert in self.certifications]
+            additional.append("Certifications:\n" + "\n".join(certs))
+
+        if self.languages:
+            langs = [f"- {lang.name} ({lang.proficiency})" for lang in self.languages]
+            additional.append("Languages:\n" + "\n".join(langs))
+
+        if self.awards:
+            awards = [f"- {award.title} ({award.issuer})" for award in self.awards]
+            additional.append("Awards:\n" + "\n".join(awards))
+
+        if self.publications:
+            pubs = [f"- {pub.title} ({pub.publisher})" for pub in self.publications]
+            additional.append("Publications:\n" + "\n".join(pubs))
+
+        if self.custom_sections:
+            for custom in self.custom_sections:
+                content = custom.content
+                if isinstance(content, list):
+                    content = "\n".join([f"- {item}" for item in content])
+                additional.append(f"{custom.title}:\n{content}")
+
+        if additional:
+            sections.append("\n\n".join(additional))
+
+        # Portfolio links
+        if self.portfolio_links:
+            portfolio = [f"Portfolio: {link}" for link in self.portfolio_links]
+            sections.append("\n".join(portfolio))
+
+        return "\n\n".join(sections)
+
 
     class Config:
         # Allow the model to use `datetime` fields as ISO format strings when serialized

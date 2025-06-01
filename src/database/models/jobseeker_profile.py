@@ -32,6 +32,7 @@ class JobSeekerProfile(BaseModel):
     remote_preference: Optional[bool] = False
     availability: Optional[str] = None  # e.g. "Immediate", "30-day notice"
 
+
     # Freelance readiness
     is_freelancer: bool = Field(default=False, description="Indicates if user is open to freelance work")
     freelance_skills: Optional[List[str]] = Field(default_factory=list)
