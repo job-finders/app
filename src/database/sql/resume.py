@@ -2,6 +2,8 @@ import uuid
 from sqlalchemy import Column, String, Date, DateTime, Boolean, ForeignKey, Text, UniqueConstraint, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
+
+from database.constants import utc_time
 from src.database.constants import ID_LEN, NAME_LEN
 from src.database.sql import Base, engine
 from sqlalchemy import inspect
@@ -25,7 +27,7 @@ class JobSeekerCVORM(Base):
     website = Column(String(255), nullable=True)  # Added website
     linkedin = Column(String(255), nullable=True)  # Added linkedin
     github = Column(String(255), nullable=True)  # Added github
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_time)
 
     # Relationships (if needed)
     experience = relationship("ExperienceORM", back_populates="cv", cascade="all, delete-orphan")
@@ -354,7 +356,7 @@ class SavedCVORM(Base):
     id = Column(String(ID_LEN), primary_key=True)
     employer_id = Column(String(ID_LEN), ForeignKey("users.uid"), nullable=False, index=True)
     cv_id = Column(String(ID_LEN), ForeignKey("jobseeker_cvs.cv_id"), nullable=False, index=True)
-    saved_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    saved_at = Column(DateTime(timezone=True), default=lambda: utc_time())
     notes = Column(Text)
 
     __table_args__ = (

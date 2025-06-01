@@ -1,10 +1,9 @@
 import uuid
-from datetime import datetime, timezone
 
 from sqlalchemy import Column, String, Text, Integer, Boolean, ForeignKey, JSON, DateTime, inspect
 from sqlalchemy.orm import relationship
 
-from src.database.constants import ID_LEN, NAME_LEN
+from src.database.constants import ID_LEN, NAME_LEN, utc_time
 from src.database.sql import Base, engine
 
 
@@ -38,14 +37,14 @@ class CompanyORM(Base):
     twitter_handle = Column(String(50), nullable=True)
 
     # Audit Fields
-    created_at = Column(DateTime, default=utc_time())
-    updated_at = Column(DateTime, default=utc_time(), onupdate=utc_time())
+    created_at = Column(DateTime(timezone=True), default=utc_time)
+    updated_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
 
     # Relationships
     jobs = relationship("JobsORM", back_populates="company", lazy="dynamic")
     employers = relationship("EmployerORM", lazy="dynamic")
     is_verified = Column(Boolean, default=False)
-    time_verification_request_sent = Column(DateTime, nullable=True)
+    time_verification_request_sent = Column(DateTime(timezone=True), nullable=True)
     verification_status = Column(String(16), default="pending")
 
     @classmethod
@@ -102,10 +101,10 @@ class CompanyVerificationDocumentORM(Base):
     company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"), nullable=False)
     document_type = Column(String(36), nullable=False)  # e.g. "CIPC_CERT", "TAX_CLEARANCE", "BEE_CERT"
     file_url = Column(String(255), nullable=False)
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    uploaded_at = Column(DateTime(timezone=True), default=utc_time)
     status = Column(String(36), default="pending")  # pending, approved, rejected
     reviewed_by = Column(String(ID_LEN), ForeignKey("users.uid"), nullable=True)
-    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
 
     @classmethod
@@ -172,8 +171,8 @@ class CompanyFollowingORM(Base):
     follow_id = Column(String(ID_LEN), primary_key=True, index=True)
     user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_uid'), primary_key=True)
     company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), primary_key=True)
-    followed_at = Column(DateTime, default=datetime.utcnow)
-    last_notified_at = Column(DateTime)
+    followed_at = Column(DateTime(timezone=True), default=utc_time)
+    last_notified_at = Column(DateTime(timezone=True))
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):

@@ -20,7 +20,7 @@ class BlogPrompt(Base):
     id = Column(Integer, primary_key=True)
     content = Column(Text, nullable=False)
     topic_id = Column(Integer, ForeignKey("blog_topics.id"))
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
     feedback_score = Column(Float, default=0.0)
     topic = relationship("BlogTopic", back_populates="prompts")
 
@@ -33,6 +33,6 @@ class BlogFeedback(Base):
     likes = Column(Integer, default=0)
     comments = Column(Integer, default=0)
     feedback_score = Column(Float)
-    submitted_at = Column(DateTime, default=datetime.datetime.utcnow)
+    submitted_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
 
     prompt = relationship("BlogPrompt")

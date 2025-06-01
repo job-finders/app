@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, inspect, Boolean, DateTime, Index
 
-from src.database.constants import NAME_LEN, ID_LEN
+from src.database.constants import NAME_LEN, ID_LEN, utc_time
 from src.database.sql import Base, engine
 
 
@@ -15,8 +15,8 @@ class UserORM(Base):
     password_hash = Column(String(255))
     role = Column(String(12), default="seeker")
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, server_default=func.now())  # Auto-set on creation
-    last_login = Column(DateTime, onupdate=func.now(), nullable=True)  # Auto-update on modification
+    created_at = Column(DateTime(timezone=True), default=utc_time)  # Auto-set on creation
+    last_login = Column(DateTime(timezone=True), onupdate=utc_time, nullable=True)  # Auto-update on modification
 
     # Optional: Add an index for faster login time queries
     __table_args__ = (

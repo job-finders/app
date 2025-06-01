@@ -9,7 +9,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from slugify import slugify
 
 from src.database.models.jobs_model import JobApprovalStatusEnum
-from src.database.constants import ID_LEN, NAME_LEN
+from src.database.constants import ID_LEN, NAME_LEN, utc_time
 from src.database.sql import Base, engine
 
 
@@ -119,9 +119,9 @@ class JobsORM(Base):
     geo_location = Column(String(100))  # "lat,lng" for mapping
 
     # Timeline
-    posted_at = Column(DateTime, default=datetime.now(timezone.utc), index=True)
-    expires_at = Column(DateTime, index=True)
-    application_deadline = Column(DateTime)
+    posted_at = Column(DateTime(timezone=True), default=utc_time, index=True)
+    expires_at = Column(DateTime(timezone=True), index=True)
+    application_deadline = Column(DateTime(timezone=True))
 
     # Requirements
     experience_level = Column(String(50), index=True)  # ENTRY, MID, SENIOR
@@ -146,8 +146,8 @@ class JobsORM(Base):
     is_featured = Column(Boolean, default=False)
 
     # Audit Fields
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=utc_time)
+    updated_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
 
 
     # Relationships
@@ -165,6 +165,7 @@ class JobsORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
@@ -172,7 +173,7 @@ class JobsORM(Base):
 
     @hybrid_property
     def is_active(self):
-        return self.status == 'active' and self.expires_at > datetime.now(timezone.utc)
+        return self.status == 'active' and self.expires_at > utc_time()
 
     @hybrid_property
     def location(self):
@@ -220,8 +221,8 @@ class JobsORM(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "location": self.location,
-            "is_active": self.is_active,
-            "slug": self.generate_slug()
+            "is_active": self.is_active
+
         }
 
 def generate_slug(job):
@@ -258,7 +259,7 @@ class JobVersionHistoryORM(Base):
     version = Column(Integer)
     changes = Column(JSON)  # Stores diff between versions
     modified_by = Column(String(ID_LEN), ForeignKey('users.uid'))
-    modified_at = Column(DateTime, default=datetime.utcnow)
+    modified_at = Column(DateTime(timezone=True), default=utc_time)
 
 class SavedJobORM(Base):
     __tablename__ = 'saved_jobs'
@@ -266,7 +267,7 @@ class SavedJobORM(Base):
     user_id = Column(String(ID_LEN), index=True)
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)
 
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=utc_time)
 
     job = relationship("JobsORM", back_populates="saved_jobs")
 
@@ -275,6 +276,7 @@ class SavedJobORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
@@ -301,8 +303,8 @@ class JobApplicationORM(Base):
     job = relationship("JobsORM", back_populates="applications")  # New relationship
 
     # Rest of the existing columns...
-    applied_date = Column(DateTime, default=datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+    applied_date = Column(DateTime(timezone=True), default=utc_time)
+    updated_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
 
     cover_letter = Column(Text, nullable=True)
 
@@ -353,6 +355,7 @@ class JobApplicationORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
@@ -368,7 +371,7 @@ class ATSReportORM(Base):
     matched_keywords = Column(JSON, nullable=False, default=list)
     missing_keywords = Column(JSON, nullable=False, default=list)
     feedback = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=utc_time)
 
 
     @classmethod
@@ -376,6 +379,7 @@ class ATSReportORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
@@ -421,7 +425,7 @@ class JobApprovalRequestORM(Base):
         >>> request = JobApprovalRequestORM(
         ...     job_id="job-1234",
         ...     token="abc-uuid-token",
-        ...     token_expires=datetime.now(timezone.utc) + timedelta(days=2),
+        ...     token_expires=utc_time() + timedelta(days=2),
         ...     requested_by="company-5678",
         ...     approvers=["user-1", "user-2"]
         ... )
@@ -434,12 +438,12 @@ class JobApprovalRequestORM(Base):
     request_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), unique=True)
     token = Column(String(36), unique=True, index=True)
-    token_expires = Column(DateTime)
-    requested_at = Column(DateTime, default=datetime.now(timezone.utc))
+    token_expires = Column(DateTime(timezone=True))
+    requested_at = Column(DateTime(timezone=True), default=utc_time)
     requested_by = Column(String(ID_LEN), ForeignKey('companies.company_id'))
     approvers = Column(JSON, default=[])  # List of user IDs
     status = Column(String(20), default=JobApprovalStatusEnum.PENDING.value)  # pending/approved/rejected/expired
-    decision_at = Column(DateTime, onupdate=datetime.now(timezone.utc))
+    decision_at = Column(DateTime(timezone=True), onupdate=utc_time)
     decision_by = Column(String(ID_LEN), ForeignKey('users.uid'))
     feedback = Column(Text)
 
@@ -450,6 +454,7 @@ class JobApprovalRequestORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
@@ -470,15 +475,36 @@ class JobApprovalRequestORM(Base):
             "feedback": self.feedback,
         }
 
+
 class ApplicationDashboardORM(Base):
     """Cached dashboard data for quick access"""
     __tablename__ = "application_dashboards"
 
     dashboard_id = Column(String(ID_LEN), primary_key=True)
     company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"))
-    snapshot_date = Column(DateTime)
+    snapshot_date = Column(DateTime(timezone=True))
     data = Column(JSON)
     metrics = Column(JSON)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            "dashboard_id": self.dashboard_id,
+            "company_id": self.company_id,
+            "snapshot_date": self.snapshot_date.isoformat() if self.snapshot_date else None,
+            "data": self.data,
+            "metrics": self.metrics
+        }
+
 
 class TalentPoolReportORM(Base):
     """Historical talent pool reports"""
@@ -486,9 +512,29 @@ class TalentPoolReportORM(Base):
 
     report_id = Column(String(ID_LEN), primary_key=True)
     company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"))
-    generated_at = Column(DateTime)
+    generated_at = Column(DateTime(timezone=True))
     report_data = Column(JSON)
     insights = Column(JSON)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            "report_id": self.report_id,
+            "company_id": self.company_id,
+            "generated_at": self.generated_at.isoformat() if self.generated_at else None,
+            "report_data": self.report_data,
+            "insights": self.insights
+        }
+
 
 class ImportJobBatchORM(Base):
     """Track bulk import operations"""
@@ -496,7 +542,27 @@ class ImportJobBatchORM(Base):
 
     batch_id = Column(String(ID_LEN), primary_key=True)
     company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"))
-    started_at = Column(DateTime)
-    completed_at = Column(DateTime)
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
     status = Column(String(20))
     summary = Column(JSON)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self):
+        return {
+            "batch_id": self.batch_id,
+            "company_id": self.company_id,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "status": self.status,
+            "summary": self.summary
+        }

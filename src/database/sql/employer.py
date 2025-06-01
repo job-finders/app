@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from src.database.constants import ID_LEN, NAME_LEN
+from src.database.constants import ID_LEN, NAME_LEN, utc_time
 from src.database.sql import Base  # Assuming your Base declarative is here
 
 
@@ -20,7 +20,7 @@ class EmployerORM(Base):
     verification_token = Column(String(NAME_LEN), nullable=True)
     verification_token_expires_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), default=utc_time)
 
     # Relationship to CompanyORM
     company = relationship("CompanyORM", back_populates="employers")

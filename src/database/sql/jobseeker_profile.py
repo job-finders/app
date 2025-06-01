@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect, Integer, JSON
 from sqlalchemy.dialects.postgresql import ARRAY
 
-from src.database.constants import ID_LEN, NAME_LEN
+from src.database.constants import ID_LEN, NAME_LEN, utc_time
 from src.database.sql import Base, engine  # Assuming this is your declarative base
 
 
@@ -47,13 +47,14 @@ class JobSeekerProfileORM(Base):
     # Settings
     visibility = Column(Boolean, default=True)
     profile_completion = Column(String(NAME_LEN), default="0")  # or Integer if more appropriate
-    last_updated = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=utc_time)
 
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):

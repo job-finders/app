@@ -11,5 +11,5 @@ class BlogFeedbackORM(Base):
     article_id = Column(String(ID_LEN), nullable=False)
     feedback_score = Column(Integer, nullable=False)
     comments = Column(Text)
-    submitted_at = Column(DateTime, server_default=func.now())
+    submitted_at = Column(DateTime(timezone=True), server_default=func.now())
 

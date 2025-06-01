@@ -27,7 +27,7 @@ class UserSearchActivityORM(Base):
     search_term = Column(String(255))
     filters = Column(JSON)
     result_count = Column(Integer)
-    timestamp = Column(DateTime, default=utc_time(), index=True)
+    timestamp = Column(DateTime(timezone=True), default=utc_time(), index=True)
 
 
 class JobViewActivityORM(Base):
@@ -35,8 +35,8 @@ class JobViewActivityORM(Base):
     id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_id'), index=True)
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)
-    view_start = Column(DateTime)
-    view_end = Column(DateTime)
+    view_start = Column(DateTime(timezone=True))
+    view_end = Column(DateTime(timezone=True))
     application_started = Column(Boolean, default=False)
     duration = Column(Integer)  # Seconds
 
@@ -46,7 +46,7 @@ class ApplicationStepORM(Base):
     id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
     application_id = Column(String(ID_LEN), ForeignKey('job_applications.application_id'), index=True)
     step_name = Column(String(50))
-    timestamp = Column(DateTime, default=utc_time(), index=True)
+    timestamp = Column(DateTime(timezone=True), default=utc_time(), index=True)
 
 # ----------- Data Retention -----------
 class ArchivedActivityORM(Base):
@@ -56,7 +56,7 @@ class ArchivedActivityORM(Base):
     user_id = Column(String(ID_LEN), index=True)
     activity_type = Column(String(20))
     data = Column(JSON)
-    archived_at = Column(DateTime, default=utc_time())
+    archived_at = Column(DateTime(timezone=True), default=utc_time())
 
 
 # Create indexes
