@@ -1,13 +1,17 @@
 # src/agents/openrouter_client.py
 
-from typing import Type
+from typing import List, Dict, Type
 from pydantic import BaseModel
 import httpx
 from src.config import config_instance
 
-# src/agents/openrouter_client.py
-
-async def call_openrouter(prompt: str, output_model: Type[BaseModel], system_prompt: str) -> BaseModel:
+async def call_openrouter(
+    messages: List[Dict[str, str]],
+    output_model: Type[BaseModel],
+    model: str = "deepseek-chat",
+    temperature: float = 0.7,
+    max_tokens: int = 1024,
+) -> BaseModel:
     OPENROUTER_API_KEY = config_instance().OPENROUTER_API_KEY
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -15,13 +19,10 @@ async def call_openrouter(prompt: str, output_model: Type[BaseModel], system_pro
     }
 
     data = {
-        "model": "deepseek-chat",  # or your preferred default
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.7,
-        "max_tokens": 1024
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens
     }
 
     async with httpx.AsyncClient() as client:
@@ -32,4 +33,3 @@ async def call_openrouter(prompt: str, output_model: Type[BaseModel], system_pro
         message = response.json()["choices"][0]["message"]["content"]
 
     return output_model.parse_raw(message)
-

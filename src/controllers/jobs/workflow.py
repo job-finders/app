@@ -1,31 +1,28 @@
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 import requests
+from Levenshtein import ratio as levenstein_ratio
 from flask import Flask, url_for
 from pydantic import ValidationError
 from requests import RequestException
-from sqlalchemy import or_, select, func, and_, case
-from sqlalchemy.orm import joinedload
-from Levenshtein import ratio as levenstein_ratio
+from sqlalchemy import select, func, and_, case
 
-from src.database.models.employer_models import Employer
 from src.controllers.controller import Controllers
-from src.database.models.jobseeker_profile import JobSeekerProfile
-from src.database.models.resume import JobSeekerCV
-from src.database.sql.jobseeker_profile import JobSeekerProfileORM
-from src.database.sql.resume import JobSeekerCVORM
-from src.database.sql.users import UserORM
-
 from src.controllers.controller import error_handler
+from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import (Job, JobApplication, SavedJob, JobStatistics, StatusCounts,
                                             ApplicationMetrics, ApplicationFunnelStats, BulkImportResult,
                                             TalentPoolReport, JobApplicationDashboard, ATSReport,
                                             JobApplicationStatusEnum, JobApprovalStatusEnum, JobStatusEnum)
-from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, CompanyORM, JobApprovalRequestORM,
-    ATSReportORM)
+from src.database.models.jobseeker_profile import JobSeekerProfile
+from src.database.sql.company import CompanyORM
+from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, JobApprovalRequestORM,
+                                       ATSReportORM)
+from src.database.sql.jobseeker_profile import JobSeekerProfileORM
+from src.database.sql.resume import JobSeekerCVORM
+from src.database.sql.users import UserORM
 
 
 class JobsWorkflowController(Controllers):

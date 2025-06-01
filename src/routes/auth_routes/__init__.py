@@ -1,0 +1,1 @@
+from src.routes.auth_routes.auth import auth_route

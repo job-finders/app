@@ -1,0 +1,1 @@
+from src.routes.blog_routes.blog import blog_route

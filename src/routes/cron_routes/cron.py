@@ -1,8 +1,13 @@
 import requests
 from flask import Blueprint, url_for
+from flask import Blueprint, jsonify
+from agents.blog.reader_agent import BlogPostReaderAgent
+from agents.blog.gap_analyzer_agent import GapAnalyzerAgent
+from agents.blog.article_creator_agent import ArticleCreatorAgent
+from agents.blog.post_submitter_agent import BlogPostSubmitterAgent
+from agents.blog.feedback_collector import FeedbackCollector
+from agents.blog.strategy_refiner import StrategyRefiner
 
-# from src.agents.adaptive_topic_agent import enhance_prompt_strategy
-from src.routes.seo import get_site_job_links
 from src.logger import init_logger
 
 cron_route = Blueprint('cron', __name__)
@@ -45,9 +50,21 @@ async def scrape_junction():
         Return: return_description
     """
     pass
-    
 
-    
+@cron_route.route("/create-article", methods=["GET"])
+async def create_article_pipeline():
+    existing_posts = await BlogPostReaderAgent().run()
+    content_gaps = await GapAnalyzerAgent().run(existing_posts)
+
+    for topic in content_gaps.suggested_topics:
+        for prompt in topic.prompts:
+            article = await ArticleCreatorAgent().run(prompt=prompt, topic=topic.title)
+            await BlogPostSubmitterAgent().run(article)
+
+    feedback_data = await FeedbackCollector().run()
+    await StrategyRefiner().run(feedback_data)
+
+    return jsonify({"status": "Blog automation executed successfully"})
 
 # @cron_route.route("/_cron/adapt-blog-strategy", methods=["GET"])
 # def adapt_blog_strategy():

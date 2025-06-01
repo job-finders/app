@@ -1,3 +1,3 @@
 
-from src.controllers.agents.agent_controller import AgentController
+from src.controllers.agents.employer_agent_controller import EmployerAgentsController
 

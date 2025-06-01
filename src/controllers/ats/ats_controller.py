@@ -1,11 +1,4 @@
-import json
-import os
-import re
-import uuid
-import aiohttp
-import docx2txt
-import fitz  # PyMuPDF
-import spacy
+import json, os, re, uuid, aiohttp, docx2txt, fitz, spacy
 
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -16,7 +9,7 @@ from src.controllers.controller import Controllers, error_handler
 from src.database.models.jobs_model import Job, ATSReport
 from src.database.sql.config import ConfigurationORM
 from src.database.models.resume import JobSeekerCV
-from src.controllers.resume_controller import ResumeController
+from src.controllers.resumes import ResumeController
 
 # single, shared spaCy model instance
 _NLP = spacy.load("en_core_web_sm", disable=["parser", "ner"])

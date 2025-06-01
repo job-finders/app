@@ -1,34 +1,189 @@
 # agents/employer/job_post_intelligence.py
-from typing import Type
-from pydantic import BaseModel
+import uuid
+from typing import Type, Optional, List, Dict
+from pydantic import BaseModel, Field, field_validator
 
+from src.database.models import Job
 from src.agents.base import BaseAgent
-from src.database.models.agent_models import JobPostInsights
 
 
 class EnhanceJobPostInput(BaseModel):
-    title: str
-    description: str
-    salary_min: Optional[int] = None
-    salary_max: Optional[int] = None
-    position_type: Optional[str] = None
+    """
+    Input model for job post enhancement agent.
+    Contains partial information about a job post that needs enhancement.
+    """
+    title: str = Field(..., min_length=5, description="Job title (can be partial or basic)")
+    description: str = Field(..., description="Job description (can be incomplete)")
+    position_type: Optional[str] = Field(
+        None,
+        description="Type of position (FULL_TIME, PART_TIME, CONTRACT)",
+        pattern="FULL_TIME|PART_TIME|CONTRACT"
+    )
+    remote_policy: Optional[str] = Field(
+        None,
+        description="Remote work policy (ONSITE, HYBRID, REMOTE)",
+        pattern="ONSITE|HYBRID|REMOTE"
+    )
+    salary_min: Optional[float] = Field(None, ge=0, description="Minimum salary in local currency")
+    salary_max: Optional[float] = Field(None, ge=0, description="Maximum salary in local currency")
+    salary_currency: Optional[str] = Field("ZAR", description="Currency code (3 characters)")
+    city: Optional[str] = Field(None, description="Job city location")
+    province: Optional[str] = Field(None, description="Job province/state location")
+    country: Optional[str] = Field(None, description="Job country location")
+    experience_level: Optional[str] = Field(
+        None,
+        description="Experience level (ENTRY, MID, SENIOR)",
+        pattern="ENTRY|MID|SENIOR"
+    )
+    required_skills: Optional[List[str]] = Field([], description="List of required skills")
+    preferred_skills: Optional[List[str]] = Field([], description="List of preferred skills")
+
+    @field_validator("salary_currency")
+    @classmethod
+    def validate_currency(cls, v: str) -> str:
+        if v and len(v) != 3:
+            raise ValueError("Currency code must be 3 characters")
+        return v.upper()
 
 
-class EnhancedJobPost(BaseModel):
-    title: Optional[str]
-    description: Optional[str]
-    skills: Optional[str]
-    education: Optional[str]
-    salary: Optional[str]
+class EnhanceJobPostOutput(BaseModel):
+    """
+    Enhanced job post output model that directly maps to the Job ORM model.
+    Contains a complete, professionally enhanced job post ready for conversion.
+    """
+    # Core Identification
+    job_ref: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4())[:8].upper())
+
+    # Job Details
+    title: str = Field(..., min_length=5, max_length=255, description="Enhanced job title")
+    description: str = Field(..., description="Detailed job description")
+    position_type: str = Field(
+        ...,
+        description="Position type (FULL_TIME, PART_TIME, CONTRACT)",
+        pattern="FULL_TIME|PART_TIME|CONTRACT"
+    )
+    remote_policy: str = Field(
+        ...,
+        description="Remote work policy (ONSITE, HYBRID, REMOTE)",
+        pattern="ONSITE|HYBRID|REMOTE"
+    )
+    category: Optional[str] = Field(None, description="Job category")
+
+    # Compensation
+    salary_min: float = Field(..., ge=0, description="Competitive minimum salary")
+    salary_max: float = Field(..., ge=0, description="Competitive maximum salary")
+    salary_currency: str = Field("ZAR", min_length=3, max_length=3, description="Currency code")
+    salary_confidential: bool = Field(False, description="Salary confidentiality flag")
+
+    # Location
+    city: str = Field(..., min_length=2, max_length=100, description="Job city")
+    province: str = Field(..., min_length=2, max_length=100, description="Job province/state")
+    country: str = Field(..., min_length=2, max_length=100, description="Job country")
+    geo_location: Optional[str] = Field(None, description="Geolocation coordinates")
+
+    # Timeline
+    expires_at: Optional[str] = Field(None, description="Job expiration date (ISO format)")
+    application_deadline: Optional[str] = Field(None, description="Application deadline (ISO format)")
+
+    # Requirements
+    experience_level: str = Field(
+        ...,
+        description="Experience level (ENTRY, MID, SENIOR)",
+        pattern="ENTRY|MID|SENIOR"
+    )
+    education_requirements: Optional[Dict[str, str]] = Field(
+        {},
+        description="Education requirements as key-value pairs"
+    )
+    required_skills: List[str] = Field(..., description="List of required skills")
+    preferred_skills: List[str] = Field([], description="List of preferred skills")
+    required_documents: List[str] = Field([], description="List of required documents")
+    required_questionnaire: List[str] = Field([], description="List of required questionnaire IDs")
+
+    # Application Process
+    application_url: Optional[str] = Field(None, description="Application URL")
+    application_instructions: str = Field(..., min_length=10, description="Application instructions")
+
+    # Status
+    status: str = Field("draft", pattern="draft|pending|active|closed|archived")
+    is_featured: bool = Field(False, description="Featured job flag")
+
+    class Config:
+        from_attributes = True
 
 
+class EnhanceJobPostAgent(BaseAgent):
+    """Agent that enhances partial job posts into complete, professional listings."""
+    name = "enhance_job_post"
+    description = "Creates complete, professional job posts from partial inputs"
 
-class JobPostAgent(BaseAgent):
+    def system_prompt(self) -> str:
+        return (
+            "You are a professional job post generator for employers. "
+            "Create complete, attractive job posts using ONLY the following JSON schema:"
+        )
+
+    def prompt(self, input_model: EnhanceJobPostInput) -> str:
+        # Build context from input
+        context = [
+            f"Title: {input_model.title}",
+            f"Description: {input_model.description}",
+            f"Position Type: {input_model.position_type or 'Not specified'}",
+            f"Remote Policy: {input_model.remote_policy or 'Not specified'}",
+            f"Salary: {input_model.salary_min or 'N/A'} - {input_model.salary_max or 'N/A'} {input_model.salary_currency}",
+            f"Location: {input_model.city or ''}, {input_model.province or ''}, {input_model.country or ''}",
+            f"Experience Level: {input_model.experience_level or 'Not specified'}",
+            f"Required Skills: {', '.join(input_model.required_skills) if input_model.required_skills else 'None'}",
+            f"Preferred Skills: {', '.join(input_model.preferred_skills) if input_model.preferred_skills else 'None'}"
+        ]
+
+        return f"""
+Create a complete, professional job post based on the following partial information:
+
+{"\n".join(context)}
+
+Generate a comprehensive job post including:
+1. An attractive, clear job title (5-255 characters)
+2. Detailed job description with responsibilities and expectations
+3. Position type (FULL_TIME, PART_TIME, or CONTRACT)
+4. Remote work policy (ONSITE, HYBRID, or REMOTE)
+5. Competitive salary range as numbers (min and max)
+6. Salary currency (3-letter code, default to ZAR)
+7. Location details (city, province, country)
+8. Experience level (ENTRY, MID, or SENIOR)
+9. Comprehensive list of required skills
+10. List of preferred skills
+11. Suggested education requirements as key-value pairs
+12. Clear application instructions (min 10 characters)
+13. Application deadline (30 days from now in ISO format)
+14. Expiration date (60 days from now in ISO format)
+
+Additional guidelines:
+- Salary should be competitive for the role and location
+- Application instructions should include how to apply
+- Education requirements should be realistic for the role
+- Use South African context when location is unspecified
+
+Output MUST be in valid JSON format matching the specified schema.
+"""
+
+    def output_model(self):
+        return EnhanceJobPostOutput
+
+class JobPostInsights(BaseModel):
+    clarity_score: float
+    salary_benchmark: str
+    missing_information: List[str]
+    suggestions: List[str]
+
+    class Config:
+        from_attributes = True
+
+
+class JobPostIntelligenceAgent(BaseAgent):
+    __doc__ = "This Agent is used to Analyze Existing Job posts"
     name = "job_post_intelligence"
     description = "Analyzes job post quality, clarity, and competitiveness based on salary, skills, and completeness."
-
-    class Input(BaseModel):
-        job_post_text: str
 
     def system_prompt(self) -> str:
         return (
@@ -37,10 +192,10 @@ class JobPostAgent(BaseAgent):
             "Return structured insights, and suggest improvements where necessary."
         )
 
-    def prompt(self, input: Input) -> str:
+    def prompt(self, input_model: Job) -> str:
         return (
             f"Analyze the following job post:\n\n"
-            f"{input.job_post_text.strip()}\n\n"
+            f"{input_model.ats_description.strip()}\n\n"
             f"Provide feedback on:\n"
             f"- Clarity\n"
             f"- Salary competitiveness\n"
@@ -54,37 +209,5 @@ class JobPostAgent(BaseAgent):
         return JobPostInsights
 
 
-# agents/employer/job_post_intelligence.py
 
-class EnhanceJobPost(BaseAgent):
-    name = "enhance_job_post"
-    description = "Given partial job post description or title - create a detailed and enhanced job post."
-    
-    def system_prompt(self) -> str:
-        return (
-            "You are a professional job post generator for employers. "
-            "You help them craft clear, attractive, and complete job posts tailored to their input."
-        )
 
-    def prompt(self, input: EnhanceJobPostInput) -> str:
-        prompt = f"""
-You are an expert job post generator.
-
-Here is a partial job post provided by an employer:
-
-- Title: {input.title}
-- Description: {input.description}
-- Salary Range: {input.salary_min or 'N/A'} - {input.salary_max or 'N/A'}
-- Position Type: {input.position_type or 'Not specified'}
-
-Generate an improved version of this job post. Your output should include:
-- A more attractive and clear job title
-- A detailed job description
-- Recommended skills
-- Suggested educational qualifications
-- A competitive salary range suggestion (formatted in local currency, e.g., R35,000 - R50,000).
-"""
-        return prompt.strip()
-
-    def output_model(self):
-        return EnhancedJobPost

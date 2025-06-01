@@ -84,7 +84,7 @@ class CompanyController(Controllers):
         """
         with self.get_session() as session:
             # Get company with eager-loaded jobs in single query
-            company_orm = (
+            company_orm: CompanyORM = (
                 session.query(CompanyORM)
                 .options(joinedload(CompanyORM.jobs))
                 .filter_by(id=company_id)

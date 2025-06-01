@@ -1,10 +1,12 @@
 import re
 import uuid
-from datetime import date, timezone
+from datetime import date, timezone, timedelta
 from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict, HttpUrl, EmailStr
 from typing import Optional, Any
 from datetime import datetime
 from enum import Enum
+
+from agents.employer import EnhanceJobPostOutput
 from src.database.models.company_models import Company
 from sqlalchemy.orm import relationship
 
@@ -186,17 +188,104 @@ class Job(BaseModel):
 
     @property
     def ats_description(self) -> str:
-        skill_text = f"Desired skills include: {', '.join(self.preferred_skills)}." if self.preferred_skills else ""
+        # Format required skills
+        required_skills_text = (
+            f"Required skills: {', '.join(self.required_skills)}." if self.required_skills else ""
+        )
+        # Format preferred skills
+        preferred_skills_text = (
+            f"Preferred skills: {', '.join(self.preferred_skills)}." if self.preferred_skills else ""
+        )
+        # Format education requirements
+        education_text = ""
+        if self.education_requirements:
+            edu_list = [f"{k}: {v}" for k, v in self.education_requirements.items()]
+            education_text = "Education Requirements: " + "; ".join(edu_list) + "."
+
+        # Compose the full ATS-friendly description
         summary_parts = [
             f"Job Title: {self.title}",
             f"Company: {self.company.name if self.company else ''}",
             f"Location: {self.location}",
             f"Position Type: {self.position_type}",
-            f"Salary: {self.salary_currency} {self.salary_min} - {self.salary_max}",
-            skill_text,
+            f"Remote Policy: {self.remote_policy}",
+            f"Experience Level: {self.experience_level}",
+            f"Salary: {self.salary_currency} {self.salary_min} - {self.salary_max}" if self.salary_min and self.salary_max else "",
+            required_skills_text,
+            preferred_skills_text,
+            education_text,
             f"Job Description: {self.description or ''}"
         ]
         return "\n".join(part for part in summary_parts if part.strip())
+
+    @classmethod
+    def create_from_enhanced_agent_output(
+            cls,
+            agent_output: 'EnhanceJobPostOutput',
+            employer_id: str,
+            company_id: str,
+            **kwargs
+    ) -> 'Job':
+        """
+        Creates a Job instance from the EnhanceJobPostAgent output
+
+        Args:
+            agent_output: Output from the enhancement agent
+            employer_id: ID of the employer creating the job
+            company_id: ID of the company posting the job
+            kwargs: Additional job attributes not provided by the agent
+
+        Returns:
+            Job instance ready for database insertion
+        """
+        # Convert ISO strings to datetime objects
+        expires_at = datetime.fromisoformat(agent_output.expires_at) if agent_output.expires_at else None
+        application_deadline = datetime.fromisoformat(
+            agent_output.application_deadline) if agent_output.application_deadline else None
+
+        # Set default expiration if not provided
+        if not expires_at:
+            expires_at = datetime.utcnow() + timedelta(days=60)
+
+        # Create job data dictionary
+        job_data = {
+            'job_ref': agent_output.job_ref,
+            'title': agent_output.title,
+            'description': agent_output.description,
+            'position_type': agent_output.position_type,
+            'remote_policy': agent_output.remote_policy,
+            'category': agent_output.category,
+            'salary_min': agent_output.salary_min,
+            'salary_max': agent_output.salary_max,
+            'salary_currency': agent_output.salary_currency,
+            'salary_confidential': agent_output.salary_confidential,
+            'city': agent_output.city,
+            'province': agent_output.province,
+            'country': agent_output.country,
+            'geo_location': agent_output.geo_location,
+            'expires_at': expires_at,
+            'application_deadline': application_deadline,
+            'experience_level': agent_output.experience_level,
+            'education_requirements': agent_output.education_requirements,
+            'required_skills': agent_output.required_skills,
+            'preferred_skills': agent_output.preferred_skills,
+            'required_documents': agent_output.required_documents,
+            'required_questionnaire': agent_output.required_questionnaire,
+            'application_url': agent_output.application_url,
+            'application_instructions': agent_output.application_instructions,
+            'status': agent_output.status,
+            'is_featured': agent_output.is_featured,
+            'employer_id': employer_id,
+            'company_id': company_id,
+            'posted_at': datetime.utcnow(),
+            'created_at': datetime.utcnow(),
+            'updated_at': datetime.utcnow()
+        }
+
+        # Add any additional fields passed via kwargs
+        job_data.update(kwargs)
+
+        return cls(**job_data)
 
     # Validators
     @field_validator("job_ref")
@@ -217,6 +306,7 @@ class Job(BaseModel):
         str_strip_whitespace=True,
         json_encoders={datetime: lambda v: v.isoformat()}
     )
+
 
 class SavedJob(BaseModel):
     saved_job_id: str = Field(default_factory=lambda: str(uuid.uuid4()))

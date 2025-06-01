@@ -1,6 +1,6 @@
 from flask import Flask
 
-
+from controllers.agents import EmployerAgentsController
 from src.utils import template_folder, static_folder, format_title, format_description
 from src.emailer import SendMail
 from src.controllers.encryptor import Encryptor
@@ -41,6 +41,7 @@ junction_scrapper = JunctionScraper()
 from src.controllers.jobseekers import JobSeekerProfilesController
 job_seeker_profile_controller = JobSeekerProfilesController()
 
+employer_agents_controller = EmployerAgentsController()
 
 def create_app(config):
     """
@@ -75,13 +76,13 @@ def create_app(config):
 
         company_controller.init_app(app=app)
 
-        junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
+        # junction_scrapper.init_app(app=app, timer_multiplier=run_every_hour)
         # junction_scrapper.reload()
         job_seeker_profile_controller.init_app(app=app)
         # career_scrapper.init_app(app=app)
 
         # importing routes
-        from src.routes.auth import auth_route
+        from src.routes.auth_routes import auth_route
         from src.routes.home import home_route
         from src.routes.jobs import jobs_route
         from src.routes.seo import seo_route

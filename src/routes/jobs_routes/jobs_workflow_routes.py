@@ -7,16 +7,16 @@ from src.database.models.users import User
 from src.main import jobs_workflow_controller  # your workflow controller instance
 from src.database.models.jobs_model import Job, JobApplication
 
-jobs_workflow_bp = Blueprint("jobs_workflow", __name__, url_prefix="/jobs")
+jobs_workflow_route = Blueprint("jobs_workflow", __name__, url_prefix="/jobs")
 
-@jobs_workflow_bp.get("/create")
+@jobs_workflow_route.get("/create")
 @flask_error_handler
 @admin_login
 async def show_create_form(user: User):
     """Render form to create a new job."""
     return render_template("jobs_workflow/create.html", current_user=user)
 
-@jobs_workflow_bp.post("/create")
+@jobs_workflow_route.post("/create")
 @flask_error_handler
 @admin_login
 async def create_job(user: User):
@@ -31,7 +31,7 @@ async def create_job(user: User):
     return redirect(url_for("jobs.job_details", job_id=job.job_id))
 
 
-@jobs_workflow_bp.get("/<string:job_id>/edit")
+@jobs_workflow_route.get("/<string:job_id>/edit")
 @flask_error_handler
 @admin_login
 async def show_edit_form(user: User, job_id: str):
@@ -42,7 +42,7 @@ async def show_edit_form(user: User, job_id: str):
         return redirect(url_for("jobs.list_jobs"))
     return render_template("jobs_workflow/edit.html", current_user=user, job=job)
 
-@jobs_workflow_bp.post("/<string:job_id>/edit")
+@jobs_workflow_route.post("/<string:job_id>/edit")
 @flask_error_handler
 @admin_login
 async def edit_job(user: User, job_id: str):
@@ -56,7 +56,7 @@ async def edit_job(user: User, job_id: str):
     return redirect(url_for("jobs.job_details", job_id=job_id))
 
 
-@jobs_workflow_bp.get("/<string:job_id>/archive")
+@jobs_workflow_route.get("/<string:job_id>/archive")
 @flask_error_handler
 @admin_login
 async def archive_job(user: User, job_id: str):
@@ -69,7 +69,7 @@ async def archive_job(user: User, job_id: str):
     return redirect(url_for("jobs.list_jobs"))
 
 
-@jobs_workflow_bp.get("/<string:job_id>/feature")
+@jobs_workflow_route.get("/<string:job_id>/feature")
 @flask_error_handler
 @admin_login
 async def feature_job(user: User, job_id: str):
@@ -82,7 +82,7 @@ async def feature_job(user: User, job_id: str):
     return redirect(url_for("jobs.list_jobs"))
 
 
-@jobs_workflow_bp.get("/approve/<string:approval_token>")
+@jobs_workflow_route.get("/approve/<string:approval_token>")
 @flask_error_handler
 @admin_login
 async def approve_job(user: User, approval_token: str):
@@ -96,7 +96,7 @@ async def approve_job(user: User, approval_token: str):
         return render_template("jobs_workflow/approval_error.html", message=result.message), 400
 
 
-@jobs_workflow_bp.get("/reject/<string:approval_token>")
+@jobs_workflow_route.get("/reject/<string:approval_token>")
 @flask_error_handler
 @admin_login
 async def reject_job(user: User, approval_token: str):
@@ -110,7 +110,7 @@ async def reject_job(user: User, approval_token: str):
         return render_template("jobs_workflow/approval_error.html", message=result.message), 400
 
 
-@jobs_workflow_bp.post("/<string:job_id>/apply")
+@jobs_workflow_route.post("/<string:job_id>/apply")
 @flask_error_handler
 @user_details
 async def submit_application(user: User, job_id: str):
