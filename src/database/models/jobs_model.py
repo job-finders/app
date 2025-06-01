@@ -1,14 +1,10 @@
-import re
 import uuid
-from datetime import date, timezone, timedelta
-from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict, HttpUrl, EmailStr
-from typing import Optional, Any
-from datetime import datetime
+from datetime import date, timezone, timedelta, datetime
 from enum import Enum
+from typing import Optional, Any
 
-from agents.employer import EnhanceJobPostOutput
+from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict
 from src.database.models.company_models import Company
-from sqlalchemy.orm import relationship
 
 
 def format_reference(ref: str) -> str:

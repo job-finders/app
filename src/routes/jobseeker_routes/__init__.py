@@ -1,0 +1,3 @@
+from src.routes.jobseeker_routes.jobseeker import jobseeker_route
+from src.routes.jobseeker_routes.jobseeker_profile import jobseeker_profiles_bp
+from src.routes.jobseeker_routes.jobseeker_applications import jobseeker_applications_route

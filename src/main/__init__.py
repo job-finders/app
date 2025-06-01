@@ -1,6 +1,6 @@
 from flask import Flask
 
-from controllers.agents import EmployerAgentsController, EmployeeAgentsController
+
 from src.utils import template_folder, static_folder, format_title, format_description
 from src.emailer import SendMail
 from src.controllers.encryptor import Encryptor
@@ -40,6 +40,8 @@ junction_scrapper = JunctionScraper()
 
 from src.controllers.jobseekers import JobSeekerProfilesController
 job_seeker_profile_controller = JobSeekerProfilesController()
+
+from src.controllers.agents import EmployerAgentsController, EmployeeAgentsController
 
 employer_agents_controller = EmployerAgentsController()
 employee_agents_controller = EmployeeAgentsController()
@@ -84,31 +86,31 @@ def create_app(config):
 
         # importing routes
         from src.routes.auth_routes import auth_route
-        from src.routes.home import home_route
-        from src.routes.jobs import jobs_route
-        from src.routes.seo import seo_route
-        from src.routes.blog import blog_route
-        from src.routes.users import users_route
-        from src.routes.jobseeker import jobseeker_route
-        from src.routes.jobseeker_profile import jobseeker_profiles_bp
-        from src.routes.jobseeker_cv import jobseeker_cv_bp
-        from src.routes.jobseeker_applications import jobseeker_applications_route
-        from src.routes.cron import cron_route
-        from src.routes.ats_tool import ats_tool_route
+        from src.routes.home_routes import home_route
+        from src.routes.jobs_routes import jobs_workflow_route, jobs_search_route
+        from src.routes.seo_routes import seo_route
+        from src.routes.blog_routes import blog_route
+        from src.routes.users_routes import users_route
+        from src.routes.jobseeker_routes import jobseeker_route, jobseeker_profiles_bp, jobseeker_applications_route
+
+        from src.routes.resumes_routes import resume_routes
+        from src.routes.cron_routes import cron_route
+        from src.routes.ats_routes import ats_tool_route
 
 
 
         # registering routes
         app.register_blueprint(auth_route)
         app.register_blueprint(home_route)
-        app.register_blueprint(jobs_route)
+        app.register_blueprint(jobs_workflow_route)
+        app.register_blueprint(jobs_search_route)
         app.register_blueprint(seo_route)
         app.register_blueprint(blog_route)
 
         app.register_blueprint(users_route)
         app.register_blueprint(jobseeker_route)
         app.register_blueprint(jobseeker_profiles_bp)
-        app.register_blueprint(jobseeker_cv_bp)
+        app.register_blueprint(resume_routes)
         app.register_blueprint(jobseeker_applications_route)
 
         app.register_blueprint(cron_route)

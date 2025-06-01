@@ -1,1 +1,1 @@
-from src.routes.cron_routes.cron_routes import cron_bp
+from src.routes.cron_routes.cron import cron_route

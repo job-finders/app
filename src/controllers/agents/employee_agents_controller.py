@@ -1,20 +1,18 @@
 # src/controllers/agents.py
 from typing import Optional
 
-from agents.jobseeker.cover_letter import CoverLetterOutput, CoverLetterInput, CoverLetterAgent
-from database.models import Job
-from database.models.resume import JobSeekerCV
-from database.sql.users import UserORM
-from src.controllers.controller import Controllers, error_handler
 from src.agents.jobseeker.application_coach import (
     ApplicationCoachAgent,
     JobMatchInsights,
     ApplicationCoachInput
 )
-from src.logger import init_logger
+from src.agents.jobseeker.cover_letter import CoverLetterOutput, CoverLetterInput, CoverLetterAgent
+from src.controllers.controller import Controllers, error_handler
+from src.database.models import Job
+from src.database.models.resume import JobSeekerCV
 from src.database.models.users import User
+from src.logger import init_logger
 from src.main import job_search_controller, users_controller, resume_controller
-
 
 
 class EmployeeAgentsController(Controllers):

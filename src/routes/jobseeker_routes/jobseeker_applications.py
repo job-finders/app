@@ -6,7 +6,7 @@ from src.database.models.resume import JobSeekerCV
 from src.logger import init_logger
 from src.database.models.jobs_model import JobApplication, Job, ATSReport
 from src.routes import flask_error_handler
-from src.main import resume_controller, ats_controller, jobs_controller
+from src.main import resume_controller, ats_controller, job_search_controller, jobs_workflow_controller
 from src.database.models.users import User
 from src.authentication import login_required
 
@@ -27,7 +27,7 @@ async def get_location_options(user_id: str, cv_ids: list[str]) -> list[str]:
 
     profile_locations = await resume_controller.get_preferred_locations_from_profile(user_id)
     cv_locations = await resume_controller.get_locations_from_cvs(cv_ids)
-    job_locations = await jobs_controller.get_job_location()
+    job_locations = await job_search_controller.get_job_location()
     combined = list(set(profile_locations + cv_locations))
     return combined
 

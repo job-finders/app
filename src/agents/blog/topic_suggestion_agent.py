@@ -1,5 +1,5 @@
 # agents/jobseeker/topic_suggestion.py
-from agents.base import BaseAgent
+from src.agents.base import BaseAgent
 from pydantic import BaseModel
 from typing import List
 

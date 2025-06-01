@@ -1,14 +1,15 @@
 # src/controllers/agents.py
 from datetime import datetime, timedelta, timezone
 
-from agents.employer import JobPostIntelligenceAgent
-from database.models import Job
-from database.models.agent_models import JobPostInsights
-from database.sql.jobs_sql import JobsORM
+from src.agents.employer import JobPostIntelligenceAgent
+
+from src.database.models.agent_models import JobPostInsights
+
 from src.controllers.controller import Controllers, error_handler
 from src.agents.employer import EnhanceJobPostOutput, EnhanceJobPostInput, EnhanceJobPostAgent
-from src.logger import init_logger
 
+from src.database.models import Job
+from src.database.sql.jobs_sql import JobsORM
 
 class EmployerAgentsController(Controllers):
     def __init__(self):

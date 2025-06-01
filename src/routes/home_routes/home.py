@@ -7,7 +7,7 @@ from src.routes import flask_error_handler
 from src.database.models.notifications import CreateNotifications
 from src.database.models.seo import create_tags
 from src.logger import init_logger
-from src.main import scrapper, notifications_controller
+from src.main import notifications_controller, junction_scrapper
 from src.routes.utils import (fetch_and_cache_logo, create_context, not_found, redirect_apply_page)
 from src.utils import format_title
 
@@ -20,7 +20,7 @@ home_logger = init_logger("home_logger")
 @home_route.get("/media/logos/<job_ref>.png")
 async def serve_logo(job_ref: str):
     """Serve a job logo that is cached or fetch it if not present."""
-    job = scrapper.jobs.get(job_ref)
+    job = junction_scrapper.jobs.get(job_ref)
     if not job:
         home_logger.error(f"Job not found: {job_ref}")
         abort(404)

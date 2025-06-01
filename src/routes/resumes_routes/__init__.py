@@ -1,0 +1,1 @@
+from src.routes.resumes_routes.resumes import resume_routes

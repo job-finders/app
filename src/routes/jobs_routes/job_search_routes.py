@@ -2,8 +2,8 @@ from typing import TypedDict, List
 
 from flask import Blueprint, render_template, request
 
-from database.models import Job
-from main import job_search_controller
+from src.database.models import Job
+from src.main import job_search_controller
 from src.authentication import user_details
 from src.database.models.users import User
 from src.routes import flask_error_handler

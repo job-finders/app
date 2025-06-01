@@ -1,0 +1,1 @@
+from src.routes.seo_routes.seo import seo_route

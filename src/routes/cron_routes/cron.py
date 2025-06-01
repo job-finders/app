@@ -1,16 +1,17 @@
 import requests
-from flask import Blueprint, url_for
 from flask import Blueprint, jsonify
-from agents.blog.reader_agent import BlogPostReaderAgent
-from agents.blog.gap_analyzer_agent import GapAnalyzerAgent
-from agents.blog.article_creator_agent import ArticleCreatorAgent
-from agents.blog.post_submitter_agent import BlogPostSubmitterAgent
-from agents.blog.feedback_collector import FeedbackCollector
-from agents.blog.strategy_refiner import StrategyRefiner
+from flask import url_for
 
+from src.agents.blog.article_creator_agent import ArticleCreatorAgent
+from src.agents.blog.feedback_collector import FeedbackCollector
+from src.agents.blog.gap_analyzer_agent import GapAnalyzerAgent
+from src.agents.blog.post_submitter_agent import BlogPostSubmitterAgent
+from src.agents.blog.reader_agent import BlogPostReaderAgent
+from src.agents.blog.strategy_refiner import StrategyRefiner
 from src.logger import init_logger
+from src.routes.seo_routes.seo import get_site_job_links
 
-cron_route = Blueprint('cron', __name__)
+cron_route = Blueprint('cron', __name__, url_prefix='/_cron')
 cron_logger = init_logger()
 
 
@@ -28,7 +29,7 @@ def ping_indexnow(url_list: list[str], key: str, key_location: str):
         return {'indexnow': str(e)}
 
 
-@cron_route.get('/_cron/ping-index-now')
+@cron_route.get('/ping-index-now')
 async def cron_ping_index_now():
     """
     https://jobfinders.site/_cron/ping-index-now
@@ -41,7 +42,7 @@ async def cron_ping_index_now():
     result = ping_indexnow(url_list=jobs_links, key=key, key_location=url_for('seo.get_indexnow_key', _external=True))
     return result
 
-@cron_route.get('/_cron/scrape-junction')
+@cron_route.get('/scrape-junction')
 async def scrape_junction():
     """sumary_line
         Need to Actual scrape online for jobs     

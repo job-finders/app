@@ -1,7 +1,7 @@
 # /agents/adaptive_topic_agent.py
 
-from src.agents.topic_suggestion_agent import generate_new_topics
-from src.agents.feedback_agent import analyze_feedback
+from src.agents.blog.topic_suggestion_agent import generate_new_topics
+from src.agents.blog.feedback_agent import analyze_feedback
 
 
 def enhance_prompt_strategy():

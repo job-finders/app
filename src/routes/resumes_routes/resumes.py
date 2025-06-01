@@ -18,7 +18,7 @@ from src.database.models.resume import (
     CustomSection
 )
 
-jobseeker_cv_bp = Blueprint(
+resume_routes = Blueprint(
     "jobseeker_cv",
     __name__,
     url_prefix="/jobseeker/cv",
@@ -134,7 +134,7 @@ def lenient_cv_parse(data: dict) -> JobSeekerCV:
     )
 
 # Add to your routes
-@jobseeker_cv_bp.route("/api/ats-check", methods=["POST"])
+@resume_routes.route("/api/ats-check", methods=["POST"])
 @login_required
 @flask_error_handler
 async def ats_check(user: User):
@@ -167,7 +167,7 @@ async def ats_check(user: User):
 
 
 
-@jobseeker_cv_bp.route("/edit/<string:cv_id>", methods=["GET", "POST"])
+@resume_routes.route("/edit/<string:cv_id>", methods=["GET", "POST"])
 @login_required
 @flask_error_handler
 async def edit_cv(user: User, cv_id: str):
@@ -263,7 +263,7 @@ def _format_pydantic_error(e: ValidationError) -> str:
     )
 
 
-@jobseeker_cv_bp.route("/upload", methods=["GET", "POST"])
+@resume_routes.route("/upload", methods=["GET", "POST"])
 @login_required
 @flask_error_handler
 async def upload_cv(user: User):
@@ -290,7 +290,7 @@ async def upload_cv(user: User):
     context = dict(current_user=user)
     return render_template("jobseekers/upload_cv.html", **context)
 
-@jobseeker_cv_bp.route("/view/<string:cv_id>")
+@resume_routes.route("/view/<string:cv_id>")
 @login_required
 @flask_error_handler
 async def view_cv(user: User, cv_id: str):
@@ -301,7 +301,7 @@ async def view_cv(user: User, cv_id: str):
     return render_template("jobseekers/cv/view_cv.html", **context)
 
 
-@jobseeker_cv_bp.route("/delete/<string:cv_id>", methods=["POST"])
+@resume_routes.route("/delete/<string:cv_id>", methods=["POST"])
 @login_required
 @flask_error_handler
 async def delete_cv(user: User, cv_id: str):
@@ -315,7 +315,7 @@ async def delete_cv(user: User, cv_id: str):
     return redirect(url_for("jobseeker_cv.list_cvs"))
 
 
-@jobseeker_cv_bp.route("/list")
+@resume_routes.route("/list")
 @login_required
 @flask_error_handler
 async def list_cvs(user: User):
