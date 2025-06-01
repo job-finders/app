@@ -3,6 +3,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
 from flask import Flask, render_template, url_for
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from src.controllers.controller import Controllers, error_handler
@@ -97,6 +98,47 @@ class CompanyController(Controllers):
             # Convert ORM to Pydantic model
             return Company(**company_orm.to_dict())
 
+    @error_handler
+    async def get_company_by_name(self, name: str) -> Company:
+        """
+        Return a company with the exact name (case-insensitive)
+        :param name: Exact name of the company to retrieve
+        :return: Company object with nested jobs
+        :raises ValueError: If no company matches the exact name
+        """
+        with self.get_session() as session:
+            # Case-insensitive exact match
+            company_orm: CompanyORM = (
+                session.query(CompanyORM)
+                .options(joinedload(CompanyORM.jobs))
+                .filter(func.lower(CompanyORM.name) == func.lower(name))
+                .first()
+            )
+
+            if not company_orm:
+                raise ValueError(f"No company found with name '{name}'")
+
+            return Company(**company_orm.to_dict())
+
+    @error_handler
+    async def search_companies_by_name(self, name: str) -> list[Company]:
+        """
+        Search for companies containing the name substring
+        :param name: Substring to search in company names
+        :return: List of matching Company objects
+        """
+        with self.get_session() as session:
+            companies_orm: list[CompanyORM] = (
+                session.query(CompanyORM)
+                .options(joinedload(CompanyORM.jobs))
+                .filter(func.lower(CompanyORM.name).contains(func.lower(name)))
+                .all()
+            )
+
+            if not companies_orm:
+                raise ValueError(f"No companies found matching '{name}'")
+
+            return [Company(**c.to_dict()) for c in companies_orm]
 
     @error_handler
     async def _get_employer(self, employer_id: str, session) -> EmployerORM| None:

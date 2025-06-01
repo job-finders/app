@@ -2,6 +2,7 @@ import requests
 from flask import Blueprint, jsonify
 from flask import url_for
 
+from src.main import junction_scrapper
 from src.agents.blog.article_creator_agent import ArticleCreatorAgent
 from src.agents.blog.feedback_collector import FeedbackCollector
 from src.agents.blog.gap_analyzer_agent import GapAnalyzerAgent
@@ -50,7 +51,7 @@ async def scrape_junction():
         argument -- description
         Return: return_description
     """
-    pass
+    await junction_scrapper.scrape_and_store_jobs()
 
 @cron_route.route("/create-article", methods=["GET"])
 async def create_article_pipeline():

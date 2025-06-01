@@ -196,7 +196,7 @@ class Scraper:
         
         # Check database if not in cache
         existing = await company_controller.get_company_by_name(dto.name)
-        if existing:
+        if existing is not None:
             # Add to cache for future access
             self.company_cache[cache_key] = existing
             return existing
@@ -400,7 +400,7 @@ class JunctionScraper(Scraper):
             for dto in job_dtos:
                 # Find or create associated company
                 company = await self.find_or_create_company(dto.company)
-                
+
                 # Convert to Job model
                 job_model = self.convert_to_job_model(dto, company)
                 
