@@ -1,0 +1,195 @@
+{% extends "jobseekers/layouts/page.html" %}
+{% block title %}{{ meta_title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Job Title & Meta Info -->
+  <div class="mb-4">
+    <h1 class="h3">{{ job.title }}</h1>
+    <p class="text-muted">{{ job.company_name }} &middot; {{ job.location }}</p>
+  </div>
+
+  <!-- Job Description Card -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Job Description</h5>
+      <p class="card-text">{{ job.description | safe }}</p>
+      <ul>
+        <li><strong>Salary:</strong> {{ job.salary | default("Not specified") }}</li>
+        <li><strong>Employment Type:</strong> {{ job.employment_type }}</li>
+        <li><strong>Posted On:</strong> {{ job.posted_on.strftime('%Y-%m-%d') }}</li>
+        <li><strong>Application Deadline:</strong> {{ job.application_deadline.strftime('%Y-%m-%d') if job.application_deadline else "Open" }}</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Required Skills</h5>
+        <ul class="list-unstyled">
+            {% if job.required_skills %}
+            {% for skill in job.required_skills %}
+                <li class="badge bg-secondary me-1">{{ skill }}</li>
+            {% endfor %}
+            {% else %}
+            <li class="text-muted">Not specified</li>
+            {% endif %}
+        </ul>        
+    </div>
+</div>
+
+
+  <div class="card mb-4">
+    <div class="card-body">
+        <h3 class="card-title">Complete Job Details</h3>
+      <a href="{{ url_for('jobs.full_job_details', job_id=job.job_id) }}" class="btn btn-primary btn-lg">Complete Job Details</a>    
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Company Details</h5>    
+        <a class="btn btn-success btn-lg" href="{{ url_for('company_search.view_company', company_id=job.company_id) }}" >Company Details</a>
+    </div>
+  </div>
+
+  <!-- CV Selection + AI Tools -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Evaluate Your Fit & Generate Cover Letter</h5>
+
+      <form id="ai-tools-form">
+        <div class="mb-3">
+          <label for="cv_id" class="form-label">Select your CV</label>
+          <select class="form-select" id="cv_id" name="cv_id" required>
+            <option value="">-- Choose CV --</option>
+            {% for resume in list_resumes %}
+              <option value="{{ resume.cv_id }}">{{ resume.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label for="tone" class="form-label">Tone for Cover Letter</label>
+          <select class="form-select" id="tone" name="tone">
+            <option value="professional" selected>Professional</option>
+            <option value="enthusiastic">Enthusiastic</option>
+            <option value="friendly">Friendly</option>
+            <option value="formal">Formal</option>
+            <option value="concise">Concise</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Generate & Analyze</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- AI Results (Dynamic) -->
+  <div id="ai-results" class="d-none">
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Match Analysis</h5>
+        <p id="match-summary" class="text-muted small"></p>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Cover Letter</h5>
+        <textarea name="cover_letter" id="cover_letter" class="form-control" rows="8" required></textarea>
+      </div>
+    </div>
+
+    <!-- Application Submit Form -->
+    <div class="card mb-5">
+      <div class="card-body">
+        <h5 class="card-title">Submit Application</h5>
+        <form id="application-form" method="POST" action="/jobs/{{ job.job_id }}/apply">
+          <input type="hidden" name="cv_id" id="app_cv_id">
+          <input type="hidden" name="cover_letter" id="app_cover_letter">
+
+          <div class="mb-3">
+            <label for="expected_salary" class="form-label">Expected Salary (ZAR)</label>
+            <input type="number" class="form-control" name="expected_salary">
+          </div>
+
+          <div class="mb-3">
+            <label for="preferred_start_date" class="form-label">Preferred Start Date</label>
+            <input type="date" class="form-control" name="preferred_start_date">
+          </div>
+
+          <div class="mb-3">
+            <label for="preferred_location" class="form-label">Preferred Location</label>
+            <input type="text" class="form-control" name="preferred_location">
+          </div>
+
+          <button type="submit" class="btn btn-success w-100">Submit Application</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Related Jobs -->
+  {% if related_jobs %}
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Related Jobs</h5>
+        <ul class="list-group list-group-flush">
+          {% for job in related_jobs %}
+            <li class="list-group-item">
+                <strong>{{ job.company_name }}</strong> - {{ job.location }}<br>                    
+                
+              <a href="/jobs/{{ job.job_id }}">{{ job.title }} - {{ job.location }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+  const aiForm = document.getElementById("ai-tools-form");
+  const resultsBlock = document.getElementById("ai-results");
+
+  aiForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const cvId = document.getElementById("cv_id").value;
+    const tone = document.getElementById("tone").value;
+    const jobId = "{{ job.job_id }}";
+
+    if (!cvId) return alert("Please select a CV");
+
+    try {
+      // Fetch cover letter
+      const coverRes = await fetch(`/agents/employee/v1/jobs/${jobId}/cover-letter`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cv_id: cvId, tone })
+      });
+      const coverData = await coverRes.json();
+      document.getElementById("cover_letter").value = coverData.cover_letter;
+
+      // Fetch match analysis
+      const matchRes = await fetch(`/agents/employee/v1/jobs/${jobId}/match-analysis`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cv_id: cvId, cover_letter: coverData.cover_letter })
+      });
+      const matchData = await matchRes.json();
+      document.getElementById("match-summary").innerText = matchData.summary || "Match analysis complete.";
+
+      // Show results
+      resultsBlock.classList.remove("d-none");
+
+      // Autofill hidden form fields
+      document.getElementById("app_cv_id").value = cvId;
+      document.getElementById("app_cover_letter").value = coverData.cover_letter;
+    } catch (error) {
+      console.error("AI processing failed", error);
+      alert("Something went wrong generating your application.");
+    }
+  });
+</script>
+{% endblock %}

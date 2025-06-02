@@ -3,7 +3,7 @@ from typing import TypedDict, List
 from flask import Blueprint, render_template, request
 
 from src.database.models import Job
-from src.main import job_search_controller
+from src.main import job_search_controller, resumes_controller
 from src.authentication import user_details
 from src.database.models.users import User
 from src.routes import flask_error_handler
@@ -133,6 +133,38 @@ async def category_jobs(user: User, category: str):
     return render_template('jobs/category.html', **context)
 
 
+@jobs_search_route.get('/full-job-detail/<string:job_id>')
+@flask_error_handler
+@user_details
+async def full_job_details(user: User, job_id: str):
+    """sumary_line
+        Display full job details for a specific job ID.
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    job = await job_search_controller.get_job_by_id(job_id)
+
+    if not job or job.status != "active":
+        return await gone(user=user, search_term=job_id)
+
+    related_jobs: list[Job] = await job_search_controller.get_similar_jobs(job_id=job.job_id)
+    
+    
+    list_resumes: list[JobSeekerCV] = await resumes_controller.list_cvs_for_user(user_id=user.uid)
+
+    context = {
+        'current_user': user,
+        'job': job,
+        'list_resumes': list_resumes,
+        'related_jobs': related_jobs,
+        'meta_title': job.title,
+        'meta_description': job.short_description,
+    }
+
+    return render_template('jobs/full_job_detail.html', **context)
+
+
 @jobs_search_route.get('/<string:job_id>')
 @flask_error_handler
 @user_details
@@ -152,14 +184,20 @@ async def job_details(user: User, job_id: str):
         return await gone(user=user, search_term=job_id)
 
     related_jobs: list[Job] = await job_search_controller.get_similar_jobs(job_id=job.job_id)
+    
+    
+    list_resumes: list[JobSeekerCV] = await resumes_controller.list_cvs_for_user(user_id=user.uid)
 
     context = {
         'current_user': user,
         'job': job,
+        'list_resumes': list_resumes,
         'related_jobs': related_jobs,
         'meta_title': job.title,
         'meta_description': job.short_description,
     }
+
+
     return render_template('jobs/job_detail.html', **context)
 
 @jobs_search_route.get('/location/<string:location>')

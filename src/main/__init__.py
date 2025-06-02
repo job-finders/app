@@ -100,6 +100,7 @@ def create_app(config):
         from src.routes.cron_routes import cron_route
         from src.routes.ats_routes import ats_tool_route
 
+        from src.routes.company_routes import company_bp, company_search_routes
 
 
         # registering routes
@@ -119,6 +120,9 @@ def create_app(config):
         app.register_blueprint(cron_route)
         app.register_blueprint(ats_tool_route)
 
+        app.app.register_blueprint(blueprint_name=company_bp)
+        app.register_blueprint(company_search_routes)
+        
         # registering filters
         app.jinja_env.filters['title'] = format_title
         app.jinja_env.filters['description'] = format_description
