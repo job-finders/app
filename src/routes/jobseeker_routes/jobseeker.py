@@ -1,20 +1,28 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, jsonify
 
 from flask import Blueprint, render_template
 
+from database.models.resume import JobSeekerCV
 from src.authentication import login_required
 from src.database.models.users import User
-from src.main import resume_controller
+from src.main import resume_controller, employee_agents_controller
 from src.routes import flask_error_handler
 
 jobseeker_route = Blueprint('jobseekers', __name__,  url_prefix="/jobseeker")
 
+
+async def get_user_cv(uid):
+    pass
+
+
 @jobseeker_route.route("/ai/cv/optimize", methods=["POST"])
 @login_required
 async def optimize_cv(user: User):
-    cv_data = await get_user_cv(user.uid)
-    response = await agent_controller.cv_optimizer(cv=cv_data, user_uid=user.uid)
-    return jsonify(response.dict())
+    # TODO - please Note this is just an API
+    primary_resume: JobSeekerCV = await resume_controller.get_primary_resume(user_uid=user.uid)
+    optimized_resume: JobSeekerCV = await employee_agents_controller.optimize_primary_cv(primary_resume=primary_resume)
+    return jsonify(optimized_resume.model_dump())
+
 
 
 @jobseeker_route.route('/dashboard', methods=['GET'])

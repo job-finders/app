@@ -115,3 +115,11 @@ class EmployeeAgentsController(Controllers):
         result = await agent.run(input_model=input_data)
         return result
 
+
+    async def optimize_primary_cv(self, primary_resume: JobSeekerCV):
+        """
+            with the resume please run an Agent which will optimize the CV in order to rank higher
+        :param user_uid:
+        :return:
+        """
+        pass
