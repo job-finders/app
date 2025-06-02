@@ -1,0 +1,65 @@
+<nav class="sidebar sidebar-hide-to-small sidebar-shrink sidebar-gestures">
+  <div class="nano">
+    <div class="nano-content">
+      <ul>
+        <li class="label">Company Dashboard</li>
+
+        <!-- Existing Routes -->
+        <li>
+          <a href="{{ url_for('company.dashboard') }}">
+            <i class="ti-home"></i> Dashboard
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('company.jobs') }}">
+            <i class="ti-briefcase"></i> My Job Posts
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('company.applicants') }}">
+            <i class="ti-user"></i> Applicants
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('company.profile') }}">
+            <i class="ti-id-badge"></i> Company Profile
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('company.notifications') }}">
+            <i class="ti-bell"></i> Notifications
+          </a>
+        </li>
+
+        <!-- Planned Routes (Placeholders / To be implemented) -->
+        <li class="label">Coming Soon</li>
+        <li>
+          <a href="#">
+            <i class="ti-stats-up"></i> Analytics
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i class="ti-star"></i> Shortlisted Candidates
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i class="ti-files"></i> Billing & Invoices
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i class="ti-settings"></i> Settings
+          </a>
+        </li>
+
+        <li>
+          <a href="{{ url_for('auth.logout') }}">
+            <i class="ti-power-off"></i> Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
