@@ -192,6 +192,27 @@ class CompanyController(Controllers):
                 jobs = [job for job in jobs if job.status == status.value]
             return [Job(**job.to_dict()) for job in jobs]
 
+
+    @error_handler
+    async def get_all_company_employers(self, company_id: str) -> List[Employer]:
+        """
+        Retrieve all employers associated with a specific company
+        :param company_id: UUID of the company
+        :return: List of Employer objects
+        """
+        with self.get_session() as session:
+            employers_orm = (
+                session.query(EmployerORM)
+                .filter_by(company_id=company_id)
+                .all()
+            )
+
+            if not employers_orm:
+                return []
+
+            return [Employer(**employer.to_dict()) for employer in employers_orm]
+
+
     @error_handler
     async def get_application_analytics(self, company_id: str) -> JobApplicationDashboard:
         """Get hiring metrics using JobsController's analytics engine

@@ -1,0 +1,86 @@
+{% extends "company/layout/page" %}
+
+{% block title %}Company Dashboard | {{ company.name if company else "Recruitment Portal" }}{% endblock %}
+
+{% block meta_description %}
+  Manage your recruitment activities: view verification status, active jobs, candidate analytics, and recent applications on your company dashboard.
+{% endblock %}
+
+{% block meta_keywords %}
+  company dashboard, recruitment dashboard, hiring analytics, job management, candidate tracking, verification status, employer dashboard
+{% endblock %}
+
+{% block content %}
+
+<div class="dashboard">
+  <!-- Status Summary Row -->
+  <div class="status-cards">
+    <div class="card verification-status">
+      <h3>Verification</h3>
+      <div class="status-badge {{ company.verification_status }}"></div>
+      {% if company.verification_status != "verified" %}
+        <a href="{{ url_for('company.initiate_company_verification') }}" class="btn">
+          Complete Verification
+        </a>
+      {% endif %}
+    </div>
+    
+    <div class="card jobs-summary">
+      <h3>Active Jobs</h3>
+      <div class="count">{{ metrics.active_jobs }}</div>
+      <a href="{{ url_for('company.manage_jobs') }}">View All</a>
+    </div>
+    
+    <div class="card candidates-summary">
+      <h3>Saved Candidates</h3>
+      <div class="count">{{ metrics.saved_candidates }}</div>
+      <a href="{{ url_for('company.candidate_management') }}">Browse</a>
+    </div>
+  </div>
+
+  <!-- Verification Progress -->
+  <div class="verification-progress">
+    <h2>Verification Steps</h2>
+    <div class="steps">
+      {% for step in verification_steps %}
+        <div class="step {% if step.complete %}completed{% endif %}">
+          {{ loop.index }}. {{ step.name }}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="recent-activity">
+    <h2>Recent Activity</h2>
+    <div class="activity-list">
+      {% for app in recent_activity.new_applications %}
+        <div class="activity-item">
+          <span class="icon">📄</span>
+          New application for {{ app.job_title }}
+        </div>
+      {% endfor %}
+      {% for candidate in recent_activity.saved_candidates %}
+        <div class="activity-item">
+          <span class="icon">👤</span>
+          Saved candidate {{ candidate.name }}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <a href="{{ url_for('company.manage_jobs') }}" class="action-card">
+      ➕ Post New Job
+    </a>
+    <a href="{{ url_for('company.candidate_management') }}" class="action-card">
+      🔍 Find Candidates
+    </a>
+    <a href="{{ url_for('company.application_analytics') }}" class="action-card">
+      📊 View Analytics
+    </a>
+  </div>
+</div>
+
+{% endblock %}

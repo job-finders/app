@@ -22,6 +22,10 @@ logger = init_logger("company_routes")
 ALLOWED_EXTENSIONS = {'pdf'}
 UPLOAD_FOLDER = 'company_documents'
 
+def allowed_file(filename):
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 @company_bp.route("/create-company", methods=["GET", "POST"])
 @login_required
@@ -31,8 +35,7 @@ async def create_company_profile(user: User):
 
     if request.method == "GET":
         if not _employer_profile:
-            flash(message="You do not already have an employer profile please create your employer profile first",
-                  category="success")
+            flash(message="You do not already have an employer profile please create your employer profile first",category="success")
             return redirect(url_for('company.employer_profile'))
         # with user data & employer profile we can now create a company profile
         context = dict(current_user=user, employer_profile=_employer_profile)
@@ -139,7 +142,7 @@ async def manage_jobs(user: User):
 
     if not user.role == "employer":
         flash(message="You are not associated with any company please create a company in order to continue",
-              category="danger")
+        category="danger")
         return redirect(url_for('company.employer_profile'))
 
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
@@ -179,7 +182,7 @@ async def candidate_management(user: User):
 
     if not user.role == "employer":
         flash(message="You are not associated with any company please create a company in order to continue",
-              category="danger")
+        category="danger")
         return redirect(url_for('company.create_company_profile'))
 
     if request.method == "GET":
@@ -331,9 +334,7 @@ async def initiate_company_verification(user: User):
         return redirect(url_for('company.verification_status'))
 
     # GET request - show upload form
-    return render_template('company/initiate_verification.html',
-                           company=company,
-                           allowed_extensions=ALLOWED_EXTENSIONS)
+    return render_template('company/initiate_verification.html',company=company,allowed_extensions=ALLOWED_EXTENSIONS)
 
 
 @company_bp.route('/verification-status')
@@ -347,11 +348,83 @@ async def verification_status(user: User):
     company = await company_controller.get_company_profile(employer.company_id)
     status_info = await company_controller.get_verification_status(company.company_id)
 
-    return render_template('company/verification_status.html',
-                           company=company,
-                           status_info=status_info)
+    return render_template('company/verification_status.html',company=company,status_info=status_info)
 
 
-def allowed_file(filename):
-    return '.' in filename and \
-        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@company_bp.route("/billing")
+async def billing():
+    return render_template("company/billing.html")  # Placeholder template
+
+@company_bp.route("/settings")
+async def settings():
+    return render_template("company/settings.html")  # Placeholder template
+
+@company_bp.route("/employers")
+@login_required
+async def employers(user: User):
+    """
+    List all employers associated with the company
+    """
+    if user.role != "employer":
+        flash("You must be an employer to view this page", "danger")
+        return redirect(url_for("company.employer_profile"))
+    # Fetch company data associated with the user
+    _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+    if not _employer_profile:
+        flash("You do not have an employer profile", "danger")
+        return redirect(url_for("company.employer_profile"))
+
+    # This would typically fetch from the database
+    employers = await company_controller.get_all_company_employers(company_id=_employer_profile.company_id)
+    context = {
+        "current_user": user,
+        "employer_profile": _employer_profile,
+        "employers": employers
+    }
+
+    return render_template("company/employers.html",**context)
+
+
+
+@company_bp.route("/")
+@login_required
+async def get_dashboard(user: User):
+    # 1. Verify employer profile exists
+    employer = await company_controller.get_employer_by_uid(user.uid)
+    if not employer:
+        return redirect(url_for('company.employer_profile'))
+    
+    # 2. Get company data
+    company = await company_controller.get_company_by_id(employer.company_id)
+    
+    # 3. Fetch dashboard metrics
+    metrics = {
+        'active_jobs': await company_controller.count_active_jobs(company.company_id),
+        'total_applications': await company_controller.count_applications(company.company_id),
+        'saved_candidates': await company_controller.count_saved_candidates(employer.employer_id),
+        'verification_status': company.verification_status
+    }
+    
+    # 4. Get recent activity
+    recent_activity = {
+        'new_applications': await company_controller.get_recent_applications(company.company_id),
+        'saved_candidates': await company_controller.get_recent_saved_candidates(employer.employer_id)
+    }
+    
+    # 5. Determine verification progress
+    verification_steps = [
+        {'name': 'Employer Verified', 'complete': employer.is_verified},
+        {'name': 'Documents Submitted', 'complete': bool(company.documents_submitted)},
+        {'name': 'Company Verified', 'complete': company.verification_status == "verified"}
+    ]
+    
+    return render_template(
+        "company/dashboard.html",
+        current_user=user,
+        company=company,
+        employer=employer,
+        metrics=metrics,
+        recent_activity=recent_activity,
+        verification_steps=verification_steps
+    )
