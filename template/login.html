@@ -5,14 +5,13 @@
     <meta name="description" content="Access your JobFinders account to apply for jobs, manage your profile, and track applications.">
     <meta property="og:title" content="Login - JobFinders.site" />
     <meta property="og:description" content="Log in to JobFinders to explore thousands of job listings and opportunities across South Africa." />
-    <meta property="og:url" content="{{ url_for('auth.get_auth', _external=True) }}" />
+    <meta property="og:url" content="{{ url_for('auth.login', _external=True) }}" />
     <meta property="og:image" content="https://jobfinders.site/static/images/jobfinder.jpg" />
     <meta name="robots" content="index, follow">
 {% endblock %}
 
 {% block content %}
 <div class="login-content">
-
     <div class="login-logo text-center mb-4">
         <a href="{{ url_for('home.get_home') }}" class="text-decoration-none">
             <span class="font-weight-bold h3">Job</span><span class="text-white-50 font-weight-bold h3">Finders</span>

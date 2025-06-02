@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "layouts/page.html" %}
 {% block title %}{{ job.title }} at {{ job.company.name if job.company else "Unknown Company" }}{% endblock %}
 
 {% block content %}

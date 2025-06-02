@@ -1,0 +1,154 @@
+{% extends "company/layout/page" %}
+
+{% block title %}Company Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto bg-white shadow-md rounded-xl p-6 mt-6">
+    <h1 class="text-2xl font-semibold text-gray-800 mb-6">🏢 Company Profile</h1>
+
+    <div class="flex flex-col items-center text-center mb-8">
+        {% if company_data.logo_url %}
+            <img src="{{ company_data.logo_url }}" alt="{{ company_data.name }} logo" class="mb-4 w-32 h-auto rounded" />
+        {% endif %}
+        <h2 class="text-xl font-bold text-gray-900 mb-2">{{ company_data.name or 'Company Name Not Provided' }}</h2>
+        <div class="text-gray-700 space-y-2">
+            <p><strong>Industry:</strong> {{ company_data.industry or 'Not Provided' }}</p>
+            <p><strong>Website:</strong>
+                {% if company_data.website %}
+                    <a href="{{ company_data.website }}" class="text-blue-600 hover:underline break-all" target="_blank" rel="noopener noreferrer">
+                        {{ company_data.website }}
+                    </a>
+                {% else %}
+                    Not Provided
+                {% endif %}
+            </p>
+            <p><strong>Headquarters:</strong> {{ company_data.location or 'Not Provided' }}</p>
+            <p><strong>Created:</strong>
+                {% if company_data.created_at %}
+                    {{ company_data.created_at.strftime('%d %b %Y') }}
+                {% else %}
+                    Not Provided
+                {% endif %}
+            </p>
+            <p><strong>Description:</strong><br>
+                {{ company_data.description or 'No description provided.' }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Job Statistics Section -->
+    <div class="mb-8 border-t pt-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">📊 Job Statistics</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- Total Jobs Card -->
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                <div class="text-blue-800 font-bold text-3xl mb-1">{{ company_data.total_jobs }}</div>
+                <div class="text-blue-700 font-medium">Total Jobs</div>
+                <div class="text-blue-600 text-sm mt-1">All posted positions</div>
+            </div>
+
+            <!-- Active Jobs Card -->
+            <div class="bg-green-50 border border-green-100 rounded-lg p-4">
+                <div class="text-green-800 font-bold text-3xl mb-1">{{ company_data.active_jobs }}</div>
+                <div class="text-green-700 font-medium">Active Jobs</div>
+                <div class="text-green-600 text-sm mt-1">Currently accepting applications</div>
+            </div>
+
+            <!-- Applications Card -->
+            <div class="bg-purple-50 border border-purple-100 rounded-lg p-4">
+                <div class="text-purple-800 font-bold text-3xl mb-1">{{ company_data.total_applications }}</div>
+                <div class="text-purple-700 font-medium">Applications</div>
+                <div class="text-purple-600 text-sm mt-1">Total candidates applied</div>
+            </div>
+
+            <!-- Response Rate Card -->
+            <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
+                <div class="text-amber-800 font-bold text-3xl mb-1">{{ company_data.application_response_rate|round(1) }}%</div>
+                <div class="text-amber-700 font-medium">Response Rate</div>
+                <div class="text-amber-600 text-sm mt-1">Of applications get responses</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Avg Applications -->
+            <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold text-gray-700 mb-2">📈 Average Applications per Job</h3>
+                <div class="flex items-center">
+                    <div class="text-2xl font-bold text-gray-800 mr-2">{{ company_data.avg_applications_per_job|round(1) }}</div>
+                    <div class="text-sm text-gray-600">applications per position</div>
+                </div>
+                <div class="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    {% set max_apps = 50 %}
+                    {% set width = (company_data.avg_applications_per_job / max_apps * 100)|min(100) %}
+                    <div class="h-full bg-purple-500" style="width: {{ width }}%"></div>
+                </div>
+            </div>
+
+            <!-- Hiring Time -->
+            <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold text-gray-700 mb-2">⏱️ Average Hiring Time</h3>
+                <div class="flex items-center">
+                    <div class="text-2xl font-bold text-gray-800 mr-2">{{ company_data.avg_hiring_time|round(1) }}</div>
+                    <div class="text-sm text-gray-600">days to fill positions</div>
+                </div>
+                <div class="mt-3">
+                    {% if company_data.avg_hiring_time < 7 %}
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Faster than industry average</span>
+                    {% elif company_data.avg_hiring_time < 14 %}
+                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">Industry average</span>
+                    {% else %}
+                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm">Slower than industry average</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Popular Job Titles -->
+        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <h3 class="font-semibold text-gray-700 mb-3">🌟 Popular Job Titles</h3>
+            <div class="flex flex-wrap gap-2">
+                {% if company_data.popular_job_titles %}
+                    {% for title in company_data.popular_job_titles %}
+                    <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm">
+                        {{ title }}
+                    </span>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500">No job titles available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Optional Employer Reference Details for Admin Insight -->
+    <div class="mt-8 border-t pt-6">
+        <h2 class="text-lg font-medium text-gray-700 mb-4">👤 Employer Reference</h2>
+        <p><strong>Email:</strong>
+            {% if employer_profile.contact_email %}
+                <a href="mailto:{{ employer_profile.contact_email }}" class="text-blue-600 hover:underline break-all">
+                    {{ employer_profile.contact_email }}
+                </a>
+            {% else %}
+                Not Provided
+            {% endif %}
+        </p>
+        <p><strong>Phone:</strong> {{ employer_profile.phone or 'Not Provided' }}</p>
+        <p><strong>Joined:</strong>
+            {% if employer_profile.created_at %}
+                {{ employer_profile.created_at.strftime('%d %b %Y') }}
+            {% else %}
+                Not Provided
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Edit Button -->
+    <div class="mt-8 text-center">
+        <a href="{{ url_for('company.update_company_profile') }}"
+           class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition inline-block">
+           ✏️ Edit Company
+        </a>
+    </div>
+</div>
+{% endblock %}

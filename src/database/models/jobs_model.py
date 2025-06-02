@@ -3,7 +3,7 @@ from datetime import date, timezone, timedelta, datetime
 from enum import Enum
 from typing import Optional, Any
 
-from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict
+from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict, model_validator
 
 from src.database.constants import utc_time
 from src.database.models.company_models import Company
@@ -105,6 +105,67 @@ def generate_job_ref() -> str:
     return f"JB-{ts}-{rand}"                         # e.g., JB-20250529143000-B6FA9C
 
 
+class JobCategory(BaseModel):
+    category_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = Field(min_length=2, max_length=100)
+    slug: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    seo_description: Optional[str] = Field(max_length=250, default=None)
+    created_at: datetime = Field(default_factory=lambda: utc_time())
+    updated_at: Optional[datetime] = Field(default=None)
+
+    # Relationship
+    jobs: list['Job'] = Field(default_factory=list)
+
+    # Computed statistics properties
+    @computed_field
+    @property
+    def total_jobs(self) -> int:
+        """Total jobs in this category"""
+        return len(self.jobs)
+
+    @computed_field
+    @property
+    def active_jobs(self) -> int:
+        """Active jobs (not expired)"""
+        now = utc_time()
+        return sum(
+            1 for job in self.jobs
+            if job.status == 'active' and job.expires_at > now
+        )
+
+    @computed_field
+    @property
+    def featured_jobs(self) -> int:
+        """Featured jobs in this category"""
+        return sum(1 for job in self.jobs if job.is_featured)
+
+    @computed_field
+    @property
+    def avg_salary_min(self) -> Optional[float]:
+        """Average minimum salary"""
+        min_salaries = [job.salary_min for job in self.jobs if job.salary_min is not None]
+        return sum(min_salaries) / len(min_salaries) if min_salaries else None
+
+    @computed_field
+    @property
+    def avg_salary_max(self) -> Optional[float]:
+        """Average maximum salary"""
+        max_salaries = [job.salary_max for job in self.jobs if job.salary_max is not None]
+        return sum(max_salaries) / len(max_salaries) if max_salaries else None
+
+    @model_validator(mode='after')
+    def generate_slug(self) -> 'JobCategory':
+        """Generate slug if not provided"""
+        if not self.slug and self.name:
+            self.slug = self.name.lower().replace(" ", "-")
+        return self
+
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
+
 
 class Job(BaseModel):
     # Core Identification
@@ -127,8 +188,9 @@ class Job(BaseModel):
     description: str
     position_type: str = Field(pattern="FULL_TIME|PART_TIME|CONTRACT")
     remote_policy: str = Field(pattern="ONSITE|HYBRID|REMOTE")
-    category: Optional[str] = Field(default=None)
 
+    category_id: Optional[str] = Field(default=None)
+    category: Optional[JobCategory] = Field(default={})  # Updated to JobCategory
     # Compensation
     salary_min: Optional[float] = Field(ge=0, default=None)
     salary_max: Optional[float] = Field(ge=0, default=None)
@@ -175,7 +237,7 @@ class Job(BaseModel):
 
     @computed_field
     @property
-    def salary():
+    def salary(self) -> str:
         """Returns a formatted salary range string."""
         if self.salary_min is not None and self.salary_max is not None:
             return f"{self.salary_currency} {self.salary_min} - {self.salary_max}"

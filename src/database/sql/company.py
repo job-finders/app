@@ -88,7 +88,7 @@ class CompanyORM(Base):
             "updated_at": self.updated_at.isoformat(),
             "is_verified": self.is_verified,
             "jobs": [job.to_dict() for job in self.jobs] if hasattr(self, 'jobs') else None,
-            "time_verification_request_sent": self.time_verification_request_sent.isoformat(),
+            "time_verification_request_sent": self.time_verification_request_sent.isoformat() if self.time_verification_request_sent else None,
             "verification_status": self.verification_status
         }
 

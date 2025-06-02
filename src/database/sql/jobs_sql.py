@@ -1,5 +1,7 @@
 import uuid
 from datetime import datetime, timezone
+from typing import Any, Optional
+
 from sqlalchemy import Column, String, Text, Date, Float, Integer, Boolean, ForeignKey, JSON, Index, DateTime, inspect, \
     ARRAY, UUID, event
 from sqlalchemy.orm import relationship, deferred
@@ -12,6 +14,75 @@ from src.database.models.jobs_model import JobApprovalStatusEnum
 from src.database.constants import ID_LEN, NAME_LEN, utc_time
 from src.database.sql import Base, engine
 
+
+class JobCategoryORM(Base):
+    __tablename__ = "job_category"
+    category_id = Column(String(ID_LEN), primary_key=True, index=True)
+    name = Column(String(NAME_LEN), index=True)
+    slug = Column(String(NAME_LEN), nullable=True)
+    description = Column(Text, nullable=True)
+    seo_description = Column(String(250), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_time)
+    updated_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
+
+    jobs = relationship("JobsORM", back_populates="category")
+
+    # Computed statistics properties
+    @hybrid_property
+    def total_jobs(self) -> int:
+        """Total jobs in this category"""
+        return len(self.jobs)
+
+    @hybrid_property
+    def active_jobs(self) -> int:
+        """Active jobs (not expired)"""
+        now = utc_time()
+        return sum(
+            1 for job in self.jobs
+            if job.status == 'active' and job.expires_at > now
+        )
+
+    @hybrid_property
+    def featured_jobs(self) -> int:
+        """Featured jobs in this category"""
+        return sum(1 for job in self.jobs if job.is_featured)
+
+    @hybrid_property
+    def avg_salary_min(self) -> Optional[float]:
+        """Average minimum salary"""
+        min_salaries = [job.salary_min for job in self.jobs if job.salary_min is not None]
+        return sum(min_salaries) / len(min_salaries) if min_salaries else None
+
+    @hybrid_property
+    def avg_salary_max(self) -> Optional[float]:
+        """Average maximum salary"""
+        max_salaries = [job.salary_max for job in self.jobs if job.salary_max is not None]
+        return sum(max_salaries) / len(max_salaries) if max_salaries else None
+
+    def to_dict(self, include_jobs=False):
+        """Convert to dictionary with computed statistics"""
+        data = {
+            "category_id": self.category_id,
+            "name": self.name,
+            "slug": self.slug,
+            "description": self.description,
+            "seo_description": self.seo_description,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            # Include computed statistics
+            "total_jobs": self.total_jobs,
+            "active_jobs": self.active_jobs,
+            "featured_jobs": self.featured_jobs,
+            "avg_salary_min": self.avg_salary_min,
+            "avg_salary_max": self.avg_salary_max
+        }
+
+        # Conditionally include job details
+        if include_jobs:
+            if include_jobs:
+                data['jobs'] = [job_orm.to_dict() for job_orm in self.jobs]
+
+        return data
 
 class JobsORM(Base):
     """
@@ -88,6 +159,8 @@ class JobsORM(Base):
 
     # Core Identification
     job_id = Column(String(ID_LEN), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
+    category_id = Column(String(ID_LEN), ForeignKey('job_category.category_id'), index=True)  # Add this below position_type/remote_policy
+
     job_ref = Column(String(NAME_LEN), unique=True, index=True)
     slug = Column(String(NAME_LEN), unique=True, index=True)
     external_source = Column(String(NAME_LEN))  # e.g., "LinkedIn", "CompanyWebsite"
@@ -104,7 +177,7 @@ class JobsORM(Base):
     position_type = Column(String(50), index=True)  # FULL_TIME, PART_TIME, CONTRACT
     remote_policy = Column(String(50), index=True)  # ONSITE, HYBRID, REMOTE
     # In Job Details section of JobsORM
-    category = Column(String(100), index=True)  # Add this below position_type/remote_policy
+
 
     # Compensation
     salary_min = Column(Float)
@@ -156,7 +229,7 @@ class JobsORM(Base):
     # Relationships
     applications = relationship("JobApplicationORM", back_populates="job")
     saved_jobs = relationship("SavedJobORM", back_populates="job")
-
+    category = relationship("JobCategoryORM", back_populates="jobs")
     
     # Indexes
     __table_args__ = (
@@ -198,8 +271,9 @@ class JobsORM(Base):
             "description": self.description,
             "summary": self.summary,
             "seo_description": self.seo_description,
+            "category_id": self.category_id,
+            "category": self.category.to_dict(include_jobs=False) if self.category else {},
             "position_type": self.position_type,
-            "category": self.category,
             "remote_policy": self.remote_policy,
             "salary_min": self.salary_min,
             "salary_max": self.salary_max,

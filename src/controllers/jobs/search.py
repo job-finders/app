@@ -14,10 +14,10 @@ from src.database.sql import escape_like
 from src.database.sql.company import CompanyORM
 from src.controllers.controller import Controllers
 from src.controllers.controller import error_handler
-from src.database.models.jobs_model import (Job, JobApplication, JobStatusEnum)
+from src.database.models.jobs_model import (Job, JobApplication, JobStatusEnum, JobCategory)
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.models.resume import JobSeekerCV
-from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM)
+from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, JobCategoryORM)
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.resume import JobSeekerCVORM
 
@@ -105,17 +105,28 @@ class JobsSearchController(Controllers):
                 "page_size": page_size,
                 "total_jobs": total_jobs,
                 "total_pages": (total_jobs + page_size - 1) // page_size,
-                "jobs": jobs
-                }
+                "jobs": jobs}
+
+    @error_handler
+    async def list_job_categories(self) -> list[JobCategory]:
+        """
+            :return:
+        """
+        with self.get_session() as session:
+            category_orm_list: list[JobCategoryORM] = session.query(JobCategoryORM).all()
+            return [JobCategory(**category_orm.to_dict(include_jobs=True)) for category_orm in category_orm_list]
 
     @error_handler
     async def search_jobs_by_category(self, category: str, page: int = 1, page_size: int = 25) -> dict:
         """Search jobs by category with pagination, filtered to active and featured preferred."""
         with self.get_session() as session:
+
+            category_orm =session.query(JobCategoryORM).filter(JobCategoryORM.name.ilike(f'%{category}%'))
+            category = JobCategory(**category_orm.to_dict())
+
             base_query = session.query(JobsORM).filter(
                 JobsORM.status == 'active',
-                JobsORM.category.ilike(f'%{category}%')  # match flexible category terms
-            )
+                JobsORM.category_id==category.category_id)  # match flexible category terms
 
             total_jobs = base_query.count()
             total_pages = math.ceil(total_jobs / page_size)
@@ -150,7 +161,6 @@ class JobsSearchController(Controllers):
     @error_handler
     async def get_job_by_reference(self, reference: str) -> Job | None:
         """
-
         :param reference:
         :return:
         """

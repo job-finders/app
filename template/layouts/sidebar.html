@@ -16,13 +16,13 @@
                 {# Section for Job Seekers #}
                 <li>
                     <a class="sidebar-sub-toggle">
-                        <i class="ti-briefcase"></i> For Job Seekers <span class="sidebar-collapse-icon ti-angle-down"></span>
+                        <i class="ti-briefcase"></i>Job Seekers <span class="sidebar-collapse-icon ti-angle-down"></span>
                     </a>
                     <ul>
-                        <li><a href="{{ url_for('jobs.browse_jobs') }}"><i class="ti-search"></i> Browse Jobs</a></li>
+                        <li><a href="{{ url_for('jobs.list_jobs') }}"><i class="ti-search"></i> Browse Jobs</a></li>
                         <li><a href="{{ url_for('jobs.search_jobs') }}"><i class="ti-zoom-in"></i> Search Jobs</a></li>
                         <li><a href="{{ url_for('jobs.job_categories') }}"><i class="ti-menu"></i> Job Categories</a></li>
-                        <li><a href="{{ url_for('company_search.list_companies') }}"><i class="ti-building"></i> Browse Companies</a></li>
+                        <li><a href="{{ url_for('company_search.list_companies') }}"><i class="ti-search"></i> Browse Companies</a></li>
                         {# Potentially add more job seeker specific links here, e.g., "Upload Resume" if applicable and public #}
                     </ul>
                 </li>
@@ -30,11 +30,11 @@
                 {# Section for Companies (Employers) #}
                 <li>
                     <a class="sidebar-sub-toggle">
-                        <i class="ti-crown"></i> For Companies <span class="sidebar-collapse-icon ti-angle-down"></span>
+                        <i class="ti-crown"></i> Companies <span class="sidebar-collapse-icon ti-angle-down"></span>
                     </a>
                     <ul>
-                        <li><a href="{{ url_for('auth.employer_register') }}"><i class="ti-pencil-alt"></i> Post a Job</a></li> {# Assuming this route #}
-                        <li><a href="{{ url_for('company_search.list_companies') }}"><i class="ti-building"></i> Browse Companies</a></li>
+                        <li><a href="{{ url_for('company.manage_jobs') }}"><i class="ti-pencil-alt"></i> Post a Job</a></li> {# Assuming this route #}
+                        <li><a href="{{ url_for('company_search.list_companies') }}"><i class="ti-search"></i> Browse Companies</a></li>
                         {# Potentially add more company specific links here, e.g., "Employer Dashboard Login" #}
                     </ul>
                 </li>
@@ -48,7 +48,7 @@
                     </a>
                     <ul>
                         <li> <a href="{{ url_for('blog.get_blog', topic='index') }}">
-                            <i class="ti-file"> </i> Blog</a>
+                            <i class="ti-file"> </i> Articles</a>
                         </li>
                         <li> <a href="{{ url_for("home.contact") }}">
                             <i class="ti-email"> </i> Contact Us</a>

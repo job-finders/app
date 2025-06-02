@@ -1,73 +1,130 @@
-{% extends "company/layout/page" %}
+{% extends "company/layout/page.html" %}
 
-{% block title %}Saved Candidates{% endblock %}
-
+{% block title %}{% if not company_data %}Create Company Profile{% elif not employer_profile %}Create Employer Profile{% else %}Employer Profile{% endif %}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto bg-white shadow-md rounded-xl p-6 mt-6">
-    <h1 class="text-2xl font-semibold text-gray-800 mb-6">👤 Employer Profile</h1>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <h1 class="card-title h2 mb-4">
+                        {% if not employer_profile %}
+                            <i class="bi bi-person-badge me-2"></i>Create Employer Profile
+                        {% else %}
+                            <i class="bi bi-person-badge me-2"></i>Employer Profile
+                        {% endif %}
+                    </h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Employer Details -->
-        <section>
-            <h2 class="text-lg font-medium text-gray-700 mb-3">Employer Details</h2>
-            <p><strong>Industry:</strong> {{ employer_profile.industry or 'Not Provided' }}</p>
-            <p><strong>Email:</strong>
-                {% if employer_profile.contact_email %}
-                    <a href="mailto:{{ employer_profile.contact_email }}" class="text-blue-600 hover:underline">
-                        {{ employer_profile.contact_email }}
-                    </a>
-                {% else %}
-                    Not Provided
-                {% endif %}
-            </p>
-            <p><strong>Phone:</strong> {{ employer_profile.phone or 'Not Provided' }}</p>
-            <p><strong>Location:</strong> {{ employer_profile.location or 'Not Provided' }}</p>
-            <p><strong>Verified:</strong>
-                {% if employer_profile.is_verified %}
-                    <span class="text-green-600 font-semibold">Yes</span>
-                {% else %}
-                    <span class="text-red-600 font-semibold">No</span>
-                {% endif %}
-            </p>
-            {% if employer_profile.created_at %}
-                <p><strong>Joined:</strong> {{ employer_profile.created_at.strftime('%d %b %Y') }}</p>
-            {% endif %}
-        </section>
+                    {% if not employer_profile %}
+                        <!-- Employer Creation Form -->
+                        <form method="POST" action="{{ url_for('company.employer_profile') }}">
+                            <input type="hidden" name="form_type" value="employer">
+                            <div class="mb-4">
+                                <p class="lead">
+                                    You're creating your employer profile </strong>.
+                                    Please provide your professional details below.
+                                </p>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <h3 class="h5 mb-3">Professional Information</h3>
 
-        <!-- Company Details -->
-        <section>
-            <h2 class="text-lg font-medium text-gray-700 mb-3">Company Details</h2>
+                                        <div class="mb-3">
+                                            <label for="industry" class="form-label">Industry *</label>
+                                            <input type="text" class="form-control" id="industry" name="industry" required minlength="2" maxlength="255" value="General">
+                                        </div>
 
-            {% if company_data.logo_url %}
-                <img src="{{ company_data.logo_url }}" alt="{{ company_data.name }} logo" class="mb-4 w-32 h-auto rounded" />
-            {% endif %}
+                                        <div class="mb-3">
+                                            <label for="contact_email" class="form-label">Contact Email *</label>
+                                            <input type="email" class="form-control" id="contact_email" name="contact_email" required value="{{ current_user.email }}">
+                                        </div>
 
-            <p><strong>Name:</strong> {{ company_data.name or 'Not Provided' }}</p>
-            <p><strong>Industry:</strong> {{ company_data.industry or 'Not Provided' }}</p>
-            <p><strong>Website:</strong>
-                {% if company_data.website %}
-                    <a href="{{ company_data.website }}" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
-                        {{ company_data.website }}
-                    </a>
-                {% else %}
-                    Not Provided
-                {% endif %}
-            </p>
-            <p><strong>Headquarters:</strong> {{ company_data.location or 'Not Provided' }}</p>
-        </section>
-    </div>
+                                        <div class="mb-3">
+                                            <label for="website" class="form-label">Personal Website</label>
+                                            <input type="url" class="form-control" id="website" name="website" placeholder="https://your-website.com">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <h3 class="h5 mb-3">Contact Details</h3>
 
-    <!-- Edit Buttons -->
-    <div class="mt-8 flex flex-wrap gap-4">
-        <a href="{{ url_for('company.update_company_profile') }}"
-           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-           ✏️ Edit Company
-        </a>
-        <a href="{{ url_for('company.update_employer_profile') }}"
-           class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition">
-           ✏️ Edit Employer
-        </a>
+                                        <div class="mb-3">
+                                            <label for="phone" class="form-label">Phone</label>
+                                            <input type="tel" class="form-control" id="phone" name="phone" maxlength="20" placeholder="+27XXXXXXXXX">
+                                            <div class="form-text">South African format: +27XXXXXXXXX</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="location" class="form-label">Location *</label>
+                                            <input type="text" class="form-control" id="location" name="location" required minlength="2" maxlength="255">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end mt-4">
+                                <button type="submit" class="btn btn-primary px-4 py-2">
+                                    <i class="bi bi-person-badge me-1"></i> Create Employer Profile
+                                </button>
+                            </div>
+                        </form>
+
+                    {% else %}
+                        <!-- Existing Profile Display -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <h3 class="h5 mb-3">Employer Details</h3>
+                                    <div class="card border-0">
+                                        <div class="card-body">
+                                            <p class="card-text"><strong>Industry:</strong> {{ employer_profile.industry or 'Not Provided' }}</p>
+                                            <p class="card-text"><strong>Email:</strong>
+                                                {% if employer_profile.contact_email %}
+                                                    <a href="mailto:{{ employer_profile.contact_email }}" class="text-decoration-none">
+                                                        {{ employer_profile.contact_email }}
+                                                    </a>
+                                                {% else %}
+                                                    Not Provided
+                                                {% endif %}
+                                            </p>
+                                            <p class="card-text"><strong>Phone:</strong>
+                                                {% if employer_profile.phone %}
+                                                    {{ employer_profile.phone }}
+                                                {% else %}
+                                                    Not Provided
+                                                {% endif %}
+                                            </p>
+                                            <p class="card-text"><strong>Location:</strong> {{ employer_profile.location or 'Not Provided' }}</p>
+                                            <p class="card-text"><strong>Verified:</strong>
+                                                {% if employer_profile.is_verified %}
+                                                    <span class="badge bg-success">Yes</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">No</span>
+                                                {% endif %}
+                                            </p>
+                                            {% if employer_profile.created_at %}
+                                                <p class="card-text"><strong>Joined:</strong> {{ employer_profile.created_at.strftime('%d %b %Y') }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edit Buttons -->
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+                            <a href="{{ url_for('company.update_employer_profile') }}"
+                               class="btn btn-secondary px-3 py-2">
+                               <i class="bi bi-pencil me-1"></i> Edit Employer
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

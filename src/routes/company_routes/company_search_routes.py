@@ -1,25 +1,17 @@
-import uuid
-from datetime import datetime
+from flask import Blueprint, render_template, redirect, url_for, flash
 
-from flask import Blueprint, request, render_template, redirect, url_for, flash
-from pydantic import ValidationError
-
-from database.models.company_models import CompanyVerificationStatus
-from database.models.resume import JobSeekerCV, SavedCV
-from src.authentication import login_required
-from src.database.models.employer_models import Employer
-from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
+from src.authentication import login_required, user_details
+from src.database.models.company_models import CompanyVerificationStatus, Company
 from src.database.models.users import User
-from src.main import users_controller, company_controller
-from src.main import company_controller
 from src.logger import init_logger
+from src.main import company_controller
 
 company_search_routes = Blueprint('company_search', __name__, url_prefix='/company')
 
 
 
 
-@company_search_routes.get('/view/<str:company_id>')
+@company_search_routes.get('/view/<string:company_id>')
 @login_required
 async def view_company_by_company_id(user: User, company_id: str):
     """
@@ -75,13 +67,30 @@ async def view_company_by_company_id(user: User, company_id: str):
         saved_cvs=saved_cvs     
     )
     
+@company_search_routes.get('/list')
+@user_details
+async def list_companies(user: User):
+    """
+    :param user:
+    :return:
+    """
+    company_list: list[Company] = await company_controller.get_all_companies()
+    context = {
+        'current_user': user,
+        'company_list': company_list
+    }
+    return render_template('company/public/company_list.html', **context)
 
+
+
+@company_search_routes.get('/employees')
+@login_required
 async def get_employer_details(company_id: str):
     """
     Fetches the employer details for a given company ID.
     """
     try:
-        employer = await company_controller.get_employer_by_company_id(company_id=company_id)
+        employer = await company_controller.get_employees_by_company_id(company_id=company_id)
         if not employer:
             return None
         return employer

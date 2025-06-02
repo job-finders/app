@@ -204,3 +204,30 @@ def generate_cache_key(f, *args, **kwargs):
     return sanitize_filename(cache_key)
 
 
+# app/template_filters.py
+def intcomma(value):
+    """
+    Format a number with commas as thousands separators.
+
+    Args:
+        value: Number to format (int, float, or string representation of a number)
+
+    Returns:
+        Formatted string with commas, or original value if not a number
+    """
+    try:
+        # Convert to float first to handle both ints and floats
+        num = float(value)
+
+        # Check if it's an integer (whole number)
+        if num.is_integer():
+            return "{:,}".format(int(num))
+        else:
+            # Format float with commas and 2 decimal places
+            return "{:,.2f}".format(num)
+    except (TypeError, ValueError):
+        # Return original value if it can't be converted to a number
+        return value
+
+def datetimeformat(value: datetime):
+    return value.isoformat()

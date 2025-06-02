@@ -1,2 +1,3 @@
 from src.agents.employer.job_post_intelligence import EnhanceJobPostAgent, JobPostIntelligenceAgent
-from src.agents.employer.job_post_intelligence import EnhanceJobPostInput, EnhanceJobPostOutput
+from src.agents.employer.job_post_intelligence import(EnhanceJobPostInput, EnhanceJobPostOutput, JobSummaryInput,
+JobSummaryAgent, JobSummaryOutput)

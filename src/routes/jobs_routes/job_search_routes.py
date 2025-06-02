@@ -1,13 +1,82 @@
+import random
+from datetime import datetime, timedelta
 from typing import TypedDict, List
 
 from flask import Blueprint, render_template, request
 
+from src.database.models.jobs_model import JobCategory
+from src.database.models.resume import JobSeekerCV
 from src.database.models import Job
-from src.main import job_search_controller, resumes_controller
+from src.main import job_search_controller, resume_controller
 from src.authentication import user_details
 from src.database.models.users import User
 from src.routes import flask_error_handler
 from src.routes.utils import gone
+
+
+
+def generate_mock_jobs(keyword: str, count: int = 5) -> list[dict]:
+    """Generate mock job listings for demonstration purposes"""
+    titles = [
+        f"Senior {keyword} Developer",
+        f"{keyword} Specialist",
+        f"Junior {keyword} Engineer",
+        f"{keyword} Team Lead",
+        f"{keyword} Product Manager"
+    ]
+
+    companies = [
+        "Tech Innovations Inc.",
+        "Digital Solutions Ltd.",
+        "Future Systems Corp.",
+        "Global Tech Partners",
+        "InnovateX Technologies"
+    ]
+
+    cities = ["Cape Town", "Johannesburg", "Durban", "Pretoria", "Port Elizabeth"]
+    provinces = ["Western Cape", "Gauteng", "KwaZulu-Natal", "Eastern Cape"]
+    job_types = ["FULL_TIME", "PART_TIME", "CONTRACT"]
+    remote_policies = ["REMOTE", "HYBRID", "ONSITE"]
+    experience_levels = ["ENTRY", "MID", "SENIOR"]
+
+    mock_jobs = []
+    for i in range(count):
+        posted_at = datetime.utcnow() - timedelta(days=random.randint(0, 30))
+        salary_min = random.randint(20000, 50000)
+        salary_max = salary_min + random.randint(10000, 30000)
+
+        job = {
+            "job_id": f"mock_{i}",
+            "title": random.choice(titles),
+            "company": {
+                "name": random.choice(companies),
+                "logo_url": None
+            },
+            "position_type": random.choice(job_types),
+            "remote_policy": random.choice(remote_policies),
+            "salary_min": salary_min,
+            "salary_max": salary_max,
+            "salary_currency": "ZAR",
+            "city": random.choice(cities),
+            "province": random.choice(provinces),
+            "country": "South Africa",
+            "posted_at": posted_at,
+            "expires_at": posted_at + timedelta(days=60),
+            "experience_level": random.choice(experience_levels),
+            "description": f"We're looking for a talented {keyword} professional to join our team. "
+                           f"You'll work on cutting-edge {keyword} solutions and collaborate with "
+                           "a team of passionate engineers. Apply now!",
+            "application_count": random.randint(0, 50),
+            "view_count": random.randint(10, 200),
+            "is_featured": i == 0,  # First job is featured
+            "location": f"{random.choice(cities)}, {random.choice(provinces)}, South Africa",
+            "salary": f"ZAR {salary_min} - {salary_max}",
+            "is_active": True
+        }
+        mock_jobs.append(job)
+
+    return mock_jobs
+
 
 
 class JobSearchContext(TypedDict):
@@ -25,7 +94,7 @@ jobs_search_route = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 
 # noinspection DuplicatedCode
-@jobs_search_route.get('/')
+@jobs_search_route.get('/browse-jobs')
 @flask_error_handler
 @user_details
 async def list_jobs(user: User):
@@ -47,10 +116,13 @@ async def list_jobs(user: User):
     """
     page: int = int(request.args.get('page', 1))
     search_result = await job_search_controller.get_all_jobs(page=page)
+    jobs = search_result.get('jobs', [])
+    if not jobs:
+        jobs = generate_mock_jobs("Software Development")
 
     context: JobSearchContext = {
         'current_user': user,
-        'jobs': search_result.get('jobs',[]),
+        'jobs': jobs,
         'page': search_result.get('page', page),
         'per_page': search_result.get('page_size',25),
         'total_pages': search_result.get('total_pages', 0),
@@ -84,19 +156,59 @@ async def search_jobs(user: User):
     page = int(request.args.get('page', 1))
     search_result = await job_search_controller.search_jobs(keyword=keyword, page=page)
 
+    jobs = search_result.get('jobs', [])
+    total_jobs = search_result.get('total_jobs', 0)
+    show_mock_jobs = not jobs  # Flag to indicate if we should show mock jobs
+
+    if show_mock_jobs:
+        # Generate mock jobs for demonstration purposes
+        jobs = generate_mock_jobs(keyword)
+        total_jobs = len(jobs)
+
     context: JobSearchContext = {
         'current_user': user,
-        'jobs': search_result.get('jobs',[]),
+        'jobs': jobs,
         'page': search_result.get('page', page),
-        'per_page': search_result.get('page_size',25),
-        'total_pages': search_result.get('total_pages', 0),
-        'total_jobs': search_result.get('total_jobs', 0),
-        'filters':{
-        'search_keyword': keyword}
+        'per_page': search_result.get('page_size', 25),
+        'total_pages': search_result.get('total_pages', 1),
+        'total_jobs': total_jobs,
+        'filters': {
+            'search_keyword': keyword
         }
+
+    }
 
     return render_template('jobs/search.html', **context)
 
+
+@jobs_search_route.get('/categories')
+@flask_error_handler
+@user_details
+async def job_categories(user: User):
+    job_category_list: list[JobCategory] = await job_search_controller.list_job_categories()
+
+    # Calculate aggregate statistics
+    total_jobs = sum(category.total_jobs for category in job_category_list)
+    active_jobs = sum(category.active_jobs for category in job_category_list)
+    featured_jobs = sum(category.featured_jobs for category in job_category_list)
+
+    # Find max salary for progress bars
+    max_salary = 0
+    for category in job_category_list:
+        if category.avg_salary_max and category.avg_salary_max > max_salary:
+            max_salary = category.avg_salary_max
+        elif category.avg_salary_min and category.avg_salary_min > max_salary:
+            max_salary = category.avg_salary_min
+
+    context = {
+        'current_user': user,
+        'categories': job_category_list,
+        'total_jobs': total_jobs,
+        'active_jobs': active_jobs,
+        'featured_jobs': featured_jobs,
+        'max_salary': max_salary
+    }
+    return render_template('jobs/job_categories_list.html', **context)
 
 @jobs_search_route.get('/category/<string:category>')
 @flask_error_handler
@@ -182,7 +294,7 @@ async def job_details(user: User, job_id: str):
     related_jobs: list[Job] = await job_search_controller.get_similar_jobs(job_id=job.job_id)
     
     
-    list_resumes: list[JobSeekerCV] = await resumes_controller.list_cvs_for_user(user_id=user.uid)
+    list_resumes: list[JobSeekerCV] = await resume_controller.list_cvs_for_user(user_id=user.uid)
 
     context = {
         'current_user': user,

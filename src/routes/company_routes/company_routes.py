@@ -1,18 +1,19 @@
-import uuid
+import os
 from datetime import datetime
 
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError
+from werkzeug.utils import secure_filename
 
-from database.models.company_models import CompanyVerificationStatus
-from database.models.resume import JobSeekerCV, SavedCV
 from src.authentication import login_required
+from src.database.models.company_models import CompanyVerificationStatus
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
+from src.database.models.resume import JobSeekerCV, SavedCV
 from src.database.models.users import User
-from src.main import users_controller
-from src.main import company_controller
 from src.logger import init_logger
+from src.main import company_controller
+from src.main import users_controller
 
 company_bp = Blueprint('company', __name__, url_prefix='/dashboard/company')
 
@@ -31,14 +32,9 @@ def allowed_file(filename):
 @login_required
 async def create_company_profile(user: User):
     """Company profile creation endpoint"""
-    _employer_profile: Employer = await company_controller.get_employer_by_uid(uid=user.uid)
 
     if request.method == "GET":
-        if not _employer_profile:
-            flash(message="You do not already have an employer profile please create your employer profile first",category="success")
-            return redirect(url_for('company.employer_profile'))
-        # with user data & employer profile we can now create a company profile
-        context = dict(current_user=user, employer_profile=_employer_profile)
+        context = dict(current_user=user)
         return render_template("company/create_company.html", **context)
     try:
         # Validate incoming data using Pydantic model
@@ -49,7 +45,6 @@ async def create_company_profile(user: User):
         return render_template("company/create_company.html",
                             error=e.errors(),
                             current_user=user)
-
     try:
         # Attempt company creation through controller
         created_company: Company = await company_controller.create_company(company_data=company_data)
@@ -63,18 +58,24 @@ async def create_company_profile(user: User):
     if not created_company:
         logger.error(f'Error creating company using company data : {company_data}')
         flash(message="there was an problem creating your company please try again", category="danger")
-
         return redirect(url_for("company.view_company"))
 
     # Update user role if needed (assuming employers need company association)
     if user.role != "employer":
         await users_controller.update_user_role(user.uid, "employer")
 
-    _add_company_employer_profile = await company_controller.update_employer_profile(
-        employer_id=_employer_profile.employer_id, company_data=company_data)
-
-    flash("Company profile created successfully!", "success")
+    flash("Company profile created successfully! - please create your employer profile next", "success")
     return redirect(url_for("company.view_company"))
+
+@company_bp.route("/update-company", methods=["GET", "POST"])
+@login_required
+async def update_company_profile():
+    pass
+
+@company_bp.route("/update-employer", methods=["GET", "POST"])
+@login_required
+async def update_employer_profile():
+    pass
 
 
 @company_bp.route("/profile", methods=["GET"])
@@ -101,39 +102,63 @@ async def view_company(user: User):
         "employer_profile": _employer_profile,
         "company_data": company_data}
 
-    return render_template("company/view_profile.html", **context)
+    return render_template("company/view_company_profile.html", **context)
 
 
 @company_bp.route("/employer/profile", methods=["GET", "POST"])
 @login_required
 async def employer_profile(user: User):
-    """Employer profile management (web interface)"""
+    """
+        employer profile
+    :param user:
+    :return:
+    """
+
     if request.method == "GET":
-        _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+        _employer_profile = await company_controller.get_employer_by_uid(user_id=user.uid)
+        company_data = {}
         if _employer_profile and _employer_profile.company_id:
             company_data = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
-        else:
-            company_data = {}
-        context = dict(current_user=user, employer_profile=_employer_profile, company_data=company_data)
+
+        context = {
+            "current_user": user,
+            "employer_profile": _employer_profile,
+            "company_data": company_data,
+            "current_year": datetime.now().year  # Add this
+        }
         return render_template("company/employer_profile.html", **context)
 
-    # creating new employer profile method is POST
-    try:
-        employer_data = Employer(**request.form)
-    except ValidationError as e:
-        logger.error(str(e))
-        return redirect(url_for("company.employer_profile"))
+    # Handle POST requests
+    form_data = request.form.to_dict()
 
-    employer: Employer = await company_controller.register_employer(employer_data=employer_data)
-    if not employer:
-        err = "Employer profile already exists"
-        logger.error(f"Profile creation failed: {err}")
-        flash("Profile creation failed: {err}", "danger")
-        return redirect(url_for("company.employer_profile"))
+    # Get existing profiles
+    _employer_profile = await company_controller.get_employer_by_uid(user_id=user.uid)
 
-    flash("Profile updated successfully", "success")
+    company_data = {}
+    if _employer_profile and _employer_profile.company_id:
+        company_data: Company = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
+
+    if not company_data:
+        # Handle company creation
+        return redirect('company.create_company_profile')
+
+    elif not _employer_profile:
+        # Handle employer creation
+        try:
+            # Add required fields
+            form_data['user_uid'] = user.uid
+            form_data['company_id'] = company_data.company_id
+            form_data['contact_email'] = user.email
+
+            employer = Employer(**form_data)
+            await company_controller.register_employer(employer)
+            flash("Employer profile created successfully", "success")
+
+        except ValidationError as e:
+            flash(f"Validation error: {str(e)}", "danger")
+            logger.error(str(e))
+
     return redirect(url_for("company.employer_profile"))
-
 
 @company_bp.route("/jobs", methods=["GET", "POST"])
 @login_required
@@ -217,7 +242,7 @@ async def application_analytics(user: User):
         return redirect(url_for('company.create_company_profile'))
 
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_uid=user.uid)
-    if not (_employer_profile.is_valid and _employer_profile.is_verified):
+    if not _employer_profile or not (_employer_profile.is_valid and _employer_profile.is_verified):
         flash(message="Your Employer Profile is either not complete or not verified", category="danger")
         return redirect(url_for('company.employer_profile'))
 
@@ -387,7 +412,7 @@ async def employers(user: User):
 
 
 
-@company_bp.route("/")
+@company_bp.route("/me")
 @login_required
 async def get_dashboard(user: User):
     # 1. Verify employer profile exists

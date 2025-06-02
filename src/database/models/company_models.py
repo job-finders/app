@@ -29,7 +29,7 @@ class CompanyVerificationStatus(Enum):
 
 
 class Company(BaseModel):
-    """Pydantic model for company data"""
+    """Pydantic model for company data with job statistics"""
     company_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(..., min_length=2, max_length=255)
     description: Optional[str] = Field(default=None, max_length=2000)
@@ -56,10 +56,87 @@ class Company(BaseModel):
     twitter_handle: Optional[str] = Field(default=None, max_length=15)
 
     # Relationships
-    jobs: Optional[list['Job']] = None  # Forward reference
+    jobs: Optional[list['Job']] = Field(default_factory=list)  # Forward reference
     is_verified: Optional[bool] = Field(default=False)
-    time_verification_request_sent : Optional[datetime] = Field(default=None)
-    verification_status : str = Field(default=CompanyVerificationStatus.PENDING.value)
+    time_verification_request_sent: Optional[datetime] = Field(default=None)
+    verification_status: str = Field(default=CompanyVerificationStatus.PENDING.value)
+
+    # Computed job statistics properties
+    @property
+    def total_jobs(self) -> int:
+        """Total jobs posted by this company"""
+        return len(self.jobs) if self.jobs else 0
+
+    @property
+    def active_jobs(self) -> int:
+        """Active jobs (not expired)"""
+        if not self.jobs:
+            return 0
+        now = datetime.utcnow()
+        return sum(1 for job in self.jobs
+                   if job.status == 'active' and job.expires_at > now)
+
+    @property
+    def featured_jobs(self) -> int:
+        """Featured jobs"""
+        return sum(1 for job in self.jobs if job.is_featured) if self.jobs else 0
+
+    @property
+    def total_applications(self) -> int:
+        """Total applications across all jobs"""
+        if not self.jobs:
+            return 0
+        return sum(job.application_count for job in self.jobs)
+
+    @property
+    def avg_applications_per_job(self) -> float:
+        """Average applications per job"""
+        return self.total_applications / self.total_jobs if self.total_jobs > 0 else 0
+
+    @property
+    def application_response_rate(self) -> float:
+        """Percentage of applications with employer response"""
+        if not self.jobs or self.total_applications == 0:
+            return 0
+
+        responded = 0
+        for job in self.jobs:
+            if job.applications:
+                responded += sum(1 for app in job.applications
+                                 if app.employer_response is not None)
+        return (responded / self.total_applications) * 100
+
+    @property
+    def avg_hiring_time(self) -> float:
+        """Average days to fill positions"""
+        if not self.jobs:
+            return 0
+
+        total_days = 0
+        filled_positions = 0
+
+        for job in self.jobs:
+            if job.status == 'closed' and job.applications:
+                # Find the hired application
+                hired_app = next((app for app in job.applications
+                                  if app.status == 'hired'), None)
+                if hired_app:
+                    total_days += (hired_app.applied_at - job.posted_at).days
+                    filled_positions += 1
+
+        return total_days / filled_positions if filled_positions > 0 else 0
+
+    @property
+    def popular_job_titles(self) -> list[str]:
+        """Most common job titles"""
+        if not self.jobs:
+            return []
+
+        title_count = {}
+        for job in self.jobs:
+            title_count[job.title] = title_count.get(job.title, 0) + 1
+
+        return sorted(title_count, key=title_count.get, reverse=True)[:3]
 
     class Config:
         from_attributes = True
@@ -112,6 +189,7 @@ class Company(BaseModel):
         ])
 
         return has_contact_info and has_location_info and has_descriptive_info
+
 
 class CompanyVerificationDocument(BaseModel):
     document_type: str  # You can use Enum here for safety

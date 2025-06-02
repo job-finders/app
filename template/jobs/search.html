@@ -1,9 +1,226 @@
 {% extends "layouts/page.html" %}
-{% block title %}Search Results for “{{ search_keyword }}” — Page {{ page }}{% endblock %}
+
+{% block title %}Search Results for “{{ filters.search_keyword }}”{% if total_pages > 1 %} — Page {{ page }}{% endif %}{% endblock %}
+{% block custom_css %}
+    <style>
+    @media (max-width: 767px) {
+      #filtersSidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        z-index: 50;
+        background: black;
+        overflow-y: auto;
+        padding: 1rem;
+      }
+
+      #filtersSidebar::before {
+        content: 'Filters';
+        display: block;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      #filtersSidebar .sticky {
+        position: static;
+      }
+    }
+    </style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h1 class="mb-3">Search Results for “{{ search_keyword }}”</h1>
-  {% include 'jobs/_jobs_list.html' %}
-</div>
+    <div class="container mx-auto px-4 py-6">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+            Search Results for "{{ filters.search_keyword }}"
+          </h1>
+          <p class="text-gray-600">
+            Found {{ total_jobs }} job{% if total_jobs != 1 %}s{% endif %}
+            {% if total_pages > 1 %} • Page {{ page }} of {{ total_pages }}{% endif %}
+          </p>
+        </div>
+
+        <!-- Mobile filter toggle -->
+        <button id="filterToggle" class="md:hidden flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
+          </svg>
+          Filters
+        </button>
+      </div>
+
+      <div class="flex flex-col md:flex-row gap-6">
+        <!-- Filters sidebar - hidden on mobile by default -->
+        <div id="filtersSidebar" class="hidden md:block md:w-1/4 lg:w-1/5">
+          <div class="bg-white rounded-lg shadow p-4 sticky top-4">
+            <h2 class="font-semibold text-lg mb-4">Filter Results</h2>
+
+            <!-- Category Filter -->
+            <div class="mb-4">
+              <h3 class="font-medium text-gray-700 mb-2">Job Category</h3>
+              <select class="w-full p-2 border border-gray-300 rounded">
+                <option>All Categories</option>
+                <option>Technology</option>
+                <option>Healthcare</option>
+                <option>Finance</option>
+                <!-- Add more categories -->
+              </select>
+            </div>
+
+            <!-- Location Filter -->
+            <div class="mb-4">
+              <h3 class="font-medium text-gray-700 mb-2">Location</h3>
+              <input type="text" placeholder="City or Province" class="w-full p-2 border border-gray-300 rounded">
+            </div>
+
+            <!-- Job Type Filter -->
+            <div class="mb-4">
+              <h3 class="font-medium text-gray-700 mb-2">Job Type</h3>
+              <div class="space-y-2">
+                <label class="flex items-center">
+                  <input type="checkbox" class="mr-2"> Full-time
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="mr-2"> Part-time
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="mr-2"> Contract
+                </label>
+              </div>
+            </div>
+
+            <!-- Remote Policy -->
+            <div class="mb-4">
+              <h3 class="font-medium text-gray-700 mb-2">Remote Policy</h3>
+              <div class="space-y-2">
+                <label class="flex items-center">
+                  <input type="checkbox" class="mr-2"> Remote
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="mr-2"> Hybrid
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="mr-2"> Onsite
+                </label>
+              </div>
+            </div>
+
+            <!-- Experience Level -->
+            <div class="mb-4">
+              <h3 class="font-medium text-gray-700 mb-2">Experience Level</h3>
+              <div class="space-y-2">
+                <label class="flex items-center">
+                  <input type="checkbox" class="mr-2"> Entry Level
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="mr-2"> Mid Level
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="mr-2"> Senior Level
+                </label>
+              </div>
+            </div>
+
+            <button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+              Apply Filters
+            </button>
+          </div>
+        </div>
+
+        <!-- Main content area -->
+        <div class="w-full md:w-3/4 lg:w-4/5">
+          {% if jobs %}
+            <!-- Jobs list -->
+            {% include 'jobs/_jobs_list.html' %}
+
+            <!-- Pagination -->
+            {% if total_pages > 1 %}
+            <div class="mt-8 flex justify-center">
+              <nav class="flex items-center gap-1">
+                {% if page > 1 %}
+                  <a href="{{ url_for('jobs_search_route.search_jobs', search_term=filters.search_keyword, page=page-1) }}"
+                     class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-100">
+                    &larr; Prev
+                  </a>
+                {% endif %}
+
+                {% for p in range(1, total_pages+1) %}
+                  {% if p == page %}
+                    <span class="px-4 py-2 bg-blue-600 text-white rounded">{{ p }}</span>
+                  {% else %}
+                    <a href="{{ url_for('jobs_search_route.search_jobs', search_term=filters.search_keyword, page=p) }}"
+                       class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100">
+                      {{ p }}
+                    </a>
+                  {% endif %}
+                {% endfor %}
+
+                {% if page < total_pages %}
+                  <a href="{{ url_for('jobs_search_route.search_jobs', search_term=filters.search_keyword, page=page+1) }}"
+                     class="px-3 py-2 border border-gray-300 rounded hover:bg-gray-100">
+                    Next &rarr;
+                  </a>
+                {% endif %}
+              </nav>
+            </div>
+            {% endif %}
+          {% else %}
+            <!-- Empty state -->
+            <div class="bg-white rounded-lg shadow p-8 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 class="text-xl font-semibold text-gray-800 mb-2">No jobs found</h3>
+              <p class="text-gray-600 mb-6">
+                We couldn't find any jobs matching "{{ filters.search_keyword }}". Try different keywords.
+              </p>
+              <a href="{{ url_for('jobs.search_jobs') }}"
+                 class="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+                Browse All Jobs
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
 {% endblock %}
+
+{% block scripts %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Mobile filter toggle
+      const filterToggle = document.getElementById('filterToggle');
+      const filtersSidebar = document.getElementById('filtersSidebar');
+
+      if (filterToggle && filtersSidebar) {
+        filterToggle.addEventListener('click', function() {
+          filtersSidebar.classList.toggle('hidden');
+          filtersSidebar.classList.toggle('block');
+
+          // Scroll to filters when opened on mobile
+          if (filtersSidebar.classList.contains('block')) {
+            filtersSidebar.scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+      }
+
+      // Close filters when clicking outside on mobile
+      document.addEventListener('click', function(event) {
+        if (window.innerWidth < 768 &&
+            filtersSidebar.classList.contains('block') &&
+            !filtersSidebar.contains(event.target) &&
+            event.target !== filterToggle) {
+          filtersSidebar.classList.remove('block');
+          filtersSidebar.classList.add('hidden');
+        }
+      });
+    });
+    </script>
+{%  endblock %}
+

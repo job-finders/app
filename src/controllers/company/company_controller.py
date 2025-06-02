@@ -42,7 +42,7 @@ class CompanyController(Controllers):
         """
         with self.get_session() as session:
             company_orm_list = session.query(CompanyORM).all()
-            return [Company(**company_orm.to_dict()) for company_orm in company_orm_list]
+            return [Company(**company_orm.to_dict()) for company_orm in company_orm_list if company_orm]
 
 
     @error_handler
@@ -97,6 +97,17 @@ class CompanyController(Controllers):
 
             # Convert ORM to Pydantic model
             return Company(**company_orm.to_dict())
+
+    @error_handler
+    async def get_employees_by_company_id(self, company_id: str) -> list[Employer]:
+        """
+
+        :param company_id:
+        :return:
+        """
+        with self.get_session() as session:
+            employer_orm_list = session.query(EmployerORM).filter_by(company_id==company_id).all()
+            return [Employer(**employer_orm.to_dict()) for employer_orm in employer_orm_list if employer_orm]
 
     @error_handler
     async def get_company_by_name(self, name: str) -> Company:
@@ -155,10 +166,11 @@ class CompanyController(Controllers):
         :return:
         """
         with self.get_session() as session:
-            employer_orm = session.query(EmployerORM).filter_by(user_id==user_id).first()
+            employer_orm = session.query(EmployerORM).filter_by(user_uid=user_id).first()
             if not employer_orm:
                 raise ValueError("The User is not already an Employer")
             return Employer(**employer_orm.to_dict())
+
 
     @error_handler
     async def get_employer_by_employer_id(self, employer_id: str) -> Employer:
@@ -167,7 +179,7 @@ class CompanyController(Controllers):
         :return:
         """
         with self.get_session() as session:
-            employer_orm = session.query(EmployerORM).filter_by(employer_id==employer_id).first()
+            employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
             if not employer_orm:
                 raise ValueError("The User is not already an Employer")
             return Employer(**employer_orm.to_dict())

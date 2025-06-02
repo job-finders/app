@@ -1,4 +1,4 @@
-{% extends "jobseekers/layouts/page.html" %}
+{% extends "layouts/page.html" %}
 {% block title %}{{ meta_title }}{% endblock %}
 
 {% block content %}
@@ -149,6 +149,10 @@
   {% endif %}
 </div>
 
+
+{% endblock %}
+{% block scripts %}
+
 <script>
   const aiForm = document.getElementById("ai-tools-form");
   const resultsBlock = document.getElementById("ai-results");
@@ -192,4 +196,5 @@
     }
   });
 </script>
+
 {% endblock %}

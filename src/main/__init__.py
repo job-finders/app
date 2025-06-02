@@ -1,7 +1,7 @@
 from flask import Flask
 
 
-from src.utils import template_folder, static_folder, format_title, format_description
+from src.utils import template_folder, static_folder, format_title, format_description, intcomma, datetimeformat
 from src.emailer import SendMail
 from src.controllers.encryptor import Encryptor
 
@@ -120,10 +120,17 @@ def create_app(config):
         app.register_blueprint(cron_route)
         app.register_blueprint(ats_tool_route)
 
-        app.app.register_blueprint(blueprint_name=company_bp)
+        app.register_blueprint(company_bp)
         app.register_blueprint(company_search_routes)
         
         # registering filters
         app.jinja_env.filters['title'] = format_title
         app.jinja_env.filters['description'] = format_description
+        app.jinja_env.filters['intcomma'] = intcomma
+        app.jinja_env.filters['datetimeformat'] =  datetimeformat
+
+        @app.template_filter('round')
+        def round_filter(value, precision=0):
+            return round(value, precision)
+
     return app

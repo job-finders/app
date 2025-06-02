@@ -6,7 +6,7 @@ def boot():
         # Drop all existing tables first
         # print("Dropping all existing database tables...")
         # Base.metadata.drop_all(bind=engine)
-
+        #
         # # Create all tables from scratch
         # print("Creating new database schema...")
         # Base.metadata.create_all(bind=engine)

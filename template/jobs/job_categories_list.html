@@ -1,0 +1,260 @@
+
+{#Job Categories List #}
+
+{% extends "layouts/page.html" %}
+{% block title %}Job Categories | {{ super() }}{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h1 class="display-4 mb-3">Explore Job Categories</h1>
+            <p class="lead text-muted">Browse through our specialized job categories to find opportunities that match your skills and interests</p>
+        </div>
+    </div>
+
+    <!-- Category Stats Summary -->
+    <div class="row mb-5">
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h2 class="text-primary">{{ total_jobs }}</h2>
+                    <p class="text-muted mb-0">Total Jobs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h2 class="text-success">{{ active_jobs }}</h2>
+                    <p class="text-muted mb-0">Active Jobs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h2 class="text-warning">{{ featured_jobs }}</h2>
+                    <p class="text-muted mb-0">Featured Jobs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h2 class="text-info">{{ categories|length }}</h2>
+                    <p class="text-muted mb-0">Categories</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Filter -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-2">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" id="categorySearch" class="form-control border-start-0" placeholder="Search categories...">
+            </div>
+        </div>
+        <div class="col-md-6 mb-2">
+            <div class="d-flex justify-content-md-end">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary sort-btn active" data-sort="jobs">Most Jobs</button>
+                    <button type="button" class="btn btn-outline-primary sort-btn" data-sort="salary">Highest Salary</button>
+                    <button type="button" class="btn btn-outline-primary sort-btn" data-sort="active">Most Active</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Grid -->
+    <div class="row g-4" id="categoriesContainer">
+        {% for category in categories %}
+        <div class="col-lg-4 col-md-6">
+            <div class="card category-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h3 class="h5 card-title mb-1">
+                                <a href="{{ url_for('jobs_search_route.category_jobs', slug=category.slug) }}"
+                                   class="text-decoration-none text-dark stretched-link">
+                                    {{ category.name }}
+                                </a>
+                            </h3>
+                            <p class="text-muted small mb-0">{{ category.description }}</p>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">{{ category.total_jobs }} jobs</span>
+                    </div>
+
+                    <!-- Salary Range -->
+                    {% if category.avg_salary_min or category.avg_salary_max %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Avg. Salary:</span>
+                            <span class="fw-bold">
+                                {% if category.avg_salary_min and category.avg_salary_max %}
+                                {{ category.avg_salary_min|format_currency }} - {{ category.avg_salary_max|format_currency }}
+                                {% elif category.avg_salary_min %}
+                                {{ category.avg_salary_min|format_currency }}+
+                                {% else %}
+                                {{ category.avg_salary_max|format_currency }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            {% set min_width = (category.avg_salary_min / max_salary * 100)|int if max_salary > 0 else 0 %}
+                            {% set max_width = (category.avg_salary_max / max_salary * 100)|int if max_salary > 0 else 0 %}
+                            <div class="progress-bar bg-success" role="progressbar"
+                                 style="width: {{ min_width }}%;"
+                                 aria-valuenow="{{ min_width }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"></div>
+                            <div class="progress-bar bg-info" role="progressbar"
+                                 style="width: {{ max_width - min_width }}%;"
+                                 aria-valuenow="{{ max_width - min_width }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Stats -->
+                    <div class="d-flex justify-content-around text-center border-top pt-3">
+                        <div>
+                            <div class="text-success fw-bold">{{ category.active_jobs }}</div>
+                            <div class="text-muted small">Active</div>
+                        </div>
+                        <div>
+                            <div class="text-warning fw-bold">{{ category.featured_jobs }}</div>
+                            <div class="text-muted small">Featured</div>
+                        </div>
+                        <div>
+                            <div class="text-info fw-bold">
+                                {% if category.avg_salary_min and category.avg_salary_max %}
+                                {{ ((category.avg_salary_min + category.avg_salary_max)/2)|format_currency }}
+                                {% else %}
+                                {{ (category.avg_salary_min or category.avg_salary_max)|format_currency }}
+                                {% endif %}
+                            </div>
+                            <div class="text-muted small">Avg. Pay</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0 text-end">
+                    <a href="{{ url_for('jobs_search_route.category_jobs', slug=category.slug) }}"
+                       class="btn btn-sm btn-outline-primary">
+                        Browse Jobs <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-folder-x display-1 text-muted mb-4"></i>
+                    <h3 class="mb-3">No Job Categories Available</h3>
+                    <p class="text-muted mb-4">We don't have any job categories listed yet. Please check back later.</p>
+                    <a href="{{ url_for('home.get_home') }}" class="btn btn-primary">
+                        <i class="bi bi-house-door me-1"></i> Return Home
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Category search functionality
+    const searchInput = document.getElementById('categorySearch');
+    const categoryCards = document.querySelectorAll('.category-card');
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+
+        categoryCards.forEach(card => {
+            const categoryName = card.querySelector('.card-title').textContent.toLowerCase();
+            card.style.display = categoryName.includes(searchTerm) ? '' : 'none';
+        });
+    });
+
+    // Sorting functionality
+    const sortButtons = document.querySelectorAll('.sort-btn');
+    const container = document.getElementById('categoriesContainer');
+
+    sortButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Update active state
+            sortButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+
+            // Get sort type
+            const sortBy = this.dataset.sort;
+            const cards = Array.from(container.querySelectorAll('.category-card'));
+
+            // Sort cards
+            cards.sort((a, b) => {
+                const aValue = getSortValue(a, sortBy);
+                const bValue = getSortValue(b, sortBy);
+                return bValue - aValue; // Descending order
+            });
+
+            // Re-append cards
+            cards.forEach(card => container.appendChild(card.parentElement));
+        });
+    });
+
+    function getSortValue(card, sortBy) {
+        switch(sortBy) {
+            case 'jobs':
+                return parseInt(card.querySelector('.badge').textContent);
+            case 'salary':
+                const salaryText = card.querySelector('.fw-bold.text-info').textContent;
+                return parseFloat(salaryText.replace(/[^\d.]/g, '')) || 0;
+            case 'active':
+                return parseInt(card.querySelector('.text-success.fw-bold').textContent);
+            default:
+                return 0;
+        }
+    }
+});
+</script>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+.category-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.progress {
+    border-radius: 4px;
+    background-color: #e9ecef;
+}
+
+.badge {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.sort-btn.active {
+    background-color: #0d6efd;
+    color: white;
+}
+</style>
+{% endblock %}
