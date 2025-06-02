@@ -24,7 +24,7 @@
                             <a href="{{ url_for('jobseekers.dashboard') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">Dashboard</a>
                         {% endif %}
                         {% if current_user and current_user.role == 'employer' %}
-                            <a href="#" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">Dashboard</a>
+                            <a href="{{ url_for('company.get_dashboard') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">Dashboard</a>
                         {% endif %}
                         <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-danger font-weight-bold text-white mx-1">Logout</a>
                     {% else %}

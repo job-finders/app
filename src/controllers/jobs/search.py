@@ -120,28 +120,42 @@ class JobsSearchController(Controllers):
     async def search_jobs_by_category(self, category: str, page: int = 1, page_size: int = 25) -> dict:
         """Search jobs by category with pagination, filtered to active and featured preferred."""
         with self.get_session() as session:
+            # Get category ORM instance (single object)
+            category_orm = session.query(JobCategoryORM).filter(
+                JobCategoryORM.name.ilike(f'%{category}%')
+            ).first()  # Get first matching category
 
-            category_orm =session.query(JobCategoryORM).filter(JobCategoryORM.name.ilike(f'%{category}%'))
-            category = JobCategory(**category_orm.to_dict())
+            if not category_orm:
+                # Return empty result if no category found
+                return {
+                    "jobs": [],
+                    "total_jobs": 0,
+                    "total_pages": 0,
+                    "page": page,
+                    "page_size": page_size
+                }
+
+            # Convert ORM to Pydantic model
+            category_model = JobCategory(**category_orm.to_dict())
 
             base_query = session.query(JobsORM).filter(
                 JobsORM.status == 'active',
-                JobsORM.category_id==category.category_id)  # match flexible category terms
+                JobsORM.category_id == category_model.category_id
+            )
 
             total_jobs = base_query.count()
-            total_pages = math.ceil(total_jobs / page_size)
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
             offset = (page - 1) * page_size
 
             jobs_orm_list = (
                 base_query.order_by(JobsORM.is_featured.desc(), JobsORM.created_at.desc())
-                        .offset(offset)
-                        .limit(page_size)
-                        .all()
+                .offset(offset)
+                .limit(page_size)
+                .all()
             )
-            # 172.29.77.10: 8084
 
             return {
-                "jobs": [Job(**job.to_dict()) for job in jobs_orm_list if job],
+                "jobs": [Job(**job.to_dict()) for job in jobs_orm_list],
                 "total_jobs": total_jobs,
                 "total_pages": total_pages,
                 "page": page,

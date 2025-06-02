@@ -17,17 +17,17 @@
                     <a href="{{ url_for('home.get_home') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
                         <i class="ti-home"></i> Home
                     </a>
-                    <a href="{{ url_for('jobseeker_cv.list_cvs') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
-                        <i class="ti-files"></i> My CV's
+                    <a href="{{ url_for('company.candidate_management') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
+                        <i class="ti-files"></i> Candidates
                     </a>
-                    <a href="{{ url_for('jobseeker_applications.list_applications') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
-                        <i class="ti-check-box"></i> My Applications
+                    <a href="{{ url_for('company.manage_jobs') }}" class="btn btn-sm btn-outline-success font-weight-bold text-info mx-1">
+                        <i class="ti-check-box"></i> Manage Jobs
                     </a>
 
                     <!-- Auth Buttons -->
                     {% if current_user and not not current_user.is_authenticated %}
-                        <a href="{{ url_for('jobseeker_profiles.view_profile') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">
-                            <i class="ti-user"></i> My Profile
+                        <a href="{{ url_for('company.view_company') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">
+                            <i class="ti-user"></i> Company Profile
                         </a>
                         <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-danger font-weight-bold text-white mx-1">
                             <i class="ti-power-off"></i> Logout

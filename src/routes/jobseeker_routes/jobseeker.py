@@ -22,7 +22,6 @@ async def optimize_cv(user: User):
 @login_required
 async def dashboard(user: User):
     """
-
     :param user:
     :return:
     """

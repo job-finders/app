@@ -1,3 +1,4 @@
+import json
 import re
 import uuid
 from datetime import datetime
@@ -60,6 +61,28 @@ class Company(BaseModel):
     is_verified: Optional[bool] = Field(default=False)
     time_verification_request_sent: Optional[datetime] = Field(default=None)
     verification_status: str = Field(default=CompanyVerificationStatus.PENDING.value)
+
+    @field_validator('tech_stack', mode='before')
+    @classmethod
+    def parse_tech_stack(cls, v):
+        """Handle different formats of tech_stack input"""
+        if v is None:
+            return None
+
+        if isinstance(v, list):
+            return v
+
+        if isinstance(v, str):
+            # Try to parse JSON string
+            if v.startswith('[') and v.endswith(']'):
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    pass
+            # Handle comma-separated values
+            return [tech.strip() for tech in v.split(',') if tech.strip()]
+
+        return v
 
     # Computed job statistics properties
     @property

@@ -32,19 +32,33 @@ def allowed_file(filename):
 @login_required
 async def create_company_profile(user: User):
     """Company profile creation endpoint"""
+    # Comprehensive list of countries relevant to South African job market
+    countries = await company_controller.get_countries()
+    # Industries relevant to South African market
+    industries = await company_controller.get_industries()
+    # TODO - Change to Industry Specific Tecg Options
+    tech_options = await company_controller.get_tech_options()
 
     if request.method == "GET":
-        context = dict(current_user=user)
+        company_data = await company_controller.get_employer_created_company(uid=user.uid)
+        if company_data:
+            flash(message="You already created a company", category="success")
+            return redirect('company.view_company')
+
+        context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options)
+
         return render_template("company/create_company.html", **context)
     try:
         # Validate incoming data using Pydantic model
-        company_data = Company(**request.form)
+        form_data = request.form.to_dict()
+        # noinspection PyTypeChecker
+        form_data['tech_stack'] = request.form.getlist("tech_stack")
+        company_data = Company(**form_data)
     except ValidationError as e:
         logger.error(f"Company validation error: {str(e)}")
         flash("Invalid company data. Please check all fields.", "danger")
-        return render_template("company/create_company.html",
-                            error=e.errors(),
-                            current_user=user)
+        return redirect(url_for('company.create_company_profile'))
+
     try:
         # Attempt company creation through controller
         created_company: Company = await company_controller.create_company(company_data=company_data)
@@ -55,6 +69,7 @@ async def create_company_profile(user: User):
                             error=str(e),
                             current_user=user,
                             form_data=request.form)
+
     if not created_company:
         logger.error(f'Error creating company using company data : {company_data}')
         flash(message="there was an problem creating your company please try again", category="danger")
@@ -65,11 +80,11 @@ async def create_company_profile(user: User):
         await users_controller.update_user_role(user.uid, "employer")
 
     flash("Company profile created successfully! - please create your employer profile next", "success")
-    return redirect(url_for("company.view_company"))
+    return redirect(url_for("company.employer_profile"))
 
 @company_bp.route("/update-company", methods=["GET", "POST"])
 @login_required
-async def update_company_profile():
+async def update_company_profile(user: User):
     pass
 
 @company_bp.route("/update-employer", methods=["GET", "POST"])
@@ -88,10 +103,11 @@ async def view_company(user: User):
 
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
     if not _employer_profile:
-        err = f"Employer lookup error: Please try again or inform admin"
+        err = f"Please Create your Employer Profile"
         logger.error(err)
         flash(err, "danger")
         return redirect(url_for("company.employer_profile"))
+
     company_data: Company = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
     if not company_data:
         logger.error(f"Error looking up Company with Company ID: {_employer_profile.company_id}")
@@ -119,6 +135,9 @@ async def employer_profile(user: User):
         company_data = {}
         if _employer_profile and _employer_profile.company_id:
             company_data = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
+        else:
+            flash(message="Please create your company profile before you can continue", category="success")
+            return redirect(url_for('company.create_company_profile'))
 
         context = {
             "current_user": user,
@@ -302,7 +321,7 @@ async def initiate_company_verification(user: User):
     """Endpoint for company verification document submission"""
     if not user.role == "employer":
         flash("Only employers can verify companies", "danger")
-        return redirect(url_for('main.dashboard'))
+        return redirect(url_for('company.get_dashboard'))
 
     # Get employer and company info
     employer = await company_controller.get_employer_by_uid(user.uid)
@@ -315,7 +334,7 @@ async def initiate_company_verification(user: User):
     # Check current verification status
     if company.verification_status == CompanyVerificationStatus.VERIFIED.value:
         flash("Company is already verified", "info")
-        return redirect(url_for('company.dashboard'))
+        return redirect(url_for('company.get_dashboard'))
     if company.verification_status == CompanyVerificationStatus.PENDING.value:
         flash("Verification is already in progress", "warning")
         return redirect(url_for('company.verification_status'))
@@ -415,14 +434,18 @@ async def employers(user: User):
 @company_bp.route("/me")
 @login_required
 async def get_dashboard(user: User):
+
     # 1. Verify employer profile exists
     employer = await company_controller.get_employer_by_uid(user.uid)
     if not employer:
+        flash(message="You need to create Employer Profile Before you can Access your Dashboard", category="success")
         return redirect(url_for('company.employer_profile'))
-    
     # 2. Get company data
     company = await company_controller.get_company_by_id(employer.company_id)
-    
+    if not company:
+        flash(message="Please Created Company Profile", category="success")
+        return redirect(url_for('company.create_company_profile'))
+
     # 3. Fetch dashboard metrics
     metrics = {
         'active_jobs': await company_controller.count_active_jobs(company.company_id),

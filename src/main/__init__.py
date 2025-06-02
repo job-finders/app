@@ -1,10 +1,9 @@
 from flask import Flask
+from datetime import datetime
 
-
-from src.utils import template_folder, static_folder, format_title, format_description, intcomma, datetimeformat
+from src.utils import template_folder, static_folder, format_title, format_description, intcomma, datetimeformat, current_year
 from src.emailer import SendMail
 from src.controllers.encryptor import Encryptor
-
 
 send_mail = SendMail()
 encryptor = Encryptor()
@@ -128,6 +127,7 @@ def create_app(config):
         app.jinja_env.filters['description'] = format_description
         app.jinja_env.filters['intcomma'] = intcomma
         app.jinja_env.filters['datetimeformat'] =  datetimeformat
+        app.jinja_env.filters['current_year'] = current_year
 
         @app.template_filter('round')
         def round_filter(value, precision=0):

@@ -60,22 +60,7 @@
         </div>
 
         <div class="card-body">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              {% for category, message in messages %}
-              <div class="alert alert-{{ category }} alert-dismissible fade show">
-                {{ message }}
-                <button type="button" class="close" data-dismiss="alert">
-                  <span>&times;</span>
-                </button>
-              </div>
-              {% endfor %}
-            {% endif %}
-          {% endwith %}
-
-          <form action="{{ url_for('company_bp.create_company_profile') }}" method="post" enctype="multipart/form-data">
-            {{ csrf_token() }}
-
+          <form action="{{ url_for('company.create_company_profile') }}" method="post" enctype="multipart/form-data">
             <!-- Company Details -->
             <div class="mb-4">
               <h4 class="section-header">Company Information</h4>
@@ -94,9 +79,6 @@
                 <input type="text" class="form-control" name="name"
                        value="{{ form_data.name if form_data }}" required
                        minlength="2" maxlength="255">
-                {% if error and 'name' in error %}
-                <div class="text-danger small">{{ error.name }}</div>
-                {% endif %}
               </div>
 
               <div class="form-group">
@@ -112,7 +94,7 @@
                     <select class="form-control" name="industry" maxlength="255">
                       <option value="">Select Industry</option>
                       {% for industry in industries %}
-                      <option value="{{ industry }}" {% if form_data.industry == industry %}selected{% endif %}>
+                      <option value="{{ industry }}" {% if form_data and form_data.industry == industry %}selected{% endif %}>
                         {{ industry }}
                       </option>
                       {% endfor %}
@@ -152,7 +134,7 @@
                     <select class="form-control" name="country" maxlength="255">
                       <option value="">Select Country</option>
                       {% for country in countries %}
-                      <option value="{{ country }}" {% if form_data.country == country %}selected{% endif %}>
+                      <option value="{{ country }}" {% if form_data and form_data.country == country %}selected{% endif %}>
                         {{ country }}
                       </option>
                       {% endfor %}
@@ -191,44 +173,33 @@
               <h4 class="section-header">Additional Information</h4>
               <div class="row">
                 <div class="col-md-6">
+
                   <div class="form-group">
                     <label class="font-weight-bold">Employee Count</label>
                     <input type="number" class="form-control" name="employee_count"
                            value="{{ form_data.employee_count if form_data }}" min="1">
                   </div>
+
                   <div class="form-group">
                     <label class="font-weight-bold">Founded Year</label>
                     <input type="number" class="form-control" name="founded_year"
                            value="{{ form_data.founded_year if form_data }}"
-                           min="1800" max="{{ datetime.now().year }}">
+                           min="1800" max="{{  current_year }}">  <!-- Use filter -->
                   </div>
                 </div>
                 <div class="col-md-6">
-                  <div class="form-group">
-                    <label class="font-weight-bold">Tech Stack</label>
-                    <div id="techStackContainer">
-                      <div class="input-group mb-2">
-                        <input type="text" class="form-control tech-stack-input"
-                               placeholder="Add technology (e.g. Python)">
-                        <div class="input-group-append">
-                          <button class="btn btn-outline-secondary" type="button" id="addTech">
-                            <i class="ti-plus"></i>
-                          </button>
-                        </div>
-                      </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Tech Stack</label>
+                        <select class="form-control" name="tech_stack" multiple>
+                            {% for tech in tech_options %}
+                            <option value="{{ tech }}"
+                                {% if form_data and tech in form_data.tech_stack %}selected{% endif %}>
+                                {{ tech }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple technologies</small>
                     </div>
-                    <input type="hidden" name="tech_stack" id="techStackValues"
-                           value="{{ form_data.tech_stack|tojson if form_data.tech_stack }}">
-                    <div id="techStackDisplay" class="mt-2">
-                      {% if form_data.tech_stack %}
-                        {% for tech in form_data.tech_stack %}
-                        <span class="tech-stack-pill badge badge-secondary">
-                          {{ tech }} <i class="ti-close ml-1" onclick="removeTech(this)"></i>
-                        </span>
-                        {% endfor %}
-                      {% endif %}
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>

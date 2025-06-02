@@ -63,6 +63,20 @@ class CompanyController(Controllers):
             return company_data
 
     @error_handler
+    async def get_employer_created_company(self, uid: str) -> Optional[Company]:
+        """
+            get the company which the employer just created
+        :param uid:
+        :return:
+        """
+        with self.get_session() as session:
+            company_orm = session.query(CompanyORM).filter_by(uid=uid).first()
+            if not company_orm:
+                return None
+            return Company(**company_orm.to_dict())
+
+
+    @error_handler
     async def register_employer(self, employer_data: Employer) -> Employer:
         """Create new employer profile with company association
         Links employer to Auth0/Firebase UID and initial company metadata
@@ -160,7 +174,7 @@ class CompanyController(Controllers):
         raise ValueError("Employer does not exist")
 
     @error_handler
-    async def get_employer_by_uid(self, user_id: str) -> Employer:
+    async def get_employer_by_uid(self, user_id: str) -> Employer | None:
         """
         :param user_id:
         :return:
@@ -168,12 +182,12 @@ class CompanyController(Controllers):
         with self.get_session() as session:
             employer_orm = session.query(EmployerORM).filter_by(user_uid=user_id).first()
             if not employer_orm:
-                raise ValueError("The User is not already an Employer")
+                return None
             return Employer(**employer_orm.to_dict())
 
 
     @error_handler
-    async def get_employer_by_employer_id(self, employer_id: str) -> Employer:
+    async def get_employer_by_employer_id(self, employer_id: str) -> Employer| None:
         """
         :param employer_id:
         :return:
@@ -181,7 +195,7 @@ class CompanyController(Controllers):
         with self.get_session() as session:
             employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
             if not employer_orm:
-                raise ValueError("The User is not already an Employer")
+                return None
             return Employer(**employer_orm.to_dict())
 
 
@@ -414,3 +428,34 @@ class CompanyController(Controllers):
 
     async def get_verification_status(self, company_id: str):
         return await self._get_verification_status_from_db(company_id)
+
+
+    async def get_industries(self):
+        industries = [
+            "Information Technology", "Finance and Banking", "Mining and Resources",
+            "Agriculture", "Manufacturing", "Healthcare", "Education", "Tourism and Hospitality",
+            "Retail", "Construction and Engineering", "Telecommunications", "Energy",
+            "Transportation and Logistics", "Media and Advertising", "Government",
+            "Non-profit", "Consulting", "Automotive", "Real Estate", "Food and Beverage",
+            "E-commerce", "Biotechnology", "Pharmaceuticals", "Insurance", "Legal"
+        ]
+        return industries
+
+
+    async def get_countries(self):
+        countries = [
+            "South Africa", "Botswana", "Lesotho", "Eswatini", "Namibia", "Zimbabwe",
+            "Zambia", "Mozambique", "Malawi", "Angola", "Kenya", "Nigeria", "Ghana",
+            "China", "Russia", "United States", "United Kingdom", "Germany", "Australia",
+            "Canada", "United Arab Emirates", "Singapore", "India", "Brazil"
+        ]
+        return countries
+
+    async def get_tech_options(self):
+        tech_options = [
+            "Python", "JavaScript", "Java", "C#", "PHP", "C++", "Ruby", "Swift", "Go",
+            "TypeScript", "Kotlin", "Rust", "SQL", "HTML/CSS", "React", "Angular", "Vue.js",
+            "Node.js", "Django", "Flask", "Spring", "Laravel", "Ruby on Rails", ".NET",
+            "AWS", "Azure", "Google Cloud", "Docker", "Kubernetes", "Terraform", "Ansible"
+        ]
+        return tech_options

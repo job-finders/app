@@ -29,19 +29,19 @@ def login_required(route_function):
     async def decorated_function(*args, **kwargs):
         auth_cookie = request.cookies.get('auth')
         if auth_cookie:
-            # Assuming you have a function to retrieve the user details based on the uid
             user = await get_user_details(auth_cookie)
-            try:
-                if user:
-                    return await route_function(user, *args, **kwargs)  # Inject user as a parameter
-                flash(message="User may not be Authorized or Logged In", category="danger")
+            if user:
+                try:
+                    # Only pass user to the route function, not additional args
+                    return await route_function(user)
+                except TypeError as e:
+                    auth_logger.error(f"TypeError in route: {str(e)}", exc_info=True)
+                    flash(f"Error processing request: {str(e)}", "danger")
+                    return redirect(url_for('home.get_home'))
+            else:
+                flash("User may not be authorized or logged in", "danger")
                 return redirect(url_for('home.get_home'))
-            except TypeError as e:
-                auth_logger.error(str(e))
-                _mess = f'Error making request please try again later {str(e)}'
-                flash(message=_mess, category="danger")
-                return redirect(url_for('home.get_home'))
-        return redirect(url_for('auth.login'))  # Redirect to login page if not logged in
+        return redirect(url_for('auth.login'))
 
     return decorated_function
 

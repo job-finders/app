@@ -34,20 +34,19 @@ async def login(user: User):
         thirty_days = 30 * 24 * 60  # 30 days × 24 hours × 60 minutes
 
         remember_me_delay = thirty_days if remember_me else thirty_minutes
-
         user = await users_controller.login_user(email=email, password=password)
         if not user:
             flash("Invalid email or password", "danger")
             return redirect(url_for("auth.login"))
+        if user.role == "employer":
+            response = await create_response(url_for('company.get_dashboard'))
+        else:
+            response = await create_response(url_for('jobseekers.dashboard'))
 
-        response = await create_response(url_for('home.get_home'))
 
         expiration = datetime.utcnow() + timedelta(minutes=remember_me_delay)
-
         response.set_cookie('auth', value=user.uid, expires=expiration, httponly=True)
-
         flash("Login successful", "success")
-
         return response
 
     return render_template("login.html")

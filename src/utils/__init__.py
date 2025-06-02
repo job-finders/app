@@ -231,3 +231,7 @@ def intcomma(value):
 
 def datetimeformat(value: datetime):
     return value.isoformat()
+
+
+def current_year() -> int:
+    return datetime.now().year
