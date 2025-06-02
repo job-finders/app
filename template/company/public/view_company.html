@@ -1,4 +1,4 @@
-{% extends "public/layout/base.html" %}
+{% extends "layouts/page.html" %}
 
 {% block title %}{{ company_data.name }} - Company Profile | TechHire{% endblock %}
 
@@ -54,12 +54,26 @@
               {% endif %}
             </div>
           </div>
+          
           {% if company_data.website %}
           <a href="{{ company_data.website }}" target="_blank" rel="noopener"
              class="flex items-center text-blue-600 hover:text-blue-800 font-medium">
             <i class="ti-world mr-2"></i> Visit Website
           </a>
           {% endif %}
+          {% if company_data.linkedin_url %}
+          <a href="{{ company_data.linkedin_url }}" target="_blank" rel="noopener"
+             class="flex items-center text-blue-600 hover:text-blue-800 font-medium">
+            <i class="ti-LinkedIn mr-2"></i> Linked In
+          </a>
+          {% endif %}
+          {% if company_data.twitter_handle %}
+          <a href="{{ company_data.twitter_handle }}" target="_blank" rel="noopener"
+             class="flex items-center text-blue-600 hover:text-blue-800 font-medium">
+            <i class="ti-tweeter mr-2"></i> X
+          </a>
+          {% endif %}
+
         </div>
         
         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -79,7 +93,6 @@
       </div>
     </div>
   </div>
-
   <!-- Company Description -->
   <div class="mt-6 bg-white rounded-xl shadow-md p-6">
     <h2 class="text-xl font-semibold text-gray-800 mb-4">About Us</h2>
@@ -87,7 +100,6 @@
       {{ company_data.description or 'No description available' }}
     </div>
   </div>
-
   <!-- Current Job Openings -->
   <div class="mt-6">
     <div class="flex justify-between items-center mb-4">
@@ -96,7 +108,6 @@
         {{ jobs|length }} positions
       </span>
     </div>
-
     {% if jobs %}
     <div class="grid grid-cols-1 gap-4">
       {% for job in jobs %}

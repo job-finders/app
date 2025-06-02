@@ -1,95 +1,63 @@
-    <div class="sidebar sidebar-shrink sidebar-gestures">
-        <div class="nano">
-            <div class="nano-content">
-                <ul>
+<div class="sidebar sidebar-shrink sidebar-gestures">
+    <div class="nano">
+        <div class="nano-content">
+            <ul>
                 <div class="logo">
                     <a href="{{ url_for('home.get_home') }}">
                         <img src="{{ url_for('static', filename="images/jobfinder.jpg") }}" width="45" height="45" alt="Job Finder Logo">
-{#                        <img src="{{ url_for('static', filename='images/custom/logo.png') }}" alt="logo" width="45" height="45">#}
                         <span> Job Finders</span>
                     </a>
                 </div>
-                <li class="label">Main</li>
+
+                <li class="label">Main Navigation</li>
+
                 <li><a href="{{ url_for('home.get_home') }}"><i class="ti-home"></i> Home</a></li>
+
+                {# Section for Job Seekers #}
                 <li>
                     <a class="sidebar-sub-toggle">
-                     <i class="ti-user"></i> Jobs <span class="sidebar-collapse-icon ti-angle-down"></span>
+                        <i class="ti-briefcase"></i> For Job Seekers <span class="sidebar-collapse-icon ti-angle-down"></span>
                     </a>
                     <ul>
-                    {% for term in search_terms %}
-                        <li>
-                        <a href="{{ url_for('jobs.category_jobs', category=term) }}">
-                            <i class="ti-briefcase"> </i>
-                            {{ term|title }}
-                        </a>
-                        </li>
-                    {% endfor %}
+                        <li><a href="{{ url_for('jobs.browse_jobs') }}"><i class="ti-search"></i> Browse Jobs</a></li>
+                        <li><a href="{{ url_for('jobs.search_jobs') }}"><i class="ti-zoom-in"></i> Search Jobs</a></li>
+                        <li><a href="{{ url_for('jobs.job_categories') }}"><i class="ti-menu"></i> Job Categories</a></li>
+                        <li><a href="{{ url_for('company_search.list_companies') }}"><i class="ti-building"></i> Browse Companies</a></li>
+                        {# Potentially add more job seeker specific links here, e.g., "Upload Resume" if applicable and public #}
                     </ul>
                 </li>
-{#                    <li> <a href="{{ url_for("home.linkedin_learning") }}">#}
-{#                        <i class="ti-linkedin"> </i>#}
-{#                        LinkedIn Learning</a>#}
-{#                    </li>#}
+
+                {# Section for Companies (Employers) #}
                 <li>
                     <a class="sidebar-sub-toggle">
-                     <i class="ti-folder"></i> Blog <span class="sidebar-collapse-icon ti-angle-down"></span>
+                        <i class="ti-crown"></i> For Companies <span class="sidebar-collapse-icon ti-angle-down"></span>
+                    </a>
+                    <ul>
+                        <li><a href="{{ url_for('auth.employer_register') }}"><i class="ti-pencil-alt"></i> Post a Job</a></li> {# Assuming this route #}
+                        <li><a href="{{ url_for('company_search.list_companies') }}"><i class="ti-building"></i> Browse Companies</a></li>
+                        {# Potentially add more company specific links here, e.g., "Employer Dashboard Login" #}
+                    </ul>
+                </li>
+
+                {# General Resources and Information #}
+                <li>
+                    <a class="sidebar-sub-toggle">
+                        <i class="ti-folder"></i> Resources <span class="sidebar-collapse-icon ti-angle-down"></span>
                     </a>
                     <ul>
                         <li> <a href="{{ url_for('blog.get_blog', topic='index') }}">
-                            <i class="ti-file"> </i>
-                            Blog</a>
+                            <i class="ti-file"> </i> Blog</a>
                         </li>
-                        <li> <a href="{{ url_for('blog.get_blog', topic='resume-writing-tips') }}">
-                            <i class="ti-file"> </i>
-                            Resume Writing Tips</a>
+                        <li> <a href="{{ url_for("home.contact") }}">
+                            <i class="ti-email"> </i> Contact Us</a>
                         </li>
-                        <li> <a href="{{ url_for('blog.get_blog', topic='job-search-strategies') }}">
-                            <i class="ti-file"> </i>
-                            Job Search Strategies</a>
+                        <li> <a href="{{ url_for("home.about") }}">
+                            <i class="ti-info"> </i> About Us</a>
                         </li>
-                        <li> <a href="{{ url_for('blog.get_blog', topic='interview-strategies') }}">
-                            <i class="ti-file"> </i>
-                            Interview Preparations</a>
-                        </li>
-                        <li> <a href="{{ url_for('blog.get_blog', topic='remote-work-freelancing') }}">
-                            <i class="ti-file"> </i>
-                            Remote Work &amp; Freelancing</a>
-                        </li>
-                        <li> <a href="{{ url_for('blog.get_blog', topic='job-application-tips') }}">
-                            <i class="ti-file"> </i>
-                            Job Applications Tips</a>
-                        </li>
-                        <li> <a href="{{ url_for('blog.get_blog', topic='workplace-tips') }}">
-                            <i class="ti-file"> </i>
-                            Workplace Tips</a>
-                        </li>
-                        <li> <a href="{{ url_for('blog.get_blog', topic='job-market-research') }}">
-                            <i class="ti-file"> </i>
-                            Job Market Research</a>
-                        </li>
-                        <li> <a href="{{ url_for('blog.get_blog', topic='education') }}">
-                            <i class="ti-file"> </i>
-                            Education &amp; Training</a>
-                        </li>
+                        {# Add other general resources like FAQs, Terms, Privacy, etc. #}
                     </ul>
-
-                    <li> <a href="{{ url_for("home.contact") }}">
-                        <i class="ti-email"> </i>
-                        Contact</a>
-                    </li>
-                    <li> <a href="{{ url_for("home.about") }}">
-                        <i class="ti-info"> </i>
-                        About</a>
-                    </li>
-                    <!-- <li>
-                        <a href="{{ url_for("home.sister_sites") }}">
-                            <i class="ti-link"> </i>
-                            Sister Sites
-                        </a>
-                    </li> -->
-                </ul>
-            </div>
+                </li>
+            </ul>
+        </div>
     </div>
 </div>
-
-<!-- /# sidebar -->
