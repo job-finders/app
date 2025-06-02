@@ -14,7 +14,7 @@ from src.main import users_controller
 from src.main import company_controller
 from src.logger import init_logger
 
-company_bp = Blueprint('company', __name__, url_prefix='/company')
+company_bp = Blueprint('company', __name__, url_prefix='/dashboard/company')
 
 logger = init_logger("company_routes")
 

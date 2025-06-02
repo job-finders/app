@@ -6,7 +6,8 @@ from src.agents.employer import JobPostIntelligenceAgent
 from src.database.models.agent_models import JobPostInsights
 
 from src.controllers.controller import Controllers, error_handler
-from src.agents.employer import EnhanceJobPostOutput, EnhanceJobPostInput, EnhanceJobPostAgent
+from src.agents.employer import (EnhanceJobPostOutput, EnhanceJobPostInput, EnhanceJobPostAgent, JobSummaryInput,
+JobSummaryAgent, JobSummaryOutput)
 
 from src.database.models import Job
 from src.database.sql.jobs_sql import JobsORM
@@ -48,3 +49,29 @@ class EmployerAgentsController(Controllers):
             agent = JobPostIntelligenceAgent(user_id=user_id)
 
             return await agent.run(input_model=job)
+
+    @error_handler
+    async def create_job_summary(self, user_id: str, job_id: str) -> JobSummaryOutput:
+        """     
+            Create a summary for a job post using the JobSummaryAgent.    
+        """
+        self.logger.info(f"Creating job summary for user: {user_id}, job: {job_id}")
+
+        # Fetch the job from database
+        with self.get_session() as session:
+            job_orm = session.get(JobsORM, job_id)
+            if not job_orm:
+                raise ValueError(f"Job with ID {job_id} not found")
+            job = Job(**job_orm.to_dict())
+            # Verify user has access to this job
+            # if job.user_id != user_id:
+            #     raise PermissionError("User not authorized to access this job")
+
+            # Run the summary agent
+            agent = JobSummaryAgent(user_id=user_id)
+            input_model = JobPostSummaryInput(ats_description=job.ats_description)
+            job_summary =  await agent.run(input_model=input_model)
+            
+            job_orm.summary = job_summary.summary
+            job_orm.seo_description = job_summary.seo_description
+

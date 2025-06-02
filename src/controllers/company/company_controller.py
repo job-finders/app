@@ -255,7 +255,8 @@ class CompanyController(Controllers):
                 raise ValueError('Your Company Profile is not yet verified (or its incomplete)')
             # TODO - once subscriptions are added please check the status of the subscription here
             # creating job with jobs controller then return the results
-            return await self.jobs_workflow_controller.create_job(job=job_data)
+            # async def post_job_employer(self, employer: Employer, job_data: Job) -> Job:
+            return await self.jobs_workflow_controller.post_job_employer(employer=_employer_profile,  job=job_data)
 
     @error_handler
     async def get_saved_candidates(self, user_uid: str) -> list[JobSeekerCV]:

@@ -149,14 +149,10 @@ async def full_job_details(user: User, job_id: str):
         return await gone(user=user, search_term=job_id)
 
     related_jobs: list[Job] = await job_search_controller.get_similar_jobs(job_id=job.job_id)
-    
-    
-    list_resumes: list[JobSeekerCV] = await resumes_controller.list_cvs_for_user(user_id=user.uid)
-
+        
     context = {
         'current_user': user,
         'job': job,
-        'list_resumes': list_resumes,
         'related_jobs': related_jobs,
         'meta_title': job.title,
         'meta_description': job.short_description,

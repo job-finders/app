@@ -79,3 +79,15 @@ async def view_company_by_company_id(user: User, company_id: str):
 
     
 
+async def get_employer_details(company_id: str):
+    """
+    Fetches the employer details for a given company ID.
+    """
+    try:
+        employer = await company_controller.get_employer_by_company_id(company_id=company_id)
+        if not employer:
+            return None
+        return employer
+    except Exception as e:
+        init_logger().error(f"Error fetching employer details: {e}")
+        return None

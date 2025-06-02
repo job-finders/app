@@ -94,7 +94,7 @@ class JobsWorkflowController(Controllers):
             return Job(**job_orm.to_dict())
 
     @error_handler
-    async def create_job(self, job: Job) -> Job | None:
+    async def _create_job(self, job: Job) -> Job | None:
         """Create new job listing"""
         with self.get_session() as session:
             # Convert Pydantic model to ORM-compatible dict
@@ -108,6 +108,13 @@ class JobsWorkflowController(Controllers):
     # In JobsController
     @error_handler
     async def post_job_employer(self, employer: Employer, job_data: Job) -> Job:
+        """sumary_line
+            Perform Extra Employer Based Checks 
+        Keyword arguments:
+        argument -- description
+        Return: return_description
+        """
+        
         if not employer.is_verified:
             return None
 

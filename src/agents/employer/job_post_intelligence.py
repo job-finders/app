@@ -7,6 +7,7 @@ from src.database.models import Job
 from src.agents.base import BaseAgent
 
 
+
 class EnhanceJobPostInput(BaseModel):
     """
     Input model for job post enhancement agent.
@@ -170,6 +171,8 @@ Output MUST be in valid JSON format matching the specified schema.
     def output_model(self):
         return EnhanceJobPostOutput
 
+
+# Job Post Insights Models
 class JobPostInsights(BaseModel):
     clarity_score: float
     salary_benchmark: str
@@ -211,3 +214,42 @@ class JobPostIntelligenceAgent(BaseAgent):
 
 
 
+# Job Summary Models
+class JobSummaryInput(BaseModel):
+    ats_desciption: str
+
+
+class JobSummaryOutput(BaseModel):
+    summary: str = Field(..., description="A short, engaging summary of the job suitable for listing previews.")
+    seo_description: str = Field(..., description="SEO-optimized description for the job post.")
+
+class JobSummaryAgent(BaseAgent):
+    __doc__ = "This Agent creates both a user-facing summary and an SEO-optimized description for a job post."
+    name = "job_summary"
+    description = (
+        "Generates a preview summary for job listings and a separate SEO-optimized meta description."
+    )
+
+    def system_prompt(self) -> str:
+        return (
+            "You are an expert in writing job summaries and SEO content for job listings. "
+            "Your task is to generate two things:\n"
+            "1. A concise, engaging summary (2–3 sentences) suitable for display in job listing previews.\n"
+            "2. A search engine optimized (SEO) description designed for meta tags and social sharing, "
+            "highlighting key job info in a way that improves discoverability.\n\n"
+            "Both must be clear, professional, and informative."
+        )
+
+    def prompt(self, input_model: Job) -> str:
+        return (
+            f"Here is the full job description (ATS format):\n\n"
+            f"{input_model.ats_description.strip()}\n\n"
+            f"Using the above, generate the following in JSON format:\n"
+            f'{{\n'
+            f'  "summary": "<Concise, 2–3 sentence summary for display>",\n'
+            f'  "seo_description": "<SEO-optimized meta description>"\n'
+            f'}}'
+        )
+
+    def output_model(self) -> Type[BaseModel]:
+        return JobSummaryOutput

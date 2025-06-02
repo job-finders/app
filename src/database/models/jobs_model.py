@@ -104,6 +104,8 @@ def generate_job_ref() -> str:
     rand = uuid.uuid4().hex[:6].upper()              # e.g., B6FA9C
     return f"JB-{ts}-{rand}"                         # e.g., JB-20250529143000-B6FA9C
 
+
+
 class Job(BaseModel):
     # Core Identification
     job_id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -167,6 +169,22 @@ class Job(BaseModel):
     # Audit
     created_at: Optional[datetime] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
+
+    summary: Optional[str] = Field(default=None, description="Short summary for job listing")
+    seo_description: Optional[str] = Field(default=None, description="SEO description for job post")
+
+    @computed_field
+    @property
+    def salary():
+        """Returns a formatted salary range string."""
+        if self.salary_min is not None and self.salary_max is not None:
+            return f"{self.salary_currency} {self.salary_min} - {self.salary_max}"
+        elif self.salary_min is not None:
+            return f"{self.salary_currency} {self.salary_min} and above"
+        elif self.salary_max is not None:
+            return f"{self.salary_currency} up to {self.salary_max}"
+        else:
+            return "Salary not specified"
 
     # Computed Properties
     @computed_field

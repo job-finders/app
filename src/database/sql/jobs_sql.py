@@ -149,11 +149,15 @@ class JobsORM(Base):
     created_at = Column(DateTime(timezone=True), default=utc_time)
     updated_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
 
+    # Note Summary and SEO Description will be auto created by Agents
+    summary = Column(Text, nullable=True)  # Summary of job details for quick access
+    seo_description = Column(Text, nullable=True)  # SEO description for job listing
 
     # Relationships
     applications = relationship("JobApplicationORM", back_populates="job")
     saved_jobs = relationship("SavedJobORM", back_populates="job")
 
+    
     # Indexes
     __table_args__ = (
         Index('ix_job_search', 'title', 'city', 'position_type', 'experience_level'),
@@ -192,6 +196,8 @@ class JobsORM(Base):
             "company": self.company.to_dict() if self.company else None,  # assumes CompanyORM has to_dict
             "title": self.title,
             "description": self.description,
+            "summary": self.summary,
+            "seo_description": self.seo_description,
             "position_type": self.position_type,
             "category": self.category,
             "remote_policy": self.remote_policy,
