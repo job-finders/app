@@ -3,7 +3,7 @@ import re
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Union
 from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, ConfigDict
 
 
@@ -228,6 +228,33 @@ class Company(BaseModel):
         ])
 
         return has_contact_info and has_location_info and has_descriptive_info
+
+
+class CompanyUpdate(BaseModel):
+    """Model for partial company updates"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    industry: Optional[str] = None
+    website: Optional[HttpUrl] = None
+    city: Optional[str] = None
+    province: Optional[str] = None
+    country: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
+    employee_count: Optional[Union[int, str]] = None
+    founded_year: Optional[int] = None
+    tech_stack: Optional[list[str]] = None
+    linkedin_url: Optional[HttpUrl] = None
+    twitter_handle: Optional[str] = None
+    logo_url: Optional[HttpUrl] = None
+    is_public: Optional[bool] = None
+
+    # # Reuse validators from main Company model
+    # _validate_phone = field_validator("phone_number", mode="before")(Company.__fields__["phone_number"].validate)
+    # _validate_twitter = field_validator("twitter_handle", mode="before")(Company.__fields__["twitter_handle"].validate)
+
+    class Config:
+        extra = 'ignore'  # Ignore extra fields
 
 
 class CompanyVerificationDocument(BaseModel):

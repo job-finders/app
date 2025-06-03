@@ -1,0 +1,221 @@
+{% extends "company/layout/page.html" %}
+
+{% block title %}Edit Company Profile{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0 fw-bold">
+            <i class="bi bi-building me-2"></i>Edit Company Profile
+        </h1>
+        <a href="{{ url_for('company.view_company') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Cancel
+        </a>
+    </div>
+
+    <form method="POST" action="{{ url_for('company.update_company_profile') }}" enctype="multipart/form-data">
+        <!-- Basic Information Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h2 class="h5 mb-0 fw-bold"><i class="bi bi-info-circle me-2 text-primary"></i>Basic Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Company Name -->
+                    <div class="col-12 col-md-6">
+                        <label for="name" class="form-label fw-medium">Company Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ company.name }}" required>
+                    </div>
+                    
+                    <!-- Industry -->
+                    <div class="col-12 col-md-6">
+                        <label for="industry" class="form-label fw-medium">Industry</label>
+                        <input type="text" class="form-control" id="industry" name="industry" 
+                               value="{{ company.industry }}" placeholder="e.g. Technology, Healthcare">
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="col-12">
+                        <label for="description" class="form-label fw-medium">Company Description</label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="4" placeholder="Describe your company culture, mission, and values">{{ company.description }}</textarea>
+                        <div class="form-text">This will appear on your public profile</div>
+                    </div>
+                    
+                    <!-- Founded Year -->
+                    <div class="col-12 col-md-6">
+                        <label for="founded_year" class="form-label fw-medium">Founded Year</label>
+                        <input type="number" class="form-control" id="founded_year" name="founded_year" 
+                               value="{{ company.founded_year }}" min="1800" max="{{ current_year }}">
+                    </div>
+                    
+                    <!-- Employee Count -->
+                    <div class="col-12 col-md-6">
+                        <label for="employee_count" class="form-label fw-medium">Employee Count</label>
+                        <input type="number" name="employee_count" id="employee_count" value="{{ company.employee_count }}">
+                    </div>
+                    
+                    <!-- Tech Stack -->
+                    <div class="col-12">
+                        <label for="tech_stack" class="form-label fw-medium">Technology Stack</label>
+                        <input type="text" class="form-control" id="tech_stack" name="tech_stack" 
+                               value="{{ company.tech_stack|join(', ') if company.tech_stack else '' }}" 
+                               placeholder="e.g. Python, JavaScript, React, AWS">
+                        <div class="form-text">Separate technologies with commas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h2 class="h5 mb-0 fw-bold"><i class="bi bi-geo-alt me-2 text-primary"></i>Contact Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Website -->
+                    <div class="col-12">
+                        <label for="website" class="form-label fw-medium">Website</label>
+                        <input type="url" class="form-control" id="website" name="website" 
+                               value="{{ company.website }}" placeholder="https://yourcompany.com">
+                    </div>
+                    
+                    <!-- Location -->
+                    <div class="col-12 col-md-4">
+                        <label for="city" class="form-label fw-medium">City</label>
+                        <input type="text" class="form-control" id="city" name="city" 
+                               value="{{ company.city }}" placeholder="e.g. San Francisco">
+                    </div>
+                    
+                    <div class="col-12 col-md-4">
+                        <label for="province" class="form-label fw-medium">State/Province</label>
+                        <input type="text" class="form-control" id="province" name="province" 
+                               value="{{ company.province }}" placeholder="e.g. California">
+                    </div>
+                    
+                    <div class="col-12 col-md-4">
+                        <label for="country" class="form-label fw-medium">Country</label>
+                        <input type="text" class="form-control" id="country" name="country" 
+                               value="{{ company.country }}" placeholder="e.g. United States">
+                    </div>
+                    
+                    <!-- Contact Email -->
+                    <div class="col-12 col-md-6">
+                        <label for="contact_email" class="form-label fw-medium">Contact Email <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                               value="{{ company.contact_email }}" required>
+                    </div>
+                    
+                    <!-- Phone -->
+                    <div class="col-12 col-md-6">
+                        <label for="phone_number" class="form-label fw-medium">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                               value="{{ company.phone_number }}" placeholder="+1 (555) 123-4567">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branding & Social Media Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h2 class="h5 mb-0 fw-bold"><i class="bi bi-globe me-2 text-primary"></i>Branding & Social Media</h2>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Logo Upload -->
+                    <div class="col-12">
+                        <label for="logo" class="form-label fw-medium">Company Logo</label>
+                        <div class="d-flex align-items-start">
+                            {% if company.logo_url %}
+                            <div class="me-3">
+                                <img src="{{ company.logo_url }}" alt="Current logo" class="rounded" style="width: 80px; height: 80px; object-fit: contain;">
+                            </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <input class="form-control" type="file" id="logo" name="logo" accept="image/*">
+                                <div class="form-text">JPG, PNG or GIF. Max 2MB</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Social Media -->
+                    <div class="col-12 col-md-6">
+                        <label for="linkedin_url" class="form-label fw-medium">LinkedIn URL</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-linkedin text-primary"></i></span>
+                            <input type="url" class="form-control" id="linkedin_url" name="linkedin_url" 
+                                   value="{{ company.linkedin_url }}" placeholder="https://linkedin.com/company/yourcompany">
+                        </div>
+                    </div>
+                    
+                    <div class="col-12 col-md-6">
+                        <label for="twitter_handle" class="form-label fw-medium">Twitter Handle</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-twitter text-info"></i></span>
+                            <input type="text" class="form-control" id="twitter_handle" name="twitter_handle" 
+                                   value="{{ company.twitter_handle }}" placeholder="@yourcompany">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verification Section -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h2 class="h5 mb-0 fw-bold"><i class="bi bi-shield-check me-2 text-primary"></i>Verification Status</h2>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        {% if company.verification_status == 'verified' %}
+                        <span class="badge bg-success py-2 px-3">
+                            <i class="bi bi-check-circle me-1"></i>Verified
+                        </span>
+                        {% elif company.verification_status == 'pending' %}
+                        <span class="badge bg-warning py-2 px-3">
+                            <i class="bi bi-clock me-1"></i>Verification Pending
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary py-2 px-3">
+                            <i class="bi bi-question-circle me-1"></i>Unverified
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if company.verification_status != 'verified' %}
+                        <a href="#" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-send me-1"></i>Request Verification
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <p class="small text-muted mb-0">
+                        Verified companies receive a badge on their profile and gain trust with job seekers.
+                        {% if company.verification_status == 'pending' %}
+                        Your request is under review. This usually takes 1-2 business days.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="make_profile_public" name="make_profile_public" 
+                       {% if company.is_public %}checked{% endif %}>
+                <label class="form-check-label" for="make_profile_public">Make company profile public</label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary px-4 py-2">
+                <i class="bi bi-save me-1"></i>Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

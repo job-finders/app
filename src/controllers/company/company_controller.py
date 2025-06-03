@@ -6,10 +6,11 @@ from flask import Flask, render_template, url_for
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
+from src.database.sql.jobs_sql import JobsORM
 from src.controllers.controller import Controllers, error_handler
 from src.controllers.jobs import JobsWorkflowController
 from src.controllers.resumes import ResumeController
-from src.database.models.company_models import Company
+from src.database.models.company_models import Company, CompanyUpdate
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Job, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
 from src.database.models.resume import JobSeekerCV, SavedCV
@@ -72,7 +73,7 @@ class CompanyController(Controllers):
         with self.get_session() as session:
             employer_orm = session.query(EmployerORM).filter_by(user_uid=uid).first()
             if not employer_orm:
-                self.logger.info("Unable to locate Employer ORM Model for UID : {uid}")
+                self.logger.info(f"Unable to locate Employer ORM Model for UID : {uid}")
 
                 return None
 
@@ -84,7 +85,7 @@ class CompanyController(Controllers):
 
 
     @error_handler
-    async def register_employer(self, employer_data: Employer) -> Employer:
+    async def register_employer(self, employer_data: Employer) -> Optional[Employer]:
         """Create new employer profile with company association
         Links employer to Auth0/Firebase UID and initial company metadata
         """
@@ -92,36 +93,47 @@ class CompanyController(Controllers):
             if session.query(EmployerORM).filter_by(user_uid=employer_data.user_uid).first():
                 raise ValueError("Employer profile exists for this user")
                 
+            # Dump the Employer Model without the relationships
+            employer_orm = EmployerORM(**employer_data.model_dump(exclude={'company', 'saved_candidates'}))
+            if not employer_orm:
+                return None
 
-            employer_orm = EmployerORM(**employer_data.model_dump())
-            if employer_orm:
-                self.logger.info(f"Creating Employer ORM : {employer_orm.to_dict()}")
-                session.add(employer_orm)
-
-            return Employer(**employer_orm.to_dict())
+            self.logger.info(f"Creating Employer ORM : {employer_orm.to_dict()}")
+            session.add(employer_orm)
+            self.logger.info(f"Employer Added to Session but if error occurs the data will be rolled back")
+            # Do Not Include Relationships here because the data is not yet saved to the database
+            return employer_data
 
     @error_handler
     async def get_company_by_id(self, company_id: str) -> Optional[Company]:
         """
-        Return a company complete with its job listings
+        Return a company complete with its job listings and applications
         :param company_id: UUID of the company to retrieve
-        :return: Company object with nested jobs
+        :return: Company object with nested jobs and applications
         """
         with self.get_session() as session:
-            # Get company with eager-loaded jobs in single query
+            # Eager load all relationships to avoid N+1 queries
             company_orm: CompanyORM = (
                 session.query(CompanyORM)
-                .options(joinedload(CompanyORM.jobs))
-                .filter(company_id==company_id)
+                .options(
+                    joinedload(CompanyORM.jobs).options(
+                        joinedload(JobsORM.applications)
+                    ),
+                    joinedload(CompanyORM.employers),
+                    joinedload(CompanyORM.saved_candidates)
+                )
+                .filter(CompanyORM.company_id == company_id)  # Fixed filter condition
                 .first()
             )
 
             if not company_orm:
-                self.logger.info(f"Unable to Obtain Company Data with ID : {company_id}")
+                self.logger.info(f"Unable to obtain company data with ID: {company_id}")
                 return None
-            self.logger.info(f"Obtained Company Data with this ID : {company_id}")
+
+            self.logger.info(f"Obtained company data for ID: {company_id}")
+
             # Convert ORM to Pydantic model
-            return Company(**company_orm.to_dict())
+            return Company.model_validate(company_orm)
 
     @error_handler
     async def get_employees_by_company_id(self, company_id: str) -> list[Employer]:
@@ -154,7 +166,7 @@ class CompanyController(Controllers):
             if not company_orm:
                 raise ValueError(f"No company found with name '{name}'")
 
-            return Company(**company_orm.to_dict())
+            return Company(**company_orm.to_dict(include_relationships=True))
 
     @error_handler
     async def search_companies_by_name(self, name: str) -> list[Company]:
@@ -191,10 +203,15 @@ class CompanyController(Controllers):
         :return:
         """
         with self.get_session() as session:
+            self.logger.info(f"Inside get_employer by uid : {user_id}")
             employer_orm = session.query(EmployerORM).filter_by(user_uid=user_id).first()
             if not employer_orm:
+                self.logger.info(f"Employer Record Not found : ")
                 return None
-            return Employer(**employer_orm.to_dict())
+
+            self.logger.info(f"Found Employer Record : {employer_orm.to_dict(include_relationships=True)}")
+
+            return Employer(**employer_orm.to_dict(include_relationships=True))
 
 
     @error_handler
@@ -267,20 +284,70 @@ class CompanyController(Controllers):
         return await self.jobs_workflow_controller.generate_talent_pool_report(company_id=company_id)
 
     @error_handler
-    async def update_employer_profile(self, employer_id: str, company_data: Company) -> Employer:
-        """
-
-        :param employer_id:
-        :param company_data:
-        :return:
-        """
+    async def update_employer_profile(self, employer_profile: Employer) -> Employer:
         with self.get_session() as session:
-            employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
+            self.logger.info("Inside Update Employer Profile")
+
+            # Get existing employer ORM
+            employer_orm = session.query(EmployerORM).filter_by(
+                employer_id=employer_profile.employer_id
+            ).first()
+
             if not employer_orm:
-                return  None
-            employer_orm.company_id = company_data.company_id
+                return None
+
+            # Convert Pydantic model to dict, excluding relationships
+            exclude_fields = {"company", "saved_candidates", "created_at", "updated_at"}
+            update_data = employer_profile.model_dump(exclude=exclude_fields)
+
+            # Update scalar fields
+            for key, value in update_data.items():
+                if hasattr(employer_orm, key):
+                    if value:
+                        setattr(employer_orm, key, value)
+
+            # Handle timestamp update
+            employer_orm.updated_at = func.now()
+
+            # Handle company relationship separately if needed
+            if employer_profile.company_id and employer_profile.company_id != employer_orm.company_id:
+                # Verify new company exists
+                new_company = session.query(CompanyORM).filter_by(
+                    company_id=employer_profile.company_id
+                ).first()
+
+                if new_company:
+                    employer_orm.company = new_company
+
             session.commit()
-            return Employer(**employer_orm.to_dict())
+            session.refresh(employer_orm)
+
+            # Return updated employer with relationships
+            return Employer.model_validate(employer_orm)
+
+    @error_handler
+    async def update_company(self, company_id: str, update_data: CompanyUpdate) -> Company:
+        with self.get_session() as session:
+            # Get existing company
+            company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
+            if not company_orm:
+                raise ValueError("Company not found")
+
+            # Convert Pydantic model to dict, excluding unset fields
+            update_dict = update_data.model_dump(exclude_unset=True)
+
+            # Update fields
+            for key, value in update_dict.items():
+                if hasattr(company_orm, key):
+                    if value:
+                        setattr(company_orm, key, value)
+
+            # Update timestamp
+            company_orm.updated_at = func.now()
+
+            session.commit()
+            session.refresh(company_orm)
+            return Company.model_validate(company_orm)
 
     @error_handler
     async def post_job(self, user_uid: str, job_data: Job) -> Job:

@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from datetime import datetime
 
@@ -132,5 +134,11 @@ def create_app(config):
         @app.template_filter('round')
         def round_filter(value, precision=0):
             return round(value, precision)
+        # Configure upload folder
+        app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
+        app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
+
+        # Create upload directory if not exists
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     return app

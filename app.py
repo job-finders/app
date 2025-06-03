@@ -1,6 +1,6 @@
 from src.config import config_instance
 from src.main import create_app
-import threading
+
 
 # Job Finders
 app = create_app(config=config_instance())

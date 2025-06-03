@@ -101,7 +101,7 @@ class Employer(BaseModel):
     )
 
     company: Optional[Company] = None
-    saved_candidates: Optional[List[SavedCandidates]] = None
+    saved_candidates: Optional[List[SavedCandidates]] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
