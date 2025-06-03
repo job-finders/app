@@ -3,9 +3,8 @@ import re
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional
-
-from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr
+from typing import Optional, List
+from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, ConfigDict
 
 
 def format_reference(ref: str) -> str:
@@ -62,6 +61,7 @@ class Company(BaseModel):
     time_verification_request_sent: Optional[datetime] = Field(default=None)
     verification_status: str = Field(default=CompanyVerificationStatus.PENDING.value)
 
+
     @field_validator('tech_stack', mode='before')
     @classmethod
     def parse_tech_stack(cls, v):
@@ -109,7 +109,7 @@ class Company(BaseModel):
         """Total applications across all jobs"""
         if not self.jobs:
             return 0
-        return sum(job.application_count for job in self.jobs)
+        return sum(job.total_applications for job in self.jobs)
 
     @property
     def avg_applications_per_job(self) -> float:
@@ -128,6 +128,22 @@ class Company(BaseModel):
                 responded += sum(1 for app in job.applications
                                  if app.employer_response is not None)
         return (responded / self.total_applications) * 100
+
+    @property
+    def recent_applications(self) -> list['JobApplication']:
+        if not self.jobs:  # No need to check total_applications separately
+            return []
+        recent_apps = []
+        for job in self.jobs:
+            # Only process jobs that actually have applications
+            if not job.applications:
+                continue
+            for application in job.applications:
+                # Directly compare datetimes instead of relying on is_recent_application
+                if application.is_recent_application:
+                    recent_apps.append(application)
+
+        return recent_apps
 
     @property
     def avg_hiring_time(self) -> float:
@@ -241,3 +257,49 @@ class CompanyCIPC(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat(),
         }
+
+
+class InterestLevel(str, Enum):
+    LOW = "low"
+    INTERESTED = "interested"
+    HIGHLY_INTERESTED = "highly_interested"
+    TOP_PRIORITY = "top_priority"
+    ON_HOLD = "on_hold"
+
+
+class CandidateStatus(str, Enum):
+    SAVED = "saved"
+    REVIEWED = "reviewed"
+    CONTACTED = "contacted"
+    SCREENING = "screening"
+    INTERVIEWING = "interviewing"
+    OFFER_EXTENDED = "offer_extended"
+    HIRED = "hired"
+    REJECTED = "rejected"
+    WITHDRAWN = "withdrawn"
+
+
+class SavedCandidates(BaseModel):
+    """Pydantic model for SavedCandidates"""
+    model_config = ConfigDict(from_attributes=True)
+
+    saved_id: Optional[str] = None
+    candidate_uid: str
+    company_id: str
+    saved_by: str
+    interest_level: InterestLevel = InterestLevel.INTERESTED
+    status: CandidateStatus = CandidateStatus.SAVED
+    notes: Optional[str] = None
+    internal_notes: Optional[str] = None
+    tags: Optional[List[str]] = None
+    last_contacted_at: Optional[datetime] = None
+    contact_count: int = 0
+    saved_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    @field_validator('tags', mode='before')
+    @classmethod
+    def validate_tags(cls, v):
+        if v is not None and not isinstance(v, list):
+            raise ValueError('Tags must be a list of strings')
+        return v

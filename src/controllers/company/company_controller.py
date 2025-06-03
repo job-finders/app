@@ -70,7 +70,14 @@ class CompanyController(Controllers):
         :return:
         """
         with self.get_session() as session:
-            company_orm = session.query(CompanyORM).filter_by(uid=uid).first()
+            employer_orm = session.query(EmployerORM).filter_by(user_uid=uid).first()
+            if not employer_orm:
+                self.logger.info("Unable to locate Employer ORM Model for UID : {uid}")
+
+                return None
+
+            company_id = employer_orm.company_id
+            company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
             if not company_orm:
                 return None
             return Company(**company_orm.to_dict())
@@ -85,13 +92,16 @@ class CompanyController(Controllers):
             if session.query(EmployerORM).filter_by(user_uid=employer_data.user_uid).first():
                 raise ValueError("Employer profile exists for this user")
                 
+
             employer_orm = EmployerORM(**employer_data.model_dump())
-            session.add(employer_orm)
+            if employer_orm:
+                self.logger.info(f"Creating Employer ORM : {employer_orm.to_dict()}")
+                session.add(employer_orm)
 
             return Employer(**employer_orm.to_dict())
 
     @error_handler
-    async def get_company_by_id(self, company_id: str) -> Company:
+    async def get_company_by_id(self, company_id: str) -> Optional[Company]:
         """
         Return a company complete with its job listings
         :param company_id: UUID of the company to retrieve
@@ -102,13 +112,14 @@ class CompanyController(Controllers):
             company_orm: CompanyORM = (
                 session.query(CompanyORM)
                 .options(joinedload(CompanyORM.jobs))
-                .filter_by(id=company_id)
+                .filter(company_id==company_id)
                 .first()
             )
 
             if not company_orm:
-                raise ValueError(f"Company with ID {company_id} not found")
-
+                self.logger.info(f"Unable to Obtain Company Data with ID : {company_id}")
+                return None
+            self.logger.info(f"Obtained Company Data with this ID : {company_id}")
             # Convert ORM to Pydantic model
             return Company(**company_orm.to_dict())
 

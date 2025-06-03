@@ -203,6 +203,7 @@ async def upload_picture(user: User):
 @login_required
 async def list_profiles_by_role(user: User, role: str):
     profiles = await job_seeker_profile_controller.list_profiles_by_role(role)
+
     context = dict(profiles=profiles, current_user=user, role=role)
     return render_template("jobseekers/profiles/list.html", profiles=profiles, role=role)
 
@@ -210,6 +211,6 @@ async def list_profiles_by_role(user: User, role: str):
 @jobseeker_profiles_bp.route('/activity/metrics')
 @login_required
 async def get_activity_metrics(user: User):
-    return await controller.track_job_search_activity(user.user_id)
+    return await job_seeker_profile_controller.track_job_search_activity(user.user_id)
 
 

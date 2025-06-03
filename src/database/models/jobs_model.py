@@ -235,6 +235,10 @@ class Job(BaseModel):
     summary: Optional[str] = Field(default=None, description="Short summary for job listing")
     seo_description: Optional[str] = Field(default=None, description="SEO description for job post")
 
+    applications: list['JobApplication'] = Field(default_factory=list)
+    saved_jobs: list['SavedJob'] = Field(default_factory=list)
+    category: JobCategory = Field(default={})
+
     @computed_field
     @property
     def salary(self) -> str:
@@ -247,6 +251,11 @@ class Job(BaseModel):
             return f"{self.salary_currency} up to {self.salary_max}"
         else:
             return "Salary not specified"
+
+    @computed_field
+    @property
+    def total_applications(self) -> int:
+        return len(self.applications)
 
     # Computed Properties
     @computed_field
@@ -357,7 +366,11 @@ class Job(BaseModel):
             'company_id': company_id,
             'posted_at': utc_time(),
             'created_at': utc_time(),
-            'updated_at': utc_time()
+            'updated_at': utc_time(),
+            'applications': [],
+            'saved_hobs': [],
+
+
         }
 
         # Add any additional fields passed via kwargs
@@ -387,6 +400,9 @@ class Job(BaseModel):
 
 
 class SavedJob(BaseModel):
+    """
+        Candidates will follow specific jobs using this Model.
+    """
     saved_job_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     job_id: str
@@ -417,10 +433,10 @@ class JobApplication(BaseModel):
     application_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     job_id: str
-    job: Optional[Job] = Field(None)  # Relationship to Job model
+    job: Optional[Job] = Field(None)  # Relationship to JobModel
     cv_id: Optional[str] = None
 
-    applied_date: datetime = Field(default_factory=lambda : utc_time())
+    applied_date: datetime = Field(default_factory=utc_time)
     updated_at: Optional[datetime] = Field(default=None)  # Changed from date to datetime
 
     cover_letter: Optional[str] = None
@@ -438,6 +454,10 @@ class JobApplication(BaseModel):
     validation_score: int = Field(default=0)
     missing_requirements: list[str] = Field(default_factory=list)
     review_summary: Optional[str] = Field(default=None)
+
+    def is_recent_application(self):
+        recent_cut_off_date = utc_time() - timedelta(days=7)
+        return self.applied_date > recent_cut_off_date
 
     class Config:
         from_attributes = True

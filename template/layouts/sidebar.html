@@ -2,110 +2,118 @@
     <div class="nano">
         <div class="nano-content">
             <ul>
-                <div class="logo">
+                <!-- Logo -->
+                <li class="logo">
                     <a href="{{ url_for('home.get_home') }}">
-                        <img src="{{ url_for('static', filename="images/jobfinder.jpg") }}" width="45" height="45" alt="Job Finder Logo">
-                        <span> Job Finders</span>
+                        <img src="{{ url_for('static', filename='images/jobfinder.jpg') }}"
+                             width="45" height="45" alt="Job Finder Logo">
+                        <span>Job Finders</span>
                     </a>
-                </div>
+                </li>
 
                 <li class="label">Main Navigation</li>
 
-                <li><a href="{{ url_for('home.get_home') }}"><i class="ti-home"></i> Home</a></li>
+                <!-- Home -->
+                <li>
+                    <a href="{{ url_for('home.get_home') }}">
+                        <i class="ti-home"></i> Home
+                    </a>
+                </li>
 
-                {# Section for Job Seekers #}
+                <!-- Job Seekers -->
                 <li>
                     <a class="sidebar-sub-toggle">
-                        <i class="ti-briefcase"></i>Job Seekers <span class="sidebar-collapse-icon ti-angle-down"></span>
+                        <i class="ti-briefcase"></i> Job Seekers
+                        <span class="sidebar-collapse-icon ti-angle-down"></span>
                     </a>
                     <ul>
                         <li><a href="{{ url_for('jobs.list_jobs') }}"><i class="ti-search"></i> Browse Jobs</a></li>
                         <li><a href="{{ url_for('jobs.search_jobs') }}"><i class="ti-zoom-in"></i> Search Jobs</a></li>
                         <li><a href="{{ url_for('jobs.job_categories') }}"><i class="ti-menu"></i> Job Categories</a></li>
                         <li><a href="{{ url_for('company_search.list_companies') }}"><i class="ti-search"></i> Browse Companies</a></li>
-                        {# Potentially add more job seeker specific links here, e.g., "Upload Resume" if applicable and public #}
                     </ul>
                 </li>
 
-                {# Section for Companies (Employers) #}
+                <!-- Companies -->
                 <li>
                     <a class="sidebar-sub-toggle">
-                        <i class="ti-crown"></i> Companies <span class="sidebar-collapse-icon ti-angle-down"></span>
+                        <i class="ti-crown"></i> Companies
+                        <span class="sidebar-collapse-icon ti-angle-down"></span>
                     </a>
                     <ul>
-                        
-                        <li><a href="{{ url_for('company.manage_jobs') }}"><i class="ti-pencil-alt"></i> Post a Job</a></li> {# Assuming this route #}
+                        <li><a href="{{ url_for('company.manage_jobs') }}"><i class="ti-pencil-alt"></i> Post a Job</a></li>
                         <li><a href="{{ url_for('company_search.list_companies') }}"><i class="ti-search"></i> Browse Companies</a></li>
-                        {# Potentially add more company specific links here, e.g., "Employer Dashboard Login" #}
                     </ul>
                 </li>
 
-                {# General Resources and Information #}
+                <!-- Resources -->
                 <li>
                     <a class="sidebar-sub-toggle">
-                        <i class="ti-folder"></i> Resources <span class="sidebar-collapse-icon ti-angle-down"></span>
+                        <i class="ti-folder"></i> Resources
+                        <span class="sidebar-collapse-icon ti-angle-down"></span>
                     </a>
                     <ul>
-                        <li> <a href="{{ url_for('blog.get_blog', topic='index') }}">
-                            <i class="ti-file"> </i> Articles</a>
-                        </li>
-                        <li> <a href="{{ url_for("home.contact") }}">
-                            <i class="ti-email"> </i> Contact Us</a>
-                        </li>
-                        <li> <a href="{{ url_for("home.about") }}">
-                            <i class="ti-info"> </i> About Us</a>
-                        </li>
-                        {# Add other general resources like FAQs, Terms, Privacy, etc. #}
-                        <label class="label">Legal</label>
-                        <li> <a href="{{ url_for("home.terms") }}">
-                            <i class="ti-agenda"> </i> Terms of Service</a>
-                        </li>
-                        <li> <a href="{{ url_for("home.privacy") }}">
-                            <i class="ti-lock"> </i> Privacy Policy</a>
-                        </li>
-                        <li> <a href="{{ url_for("home.faq") }}">
-                            <i class="ti-help"> </i> FAQ</a>
-                        </li>
-                        
-                        <label class="label">Social Media</label>
-                        <li>
-                            <a href="https://www.facebook.com/JobFinder" target="_blank"><i class="ti-facebook"></i> Facebook</a>
-                        </li>
-                        <li>
-                            <a href="https://www.twitter.com/JobFinder" target="_blank"><i class="ti-twitter"></i> Twitter</a>
-                        </li>
-                        <li>
-                            <a href="https://www.linkedin.com/company/jobfinder" target="_blank"><i class="ti-linkedin"></i> LinkedIn</a>
-                        </li>
-                        <li>
-                            <a href="https://www.youtube.com/JobFinder" target="_blank"><i class="ti-youtube"></i> YouTube</a>
-                        </li>
+                        <li><a href="{{ url_for('blog.get_blog', topic='index') }}"><i class="ti-file"></i> Articles</a></li>
+                        <li><a href="{{ url_for('home.faq') }}"><i class="ti-help"></i> FAQ</a></li>
+                        <li><a href="{{ url_for('home.documentation') }}"><i class="ti-files"></i> Documentations</a></li>
+                        <li><a href="{{ url_for('home.contact') }}"><i class="ti-email"></i> Contact Us</a></li>
+                        <li><a href="{{ url_for('home.about') }}"><i class="ti-info"></i> About Us</a></li>
                     </ul>
                 </li>
-                <!-- New Account Section -->
-                <li class="label">Account</li>
+
+                <!-- Legal -->
+                <li>
+                    <a class="sidebar-sub-toggle">
+                        <i class="ti-folder"></i> Legal
+                        <span class="sidebar-collapse-icon ti-angle-down"></span>
+                    </a>
+                    <ul>
+                        <li><a href="{{ url_for('home.terms') }}"><i class="ti-agenda"></i> Terms of Service</a></li>
+                        <li><a href="{{ url_for('home.privacy') }}"><i class="ti-lock"></i> Privacy Policy</a></li>
+                    </ul>
+                </li>
+
+                <!-- Social Media -->
+                <li>
+                    <a class="sidebar-sub-toggle">
+                        <i class="ti-folder"></i> Social Media
+                        <span class="sidebar-collapse-icon ti-angle-down"></span>
+                    </a>
+                    <ul>
+                        <li><a href="https://www.facebook.com/JobFinder" target="_blank"><i class="ti-facebook"></i> Facebook</a></li>
+                        <li><a href="https://www.twitter.com/JobFinder" target="_blank"><i class="ti-twitter"></i> Twitter</a></li>
+                        <li><a href="https://www.linkedin.com/company/jobfinder" target="_blank"><i class="ti-linkedin"></i> LinkedIn</a></li>
+                        <li><a href="https://www.youtube.com/JobFinder" target="_blank"><i class="ti-youtube"></i> YouTube</a></li>
+                    </ul>
+                </li>
+
+                <!-- Account Section -->
+                <li class="label"><hr></li>
+
                 {% if current_user %}
-                    <!-- Authenticated links -->
-                    <li>
-                        <a class="sidebar-sub-toggle">
-                            <i class="ti-user"></i> My Account <span class="sidebar-collapse-icon ti-angle-down"></span>
-                        </a>
-                        <ul>
-                            <li><a href="{{ url_for('auth.logout') }}"><i class="ti-power-off"></i> Logout</a></li>
-                        </ul>
-                    </li>
-                {% else %}                                    
-                    <!-- Guest links -->
-                     <li>
-                        <a class="sidebar-sub-toggle">
-                            <i class="ti-user"></i> Account <span class="sidebar-collapse-icon ti-angle-down"></span>
-                        </a>
-                        <ul>
-                            <li><a href="{{ url_for('auth.login') }}"><i class="ti-lock"></i> Login</a></li>
-                            <li><a href="{{ url_for('auth.register') }}"><i class="ti-pencil-alt"></i> Register</a></li>
-                        </ul>
-                     </li>
-                {% endif %}                
+                <!-- Authenticated User -->
+                <li>
+                    <a class="sidebar-sub-toggle">
+                        <i class="ti-user"></i> My Account
+                        <span class="sidebar-collapse-icon ti-angle-down"></span>
+                    </a>
+                    <ul>
+                        <li><a href="{{ url_for('auth.logout') }}"><i class="ti-power-off"></i> Logout</a></li>
+                    </ul>
+                </li>
+                {% else %}
+                <!-- Guest User -->
+                <li>
+                    <a class="sidebar-sub-toggle">
+                        <i class="ti-user"></i> Account
+                        <span class="sidebar-collapse-icon ti-angle-down"></span>
+                    </a>
+                    <ul>
+                        <li><a href="{{ url_for('auth.login') }}"><i class="ti-lock"></i> Login</a></li>
+                        <li><a href="{{ url_for('auth.subscribe') }}"><i class="ti-pencil-alt"></i> Register</a></li>
+                    </ul>
+                </li>
+                {% endif %}
             </ul>
         </div>
     </div>

@@ -58,10 +58,24 @@ async def create_company_profile(user: User):
         logger.error(f"Company validation error: {str(e)}")
         flash("Invalid company data. Please check all fields.", "danger")
         return redirect(url_for('company.create_company_profile'))
-
     try:
         # Attempt company creation through controller
         created_company: Company = await company_controller.create_company(company_data=company_data)
+        if not created_company:
+            flash(message="Unable to create Company - Maybe a Duplicate Company", category="danger")
+            return redirect(url_for('company.create_company_profile'))
+
+        initial_employer_profile = Employer(
+            user_uid=user.uid,
+            company_id=created_company.company_id)
+
+        create_employer_profile: Employer = await company_controller.register_employer(
+            employer_data=initial_employer_profile)
+
+        if not create_employer_profile:
+            flash(message="Unable to create Employer Profile - Maybe a Duplicate Company", category="danger")
+            return redirect(url_for('company.create_company_profile'))
+
     except ValueError as e:
         logger.error(f"Company creation conflict: {str(e)}")
         flash(str(e), "danger")
@@ -70,7 +84,7 @@ async def create_company_profile(user: User):
                             current_user=user,
                             form_data=request.form)
 
-    if not created_company:
+    if not (created_company and create_employer_profile):
         logger.error(f'Error creating company using company data : {company_data}')
         flash(message="there was an problem creating your company please try again", category="danger")
         return redirect(url_for("company.view_company"))
@@ -89,8 +103,60 @@ async def update_company_profile(user: User):
 
 @company_bp.route("/update-employer", methods=["GET", "POST"])
 @login_required
-async def update_employer_profile():
-    pass
+async def update_employer_profile(user: User):
+    if user.role != "employer":
+        flash("Access denied: Only employers can update this profile.", "danger")
+        return redirect(url_for("company.employer_profile"))
+
+    employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+    if not employer_profile:
+        flash("Please create your employer profile before updating.", "danger")
+        return redirect(url_for("company.employer_profile"))
+
+    company_data: Company = await company_controller.get_company_by_id(employer_profile.company_id)
+    if not company_data:
+        flash("Please create a company profile before updating employer details.", "danger")
+        return redirect(url_for("company.create_company_profile"))
+
+    if request.method == "POST":
+        form = request.form
+
+        # Update fields if present in the form
+        employer_profile.full_name = form.get("full_name") or employer_profile.full_name
+        employer_profile.job_title = form.get("job_title") or employer_profile.job_title
+        employer_profile.department = form.get("department") or employer_profile.department
+        employer_profile.bio = form.get("bio") or employer_profile.bio
+        employer_profile.company_email = form.get("company_email") or employer_profile.company_email
+        employer_profile.personal_email = form.get("personal_email") or employer_profile.personal_email
+        employer_profile.phone_number = form.get("phone_number") or employer_profile.phone_number
+        employer_profile.alternate_phone = form.get("alternate_phone") or employer_profile.alternate_phone
+        employer_profile.linkedin_url = form.get("linkedin_url") or employer_profile.linkedin_url
+        employer_profile.twitter_handle = form.get("twitter_handle") or employer_profile.twitter_handle
+        employer_profile.signature = form.get("signature") or employer_profile.signature
+
+        # Date field
+        hire_date = form.get("hire_date")
+        if hire_date:
+            try:
+                employer_profile.hire_date = datetime.strptime(hire_date, "%Y-%m-%d")
+            except ValueError:
+                flash("Invalid hire date format.", "warning")
+
+        # Checkbox for hiring authority
+        employer_profile.hiring_authority = "hiring_authority" in form
+
+        employer_profile.update_timestamp()
+        await company_controller.save_employer(employer_profile)
+
+        flash("Employer profile updated successfully.", "success")
+        return redirect(url_for("company.update_employer_profile"))
+
+    context = {
+        "current_user": user,
+        "employer_profile": employer_profile,
+        "company_data": company_data
+    }
+    return render_template("company/employer_profile.html", **context)
 
 
 @company_bp.route("/profile", methods=["GET"])
@@ -102,15 +168,17 @@ async def view_company(user: User):
         return redirect(url_for("company.employer_profile"))
 
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+
+
     if not _employer_profile:
         err = f"Please Create your Employer Profile"
-        logger.error(err)
+        logger.info("Unable to Retrieve Employer Profile from Database")
         flash(err, "danger")
         return redirect(url_for("company.employer_profile"))
-
+    logger.info(f"view_company : Retrieved Employer Profile : {_employer_profile}")
     company_data: Company = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
     if not company_data:
-        logger.error(f"Error looking up Company with Company ID: {_employer_profile.company_id}")
+        logger.info(f"Error looking up Company with Company ID: {_employer_profile.company_id}")
         flash(message="looks like you have not yet created a company associated with your employer profile, please create it", category='danger')
         return redirect(url_for('company.create_company_profile'))
     context = {
@@ -121,7 +189,7 @@ async def view_company(user: User):
     return render_template("company/view_company_profile.html", **context)
 
 
-@company_bp.route("/employer/profile", methods=["GET", "POST"])
+@company_bp.route("/employer/profile", methods=["GET"])
 @login_required
 async def employer_profile(user: User):
     """
@@ -129,55 +197,21 @@ async def employer_profile(user: User):
     :param user:
     :return:
     """
-
-    if request.method == "GET":
-        _employer_profile = await company_controller.get_employer_by_uid(user_id=user.uid)
-        company_data = {}
-        if _employer_profile and _employer_profile.company_id:
-            company_data = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
-        else:
-            flash(message="Please create your company profile before you can continue", category="success")
-            return redirect(url_for('company.create_company_profile'))
-
-        context = {
-            "current_user": user,
-            "employer_profile": _employer_profile,
-            "company_data": company_data,
-            "current_year": datetime.now().year  # Add this
-        }
-        return render_template("company/employer_profile.html", **context)
-
-    # Handle POST requests
-    form_data = request.form.to_dict()
-
-    # Get existing profiles
     _employer_profile = await company_controller.get_employer_by_uid(user_id=user.uid)
-
     company_data = {}
     if _employer_profile and _employer_profile.company_id:
-        company_data: Company = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
+        company_data = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
+    else:
+        flash(message="Please create your company profile before you can continue", category="success")
+        return redirect(url_for('company.create_company_profile'))
+    context = {
+        "current_user": user,
+        "employer_profile": _employer_profile,
+        "company_data": company_data,
+        "current_year": datetime.now().year  # Add this
+    }
+    return render_template("company/view_employer_profile.html", **context)
 
-    if not company_data:
-        # Handle company creation
-        return redirect('company.create_company_profile')
-
-    elif not _employer_profile:
-        # Handle employer creation
-        try:
-            # Add required fields
-            form_data['user_uid'] = user.uid
-            form_data['company_id'] = company_data.company_id
-            form_data['contact_email'] = user.email
-
-            employer = Employer(**form_data)
-            await company_controller.register_employer(employer)
-            flash("Employer profile created successfully", "success")
-
-        except ValidationError as e:
-            flash(f"Validation error: {str(e)}", "danger")
-            logger.error(str(e))
-
-    return redirect(url_for("company.employer_profile"))
 
 @company_bp.route("/jobs", methods=["GET", "POST"])
 @login_required
@@ -441,15 +475,14 @@ async def get_dashboard(user: User):
         flash(message="You need to create Employer Profile Before you can Access your Dashboard", category="success")
         return redirect(url_for('company.employer_profile'))
     # 2. Get company data
-    company = await company_controller.get_company_by_id(employer.company_id)
+    company: Company = await company_controller.get_company_by_id(employer.company_id)
     if not company:
         flash(message="Please Created Company Profile", category="success")
         return redirect(url_for('company.create_company_profile'))
 
     # 3. Fetch dashboard metrics
     metrics = {
-        'active_jobs': await company_controller.count_active_jobs(company.company_id),
-        'total_applications': await company_controller.count_applications(company.company_id),
+
         'saved_candidates': await company_controller.count_saved_candidates(employer.employer_id),
         'verification_status': company.verification_status
     }

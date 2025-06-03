@@ -27,7 +27,7 @@
     
     <div class="card jobs-summary">
       <h3>Active Jobs</h3>
-      <div class="count">{{ metrics.active_jobs }}</div>
+      <div class="count">{{ company.active_jobs }}</div>
       <a href="{{ url_for('company.manage_jobs') }}">View All</a>
     </div>
     
@@ -54,10 +54,15 @@
   <div class="recent-activity">
     <h2>Recent Activity</h2>
     <div class="activity-list">
-      {% for app in recent_activity.new_applications %}
+      {% for app in company.recent_applications %}
         <div class="activity-item">
           <span class="icon">📄</span>
-          New application for {{ app.job_title }}
+            Job Title: {{ app.job.title }} -
+            Date Applied {{ app.applied_date }} -
+            Candidate Name {{ app.jobseeker_profile.first_name }}
+            <a href="#">
+                Review Application
+            </a>
         </div>
       {% endfor %}
       {% for candidate in recent_activity.saved_candidates %}

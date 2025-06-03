@@ -259,20 +259,18 @@ class JobsORM(Base):
     def generate_slug(self):
         return f"{self.title.lower().replace(' ', '-')}-{self.job_ref}"
 
-    def to_dict(self) -> dict:
+    def to_dict(self, include_relationship=False) -> dict:
         return {
             "job_id": self.job_id,
             "job_ref": self.job_ref,
             "slug": self.slug,
             "external_source": self.external_source,
             "company_id": self.company_id,
-            "company": self.company.to_dict() if self.company else None,  # assumes CompanyORM has to_dict
             "title": self.title,
             "description": self.description,
             "summary": self.summary,
             "seo_description": self.seo_description,
             "category_id": self.category_id,
-            "category": self.category.to_dict(include_jobs=False) if self.category else {},
             "position_type": self.position_type,
             "remote_policy": self.remote_policy,
             "salary_min": self.salary_min,
@@ -301,8 +299,12 @@ class JobsORM(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "location": self.location,
-            "is_active": self.is_active
+            "is_active": self.is_active,
 
+            "category": self.category.to_dict(include_jobs=False) if self.category and include_relationship else {},
+            "company": self.company.to_dict() if self.company and include_relationship else {},
+            "applications": [application.to_dict() for application in self.applications] if include_relationship else [],
+            "saved_jobs": [_job.to_dict for _job in self.saved_jobs] if include_relationship else []
         }
 
 def generate_slug(job):
@@ -362,12 +364,12 @@ class SavedJobORM(Base):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self, include_relationship=False) -> dict[str, str]:
         return {
             "saved_job_id" : self.saved_job_id,
             "user_id": self.user_id,
             "job_id": self.job_id,
-            "job": self.job.to_dict() if self.job else None,
+            "job": self.job.to_dict() if self.job and include_relationship else None,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
 
@@ -375,13 +377,13 @@ class JobApplicationORM(Base):
     __tablename__ = 'job_applications'
 
     application_id = Column(String(ID_LEN), primary_key=True, index=True)
-    user_id = Column(String(ID_LEN), index=True)
+    user_id = Column(String(ID_LEN),ForeignKey('jobseeker_profiles.user_uid'), index=True)
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)  # Added ForeignKey
     cv_id = Column(String(ID_LEN), index=True)
 
     # Relationship to Job
     job = relationship("JobsORM", back_populates="applications")  # New relationship
-
+    jobseeker_profile = relationship("JobSeekerProfileORM", back_populates="applications")
     # Rest of the existing columns...
     applied_date = Column(DateTime(timezone=True), default=utc_time)
     updated_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
@@ -404,7 +406,7 @@ class JobApplicationORM(Base):
     missing_requirements = Column(JSON)
     review_summary = Column(Text)
 
-    def to_dict(self) -> dict:
+    def to_dict(self, include_relationship=False) -> dict:
         return {
             "application_id": self.application_id,
             "user_id": self.user_id,
@@ -425,7 +427,8 @@ class JobApplicationORM(Base):
             "application_stage": self.application_stage,
             "validation_score": self.validation_score,
             "missing_requirements": self.missing_requirements,
-            "review_summary": self.review_summary
+            "review_summary": self.review_summary,
+            "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationship else {}
         }
 
     # Rest of the existing methods...
@@ -540,7 +543,7 @@ class JobApprovalRequestORM(Base):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-    def to_dict(self) -> dict:
+    def to_dict(self, include_relationship=False) -> dict:
         return {
             "request_id": self.request_id,
             "job_id": self.job_id,
@@ -553,6 +556,7 @@ class JobApprovalRequestORM(Base):
             "decision_at": self.decision_at.isoformat() if self.decision_at else None,
             "decision_by": self.decision_by,
             "feedback": self.feedback,
+            "job": self.job.to_dict() if include_relationship and self.job else {}
         }
 
 

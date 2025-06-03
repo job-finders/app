@@ -1,6 +1,10 @@
 {% extends "company/layout/page.html" %}
 
-{% block title %}{% if not company_data %}Create Company Profile{% elif not employer_profile %}Create Employer Profile{% else %}Employer Profile{% endif %}{% endblock %}
+{% block title %}
+    {% if not company_data %}Create Company Profile
+    {% elif not employer_profile %}Create Employer Profile
+    {% else %}Employer Profile{% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -9,119 +13,113 @@
             <div class="card shadow-sm mt-4">
                 <div class="card-body">
                     <h1 class="card-title h2 mb-4">
-                        {% if not employer_profile %}
-                            <i class="bi bi-person-badge me-2"></i>Create Employer Profile
-                        {% else %}
-                            <i class="bi bi-person-badge me-2"></i>Employer Profile
-                        {% endif %}
+                        <i class="bi bi-person-badge me-2"></i>Update Employer Profile
                     </h1>
 
-                    {% if not employer_profile %}
-                        <!-- Employer Creation Form -->
-                        <form method="POST" action="{{ url_for('company.employer_profile') }}">
-                            <input type="hidden" name="form_type" value="employer">
-                            <div class="mb-4">
-                                <p class="lead">
-                                    You're creating your employer profile </strong>.
-                                    Please provide your professional details below.
-                                </p>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <h3 class="h5 mb-3">Professional Information</h3>
+                    <form method="POST" action="{{ url_for('company.update_employer_profile') }}">
+                        <input type="hidden" name="form_type" value="employer">
 
-                                        <div class="mb-3">
-                                            <label for="industry" class="form-label">Industry *</label>
-                                            <input type="text" class="form-control" id="industry" name="industry" required minlength="2" maxlength="255" value="General">
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label for="contact_email" class="form-label">Contact Email *</label>
-                                            <input type="email" class="form-control" id="contact_email" name="contact_email" required value="{{ current_user.email }}">
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label for="website" class="form-label">Personal Website</label>
-                                            <input type="url" class="form-control" id="website" name="website" placeholder="https://your-website.com">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <h3 class="h5 mb-3">Contact Details</h3>
-
-                                        <div class="mb-3">
-                                            <label for="phone" class="form-label">Phone</label>
-                                            <input type="tel" class="form-control" id="phone" name="phone" maxlength="20" placeholder="+27XXXXXXXXX">
-                                            <div class="form-text">South African format: +27XXXXXXXXX</div>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label for="location" class="form-label">Location *</label>
-                                            <input type="text" class="form-control" id="location" name="location" required minlength="2" maxlength="255">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="d-flex justify-content-end mt-4">
-                                <button type="submit" class="btn btn-primary px-4 py-2">
-                                    <i class="bi bi-person-badge me-1"></i> Create Employer Profile
-                                </button>
-                            </div>
-                        </form>
-
-                    {% else %}
-                        <!-- Existing Profile Display -->
                         <div class="row">
+                            <!-- Left Column -->
                             <div class="col-md-6">
-                                <div class="mb-4">
-                                    <h3 class="h5 mb-3">Employer Details</h3>
-                                    <div class="card border-0">
-                                        <div class="card-body">
-                                            <p class="card-text"><strong>Industry:</strong> {{ employer_profile.industry or 'Not Provided' }}</p>
-                                            <p class="card-text"><strong>Email:</strong>
-                                                {% if employer_profile.contact_email %}
-                                                    <a href="mailto:{{ employer_profile.contact_email }}" class="text-decoration-none">
-                                                        {{ employer_profile.contact_email }}
-                                                    </a>
-                                                {% else %}
-                                                    Not Provided
-                                                {% endif %}
-                                            </p>
-                                            <p class="card-text"><strong>Phone:</strong>
-                                                {% if employer_profile.phone %}
-                                                    {{ employer_profile.phone }}
-                                                {% else %}
-                                                    Not Provided
-                                                {% endif %}
-                                            </p>
-                                            <p class="card-text"><strong>Location:</strong> {{ employer_profile.location or 'Not Provided' }}</p>
-                                            <p class="card-text"><strong>Verified:</strong>
-                                                {% if employer_profile.is_verified %}
-                                                    <span class="badge bg-success">Yes</span>
-                                                {% else %}
-                                                    <span class="badge bg-danger">No</span>
-                                                {% endif %}
-                                            </p>
-                                            {% if employer_profile.created_at %}
-                                                <p class="card-text"><strong>Joined:</strong> {{ employer_profile.created_at.strftime('%d %b %Y') }}</p>
-                                            {% endif %}
-                                        </div>
-                                    </div>
+                                <h3 class="h5 mb-3">Professional Information</h3>
+
+                                <div class="mb-3">
+                                    <label for="full_name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name"
+                                           maxlength="100" value="{{ employer_profile.full_name or '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="job_title" class="form-label">Job Title</label>
+                                    <input type="text" class="form-control" id="job_title" name="job_title"
+                                           maxlength="100" value="{{ employer_profile.job_title or '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="department" class="form-label">Department</label>
+                                    <input type="text" class="form-control" id="department" name="department"
+                                           maxlength="100" value="{{ employer_profile.department or '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="hire_date" class="form-label">Hire Date</label>
+                                    <input type="date" class="form-control" id="hire_date" name="hire_date"
+                                           value="{{ employer_profile.hire_date.strftime('%Y-%m-%d') if employer_profile.hire_date else '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="bio" class="form-label">Bio</label>
+                                    <textarea class="form-control" id="bio" name="bio"
+                                              rows="3">{{ employer_profile.bio or '' }}</textarea>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" value="true"
+                                           id="hiring_authority" name="hiring_authority"
+                                           {% if employer_profile.hiring_authority %}checked{% endif %}>
+                                    <label class="form-check-label" for="hiring_authority">
+                                        I have hiring authority
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Right Column -->
+                            <div class="col-md-6">
+                                <h3 class="h5 mb-3">Contact & Social</h3>
+
+                                <div class="mb-3">
+                                    <label for="company_email" class="form-label">Company Email</label>
+                                    <input type="email" class="form-control" id="company_email" name="company_email"
+                                           value="{{ employer_profile.company_email or current_user.email }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="personal_email" class="form-label">Personal Email</label>
+                                    <input type="email" class="form-control" id="personal_email" name="personal_email"
+                                           value="{{ employer_profile.personal_email or '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="phone_number" class="form-label">Phone</label>
+                                    <input type="tel" class="form-control" id="phone_number" name="phone_number"
+                                           maxlength="20" placeholder="+27XXXXXXXXX"
+                                           value="{{ employer_profile.phone_number or '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="alternate_phone" class="form-label">Alternate Phone</label>
+                                    <input type="tel" class="form-control" id="alternate_phone" name="alternate_phone"
+                                           maxlength="20" value="{{ employer_profile.alternate_phone or '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="linkedin_url" class="form-label">LinkedIn</label>
+                                    <input type="url" class="form-control" id="linkedin_url" name="linkedin_url"
+                                           value="{{ employer_profile.linkedin_url or '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="twitter_handle" class="form-label">Twitter Handle</label>
+                                    <input type="text" class="form-control" id="twitter_handle" name="twitter_handle"
+                                           maxlength="50" value="{{ employer_profile.twitter_handle or '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="signature" class="form-label">Email Signature</label>
+                                    <input type="text" class="form-control" id="signature" name="signature"
+                                           maxlength="255" value="{{ employer_profile.signature or '' }}">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Edit Buttons -->
-                        <div class="d-flex flex-wrap gap-2 mt-4">
-                            <a href="{{ url_for('company.update_employer_profile') }}"
-                               class="btn btn-secondary px-3 py-2">
-                               <i class="bi bi-pencil me-1"></i> Edit Employer
-                            </a>
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn btn-primary px-4 py-2">
+                                <i class="bi bi-save me-2"></i> Save Profile
+                            </button>
                         </div>
-                    {% endif %}
+                    </form>
+
                 </div>
             </div>
         </div>

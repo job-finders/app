@@ -3,6 +3,7 @@ from datetime import datetime
 
 from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect, Integer, JSON
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import relationship
 
 from src.database.constants import ID_LEN, NAME_LEN, utc_time
 from src.database.sql import Base, engine  # Assuming this is your declarative base
@@ -48,6 +49,10 @@ class JobSeekerProfileORM(Base):
     visibility = Column(Boolean, default=True)
     profile_completion = Column(String(NAME_LEN), default="0")  # or Integer if more appropriate
     last_updated = Column(DateTime, default=utc_time)
+    # Relationships
+    applications = relationship("JobApplicationORM", back_populates="jobseeker_profile")
+
+    interested_companies = relationship("SavedCandidatesORM", back_populates="candidate")
 
     @classmethod
     def create_if_not_table(cls):
@@ -61,7 +66,7 @@ class JobSeekerProfileORM(Base):
             cls.__table__.drop(bind=engine)
 
 
-    def to_dict(self):
+    def to_dict(self, include_relationship=False):
         return {
             "user_uid": self.user_uid,
 
@@ -94,4 +99,5 @@ class JobSeekerProfileORM(Base):
             "visibility": self.visibility,
             "profile_completion": int(self.profile_completion),
             "last_updated": self.last_updated,
+            "applications": [application.to_dict() for application in self.applications] if include_relationship else []
         }

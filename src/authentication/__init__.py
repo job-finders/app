@@ -20,7 +20,8 @@ async def get_user_details(uid: str) -> User:
     with Session() as session:
         # Perform the query to retrieve the user based on the uid
         user = session.query(UserORM).filter(UserORM.uid == uid).first()
-        auth_logger.info(f"Is the Authenticator able to get user details : {user.to_dict()}")
+
+        auth_logger.info(f"Is the Authenticator able to get user details : {user.to_dict() if user else None}")
         return User(**user.to_dict()) if user else None
 
 
@@ -105,6 +106,7 @@ def user_details(route_function):
         uid = request.cookies.get('auth')
         auth_logger.info(f"Found UID Cookie: {uid}")
         user: User | None = await get_user_details(uid=uid) if uid else None
+
         return await route_function(user, *args, **kwargs)
 
     return decorated_function

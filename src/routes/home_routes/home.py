@@ -74,6 +74,26 @@ async def terms(user: User):
     context = dict(current_user=user, seo=seo, term='Privacy Policy | Terms & Conditions')
     return render_template('terms.html', **context)
 
+@home_route.get('/privacy')
+@flask_error_handler
+@user_details
+async def privacy(user: User):
+    """Render the terms page."""
+    seo = await create_tags(search_term="terms")
+    context = dict(current_user=user, seo=seo, term='Privacy Policy | Terms & Conditions')
+    # TODO - include separate privacy statement
+    return render_template('terms.html', **context)
+
+@home_route.get('/documentation')
+@flask_error_handler
+@user_details
+async def documentation(user: User):
+    """Render the terms page."""
+    seo = await create_tags(search_term="terms")
+    context = dict(current_user=user, seo=seo, term='Privacy Policy | Terms & Conditions')
+    # TODO - include separate privacy statement
+    return render_template('documentation.html', **context)
+
 
 @home_route.get('/sister-sites')
 @flask_error_handler
