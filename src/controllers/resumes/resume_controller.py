@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta, UTC, timezone
 from flask import Flask, url_for
+from sqlalchemy.orm import joinedload
+
 from src.database.sql.users import UserORM
-from src.main import send_mail
+
 from src.emailer import EmailModel, settings
 from src.database.sql.resume import (JobSeekerCVORM, ExperienceORM, EducationORM, CertificationORM, LanguageORM,
                                      ProjectORM, PublicationORM, AwardORM, CustomSectionORM, SavedCVORM)
@@ -9,7 +11,7 @@ from src.database.models.resume import (Experience, Education, Certification, La
                                         Award, CustomSection, JobSeekerCV, SavedCV)
 from src.controllers.controller import Controllers, error_handler
 import uuid
-
+from src.utils.route_helpers import get_service
 
 class ResumeController(Controllers):
     def __init__(self):
@@ -272,7 +274,7 @@ class ResumeController(Controllers):
                 html_=html_content
             )
 
-            await send_mail.send_mail_resend(email=email)
+            await get_service('send_mail').send_mail_resend(email=email)
             return True  # Return True to indicate email was sent successfully
 
     @error_handler

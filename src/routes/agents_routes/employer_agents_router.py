@@ -8,7 +8,7 @@ from src.agents.employer import EnhanceJobPostOutput
 from src.authentication import login_required
 from src.database.models.users import User
 from src.logger import init_logger
-from src.main import employer_agents_controller, company_controller
+from src.utils.route_helpers import get_controller
 
 employer_agents_route = Blueprint('employer_agents', __name__, url_prefix='/agents/employer/v1')
 agents_logger = init_logger("agents_tool")
@@ -28,6 +28,9 @@ async def enhance_job_post(user: User):
     :param user:
     :return:
     """
+    employer_agents_controller = get_controller('employer_agents')
+    company_controller = get_controller('company')
+
     try:
         raw_data = request.get_json()
         result: EnhanceJobPostOutput = await employer_agents_controller.enhance_job_post(
@@ -58,6 +61,7 @@ async def analyze_job_post(user: User, job_id: str):
     :param job_id:
     :return:
     """
+    employer_agents_controller = get_controller('employer_agents')
     try:
         # Call the agent directly through the controller
         result: JobPostInsights = await employer_agents_controller.analyze_job_post(

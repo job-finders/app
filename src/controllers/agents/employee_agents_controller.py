@@ -12,8 +12,7 @@ from src.database.models import Job
 from src.database.models.resume import JobSeekerCV
 from src.database.models.users import User
 from src.logger import init_logger
-from src.main import job_search_controller, users_controller, resume_controller
-
+from src.utils.route_helpers import get_controller
 
 class EmployeeAgentsController(Controllers):
     def __init__(self):
@@ -43,6 +42,10 @@ class EmployeeAgentsController(Controllers):
 
         """
         self.logger.info(f"Analyzing job match for user: {user_id}, job: {job_id}")
+        users_controller = get_controller('users')
+        job_search_controller = get_controller('jobs_search')
+        resume_controller = get_controller('resume')
+
         user: User = await users_controller.get_user_by_uid(uid=user_id)
         job: Job = await job_search_controller.get_job_by_id(job_id=job_id)
         if cv_id is None:
@@ -87,6 +90,9 @@ class EmployeeAgentsController(Controllers):
             CoverLetterOutput with generated cover letter sections
         """
         self.logger.info(f"Generating cover letter for user: {user_id}, job: {job_id}")
+        users_controller = get_controller('users')
+        job_search_controller = get_controller('jobs_search')
+        resume_controller = get_controller('resume')
 
         user: User = await users_controller.get_user_by_uid(uid=user_id)
         job: Job = await job_search_controller.get_job_by_id(job_id=job_id)

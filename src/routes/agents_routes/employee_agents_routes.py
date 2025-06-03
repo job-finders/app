@@ -1,8 +1,9 @@
 # routes/employee_agents.py
 from flask import Blueprint, request, jsonify
+
 from src.authentication import login_required
 from src.database.models.users import User
-from src.main import employee_agents_controller
+from src.utils.route_helpers import get_controller
 
 employee_agents_route = Blueprint('employee_agents', __name__, url_prefix='/agents/employee/v1')
 
@@ -16,12 +17,14 @@ async def analyze_job_match(user: User, job_id: str):
     :param job_id:
     :return:
     """
+    employee_agents_controller = get_controller('employee_agents')
     try:
         # Get optional cover letter from request body
         data = request.get_json()
         cover_letter = data.get("cover_letter") if data else None
         cv_id = data.get('cv_id') if data else None
         # Call controller
+
         result = await employee_agents_controller.analyze_job_match(
             user_id=user.id,
             job_id=job_id,
@@ -42,6 +45,8 @@ async def analyze_job_match(user: User, job_id: str):
 @employee_agents_route.route("/jobs/<string:job_id>/cover-letter", methods=["POST"])
 @login_required
 async def generate_cover_letter(user: User, job_id: str):
+
+    employee_agents_controller = get_controller('employee_agents')
     try:
         # Get optional tone from request body
         data = request.get_json()

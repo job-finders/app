@@ -4,7 +4,7 @@ from src.logger import init_logger
 from src.authentication import login_required, user_details
 from src.database.models.users import User
 from src.database.models import Role
-from src.main import users_controller
+from src.utils.route_helpers import get_controller
 
 auth_route = Blueprint("auth", __name__, template_folder="templates")
 auth_logger = init_logger('auth_logger')
@@ -34,6 +34,7 @@ async def login(user: User):
         thirty_days = 30 * 24 * 60  # 30 days × 24 hours × 60 minutes
 
         remember_me_delay = thirty_days if remember_me else thirty_minutes
+        users_controller = get_controller('users')
         user = await users_controller.login_user(email=email, password=password)
         if not user:
             flash("Invalid email or password", "danger")
@@ -42,7 +43,6 @@ async def login(user: User):
             response = await create_response(url_for('company.get_dashboard'))
         else:
             response = await create_response(url_for('jobseekers.dashboard'))
-
 
         expiration = datetime.utcnow() + timedelta(minutes=remember_me_delay)
         response.set_cookie('auth', value=user.uid, expires=expiration, httponly=True)
@@ -85,6 +85,7 @@ async def subscribe():
         flash("Please enter a valid email and password.", "danger")
         return redirect(request.referrer or url_for("home.get_home"))
 
+    users_controller = get_controller('users')
     existing_user = await users_controller.get_user_by_email(email=email)
     if existing_user:
         flash("You are already subscribed!", "info")
@@ -123,6 +124,7 @@ async def password_reset():
         flash("Please enter a valid email address.", "danger")
         return redirect(request.referrer or url_for("auth.password_reset"))
 
+    users_controller = get_controller('users')
     user = await users_controller.get_user_by_email(email)
     if not user:
         flash("If the email exists in our system, a reset link has been sent.", "info")

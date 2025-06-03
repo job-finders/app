@@ -12,9 +12,9 @@ from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
 from src.database.models.resume import JobSeekerCV, SavedCV
 from src.database.models.users import User
 from src.logger import init_logger
-from src.main import company_controller
-from src.main import users_controller
+
 from src.utils.file_uploads import save_company_logo
+from src.utils.route_helpers import get_controller
 
 company_bp = Blueprint('company', __name__, url_prefix='/dashboard/company')
 
@@ -34,6 +34,9 @@ def allowed_file(filename):
 async def create_company_profile(user: User):
     """Company profile creation endpoint"""
     # Comprehensive list of countries relevant to South African job market
+
+    company_controller = get_controller('company')
+
     countries = await company_controller.get_countries()
     # Industries relevant to South African market
     industries = await company_controller.get_industries()
@@ -95,6 +98,7 @@ async def create_company_profile(user: User):
 
     # Update user role if needed (assuming employers need company association)
     if user.role != "employer":
+        users_controller = get_controller('users')
         await users_controller.update_user_role(user.uid, "employer")
 
     flash("Company profile created successfully! - please create your employer profile next", "success")
@@ -105,8 +109,9 @@ async def create_company_profile(user: User):
 @login_required
 async def edit_company_profile(user: User):
     """Render company profile edit form"""
-    employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
-    company = await company_controller.get_company_by_id(employer_profile.company_id)
+    company_controller = get_controller('company')
+    _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+    company = await company_controller.get_company_by_id(_employer_profile.company_id)
 
     return render_template('company/company_editor.html',
                            company=company,
@@ -117,6 +122,7 @@ async def edit_company_profile(user: User):
 @login_required
 async def update_company_profile(user: User):
     """Process company profile updates"""
+    company_controller = get_controller('company')
     try:
         # Process form data
         form_data = request.form.to_dict()
@@ -184,7 +190,7 @@ async def update_employer_profile(user: User):
     if user.role != "employer":
         flash("Access denied: Only employers can update this profile.", "danger")
         return redirect(url_for("company.employer_profile"))
-
+    company_controller = get_controller('company')
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
     if not _employer_profile:
         flash("Please create your employer profile before updating.", "danger")
@@ -243,7 +249,7 @@ async def view_company(user: User):
     if user.role != "employer":
         logger.error(f"Company lookup error: User is not an Employer at any company")
         return redirect(url_for("company.employer_profile"))
-
+    company_controller = get_controller('company')
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
 
 
@@ -275,6 +281,7 @@ async def employer_profile(user: User):
     :return:
     """
     logger.info(f"Inside View Employer Profile")
+    company_controller = get_controller('company')
     _employer_profile = await company_controller.get_employer_by_uid(user_id=user.uid)
     company_data = {}
     if _employer_profile and _employer_profile.company_id:
@@ -301,7 +308,7 @@ async def manage_jobs(user: User):
         flash(message="You are not associated with any company please create a company in order to continue",
         category="danger")
         return redirect(url_for('company.employer_profile'))
-
+    company_controller = get_controller('company')
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
     if not _employer_profile:
         flash("Please create your employer profile before posting or viewing jobs", "danger")
@@ -341,7 +348,7 @@ async def candidate_management(user: User):
         flash(message="You are not associated with any company please create a company in order to continue",
         category="danger")
         return redirect(url_for('company.create_company_profile'))
-
+    company_controller = get_controller('company')
     if request.method == "GET":
         candidates: list[JobSeekerCV] = await company_controller.get_saved_candidates(user_uid=user.uid)
         context = dict(current_user=user, candidates=candidates)
@@ -372,7 +379,7 @@ async def application_analytics(user: User):
     if not user.role == "employer":
         flash(message="You are not associated with any company please create a company in order to continue", category="danger")
         return redirect(url_for('company.create_company_profile'))
-
+    company_controller = get_controller('company')
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_uid=user.uid)
     if not _employer_profile or not (_employer_profile.is_valid and _employer_profile.is_verified):
         flash(message="Your Employer Profile is either not complete or not verified", category="danger")
@@ -386,6 +393,7 @@ async def application_analytics(user: User):
 @login_required
 async def initiate_employer_verification(user: User):
     """Start company verification process"""
+    company_controller = get_controller('company')
     employer_orm = await company_controller.get_employer_by_uid(user_uid=user.uid)
     if not employer_orm:
         flash(message="please create the employer profile first", category='danger')
@@ -409,6 +417,7 @@ async def verify_employer_profile(token: str, employer_id: str):
     """
     The employer lands here after clicking the verification link in the email.
     """
+    company_controller = get_controller('company')
     employer = await company_controller.get_employer_by_employer_id(employer_id=employer_id)
     context = {'current_year': datetime.now().year}
 
@@ -435,7 +444,7 @@ async def initiate_company_verification(user: User):
     if not user.role == "employer":
         flash("Only employers can verify companies", "danger")
         return redirect(url_for('company.get_dashboard'))
-
+    company_controller = get_controller('company')
     # Get employer and company info
     employer = await company_controller.get_employer_by_uid(user.uid)
     if not employer or not employer.company_id:
@@ -498,6 +507,7 @@ async def initiate_company_verification(user: User):
 @login_required
 async def verification_status(user: User):
     """Show current verification status"""
+    company_controller = get_controller('company')
     employer = await company_controller.get_employer_by_uid(user.uid)
     if not employer or not employer.company_id:
         return redirect(url_for('company.create_company_profile'))
@@ -527,6 +537,7 @@ async def employers(user: User):
         flash("You must be an employer to view this page", "danger")
         return redirect(url_for("company.employer_profile"))
     # Fetch company data associated with the user
+    company_controller = get_controller('company')
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
     if not _employer_profile:
         flash("You do not have an employer profile", "danger")
@@ -549,6 +560,7 @@ async def employers(user: User):
 async def get_dashboard(user: User):
 
     # 1. Verify employer profile exists
+    company_controller = get_controller('company')
     employer = await company_controller.get_employer_by_uid(user.uid)
 
     if not employer:

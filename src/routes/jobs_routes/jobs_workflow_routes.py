@@ -4,8 +4,9 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from src.routes import flask_error_handler
 from src.authentication import admin_login, user_details, login_required
 from src.database.models.users import User
-from src.main import jobs_workflow_controller, employer_agents_controller, company_controller  # your workflow controller instance
+
 from src.database.models.jobs_model import Job, JobApplication
+from src.utils.route_helpers import get_controller
 
 jobs_workflow_route = Blueprint("jobs_workflow", __name__, url_prefix="/dashboard/jobs")
 
@@ -48,10 +49,13 @@ async def create_job(user: User):
     try:
         #    Will Ensure company can post jobs - will check if employer profile is verified, 
         #    and if company profile is verified.
+        company_controller = get_controller('company')
+
         job_data = await company_controller.post_job(user_uid=user.user_id, job_data=data)
 
+        employer_agents_controller = get_controller('employer_agents')
         # async def create_job_summary(self, user_id: str, job_id: str) -> JobSummaryOutput:
-        job: Job = await employer_agents_controller.create_job_summary(user_id=user.user_id, job_id=job.job_id)
+        job: Job = await employer_agents_controller.create_job_summary(user_id=user.user_id, job_id=job_data.job_id)
 
     except ValueError as e:
         flash(str(e), "danger")
@@ -68,6 +72,7 @@ async def show_edit_form(user: User, job_id: str):
     This route is used to render the form for editing an existing none live job post.
         Render form to edit an existing job.
     """
+    jobs_workflow_controller = get_controller('jobs_workflow')
     job = await jobs_workflow_controller.get_job_for_edit(job_id)
     if not job:
         flash("Job not found.", "warning")
@@ -86,6 +91,7 @@ async def edit_job(user: User, job_id: str):
     
     """
     data = request.form.to_dict()
+    jobs_workflow_controller = get_controller('jobs_workflow')
     updated = await jobs_workflow_controller.update_job(job_id, data, editor=user)
     if not updated:
         flash("Failed to update job.", "danger")
@@ -110,6 +116,7 @@ async def archive_job(user: User, job_id: str):
     Archive a job posting.
     
     """
+    jobs_workflow_controller = get_controller('jobs_workflow')
     job = await jobs_workflow_controller.archive_job_listing(job_id)
     if not job:
         flash("Job not found or could not be archived.", "danger")
@@ -131,6 +138,7 @@ async def feature_job(user: User, job_id: str):
     Mark a job as featured.
     
     """
+    jobs_workflow_controller = get_controller('jobs_workflow')
     job = await jobs_workflow_controller.feature_job_listing(job_id)
     if not job:
         flash("Job not found or could not be featured.", "danger")
@@ -146,6 +154,7 @@ async def approve_job(user: User, approval_token: str):
     """
     This will be called by the system administrator or workflow AI in order to approve a job post.
     Approve a pending job post."""
+    jobs_workflow_controller = get_controller('jobs_workflow')
     result = await jobs_workflow_controller.approve_job(approval_token, approver=user)
     if result.success:
         flash("Job approved!", "success")
@@ -164,6 +173,7 @@ async def reject_job(user: User, approval_token: str):
         Reject a pending job post.
     
     """
+    jobs_workflow_controller = get_controller('jobs_workflow')
     result = await jobs_workflow_controller.reject_job(approval_token, rejector=user)
     if result.success:
         flash("Job rejected.", "warning")
@@ -187,6 +197,7 @@ async def submit_application(user: User, job_id: str):
     Handle candidate applying to a job."""
     form = request.form.to_dict()
     try:
+        jobs_workflow_controller = get_controller('jobs_workflow')
         application: JobApplication = await jobs_workflow_controller.submit_application(
             job_id=job_id, applicant=user, data=form
         )

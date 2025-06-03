@@ -1,9 +1,9 @@
 
 from flask import Blueprint, render_template, send_from_directory, url_for, make_response
 
-from src.main import junction_scrapper
-from src.utils import static_folder
 
+from src.utils import static_folder
+from src.utils.route_helpers import get_controller, get_service
 seo_route = Blueprint('seo', __name__)
 
 
@@ -12,6 +12,7 @@ async def get_site_job_links() -> list[str]:
     :return:
     """
     links = []
+    junction_scrapper = get_service('scraper')
     for job in junction_scrapper.jobs.values():
         links.append(url_for('jobs.job_slug', _external=True, slug=job.slug))
     return links

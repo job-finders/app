@@ -2,21 +2,20 @@ import asyncio
 import json
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
-from statistics import mean
 
 from flask import Flask, render_template
 from sqlalchemy import exists
 
-from src.database.sql.analytics import (UserSearchActivityORM, JobViewActivityORM, ApplicationStepORM,
-                                        RedisActivityClient,ActivityProcessor)
+from src.controllers.controller import Controllers, error_handler
 from src.database.models.jobs_model import Job, JobApplication, JobApplicationStatusEnum
-from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM, CompanyFollowingORM, CompanyORM
 from src.database.models.jobseeker_profile import JobSeekerProfile
+from src.database.sql.analytics import (UserSearchActivityORM, JobViewActivityORM, ApplicationStepORM,
+                                        RedisActivityClient, ActivityProcessor)
+from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM, CompanyFollowingORM, CompanyORM
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.emailer import EmailModel
-from src.controllers.controller import Controllers, error_handler
 from src.main import jobs_controller, send_mail, job_seeker_profile_controller
-from src.config import config_instance
+
 
 class UserEngagementController(Controllers):
     """

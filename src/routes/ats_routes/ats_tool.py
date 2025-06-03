@@ -3,7 +3,7 @@ from flask import Blueprint, request, render_template
 from src.authentication import login_required
 from src.database.models.users import User
 from src.logger import init_logger
-from src.main import ats_controller  # Assuming ats_controller is an instance of ATSToolController
+from src.utils.route_helpers import get_controller
 
 ats_tool_route = Blueprint('ats', __name__,  url_prefix='/ats-tool')
 ats_logger = init_logger("ats_tool")
@@ -27,6 +27,8 @@ async def ats_match(user: User):
         POST /ats-match
         FormData: { resume: <file>, job_description: <text> }
     """
+    ats_controller = get_controller('ats')
+
     context = await ats_controller.handle_ats_match(current_user=user, request=request)
     return render_template("ats/compare.html", **context)
 
@@ -50,6 +52,7 @@ async def resume_quality(user: User):
         POST /resume-quality
         FormData: { resume: <file> }
     """
+    ats_controller = get_controller('ats')
     uploaded_file = request.files.get("resume")
     if not uploaded_file:
         return render_template("ats/resume_quality.html", error="No file uploaded.")
@@ -77,6 +80,7 @@ async def keyword_extract(user: User):
         POST /keyword-extract
         FormData: { resume: <file> }
     """
+    ats_controller = get_controller('ats')
     uploaded_file = request.files.get("resume")
     if not uploaded_file:
         return render_template("ats/keywords.html", error="Please upload a resume.")
@@ -106,6 +110,7 @@ async def categorize_keywords(user: User):
         POST /categorize-keywords
         FormData: { resume: <file> }
     """
+    ats_controller = get_controller('ats')
     uploaded_file = request.files.get("resume")
     if not uploaded_file:
         return render_template("ats/categories.html", error="Please upload a resume.")
@@ -141,6 +146,7 @@ async def ats_tools(user: User):
     if not uploaded_file or not job_desc:
         return render_template("ats/tools_results_inline.html", error="Please upload a resume and paste job description.")
 
+    ats_controller = get_controller('ats')
     resume_text = await ats_controller.extract_text(uploaded_file)
     context = {
         "match": await ats_controller.handle_ats_match(resume_text, job_desc),
@@ -171,6 +177,7 @@ async def summary_generator(user: User):
     uploaded_file = request.files.get("resume")
     if not uploaded_file:
         return render_template("ats/summary.html", error="No file uploaded.")
+    ats_controller = get_controller('ats')
     resume_text = await ats_controller.extract_text(uploaded_file)
     context = await ats_controller.generate_summary(resume_text)
     return render_template("ats/summary.html", **context)
@@ -194,6 +201,7 @@ async def top_skills(user: User):
     uploaded_file = request.files.get("resume")
     if not uploaded_file:
         return render_template("ats/top_skills.html", error="No file uploaded.")
+    ats_controller = get_controller('ats')
     resume_text = await ats_controller.extract_text(uploaded_file)
     skills = await ats_controller.get_top_skills(resume_text)
     return render_template("ats/top_skills.html", skills=skills)
@@ -217,6 +225,7 @@ async def ats_score_api(user: User):
     job_desc = request.form.get("job_description")
     if not uploaded_file or not job_desc:
         return {"error": "Missing data"}, 400
+    ats_controller = get_controller('ats')
     resume_text = await ats_controller.extract_text(uploaded_file)
     score = await ats_controller.handle_ats_match(resume_text, job_desc)
     return score
@@ -238,6 +247,7 @@ async def ats_score_api_json(user: User):
     job_desc = request.form.get("job_description")
     if not uploaded_file or not job_desc:
         return {"error": "Missing data"}, 400
+    ats_controller = get_controller('ats')
     resume_text = await ats_controller.extract_text(uploaded_file)
     score = await ats_controller.handle_ats_match(resume_text, job_desc)
     return score
@@ -256,6 +266,7 @@ async def parse_metadata(user: User):
     uploaded_file = request.files.get("resume")
     if not uploaded_file:
         return render_template("ats/metadata.html", error="No file uploaded.")
+    ats_controller = get_controller('ats')
     resume_text = await ats_controller.extract_text(uploaded_file)
     metadata = await ats_controller.extract_metadata(resume_text)
     return render_template("ats/metadata.html", metadata=metadata)
@@ -274,6 +285,7 @@ async def improvement_suggestions(user: User):
     uploaded_file = request.files.get("resume")
     if not uploaded_file:
         return render_template("ats/improvements.html", error="No file uploaded.")
+    ats_controller = get_controller('ats')
     resume_text = await ats_controller.extract_text(uploaded_file)
     suggestions = await ats_controller.recommend_improvements(resume_text)
     return render_template("ats/improvements.html", suggestions=suggestions)

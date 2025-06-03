@@ -6,10 +6,10 @@ from src.database.models.resume import JobSeekerCV
 from src.logger import init_logger
 from src.database.models.jobs_model import JobApplication, Job, ATSReport
 from src.routes import flask_error_handler
-from src.main import resume_controller, ats_controller, job_search_controller, jobs_workflow_controller
+
 from src.database.models.users import User
 from src.authentication import login_required
-
+from src.utils.route_helpers import get_controller
 jobseeker_applications_route = Blueprint("jobseeker_applications", __name__, url_prefix="/jobseeker/applications")
 applications_logger = init_logger("Job-Applications")
 
@@ -24,6 +24,8 @@ async def get_location_options(user_id: str, cv_ids: list[str]) -> list[str]:
     :param cv_ids: List of CV IDs associated with the jobseeker.
     :return: A deduplicated list of all relevant location strings.
     """
+    resume_controller = get_controller('resume')
+    job_search_controller = get_controller('jobs_search')
 
     profile_locations = await resume_controller.get_preferred_locations_from_profile(user_id)
     cv_locations = await resume_controller.get_locations_from_cvs(cv_ids)
@@ -61,7 +63,10 @@ async def api_ats_check(user: User):
         if not job_id or not cv_id:
             return jsonify({"error": "Missing required parameters"}), 400
 
-        job: Job = await jobs_controller.get_job_by_id(job_id)
+        job_search_controller = get_controller('jobs_search')
+        ats_controller = get_controller('jobs_search')
+
+        job: Job = await job_search_controller.get_job_by_id(job_id)
         if not job:
             return jsonify({"error": "Job not found"}), 404
 
@@ -98,7 +103,11 @@ async def api_cover_draft(user: User):
         job_id = request.args.get("job_id")
         cv_id = data.get("cv_id")
 
-        job: Job = await jobs_controller.get_job_by_id(job_id)
+        jobs_search_controller = get_controller('jobs_search')
+        resume_controller = get_controller('resume')
+        ats_controller = get_controller('ats')
+
+        job: Job = await jobs_search_controller.get_job_by_id(job_id)
         cv: JobSeekerCV = await resume_controller.get_cv_by_id(cv_id)
 
         draft: str = await ats_controller.generate_cover_letter(job, cv)
@@ -128,8 +137,11 @@ async def apply_for_job(user: User, job_id: str):
     :param job_id: The job ID for the application.
     :return: Rendered application page template.
     """
+    jobs_search_controller = get_controller('jobs_search')
+    resume_controller = get_controller('resume')
+    ats_controller = get_controller('ats')
 
-    job_details: Job = await jobs_controller.get_job_by_id(job_id)
+    job_details: Job = await jobs_search_controller.get_job_by_id(job_id)
     if not job_details:
         flash("Job not found", "danger")
         # Should Preferably redirect back to job lists.
@@ -235,8 +247,9 @@ async def submit_application(job_id: str, user: User):
         }
 
         job_application = JobApplication(**application_data)
+        jobs_workflow_controller = get_controller('jobs_workflow')
 
-        applied_job = await jobs_controller.apply_to_job(job_application=job_application)
+        applied_job = await jobs_workflow_controller.apply_to_job(job_application=job_application)
         if applied_job:
             flash("Application submitted successfully.", "success")
             return redirect(url_for("jobseeker_applications.list_applications"))
@@ -270,7 +283,9 @@ async def withdraw_application(user: User, application_id: str):
     :param application_id: UUID of the application to withdraw
     """
     # Get application with basic validation
-    application = await jobs_controller.get_job_application_by_id(application_id)
+    jobs = get_controller('jobs_search')
+    jobs_workflow_controller = get_controller('jobs_workflow')
+    application = await jobs_workflow_controller.get_job_application_by_id(application_id)
 
     if not application:
         flash("Application not found", "danger")
@@ -287,7 +302,7 @@ async def withdraw_application(user: User, application_id: str):
         return redirect(url_for("jobseeker_applications.list_applications"))
 
     # Process withdrawal
-    success = await jobs_controller.withdraw_job_application(application_id)
+    success = await jobs_workflow_controller.withdraw_job_application(application_id)
 
     if success:
         flash("Application successfully withdrawn", "success")
@@ -311,8 +326,8 @@ async def list_applications(user: User):
     :param user: Authenticated jobseeker.
     :return: Rendered application history template.
     """
-
-    applications = await jobs_controller.get_applied_jobs_for_user(user.uid)
+    jobs_search_controller = get_controller('jobs_search')
+    applications = await jobs_search_controller.get_applied_jobs_for_user(user.uid)
     context = dict(current_user=user, applications=applications)
     return render_template("jobseekers/applications/list.html", **context)
 
@@ -328,7 +343,8 @@ async def view_application(application_id: str, user: User):
     :param user: Logged-in jobseeker
     """
     # Fetch application
-    application: JobApplication = await jobs_controller.get_job_application_by_id(application_id)
+    jobs_search_controller = get_controller('jobs_search')
+    application: JobApplication = await jobs_search_controller.get_job_application_by_id(application_id)
 
     if not application:
         flash("Application not found", "danger")
@@ -340,8 +356,12 @@ async def view_application(application_id: str, user: User):
         return redirect(url_for("jobseeker_applications.list_applications"))
 
     # Fetch related data
-    job: Job = await jobs_controller.get_job_by_id(application.job_id)
+
+
+    job: Job = await jobs_search_controller.get_job_by_id(application.job_id)
+    ats_controller = get_controller('ats')
     ats_report: ATSReport | None = await ats_controller.get_ats_report_by_id(application.ats_report_id)
+    resume_controller = get_controller('resume')
     submitted_cv: JobSeekerCV | None = await resume_controller.get_cv_by_id(application.cv_id)
 
     context = {
@@ -359,7 +379,8 @@ async def view_application(application_id: str, user: User):
 @flask_error_handler
 @login_required
 async def edit_application(application_id: str, user: User):
-    application = await jobs_controller.get_job_application_by_id(application_id)
+    jobs_search_controller = get_controller('jobs_search')
+    application = await jobs_search_controller.get_job_application_by_id(application_id)
 
     if not application or application.user_uid != user.uid:
         flash("Application not found or not authorized", "danger")
@@ -368,8 +389,8 @@ async def edit_application(application_id: str, user: User):
     if application.status != "draft":
         flash("Only draft applications can be edited", "warning")
         return redirect(url_for("jobseeker_applications.view_application", application_id=application.application_id))
-
-    job = await jobs_controller.get_job_by_id(application.job_id)
+    resume_controller = get_controller('resume')
+    job = await jobs_search_controller.get_job_by_id(application.job_id)
     cvs = await resume_controller.get_user_cvs(user.uid)
 
     context = {
@@ -389,14 +410,14 @@ async def submit_edited_application(application_id: str, user: User):
     form = await request.form
     selected_cv_id = form.get("cv_id")
     cover_letter = form.get("cover_letter")
-
-    application = await jobs_controller.get_job_application_by_id(application_id)
+    jobs_search_controller = get_controller('jobs_search')
+    application = await jobs_search_controller.get_job_application_by_id(application_id)
 
     if not application or application.user_uid != user.uid or application.status != "draft":
         flash("Unauthorized or invalid application", "danger")
         return redirect(url_for("jobseeker_applications.list_applications"))
-
-    await jobs_controller.update_draft_application(
+    jobs_workflow_controller = get_controller('jobs_workflow')
+    await jobs_workflow_controller.update_draft_application(
         application_id=application.application_id,
         updated_data={
             "cv_id": selected_cv_id,

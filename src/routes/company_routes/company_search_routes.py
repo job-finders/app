@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
 
+from src.database.models.employer_models import Employer
 from src.authentication import login_required, user_details
 from src.database.models.company_models import CompanyVerificationStatus, Company
 from src.database.models.users import User
 from src.logger import init_logger
-from src.main import company_controller
+from src.utils.route_helpers import get_controller
 
 company_search_routes = Blueprint('company_search', __name__, url_prefix='/company')
 
@@ -20,7 +21,7 @@ async def view_company_by_company_id(user: User, company_id: str):
     if not company_id:
         flash("Company ID is required.", "error")
         return redirect(url_for('home.get_home'))
-
+    company_controller = get_controller('company')
     company_data = await company_controller.get_company_by_id(company_id=company_id)
     if not company_data:
         flash("Company not found.", "error")
@@ -74,6 +75,7 @@ async def list_companies(user: User):
     :param user:
     :return:
     """
+    company_controller = get_controller('company')
     company_list: list[Company] = await company_controller.get_all_companies()
     context = {
         'current_user': user,
@@ -85,15 +87,19 @@ async def list_companies(user: User):
 
 @company_search_routes.get('/employees')
 @login_required
-async def get_employer_details(company_id: str):
+async def get_employer_details(user: User):
     """
     Fetches the employer details for a given company ID.
     """
     try:
-        employer = await company_controller.get_employees_by_company_id(company_id=company_id)
-        if not employer:
-            return None
-        return employer
+        company_controller = get_controller('company')
+        _employee_profile = await company_controller.get_employer_by_uid(uid=user.uid)
+        if not _employee_profile:
+            flash(message="Unable to list Employees", category="danger")
+            return redirect('home.get_home')
+        company_id = _employee_profile.company_id
+        employee_list: list[Employer] = await company_controller.get_employees_by_company_id(company_id=company_id)
+        #TODO - need to finalize this route
     except Exception as e:
         init_logger().error(f"Error fetching employer details: {e}")
         return None

@@ -13,8 +13,7 @@ from requests_cache import CachedSession
 # Import your models
 from src.database.models.jobs_model import Company, Job, JobStatusEnum
 from src.logger import init_logger
-from src.main import company_controller, jobs_workflow_controller, job_search_controller
-
+from src.utils.route_helpers import get_controller
 
 class ScrapedCompanyDTO:
     """
@@ -139,6 +138,7 @@ class Scraper:
         self.company_cache.clear()
         
         # Load all jobs from database
+        job_search_controller = get_controller('jobs_search')
         search_result: dict = await job_search_controller.get_all_jobs()
         jobs = search_result.get('jobs', []) if search_result else []
 
@@ -147,6 +147,7 @@ class Scraper:
             self.job_cache[job.job_ref] = job
         
         # Load all companies from database
+        company_controller = get_controller('company')
         companies: list[Company] = await company_controller.get_all_companies()
         for company in companies:
             # Cache companies by normalized name
@@ -195,6 +196,7 @@ class Scraper:
             return self.company_cache[cache_key]
         
         # Check database if not in cache
+        company_controller = get_controller('company')
         existing = await company_controller.get_company_by_name(dto.name)
         if existing is not None:
             # Add to cache for future access
@@ -405,6 +407,7 @@ class JunctionScraper(Scraper):
                 job_model = self.convert_to_job_model(dto, company)
                 
                 # Check if job already exists
+                jobs_workflow_controller = get_controller('jobs_workflow')
                 existing = await jobs_workflow_controller.get_job_by_reference(job_model.job_ref)
                 if not existing:
                     # Create new job in database

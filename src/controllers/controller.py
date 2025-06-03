@@ -31,7 +31,7 @@ class Controllers:
         :return:
         """
         self.app = app
-        self.setup_error_handler(self.app)
+
 
         session_maker = self.app.config.get('session_maker')
         session_limit = self.app.config.get('session_limit')
@@ -77,19 +77,6 @@ class Controllers:
             session.close()
             self.logger.debug(f"Session closed on delete: {session}")
 
-    # noinspection PyMethodMayBeStatic
-    def setup_error_handler(self, app: Flask):
-        @app.errorhandler(404)
-        def page_not_found(error):
-            self.logger.error(str(error))
-            flash(message="we where unable to find the resource you where looking for", category="danger")
-            return render_template('index.html'), 404
-
-        @app.errorhandler(500)
-        def internal_server_error(error):
-            self.logger.error(str(error))
-            flash(message="Internal Server Error Please try again later", category="danger")
-            return render_template('index.html'), 500
 
 
 class UnauthorizedError(Exception):

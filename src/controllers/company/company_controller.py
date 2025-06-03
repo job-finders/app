@@ -20,7 +20,7 @@ from src.database.sql.employer import EmployerORM
 from src.database.sql.users import UserORM
 from src.emailer import EmailModel
 from src.logger import init_logger
-from src.main import send_mail
+from src.utils.route_helpers import get_service
 
 
 class CompanyController(Controllers):
@@ -465,7 +465,8 @@ class CompanyController(Controllers):
 
             email = EmailModel(to_=str(employer.contact_email), subject_=_subject, html_=email_body)
             # Sending Email then obtaining a response
-            response = await send_mail.send_mail_resend(email=email)
+
+            response = await get_service('send_mail').send_mail_resend(email=email)
 
     @error_handler
     async def mark_employer_as_verified(self, employer_id: str) -> bool:

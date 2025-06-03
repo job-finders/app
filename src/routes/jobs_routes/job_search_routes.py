@@ -7,12 +7,12 @@ from flask import Blueprint, render_template, request
 from src.database.models.jobs_model import JobCategory
 from src.database.models.resume import JobSeekerCV
 from src.database.models import Job
-from src.main import job_search_controller, resume_controller
+
 from src.authentication import user_details
 from src.database.models.users import User
 from src.routes import flask_error_handler
 from src.routes.utils import gone
-
+from src.utils.route_helpers import get_controller
 
 
 def generate_mock_jobs(keyword: str, count: int = 5) -> list[dict]:
@@ -115,6 +115,7 @@ async def list_jobs(user: User):
         GET /jobs?page=2
     """
     page: int = int(request.args.get('page', 1))
+    job_search_controller = get_controller('jobs_search')
     search_result = await job_search_controller.get_all_jobs(page=page)
     jobs = search_result.get('jobs', [])
     if not jobs:
@@ -154,6 +155,7 @@ async def search_jobs(user: User):
     """
     keyword = request.args.get('search_term', '')
     page = int(request.args.get('page', 1))
+    job_search_controller = get_controller('jobs_search')
     search_result = await job_search_controller.search_jobs(keyword=keyword, page=page)
 
     jobs = search_result.get('jobs', [])
@@ -185,6 +187,8 @@ async def search_jobs(user: User):
 @flask_error_handler
 @user_details
 async def job_categories(user: User):
+
+    job_search_controller = get_controller('jobs_search')
     job_category_list: list[JobCategory] = await job_search_controller.list_job_categories()
 
     # Calculate aggregate statistics
@@ -228,6 +232,7 @@ async def category_jobs(user: User, category: str):
         GET /jobs/category/engineering?page=1
     """
     page = int(request.args.get('page', 1))
+    job_search_controller = get_controller('jobs_search')
     search_result = await job_search_controller.search_jobs_by_category(category=category, page=page)
 
     context: JobSearchContext = {
@@ -255,6 +260,7 @@ async def full_job_details(user: User, job_id: str):
     argument -- description
     Return: return_description
     """
+    job_search_controller = get_controller('jobs_search')
     job = await job_search_controller.get_job_by_id(job_id)
 
     if not job or job.status != "active":
@@ -287,6 +293,9 @@ async def job_details(user: User, job_id: str):
     Returns:
         HTML page with job details and related jobs.
     """
+    job_search_controller = get_controller('jobs_search')
+    resume_controller = get_controller('resume')
+
     job = await job_search_controller.get_job_by_id(job_id)
     if not job or job.status != "active":
         return await gone(user=user, search_term=job_id)
@@ -316,6 +325,7 @@ async def jobs_by_location(user: User, location: str):
     """
     page = int(request.args.get('page', 1))
     # Stub: await jobs_controller.search_by_location(location, page)
+    job_search_controller = get_controller('jobs_search')
     search_result = await job_search_controller.get_jobs_by_location(location=location, page=page)
     context = {
         'current_user': user,
@@ -344,7 +354,7 @@ async def jobs_by_type(user: User, job_type: str):
         HTML page rendering the filtered jobs.
     """
     page = int(request.args.get('page', 1))
-
+    job_search_controller = get_controller('jobs_search')
     search_result: dict = await job_search_controller.search_by_type(job_type=job_type, page=page)
 
     context : JobSearchContext = {
@@ -377,7 +387,7 @@ async def featured_jobs(user: User):
         HTML page rendering featured job listings.
     """
     page = int(request.args.get('page', 1))
-
+    job_search_controller = get_controller('jobs_search')
     search_result = await job_search_controller.get_featured_jobs(page=page)
 
     context: JobSearchContext = {
@@ -408,6 +418,7 @@ async def recent_jobs(user: User):
         HTML template with the most recent jobs.
     """
     page = int(request.args.get('page', 1))
+    job_search_controller = get_controller('jobs_search')
     search_result = await job_search_controller.get_recent_jobs(page=page)
 
     context: JobSearchContext = {
@@ -446,7 +457,7 @@ async def jobs_by_salary_range(user: User):
 
     if unit not in ['monthly', 'yearly']:
         unit = 'yearly'  # fallback to default if invalid
-
+    job_search_controller = get_controller('jobs_search')
     search_result = await job_search_controller.search_by_salary_range(
         min_salary=min_salary,
         max_salary=max_salary,
@@ -488,6 +499,7 @@ async def jobs_by_company(user: User, company_slug: str):
         :param user:
     """
     page = int(request.args.get('page', 1))
+    job_search_controller = get_controller('jobs_search')
     search_result = await job_search_controller.search_by_company(company_slug=company_slug, page=page)
     context: JobSearchContext = {
         'current_user': user,
@@ -516,7 +528,7 @@ async def jobs_by_title(user: User):
     """
     page = int(request.args.get('page', 1))
     title = request.args.get('q', '')
-
+    job_search_controller = get_controller('jobs_search')
     result = await job_search_controller.get_jobs_by_title(title=title,page=page)
     context: JobSearchContext = {
         'current_user': user,
@@ -549,7 +561,7 @@ async def jobs_by_qualification(user: User):
     page = int(request.args.get('page', 1))
     qualification = request.args.get('q', '')
     types = request.args.getlist('type') or None
-
+    job_search_controller = get_controller('jobs_search')
     result = await job_search_controller.get_jobs_by_qualification(qualification=qualification,
                                                                    qualification_types=types,
                                                                    page=page)
@@ -569,6 +581,7 @@ async def jobs_by_qualification(user: User):
 @user_details
 async def job_by_reference(user: User, reference: str):
     """Retrieve a job by its reference number."""
+    job_search_controller = get_controller('jobs_search')
     job = await job_search_controller.get_job_by_reference(reference=reference)
 
     if not job:

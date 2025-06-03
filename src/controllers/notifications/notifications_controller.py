@@ -4,12 +4,12 @@ from flask import render_template, url_for
 import asyncio
 from pymysql import OperationalError
 
-from src.main import send_mail
+
 from src.emailer import EmailModel
 from src.database.sql.notifications import NotificationsORM
 from src.database.models.notifications import Notifications
 from src.controllers.controller import Controllers
-
+from src.utils.route_helpers import get_service
 
 class NotificationsController(Controllers):
 
@@ -42,7 +42,7 @@ class NotificationsController(Controllers):
         subject = "JobFinders.site Job Alert - Email Verification"
         msg = EmailModel(subject_=subject, to_=notification.email, html_=email_html)
         self.logger.info(f"Welcome Email Sent to: {notification.email}")
-        await send_mail.send_mail_resend(email=msg)
+        await get_service('send_mail').send_mail_resend(email=msg)
 
     async def check_verification(self, verification_id: str, email: str) -> bool:
         with self.get_session() as session:
@@ -80,7 +80,7 @@ class NotificationsController(Controllers):
             )
 
             self.logger.info(f"Job Alert Email sent to: {notification.email} | Category: {category}")
-            await send_mail.send_mail_resend(email=msg)
+            await get_service('send_mail').send_mail_resend(email=msg)
 
         except Exception as e:
             self.logger.error(f"Failed to send job alert email to {notification.email}: {e}")
@@ -90,7 +90,7 @@ class NotificationsController(Controllers):
         Runs a background loop that sends job alerts periodically based on user preferences.
         Operates on +2 Pretoria timezone (use system time, assumed to be in +2 or handled externally).
         """
-        from src.main import scrapper
+
         while True:
             try:
                 self.logger.info(f"[{datetime.now()}] Job Alert Daemon running...")
@@ -114,7 +114,7 @@ class NotificationsController(Controllers):
                                        "location": job.location,
                                        "link": url_for('home.job_detail', reference=job.reference, _external=True)
                                    }
-                                   for job in scrapper.jobs.values()
+                                   for job in get_service('scraper').jobs_cache.values()
                                    if job.search_term.casefold() == topic.casefold()
                                ][:5]
 

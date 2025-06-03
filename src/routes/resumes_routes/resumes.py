@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from pydantic import ValidationError
 from src.authentication import login_required
 from src.database.models.users import User
-from src.main import resume_controller, ats_controller
+
 from src.routes import flask_error_handler
 from src.database.models.resume import (
     JobSeekerCV,
@@ -17,6 +17,7 @@ from src.database.models.resume import (
     Award,
     CustomSection
 )
+from src.utils.route_helpers import get_controller
 
 resume_routes = Blueprint(
     "jobseeker_cv",
@@ -55,7 +56,7 @@ def _parse_cv_form_data(form_data, files):
         'awards': Award,
         'custom_sections': CustomSection
     }
-
+    resume_controller = get_controller('resume')
     for section, model in sections.items():
         structured_data[section] = []
         index = 0
@@ -145,6 +146,7 @@ async def ats_check(user: User):
         cv_data = lenient_cv_parse(raw_data)
 
         # Generate ATS report
+        ats_controller = get_controller('ats')
         report = await ats_controller.generate_industry_ats_report(cv_data)
 
         return jsonify({
@@ -171,12 +173,13 @@ async def ats_check(user: User):
 @login_required
 @flask_error_handler
 async def edit_cv(user: User, cv_id: str):
+    resume_controller = get_controller('resume')
     if request.method == "POST":
         try:
             start_time = datetime.now()
             raw_data = _parse_cv_form_data(request.form, request.files)
             updated_data = JobSeekerCV(**raw_data)
-
+            resume_controller = get_controller('resume')
             # Update CV first
             await resume_controller.update_cv(
                 user_uid=user.uid,
@@ -185,6 +188,7 @@ async def edit_cv(user: User, cv_id: str):
             )
 
             # Async ATS analysis after successful update
+            ats_controller = get_controller('ats')
             await ats_controller.queue_ats_analysis(cv_id)
 
             flash("CV updated successfully! ATS analysis in progress...", "success")
@@ -226,6 +230,7 @@ async def _get_ats_report(cv: JobSeekerCV) -> dict:
     """Get ATS report with fallback mechanism"""
     try:
         # Timeout after 15 seconds to prevent hanging
+        ats_controller = get_controller('ats')
         return await asyncio.wait_for(
             ats_controller.generate_industry_ats_report(cv),
             timeout=15
@@ -241,6 +246,7 @@ async def _handle_validation_error(e: ValidationError, cv: JobSeekerCV) -> dict:
     flash(f"Validation error: {_format_pydantic_error(e)}", "danger")
 
     try:
+        ats_controller = get_controller('ats')
         partial_report = await ats_controller.partial_ats_check(cv)
     except Exception:
         partial_report = {}

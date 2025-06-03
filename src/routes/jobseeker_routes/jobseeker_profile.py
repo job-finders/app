@@ -4,9 +4,9 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from src.routes import flask_error_handler
 from src.authentication import login_required
 from src.database.models.users import User
-from src.main import job_seeker_profile_controller
-from src.database.models.jobseeker_profile import JobSeekerProfile
 
+from src.database.models.jobseeker_profile import JobSeekerProfile
+from src.utils.route_helpers import get_controller
 jobseeker_profiles_bp = Blueprint("jobseeker_profiles", __name__, url_prefix="/jobseeker/profile")
 
 def parse_profile_form(form_data, user_uid):
@@ -55,6 +55,9 @@ def parse_profile_form(form_data, user_uid):
 @login_required
 async def create_profile(user: User):
     # Fetch config options for form
+
+    job_seeker_profile_controller = get_controller('job_seeker_profile')
+
     locations = await job_seeker_profile_controller.get_default_work_locations()
     industries = await job_seeker_profile_controller.get_industries_of_interest()
     job_titles = await job_seeker_profile_controller.get_job_titles_of_interest()
@@ -93,6 +96,7 @@ async def create_profile(user: User):
 @jobseeker_profiles_bp.route("/me")
 @login_required
 async def view_profile(user: User):
+    job_seeker_profile_controller = get_controller('job_seeker_profile')
     profile: JobSeekerProfile = await job_seeker_profile_controller.get_profile_by_uid(user_uid=user.uid)
 
     # if not profile:
@@ -107,6 +111,7 @@ async def view_profile(user: User):
 @login_required
 async def edit_profile(user: User):
     # Fetch config options for form
+    job_seeker_profile_controller = get_controller('job_seeker_profile')
     locations = await job_seeker_profile_controller.get_default_work_locations()
     industries = await job_seeker_profile_controller.get_industries_of_interest()
     job_titles = await job_seeker_profile_controller.get_job_titles_of_interest()
@@ -160,6 +165,7 @@ async def edit_profile(user: User):
 @jobseeker_profiles_bp.route("/delete", methods=["POST"])
 @login_required
 async def delete_profile(user: User):
+    job_seeker_profile_controller = get_controller('job_seeker_profile')
     result = await job_seeker_profile_controller.delete_profile(user_uid=user.uid)
     if not result:
         flash("Failed to delete profile.", "danger")
@@ -173,6 +179,7 @@ async def delete_profile(user: User):
 async def search_profiles(user:User):
     """could be used by employers and other seekers"""
     query = request.args.get("q", "")
+    job_seeker_profile_controller = get_controller('job_seeker_profile')
     profiles: list[JobSeekerProfile] = await job_seeker_profile_controller.search_profiles(query=query)
     context = dict(profiles=profiles, current_user=user, query=query)
     return render_template("jobseekers/profiles/search.html", **context)
@@ -186,6 +193,7 @@ async def upload_picture(user: User):
         return redirect(request.referrer)
 
     file = request.files
+    job_seeker_profile_controller = get_controller('job_seeker_profile')
     result = await job_seeker_profile_controller.upload_profile_picture(
         user_uid=user.uid,
         file=file,
@@ -202,6 +210,7 @@ async def upload_picture(user: User):
 @jobseeker_profiles_bp.route("/role/<string:role>")
 @login_required
 async def list_profiles_by_role(user: User, role: str):
+    job_seeker_profile_controller = get_controller('job_seeker_profile')
     profiles = await job_seeker_profile_controller.list_profiles_by_role(role)
 
     context = dict(profiles=profiles, current_user=user, role=role)
@@ -211,6 +220,7 @@ async def list_profiles_by_role(user: User, role: str):
 @jobseeker_profiles_bp.route('/activity/metrics')
 @login_required
 async def get_activity_metrics(user: User):
+    job_seeker_profile_controller = get_controller('job_seeker_profile')
     return await job_seeker_profile_controller.track_job_search_activity(user.user_id)
 
 

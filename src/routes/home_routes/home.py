@@ -7,10 +7,10 @@ from src.routes import flask_error_handler
 from src.database.models.notifications import CreateNotifications
 from src.database.models.seo import create_tags
 from src.logger import init_logger
-from src.main import notifications_controller, junction_scrapper
+
 from src.routes.utils import (fetch_and_cache_logo, create_context, not_found, redirect_apply_page)
 from src.utils import format_title
-
+from src.utils.route_helpers import get_service
 home_route = Blueprint('home', __name__)
 home_logger = init_logger("home_logger")
 
@@ -134,6 +134,7 @@ async def email_me(user: User, search_term: str):
     try:
         notifications = CreateNotifications(**request.form)
         notifications.topic = search_term
+        notifications_controller = get_service('notifications')
         created_notification = await notifications_controller.create_notification_email(notification=notifications)
         if not created_notification:
             flash("There was a problem adding you to the email list; you may already be added or cannot be on more than one list at a time", "danger")
@@ -163,7 +164,7 @@ async def verify_email(user: User, verification_id: str):
     if not email:
         flash("Unable to verify Email Address", "danger")
         return redirect(url_for('home.get_home'), code=302)
-
+    notifications_controller = get_service('notifications')
     if await notifications_controller.check_verification(verification_id=verification_id, email=email):
         flash("You have successfully been added to our job alerts service", "success")
         return redirect(url_for('home.get_home'), code=302)

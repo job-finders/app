@@ -6,9 +6,9 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, EmailStr, field_validator
 
 from src.database.constants import utc_time
-from src.main import encryptor
-from src.utils import format_reference  # assuming this is your own utility function
 
+from src.utils import format_reference  # assuming this is your own utility function
+from src.utils.route_helpers import get_service
 
 class Roles(BaseModel):
     id: str
@@ -85,14 +85,15 @@ class User(BaseModel):
         :param password: Password to compare
         :return: Boolean indicating if password matches
         """
-        return encryptor.compare_hashes(hash=self.password_hash, password=password)
+
+        return get_service('encryptor').compare_hashes(hash=self.password_hash, password=password)
 
     @classmethod
     def create(cls, name: str, email: str, password: str, role: str) -> "User":
         """
         Create a new User instance with a hashed password.
         """
-        hashed = encryptor.create_hash(password)
+        hashed = get_service('encryptor').create_hash(password)
         # noinspection PyTypeChecker
         return cls(name=name, email=email, password_hash=hashed, role=role)
 
