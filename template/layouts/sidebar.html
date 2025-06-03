@@ -41,6 +41,8 @@
                         <span class="sidebar-collapse-icon ti-angle-down"></span>
                     </a>
                     <ul>
+                        <li><a href="{{ url_for('company.get_dashboard') }}"> <i class="ti-dashboard"> </i> Company Dashboard </a> </li>
+                        <li><a href="{{ url_for('company.view_company') }}"> <i class="ti-folder"> </i> Company Profile </a> </li>
                         <li><a href="{{ url_for('company.manage_jobs') }}"><i class="ti-pencil-alt"></i> Post a Job</a></li>
                         <li><a href="{{ url_for('company_search.list_companies') }}"><i class="ti-search"></i> Browse Companies</a></li>
                     </ul>
