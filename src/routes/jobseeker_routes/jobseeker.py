@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, jsonify
 
 from flask import Blueprint, render_template
 
-from database.models.resume import JobSeekerCV
+from src.database.models.resume import JobSeekerCV
 from src.authentication import login_required
 from src.database.models.users import User
 from src.main import resume_controller, employee_agents_controller
