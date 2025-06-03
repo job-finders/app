@@ -14,11 +14,11 @@ import uuid
 from src.utils.route_helpers import get_service
 
 class ResumeController(Controllers):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, factory):
+        super().__init__(factory)
 
-    def init_app(self, app: Flask):
-        super().init_app(app=app)
+    def init_app(self, app):
+        super().init_app(app)
 
     @error_handler
     async def create_cv(self, user_uid: str, data: JobSeekerCV) -> dict:

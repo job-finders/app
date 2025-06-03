@@ -6,10 +6,7 @@ from flask import Flask, render_template, url_for
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
-from src.database.sql.jobs_sql import JobsORM
 from src.controllers.controller import Controllers, error_handler
-from src.controllers.jobs import JobsWorkflowController
-from src.controllers.resumes import ResumeController
 from src.database.models.company_models import Company, CompanyUpdate
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Job, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
@@ -17,6 +14,7 @@ from src.database.models.resume import JobSeekerCV, SavedCV
 from src.database.models.users import User
 from src.database.sql.company import CompanyORM
 from src.database.sql.employer import EmployerORM
+from src.database.sql.jobs_sql import JobsORM
 from src.database.sql.users import UserORM
 from src.emailer import EmailModel
 from src.logger import init_logger
@@ -26,11 +24,9 @@ from src.utils.route_helpers import get_service
 class CompanyController(Controllers):
     """Handles employer profiles and company-related operations"""
     
-    def __init__(self, jobs_controller=None, resume_controller=None):
-        super().__init__()
+    def __init__(self,factory):
+        super().__init__(factory)
         self.logger = init_logger("CompanyController")
-        self.jobs_workflow_controller: JobsWorkflowController = jobs_controller  # Injected dependency
-        self.resume_controller: ResumeController = resume_controller
 
 
     def init_app(self, app: Flask):

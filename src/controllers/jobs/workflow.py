@@ -34,8 +34,8 @@ class JobsWorkflowController(Controllers):
     """
     
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, factory):
+        super().__init__(factory)
 
     def init_app(self, app: Flask):
         super().init_app(app=app)

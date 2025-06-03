@@ -10,13 +10,13 @@ from src.database.sql.users import UserORM
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.controllers.controller import error_handler, Controllers
 from src.database.models.jobs_model import Job, Company, JobApplication, JobApprovalStatusEnum
-from src.database.sql.jobs_sql import JobsORM, CompanyORM, JobApprovalRequestORM, JobVersionHistoryORM, \
+from src.database.sql.jobs_sql import JobsORM,JobApprovalRequestORM, JobVersionHistoryORM, \
     JobApplicationORM
 
 
 class AdminController(Controllers):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, factory):
+        super().__init__(factory)
 
     def init_app(self, app: Flask):
         super().init_app(app=app)

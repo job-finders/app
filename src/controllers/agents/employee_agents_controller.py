@@ -15,10 +15,14 @@ from src.logger import init_logger
 from src.utils.route_helpers import get_controller
 
 class EmployeeAgentsController(Controllers):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, factory):
+        super().__init__(factory)
         self.logger = init_logger("EmployeeAgentsController")
 
+    def init_app(self, app):
+        super().init_app(app)
+        # App-specific initialization
+        # self.cache.init_app(app)
 
     @error_handler
     async def analyze_job_match(

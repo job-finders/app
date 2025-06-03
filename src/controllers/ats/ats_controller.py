@@ -20,16 +20,16 @@ ACTION_VERBS = {"manage", "develop", "lead", "create", "implement"}
 class ATSToolController(Controllers):
     """CPU‑optimized ATS Analysis Toolkit"""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, factory):
+        super().__init__(factory)
         self.top_n_keywords = 30
         self.industry_keywords = self._load_industry_keywords()
         self.required_sections = ["experience", "education", "skills"]
-        self.resume_controller: Optional[ResumeController] = None
 
-    def init_app(self, app: Flask, resume: ResumeController):
+
+    def init_app(self, app: Flask):
         super().init_app(app=app)
-        self.resume_controller = resume
+
 
     # ─── Public API ───────────────────────────────────────────────────────────
 

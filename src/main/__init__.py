@@ -44,6 +44,12 @@ def create_app(config):
         # Register template filters
         _register_template_filters(app)
 
+        # Clean Controllers Upon Exit
+        @app.teardown_appcontext
+        def shutdown_controllers(exception=None):
+            if controller_factory := app.extensions.get('controller_factory'):
+                controller_factory.close_all()
+
     return app
 
 

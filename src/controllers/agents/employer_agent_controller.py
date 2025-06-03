@@ -13,8 +13,13 @@ from src.database.models import Job
 from src.database.sql.jobs_sql import JobsORM
 
 class EmployerAgentsController(Controllers):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, factory):
+        super().__init__(factory)
+
+    def init_app(self, app):
+        super().init_app(app)
+        # App-specific initialization
+        # self.cache.init_app(app)
 
     @error_handler
     async def enhance_job_post(self, user_id: str, input_data: dict) -> EnhanceJobPostOutput:

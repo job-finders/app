@@ -10,8 +10,8 @@ from src.controllers.controller import Controllers
 
 
 class UsersController(Controllers):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, factory):
+        super().__init__(factory)
         self.users: list[User] = list()
 
 

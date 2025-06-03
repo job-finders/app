@@ -13,8 +13,13 @@ from src.utils.route_helpers import get_service
 
 class NotificationsController(Controllers):
 
-    def __init__(self):
-        super().__init__()
+
+    def __init__(self, factory):
+        super().__init__(factory)
+
+    def init_app(self, app):
+        super().init_app(app)
+
 
     async def create_notification_email(self, notification: Notifications):
         try:

@@ -13,9 +13,14 @@ class BlogAgentController(Controllers):
     using logic delegated to the BlogFeedbackController.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, factory):
+        super().__init__(factory)
         self.logger = init_logger("BlogAgentController")
+
+    def init_app(self, app):
+        super().init_app(app)
+        # App-specific initialization
+        # self.cache.init_app(app)
 
     @error_handler
     async def create_blog_topic(self, topic_in: BlogTopic) -> BlogTopic:

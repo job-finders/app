@@ -25,8 +25,8 @@ class UserEngagementController(Controllers):
         3. send emails informing employers and jobseekers of coming deadlines.
         4. send updates in case jobseekers are following certain companies.
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, factory):
+        super().__init__(factory)
         self.redis = RedisActivityClient()
         self.processor = ActivityProcessor(get_session=self.get_session,redis_client=self.redis)
 

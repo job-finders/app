@@ -12,9 +12,14 @@ class BlogFeedbackController(Controllers):
     Responsible for calculating feedback scores and updating both feedback and prompt records.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, factory):
+        super().__init__(factory)
         self.logger = init_logger("BlogFeedbackController")
+
+    def init_app(self, app):
+        super().init_app(app)
+        # App-specific initialization
+        # self.cache.init_app(app)
 
     @staticmethod
     def calculate_feedback_score(views: int, likes: int, comments: int) -> float:

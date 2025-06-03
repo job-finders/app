@@ -17,65 +17,92 @@ class Controllers:
     """
     session_limit: int = 25
 
-    def __init__(self, session_maker=Session):
+    def __init__(self, factory, session_maker=Session):
+        self.factory = factory
         self.session_maker = session_maker
         self.sessions = [session_maker() for _ in range(self.session_limit)]
         self.logger = init_logger(self.__class__.__name__)
         self.app: Flask | None = None
         self.deepseek_api_key: str | None  = None
+        # Initialize sessions if session_maker is provided
+        if session_maker:
+            self._initialize_sessions()
+
+    def _initialize_sessions(self):
+        """Initialize session pool"""
+        self.sessions = [self.session_maker() for _ in range(self.session_limit)]
+        self.logger.info(f"Initialized {self.session_limit} database sessions")
 
     def init_app(self, app: Flask):
         """
-            **init_app**
-        :param app:
-        :return:
+        Initialize with Flask application
         """
         self.app = app
 
-
+        # Update configuration from app
         session_maker = self.app.config.get('session_maker')
-        session_limit = self.app.config.get('session_limit')
-        self.deepseek_api_key = self.app.config.get('DEEPSEEK_API_KEY', None)
+        session_limit = self.app.config.get('session_limit', self.session_limit)
+        self.deepseek_api_key = self.app.config.get('DEEPSEEK_API_KEY')
 
-        if session_maker and session_limit:
-            self.sessions = [session_maker() for _ in range(session_limit)]
+        # Reinitialize sessions if configuration changed
+        if session_maker and session_limit != self.session_limit:
+            self.session_limit = session_limit
+            self._initialize_sessions()
+
+
+    def close(self):
+        """Release all resources including database sessions"""
+        self.logger.info(f"Closing {len(self.sessions)} database sessions")
+        for session in self.sessions:
+            try:
+                session.close()
+            except Exception as e:
+                self.logger.error(f"Error closing session: {e}")
+        self.sessions = []
+        self.logger.debug("All sessions closed")
 
     @contextmanager
     def get_session(self):
         """
-        Generator-based context manager for managing sessions.
-        Ensures that sessions are properly released after use.
+        Context manager for session management
         """
         session = None
         try:
             if not self.sessions:
-                self.sessions = [self.session_maker() for _ in range(self.session_limit)]
+                self.logger.warning("Session pool empty, creating new session")
+                session = self.session_maker()
+            else:
+                session = self.sessions.pop()
 
-            session = self.sessions.pop()
-            self.logger.debug(f"Session acquired: {session}")
+            self.logger.debug(f"Session acquired: {id(session)}")
             yield session
 
+            # Commit if there are changes
             if session.dirty or session.new or session.deleted:
                 session.commit()
                 self.logger.debug("Session changes committed")
 
         except SQLAlchemyError as e:
-            self.logger.error(f"Error while using session: {e}")
+            self.logger.error(f"Database error: {e}")
             if session:
-                session.rollback()  # Rollback any uncommitted changes on error
+                session.rollback()
             raise
         finally:
             if session:
-                session.close()
-                self.logger.debug(f"Session released: {session}")
-            else:
-                self.sessions.append(self.session_maker())
-                self.logger.debug("Session pool replenished")
+                try:
+                    session.close()
+                    self.logger.debug(f"Session closed: {id(session)}")
+
+                    # Only return to pool if it's not a temporary session
+                    if len(self.sessions) < self.session_limit:
+                        self.sessions.append(self.session_maker())
+                        self.logger.debug("Session returned to pool")
+                except Exception as e:
+                    self.logger.error(f"Error releasing session: {e}")
 
     def __del__(self):
-        for session in self.sessions:
-            session.close()
-            self.logger.debug(f"Session closed on delete: {session}")
+        """Destructor to ensure resource cleanup"""
+        self.close()
 
 
 
