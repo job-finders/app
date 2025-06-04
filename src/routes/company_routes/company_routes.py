@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import datetime
 
@@ -6,7 +7,8 @@ from pydantic import ValidationError
 from werkzeug.utils import secure_filename
 
 from src.authentication import login_required
-from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate
+from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate, CompanyCIPC, \
+    CompanyVerificationDocument
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
 from src.database.models.resume import JobSeekerCV, SavedCV
@@ -45,6 +47,7 @@ async def create_company_profile(user: User):
             logger.info(f"Company is found : {company_data} lets go to view it")
             flash(message="You already created a company. View or edit your company profile below.", category="info")
             return redirect(url_for('company.view_company'))
+
         context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options)
         logger.info("Will display a form to create a company")
         return render_template("company/create_company.html", **context)
@@ -101,7 +104,7 @@ async def create_company_profile(user: User):
         await users_controller.update_user_role(user.uid, "employer")
 
     flash("Company profile created successfully! Please create your employer profile next.", "success")
-    return redirect(url_for("company.employer_profile"))
+    return redirect(url_for("company.view_company"))
 
 
 @company_bp.route('/profile/edit', methods=['GET'])
@@ -281,8 +284,9 @@ async def view_company(user: User):
 
 @company_bp.route("/employer/profile", methods=["GET"])
 @login_required
-async def employer_profile(user: User):
+async def view_employer_profile(user: User):
     """
+        this route allows the employer to view their own profile
         employer profile
     :param user:
     :return:
@@ -417,12 +421,14 @@ async def initiate_employer_verification(user: User):
     if not employer.is_valid:
         flash(message="please ensure your employer profile is complete before attemmpting verification", category="danger")
         return redirect(url_for("company.employer_profile"))
-
-    response = await company_controller.initiate_employer_profile_verification(employer_id=employer.employer_id)
-    # Send verification email (pseudo-code)
+    try:
+        response = await company_controller.initiate_employer_profile_verification(employer_id=employer.employer_id)
+    except ValueError as e:
+        flash(message=str(e), category="danger")
+        return redirect(url_for("company.employer_profile"))
+    
     # await send_verification_email(request.user_email, token)
     flash("Verification initiated - check your email", "success")
-
     return redirect(url_for("company.employer_profile"))
 
 @company_bp.route("/do-verify-employer-profile/<string:token>/<string:employer_id>", methods=["GET"])
@@ -430,6 +436,7 @@ async def verify_employer_profile(token: str, employer_id: str):
     """
     The employer lands here after clicking the verification link in the email.
     """
+    # Using Factory Pattern to obtain a controller
     company_controller = get_controller('company')
     employer = await company_controller.get_employer_by_employer_id(employer_id=employer_id)
     context = {'current_year': datetime.now().year}
@@ -450,74 +457,121 @@ async def verify_employer_profile(token: str, employer_id: str):
 
     return render_template("employers/employer_verification_success.html", **context)
 
-@company_bp.route('/submit-company-documentations', methods=['GET', 'POST'])
+
+@company_bp.route('/submit-company-verification', methods=['GET', 'POST'])
 @login_required
 async def initiate_company_verification(user: User):
-    """Endpoint for company verification document submission"""
-    if not user.role == "employer":
+    """Endpoint for comprehensive company verification submission"""
+    # Authorization check
+    if user.role != "employer":
         flash("Only employers can verify companies", "danger")
         return redirect(url_for('company.get_dashboard'))
+
     company_controller = get_controller('company')
+
     # Get employer and company info
     employer = await company_controller.get_employer_by_uid(user.uid)
     if not employer or not employer.company_id:
         flash("Complete your employer profile first", "danger")
         return redirect(url_for('company.employer_profile'))
 
-    company = await company_controller.get_company_profile(employer.company_id)
+    company: Company = await company_controller.get_company_by_id(employer.company_id)
 
     # Check current verification status
     if company.verification_status == CompanyVerificationStatus.VERIFIED.value:
         flash("Company is already verified", "info")
-        status_info = await company_controller.get_verification_status(company.company_id)
+        status_info = await company_controller.get_company_verification_status(company.company_id)
         return render_template('company/verification_status.html', company=company, status_info=status_info)
+
     if company.verification_status == CompanyVerificationStatus.PENDING.value:
         flash("Verification is already in progress", "warning")
-        status_info = await company_controller.get_verification_status(company.company_id)
+        status_info = await company_controller.get_company_verification_status(company.company_id)
         return render_template('company/verification_status.html', company=company, status_info=status_info)
 
-    # Handle document submission
+    # Handle form submission
     if request.method == 'POST':
-        if 'documents' not in request.files:
-            flash("No files selected", "danger")
-            return render_template('company/initiate_verification.html', company=company, allowed_extensions=ALLOWED_EXTENSIONS)
+        # Extract CIPC details from form
+        reg_form_data = request.form.to_dict()
 
-        files = request.files.getlist('documents')
-        if len(files) == 0 or all(file.filename == '' for file in files):
-            flash("No valid files selected", "danger")
-            return render_template('company/initiate_verification.html', company=company, allowed_extensions=ALLOWED_EXTENSIONS)
+        cipc_data = CompanyCIPC(company_name=reg_form_data.get("name"),
+                                registration_number= reg_form_data.get('registration_number'),
+                                registration_date=reg_form_data.get("registration_date"),
+                                director_name= reg_form_data.get("director_name"),
+                                bee_status=reg_form_data.get("bee_status"),
+                                tax_pin=reg_form_data.get("tax_pin"))
 
-        # Process and save documents
-        saved_files = []
-        for file in files:
-            if file and allowed_file(file.filename):
-                filename = secure_filename(f"{company.company_id}_{file.filename}")
+        # Validate required CIPC fields
+        required_fields = ["name", "registration_number", "director_name"]
+        if not all(cipc_data[field] for field in required_fields):
+            flash("Missing required CIPC details", "danger")
+            return render_template('company/initiate_verification.html', company=company)
+
+        # Save/update CIPC record
+        existing_cipc = await company_controller.get_cipc_record_by_company_id(company.company_id)
+        if existing_cipc:
+            await company_controller.update_cipc_record(existing_cipc.cipc_id, cipc_data)
+        else:
+            await company_controller.create_cipc_record(cipc_data)
+
+        # Process uploaded documents
+        document_types = {
+            "director_id": "DIRECTOR_ID",
+            "cipc_cert": "CIPC_CERT",
+            "tax_clearance": "TAX_CLEARANCE",
+            "bee_cert": "BEE_CERT"
+        }
+
+        document_records = []
+        for field_name, doc_type in document_types.items():
+            file = request.files.get(field_name)
+            if file and file.filename != '' and allowed_file(file.filename):
+                # Save file
+                filename = secure_filename(f"{company.company_id}_{doc_type}_{file.filename}")
                 file_path = os.path.join(UPLOAD_FOLDER, filename)
                 await file.save(file_path)
-                saved_files.append(file_path)
 
-        if not saved_files:
-            flash("No valid documents uploaded", "danger")
-            return render_template('company/initiate_verification.html', company=company, allowed_extensions=ALLOWED_EXTENSIONS)
+                # Create document record
+                document_data = CompanyVerificationDocument(
+                    company_id=company.company_id,
+                    document_type=doc_type,
+                    file_url=file_path
+                )
 
-        # Initiate verification process
-        verification_result = await company_controller.initiate_verification_process(
-            company_id=company.company_id,
-            document_paths=saved_files,
-            user_id=user.uid
+                doc_record = await company_controller.create_verification_document(document_data)
+                document_records.append(doc_record)
+            else:
+                flash(f"Missing or invalid file for {doc_type.replace('_', ' ')}", "danger")
+                return render_template('company/initiate_verification.html', company=company)
+
+        # Initiate verification process for each document
+        verification_tasks = []
+        for doc_record in document_records:
+            task = company_controller.initiate_document_verification(
+                document_id=doc_record.document_id,
+                company_id=company.company_id
+            )
+            verification_tasks.append(task)
+
+        # Run all verifications concurrently
+        await asyncio.gather(*verification_tasks)
+
+        # Update company verification status
+        await company_controller.update_company_verification_status(
+            company.company_id,
+            CompanyVerificationStatus.PENDING.value
         )
 
-        if verification_result.get('needs_human_review'):
-            flash("Documents received - verification under review", "warning")
-        else:
-            flash("Documents received - AI verification in progress", "info")
+        flash("Verification process initiated successfully!", "success")
+        return redirect(url_for('company.verification_status', company_id=company.company_id))
 
-        status_info = await company_controller.get_verification_status(company.company_id)
-        return render_template('company/verification_status.html', company=company, status_info=status_info)
-
-    # GET request - show upload form
-    return render_template('company/initiate_verification.html', company=company, allowed_extensions=ALLOWED_EXTENSIONS)
-
+    # GET request - show verification form
+    # Pre-fill CIPC data if exists
+    cipc_record = await company_controller.get_cipc_record_by_company_id(company.company_id)
+    return render_template(
+        'company/initiate_verification.html',
+        company=company,
+        cipc_data=cipc_record
+    )
 
 @company_bp.route('/verification-status')
 @login_required
@@ -528,12 +582,10 @@ async def verification_status(user: User):
     if not employer or not employer.company_id:
         return redirect(url_for('company.create_company_profile'))
 
-    company = await company_controller.get_company_profile(employer.company_id)
-    status_info = await company_controller.get_verification_status(company.company_id)
+    company = await company_controller.get_company_by_id(employer.company_id)
+    status_info = await company_controller.get_company_verification_status(company.company_id)
 
     return render_template('company/verification_status.html',company=company,status_info=status_info)
-
-
 
 @company_bp.route("/billing")
 async def billing():
@@ -545,7 +597,7 @@ async def settings():
 
 @company_bp.route("/employers")
 @login_required
-async def employers(user: User):
+async def employers_list(user: User):
     """
     List all employers associated with the company
     """
@@ -569,8 +621,6 @@ async def employers(user: User):
 
     return render_template("company/employers.html",**context)
 
-
-
 @company_bp.route("/me")
 @login_required
 async def get_dashboard(user: User):
@@ -586,13 +636,6 @@ async def get_dashboard(user: User):
         flash(message="Please create your Company Profile before you can access your Dashboard.", category="warning")
         return redirect(url_for('company.create_company_profile'))
 
-    
-    # 4. Get recent activity
-    # recent_activity = {
-    #     'new_applications': await company_controller.get_recent_applications(company.company_id),
-    #     'saved_candidates': await company_controller.get_recent_saved_candidates(employer.employer_id)
-    # }
-    
     # 5. Determine verification progress (for checklist/progress bar)
     verification_steps = [
         {'name': 'Employer Verified', 'complete': employer.is_verified},

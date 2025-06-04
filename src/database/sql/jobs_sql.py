@@ -301,8 +301,8 @@ class JobsORM(Base):
             "location": self.location,
             "is_active": self.is_active,
 
-            "category": self.category.to_dict(include_jobs=False) if self.category and include_relationship else {},
-            "company": self.company.to_dict() if self.company and include_relationship else {},
+            "category": self.category.to_dict(include_jobs=False) if self.category and include_relationship else None,
+            "company": self.company.to_dict() if self.company and include_relationship else None,
             "applications": [application.to_dict() for application in self.applications] if include_relationship else [],
             "saved_jobs": [_job.to_dict for _job in self.saved_jobs] if include_relationship else []
         }
@@ -428,7 +428,7 @@ class JobApplicationORM(Base):
             "validation_score": self.validation_score,
             "missing_requirements": self.missing_requirements,
             "review_summary": self.review_summary,
-            "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationship else {}
+            "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationship else None
         }
 
     # Rest of the existing methods...

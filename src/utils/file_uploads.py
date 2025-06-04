@@ -29,3 +29,29 @@ def save_company_logo(file, company_id):
 
     # Return URL path
     return url_for('static', filename=f"uploads/{filename}", _external=True)
+
+
+class CompanyDocumentsService():
+    def __init__(self):
+        pass
+
+    def company_document_reader(document_id: str, company_id: str):
+        """
+
+        :param file:
+        :param company_id:
+        :return:
+        """
+        pass
+
+    def company_document_saver(file_contents, document_id: str, company_id: str):
+        """
+
+        :param file_contents:
+        :param document_id:
+        :param company_id:
+        :return:
+        """
+        pass
+
+

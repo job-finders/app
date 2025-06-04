@@ -4,6 +4,7 @@ from src.emailer import SendMail
 from src.controllers.encryptor import Encryptor
 from src.scrappers import JunctionScraper
 from src.controllers.notifications import NotificationsController
+from src.utils.file_uploads import CompanyDocumentsService
 
 
 class ServiceFactory:
@@ -48,6 +49,11 @@ class ServiceFactory:
         if 'notifications' not in self._services:
             self._services['notifications'] = NotificationsController()
         return self._services['notifications']
+    def get_company_document_loader(self):
+        """return a utility to obtain company uploaded file"""
+        if "company_document_loader" not in self._services:
+            self._services["company_document_loader"] = CompanyDocumentsService()
+        return self._services["company_document_loader"]
 
     def clear_cache(self):
         """Clear all cached service instances"""

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDi
 
 from src.database.constants import utc_time
 from src.database.models.company_models import Company
-
+from src.database.models.employer_models import Employer
 
 def format_reference(ref: str) -> str:
     """Sample reference formatter - implement your logic"""

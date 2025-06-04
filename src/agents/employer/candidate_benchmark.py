@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from src.agents.base import BaseAgent
 from src.database.models.agent_models import CandidateBenchmarkReport
 
+class JobPostSummaryInput(BaseModel):
+    ats_description: str
 
 class CandidateBenchmarkAgent(BaseAgent):
     name = "candidate_benchmark"

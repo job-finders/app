@@ -64,6 +64,7 @@ def get_service(service_name: str):
         'encryptor': factory.get_encryptor,
         'scraper': factory.get_junction_scraper,
         'notifications': factory.get_notifications_controller,
+        "company_document_loader": factory.get_company_document_loader,
     }
     if service_name not in service_map:
         raise ValueError(f"Unknown service: {service_name}")

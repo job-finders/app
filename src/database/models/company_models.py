@@ -6,11 +6,13 @@ from enum import Enum
 from typing import Optional, List, Union
 from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, ConfigDict
 
+from database.models.jobseeker_profile import JobSeekerProfile
+from src.database.constants import utc_time
+
 
 def format_reference(ref: str) -> str:
     """Sample reference formatter - implement your logic"""
     return ref.upper().replace(" ", "-")
-
 
 class CompanyVerificationStatus(Enum):
     """
@@ -19,6 +21,7 @@ class CompanyVerificationStatus(Enum):
     """
     NOT_VERIFIED = "not_verified"
     PENDING = "pending"
+    HUMAN_REVIEW = "human_review"
     DOCUMENTS_UPLOADED = "documents_uploaded"
     DOCUMENTS_REJECTED = "documents_rejected"
     DOCUMENTS_APPROVED = "documents_approved"
@@ -26,7 +29,6 @@ class CompanyVerificationStatus(Enum):
     CIPC_VERIFIED = "cipc_verified"
     CIPC_FAILED = "cipc_failed"
     VERIFIED = "verified"
-
 
 class Company(BaseModel):
     """Pydantic model for company data with job statistics"""
@@ -55,12 +57,14 @@ class Company(BaseModel):
     linkedin_url: Optional[HttpUrl] = Field(default=None)
     twitter_handle: Optional[str] = Field(default=None, max_length=15)
 
+    is_verified: Optional[bool] = Field(default=False)
+    time_verification_process_started: Optional[datetime] = Field(default=None)
+    verification_status: str = Field(default=CompanyVerificationStatus.PENDING.value)
+
     # Relationships
     jobs: Optional[list['Job']] = Field(default_factory=list)  # Forward reference
-    is_verified: Optional[bool] = Field(default=False)
-    time_verification_request_sent: Optional[datetime] = Field(default=None)
-    verification_status: str = Field(default=CompanyVerificationStatus.PENDING.value)
     saved_candidates: Optional[list['SavedCandidates']] = Field(default_factory=list)
+    employers: Optional[list['Employer']] = Field(default_factory=list)
 
 
     @field_validator('tech_stack', mode='before')
@@ -69,10 +73,8 @@ class Company(BaseModel):
         """Handle different formats of tech_stack input"""
         if v is None:
             return None
-
         if isinstance(v, list):
             return v
-
         if isinstance(v, str):
             # Try to parse JSON string
             if v.startswith('[') and v.endswith(']'):
@@ -82,7 +84,6 @@ class Company(BaseModel):
                     pass
             # Handle comma-separated values
             return [tech.strip() for tech in v.split(',') if tech.strip()]
-
         return v
     @property
     def total_saved_candidates(self) -> int:
@@ -234,7 +235,6 @@ class Company(BaseModel):
 
         return has_contact_info and has_location_info and has_descriptive_info
 
-
 class CompanyUpdate(BaseModel):
     """Model for partial company updates"""
     name: Optional[str] = None
@@ -261,12 +261,74 @@ class CompanyUpdate(BaseModel):
     class Config:
         extra = 'ignore'  # Ignore extra fields
 
+class AllowableCompanyVerificationDocumentsEnum(Enum):
+    """Allowable documents for company verification in South Africa"""
+    CIPC_CERTIFICATE_OF_INCORPORATION = "CIPC_CERT"
+    CIPC_DIRECTORS_REPORT = "CIPC Directors Report (CoR39.1)"
+    SARS_TAX_COMPLIANCE_PIN = "SARS Tax Compliance Status PIN"
+    SARS_VAT_REGISTRATION = "SARS VAT Registration Certificate"
+    CIPC_ANNUAL_RETURN = "CIPC Annual Return (CoR30.1)"
+    TAX_CLEARANCE = "TAX_CLEARANCE"
+    CK1_FOUNDING_STATEMENT = "CK1 Founding Statement (Close Corporations)"
+    BUSINESS_BANK_STATEMENT = "Business Bank Statement (SA Bank, recent)"
+    MUNICIPAL_ACCOUNT = "Municipal Account (Business premises)"
+    LEASE_AGREEMENT = "Lease Agreement (Business premises)"
+    BEE_CERTIFICATE = "BEE_CERT"
+    BUSINESS_LICENSE = "Sector-Specific Business License"
+    FINANCIAL_STATEMENTS = "Audited Financial Statements"
+    CERTIFIED_ID_COPIES = "Certified ID Copies of Directors"
+    DIRECTOR_ID_CARD_FRONT = "DIRECTOR_ID"
+
+    @classmethod
+    def sa_company_documents_list(cls) -> list[str]:
+        """Get all allowable SA document names as strings"""
+        return [doc.value for doc in cls]
+
+class AIBasedDocumentReviewResult(BaseModel):
+    """
+    Pydantic model for AI-Based Document Review Result
+    """
+
+    review_id: str = Field(default_factory=lambda : str(uuid.uuid4()),
+                           description="Unique ID of the review process")
+
+    document_id: str = Field(..., description="ID of the document reviewed")
+    is_document_valid: bool = Field(..., description="Indicates if the document is valid")
+    reason: Optional[str] = Field(None, description="Reason for invalidity, if any")
+
+    match_director_name: Optional[bool] = Field(None, description="Whether director name matches expected")
+    match_id_number: Optional[bool] = Field(None, description="Whether ID number matches expected")
+    match_cipc_data: bool = Field(False, description="Whether document data matches CIPC records")
+    match_company_profile_data: bool = Field(False, description="Whether document matches internal company profile")
+    cipc_number_verified_online: bool = Field(False, description="Whether CIPC number was verified online")
+    cipc_number_verification_notes: Optional[str] = Field(None, description="Notes on CIPC number verification")
+
+    is_suspicious: bool = Field(False, description="Whether the document appears suspicious")
+    suspicious_notes: Optional[str] = Field(None, description="Details of suspicious elements if any")
+
+    requires_human_review: bool = Field(False, description="Whether the document needs human review")
+    document_type: str = Field(..., description="Type of the document reviewed")
+    score: Optional[float] = Field(None, description="AI confidence score or overall score of review")
+    reviewer_notes: Optional[str] = Field(None, description="Notes or comments from the AI reviewer")
+
+    created_at: datetime = Field(..., description="Timestamp when the review was completed")
+
+    class Config:
+        orm_mode = True
 
 class CompanyVerificationDocument(BaseModel):
+    document_id: str = Field(default_factory=lambda : str(uuid.uuid4()))
+    company_id: str
+    ai_review_id: Optional[str]
     document_type: str  # You can use Enum here for safety
     file_url: HttpUrl
+    updated_at: datetime = Field(default_factory=utc_time)
+
     status: Optional[str] = "pending"
-    uploaded_at: Optional[datetime] = None
+    reviewed_by: Optional[str]
+    reviewed_at: Optional[str]
+    notes: Optional[str]
+    ai_review: Optional[list[AIBasedDocumentReviewResult]]
 
     class Config:
         from_attributes = True
@@ -280,8 +342,10 @@ class CompanyCIPC(BaseModel):
     registration_date: Optional[datetime]
     registered_address: Optional[str]
     company_type: Optional[str]  # e.g., "Private Company", "Non-Profit"
-    director_names: Optional[list[str]] = []
-    status: Optional[str] = "pending"  # pending, verified, failed
+    director_name: Optional[list[str]] = []
+    tax_pin: Optional[str]
+    bee_status: Optional[str]
+    status: Optional[str] = Field(default="pending")  # pending, verified, failed
     verified_at: Optional[datetime] = None
 
     class Config:
@@ -290,13 +354,77 @@ class CompanyCIPC(BaseModel):
             datetime: lambda v: v.isoformat(),
         }
 
-
 class InterestLevel(str, Enum):
     LOW = "low"
     INTERESTED = "interested"
     HIGHLY_INTERESTED = "highly_interested"
     TOP_PRIORITY = "top_priority"
     ON_HOLD = "on_hold"
+
+class CompanyFollowing(BaseModel):
+   """This Model captures the details of the Follow
+   by the Jobseeker to a company
+   """
+   follow_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+   followed_at: datetime = Field(default_factory=utc_time)
+   user_id: str
+   company_id: str
+   last_notified_at: Optional[datetime] = Field(default=None)
+
+   interest_level: str = Field(default=InterestLevel.INTERESTED.value)
+
+   jobseeker_follower: Optional[JobSeekerProfile] = Field(default=None)
+   followed_company: Optional[Company] = Field(default=None)
+
+   @property
+   def recent_follow(self) -> bool:
+       """Check if this follow happened within the last 7 days"""
+       return (utc_time() - self.followed_at).days <= 7
+
+   @property
+   def days_following(self) -> int:
+       """Number of days since following this company"""
+       return (utc_time() - self.followed_at).days
+
+   @property
+   def weeks_following(self) -> int:
+       """Number of weeks since following this company"""
+       return self.days_following // 7
+
+   @property
+   def is_highly_interested(self) -> bool:
+       """Check if interest level is high"""
+       return self.interest_level == InterestLevel.HIGHLY_INTERESTED.value
+
+   @property
+   def follow_age_category(self) -> str:
+       """Categorize follow by age"""
+       days = self.days_following
+       if days <= 7:
+           return "new"
+       elif days <= 30:
+           return "recent"
+       elif days <= 90:
+           return "active"
+       else:
+           return "old"
+
+   @property
+   def needs_notification(self) -> bool:
+       """Check if user needs notification about company updates"""
+       if not self.last_notified_at:
+           return True
+       return (utc_time() - self.last_notified_at).days >= 7
+
+   @property
+   def company_name(self) -> Optional[str]:
+       """Get company name if company data is loaded"""
+       return self.followed_company.name if self.followed_company else None
+
+   @property
+   def follower_name(self) -> Optional[str]:
+       """Get follower name if jobseeker data is loaded"""
+       return self.jobseeker_follower.full_name if self.jobseeker_follower else None
 
 
 class CandidateStatus(str, Enum):
@@ -309,7 +437,6 @@ class CandidateStatus(str, Enum):
     HIRED = "hired"
     REJECTED = "rejected"
     WITHDRAWN = "withdrawn"
-
 
 class SavedCandidates(BaseModel):
     """Pydantic model for SavedCandidates"""

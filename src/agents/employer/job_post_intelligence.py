@@ -8,6 +8,7 @@ from src.agents.base import BaseAgent
 
 
 
+
 class EnhanceJobPostInput(BaseModel):
     """
     Input model for job post enhancement agent.
@@ -216,7 +217,7 @@ class JobPostIntelligenceAgent(BaseAgent):
 
 # Job Summary Models
 class JobSummaryInput(BaseModel):
-    ats_desciption: str
+    ats_description: str
 
 
 class JobSummaryOutput(BaseModel):
@@ -240,10 +241,10 @@ class JobSummaryAgent(BaseAgent):
             "Both must be clear, professional, and informative."
         )
 
-    def prompt(self, input_model: Job) -> str:
+    def prompt(self, input_model: JobSummaryInput) -> str:
         return (
             f"Here is the full job description (ATS format):\n\n"
-            f"{input_model.ats_description.strip()}\n\n"
+            f"{input_model.job_ats_description.strip()}\n\n"
             f"Using the above, generate the following in JSON format:\n"
             f'{{\n'
             f'  "summary": "<Concise, 2–3 sentence summary for display>",\n'

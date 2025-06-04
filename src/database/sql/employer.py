@@ -25,6 +25,7 @@ class EmployerORM(Base):
 
     # Verification & timestamps
     is_verified = Column(Boolean, default=False)
+    is_admin = Column(Boolean, default=False)
     verification_token = Column(String(255), nullable=True)
     verification_token_expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -98,6 +99,6 @@ class EmployerORM(Base):
             "signature": self.signature,
 
             # Include nested company data & saved_canndidates if loaded
-            "company": self.company.to_dict() if self.company and include_relationships else {},
-            "saved_candidates": [candidate.to_dict() for candidate in self.saved_candidates] if include_relationships else []
+            "company": self.company.to_dict(include_relationships=False) if self.company and include_relationships else None,
+            "saved_candidates": [candidate.to_dict(include_relationships=False) for candidate in self.saved_candidates] if include_relationships else []
         }

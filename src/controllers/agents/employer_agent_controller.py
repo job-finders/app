@@ -1,7 +1,13 @@
 # src/controllers/agents.py
 from datetime import datetime, timedelta, timezone
+from typing import Optional, Tuple
 
+from src.agents.employer.candidate_benchmark import JobPostSummaryInput
+from src.agents.employer.document_verifications import DocumentVerificationInput, DocumentVerificationAgent, \
+    DocumentVerificationOutPut
 from src.agents.employer import JobPostIntelligenceAgent
+
+
 
 from src.database.models.agent_models import JobPostInsights
 
@@ -11,6 +17,11 @@ JobSummaryAgent, JobSummaryOutput)
 
 from src.database.models import Job
 from src.database.sql.jobs_sql import JobsORM
+from src.database.sql.company import CompanyORM, CompanyVerificationDocumentORM, CompanyCIPCORM, \
+    AIBasedDocumentReviewResultORM
+from src.database.models.company_models import Company, CompanyVerificationDocument, CompanyCIPC, CompanyVerificationStatus, AllowableCompanyVerificationDocumentsEnum
+from src.utils.route_helpers import get_service
+
 
 class EmployerAgentsController(Controllers):
     def __init__(self, factory):
@@ -53,6 +64,7 @@ class EmployerAgentsController(Controllers):
             # Run the analysis agent
             agent = JobPostIntelligenceAgent(user_id=user_id)
 
+            # noinspection PyTypeChecker
             return await agent.run(input_model=job)
 
     @error_handler
@@ -79,4 +91,132 @@ class EmployerAgentsController(Controllers):
             
             job_orm.summary = job_summary.summary
             job_orm.seo_description = job_summary.seo_description
+            session.commit()
+            # noinspection PyTypeChecker
+            return job_summary
 
+
+    async def analyze_company_documents_for_authenticity(self, company_id: str):
+
+        self.logger.info(f"Starting company verification for {company_id}")
+        with self.get_session() as session:
+            company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
+            if not company_orm:
+                self.logger.warning(f"Company {company_id} not found.")
+                return
+
+            # Mark that the process has started
+            company_orm.time_verification_process_started = datetime.now(timezone.utc)
+            company_orm.verification_status = CompanyVerificationStatus.PENDING.value
+            session.add(company_orm)
+            session.commit()
+
+            await self.run_document_verification_agents(company_orm, session)
+
+            # Re-fetch documents with updated AI status
+            documents = session.query(CompanyVerificationDocumentORM).filter_by(company_id=company_id).all()
+            doc_types = [doc.document_type for doc in documents]
+
+            if AllowableCompanyVerificationDocumentsEnum.DIRECTOR_ID_CARD_FRONT.value not in doc_types:
+                company_orm.verification_status = CompanyVerificationStatus.DOCUMENTS_REJECTED.value
+            elif all(d.ai_review_status == "approved" for d in documents):
+                company_orm.is_verified = True
+                company_orm.verification_status = CompanyVerificationStatus.VERIFIED.value
+            elif any(d.ai_review_status == "rejected" for d in documents):
+                company_orm.is_verified = False
+                if any(d.ai_review_status == "approved" for d in documents):
+                    company_orm.verification_status = CompanyVerificationStatus.HUMAN_REVIEW.value
+                else:
+                    company_orm.verification_status = CompanyVerificationStatus.DOCUMENTS_REJECTED.value
+            else:
+                company_orm.is_verified = False
+                company_orm.verification_status = CompanyVerificationStatus.HUMAN_REVIEW.value
+
+            session.add(company_orm)
+            session.commit()
+
+
+    async def run_document_verification_agents(self, company_orm: CompanyORM, session):
+        self.logger.info(f"Running AI document verification for company {company_orm.company_id}")
+
+        documents_list: list[CompanyVerificationDocumentORM] = session.query(CompanyVerificationDocumentORM).filter_by(company_id=company_orm.company_id).all()
+        cipc_record = session.query(CompanyCIPCORM).filter_by(company_id=company_orm.company_id).first()
+
+        document_verification_agent = DocumentVerificationAgent(user_id=company_orm.company_id)
+
+        for doc in documents_list:
+            agent_input = DocumentVerificationInput(
+                document_type=doc.document_type,
+                supplied_document_pdf= get_service('company_document_loader')(document_uri=doc.file_url),
+                director_name=cipc_record.director_name,
+                id_number=cipc_record.director_id,
+                director_id_card_pdf=company_orm.company_id,
+                cipc_company_data=CompanyCIPC(**cipc_record.to_dict()),
+                company_data=Company(**company_orm.to_dict())
+            )
+
+            document_verification_output: DocumentVerificationOutPut = await document_verification_agent.run(input_model=agent_input)
+            # AI Output Example (suspicious tax clearance certificate)
+            session.add(AIBasedDocumentReviewResultORM(**document_verification_output.model_dump()))
+            session.commit()
+
+            status, notes = self.reduce_verification_output(document_verification_output)
+            doc.status = status
+            doc.notes = notes
+            session.add(doc)
+        session.commit()
+
+    @staticmethod
+    def reduce_verification_output(ai_output: DocumentVerificationOutPut) -> Tuple[str, Optional[str]]:
+        # Determine document status
+        if ai_output.requires_human_review or ai_output.is_suspicious:
+            status = "human_review"
+        elif not ai_output.is_document_valid:
+            status = "rejected"
+        else:
+            status = "approved"
+
+        # Compile notes from relevant fields
+        notes_parts = []
+
+        # Core validity and reasoning
+        notes_parts.append(f"Document Validity: {ai_output.is_document_valid}")
+        if ai_output.reason:
+            notes_parts.append(f"Invalidity Reason: {ai_output.reason}")
+
+        # Match results
+        if ai_output.match_director_name is not None:
+            notes_parts.append(f"Director Name Match: {ai_output.match_director_name}")
+        if ai_output.match_id_number is not None:
+            notes_parts.append(f"ID Number Match: {ai_output.match_id_number}")
+        if ai_output.match_cipc_data is not None:
+            notes_parts.append(f"CIPC Data Match: {ai_output.match_cipc_data}")
+        if ai_output.match_company_profile_data is not None:
+            notes_parts.append(f"Company Profile Match: {ai_output.match_company_profile_data}")
+
+        # CIPC verification details
+        if ai_output.cipc_number_verified_online is not None:
+            notes_parts.append(f"CIPC Online Verification: {ai_output.cipc_number_verified_online}")
+        if ai_output.cipc_number_verification_notes:
+            notes_parts.append(f"CIPC Verification Notes: {ai_output.cipc_number_verification_notes}")
+
+        # Fraud indicators
+        if ai_output.is_suspicious:
+            notes_parts.append(f"Suspicious Document: True")
+        if ai_output.suspicious_notes:
+            notes_parts.append(f"Suspicious Indicators: {ai_output.suspicious_notes}")
+
+        # Review metadata
+        if ai_output.score is not None:
+            notes_parts.append(f"Confidence Score: {ai_output.score:.2f}")
+        if ai_output.reviewer_notes:
+            notes_parts.append(f"Reviewer Summary: {ai_output.reviewer_notes}")
+
+        # Human review flag (if not already covered by status)
+        if ai_output.requires_human_review and status != "human_review":
+            notes_parts.append("Flagged for Manual Review")
+
+        # Combine all notes
+        notes = "\n".join(notes_parts) if notes_parts else None
+
+        return status, notes

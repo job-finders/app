@@ -20,6 +20,7 @@ class Employer(BaseModel):
 
     # Verification & timestamps
     is_verified: bool = Field(default=False, description="Admin-approved status")
+    is_admin: bool = Field(default=False, description="Admin-approved status")
     verification_token: Optional[str] = Field(default=None, max_length=255)
     verification_token_expires_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=utc_time)

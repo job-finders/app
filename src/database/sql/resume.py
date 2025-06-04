@@ -48,7 +48,7 @@ class JobSeekerCVORM(Base):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-    def to_dict(self) -> dict:
+    def to_dict(self, include_relationship: bool = False) -> dict:
         return {
             "cv_id": self.cv_id,
             "user_uid": self.user_uid,
@@ -64,7 +64,15 @@ class JobSeekerCVORM(Base):
             "website": self.website,
             "linkedin": self.linkedin,
             "github": self.github,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "experience": [exp.to_dict() for exp in self.experience] if include_relationship and self.experience else [],
+            "education": [edu.to_dict() for edu in self.education] if include_relationship and self.education else [],
+            "certifications": [cert.to_dict() for cert in self.certifications] if include_relationship and self.certifications else [],
+            "languages": [lang.to_dict() for lang in self.languages] if include_relationship and self.languages else [],
+            "projects": [proj.to_dict() for proj in self.projects] if include_relationship and self.projects else [],
+            "publications": [pub.to_dict() for pub in self.publications] if include_relationship and self.publications else [],
+            "awards": [award.to_dict() for award in self.awards] if include_relationship and self.awards else [],
+            "custom_sections": [cust.to_dict() for cust in self.custom_sections] if include_relationship and self.custom_sections else []
         }
 
 class ExperienceORM(Base):

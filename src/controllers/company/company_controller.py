@@ -6,13 +6,14 @@ from flask import Flask, render_template, url_for
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
+from src.database.models.company_models import CompanyCIPC, CompanyVerificationDocument
 from src.controllers.controller import Controllers, error_handler
-from src.database.models.company_models import Company, CompanyUpdate
+from src.database.models.company_models import Company, CompanyUpdate, CompanyVerificationStatus
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Job, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
 from src.database.models.resume import JobSeekerCV, SavedCV
 from src.database.models.users import User
-from src.database.sql.company import CompanyORM
+from src.database.sql.company import CompanyORM, CompanyCIPCORM, CompanyVerificationDocumentORM
 from src.database.sql.employer import EmployerORM
 from src.database.sql.jobs_sql import JobsORM
 from src.database.sql.users import UserORM
@@ -109,19 +110,19 @@ class CompanyController(Controllers):
         """
         with self.get_session() as session:
             # Eager load all relationships to avoid N+1 queries
-            company_orm: CompanyORM = (
-                session.query(CompanyORM)
-                .options(
-                    joinedload(CompanyORM.jobs).options(
-                        joinedload(JobsORM.applications)
-                    ),
-                    joinedload(CompanyORM.employers),
-                    joinedload(CompanyORM.saved_candidates)
-                )
-                .filter(CompanyORM.company_id == company_id)  # Fixed filter condition
-                .first()
-            )
-
+            # company_orm: CompanyORM = (
+            #     session.query(CompanyORM)
+            #     .options(
+            #         joinedload(CompanyORM.jobs).options(
+            #             joinedload(JobsORM.applications)
+            #         ),
+            #         joinedload(CompanyORM.employers),
+            #         joinedload(CompanyORM.saved_candidates)
+            #     )
+            #     .filter(CompanyORM.company_id == company_id)  # Fixed filter condition
+            #     .first()
+            # )
+            company_orm = session.query(CompanyORM).get(company_id)
             if not company_orm:
                 self.logger.info(f"Unable to obtain company data with ID: {company_id}")
                 return None
@@ -129,7 +130,7 @@ class CompanyController(Controllers):
             self.logger.info(f"Obtained company data for ID: {company_id}")
 
             # Convert ORM to Pydantic model
-            return Company.model_validate(company_orm)
+            return Company(**company_orm.to_dict(include_relationships=True))
 
     @error_handler
     async def get_employees_by_company_id(self, company_id: str) -> list[Employer]:
@@ -475,8 +476,8 @@ class CompanyController(Controllers):
             employer_orm.verification_token_expires_at = None
             return True
 
-
-    async def initiate_verification_process(self, company_id: str, document_paths: list, user_id: str):
+    @error_handler
+    async def initiate_company_verification_process(self, company_id: str, document_paths: list, user_id: str):
         """Handle verification workflow"""
         # Store documents in database
         verification_id = await self._store_verification_documents(
@@ -499,10 +500,36 @@ class CompanyController(Controllers):
 
         await self._reject_verification(company_id, ai_result['reason'])
         return {'status': 'rejected', 'reason': ai_result['reason']}
+    
+    
+    @error_handler
+    async def _get_company_verification_status_from_db(self, company_id: str):
+        """Fetch verification status and related info for a company from the database."""
+        with self.get_session() as session:
+            company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
+            if not company_orm:
+                return {
+                    'company_id': company_id,
+                    'verification_status': 'not_found',
+                    'is_verified': False,
+                    'time_verification_process_started': None
+                }
+            
+            return {
+                'company_id': company_orm.company_id,
+                'verification_status': company_orm.verification_status,
+                'is_verified': company_orm.is_verified,
+                'time_verification_process_started': company_orm.time_verification_process_started.isoformat() if company_orm.time_verification_process_started else None
+            }
 
-
-    async def get_verification_status(self, company_id: str):
-        return await self._get_verification_status_from_db(company_id)
+    @error_handler
+    async def get_company_verification_status(self, company_id: str):
+        """Get the verification status of a company from the database 
+        This function will return the verification status of a company from the database
+        :param company_id:
+        :return:
+        """
+        return await self._get_company_verification_status_from_db(company_id)
 
 
     async def get_industries(self):
@@ -534,3 +561,152 @@ class CompanyController(Controllers):
             "AWS", "Azure", "Google Cloud", "Docker", "Kubernetes", "Terraform", "Ansible"
         ]
         return tech_options
+
+    async def _get_verification_status_from_db(self, company_id: str):
+        """Fetch verification status and related info for a company from the database."""
+        with self.get_session() as session:
+            company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
+            if not company_orm:
+                return {
+                    'company_id': company_id,
+                    'verification_status': 'not_found',
+                    'is_verified': False,
+                    'time_verification_request_sent': None
+                }
+            return {
+                'company_id': company_orm.company_id,
+                'verification_status': company_orm.verification_status,
+                'is_verified': company_orm.is_verified,
+                'time_verification_request_sent': company_orm.time_verification_request_sent.isoformat() if company_orm.time_verification_request_sent else None
+            }
+
+    async def _store_verification_documents(self, company_id: str, document_paths: list, user_id: str) -> str:
+        """
+        Store verification documents in the database and return a verification ID.
+        """
+        # Placeholder: Implement actual DB storage logic
+        self.logger.info(f"Storing verification documents for company {company_id}: {document_paths}")
+        # Return a mock verification ID
+        return f"verif-{company_id}-{datetime.now().timestamp()}"
+    
+    @error_handler
+    async def _analyze_documents_with_ai(self, company_id: str ) -> dict:
+        """
+        Analyze documents using AI/ML to determine validity.
+        Returns a dict with keys: is_valid (bool), needs_human_review (bool), reason (str, optional)
+        """
+        self.logger.info(f"Analyzing documents with AI: {document_paths}")
+        # Placeholder: Always return needs_human_review for now
+        return {"is_valid": False, "needs_human_review": True, "reason": "AI review required"}
+
+    @error_handler
+    async def _mark_company_verified(self, company_id: str) -> None:
+        """
+        Mark the company as verified in the database.
+        """
+        with self.get_session() as session:
+            company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
+            if company_orm:
+                company_orm.is_verified = True
+                company_orm.verification_status = CompanyVerificationStatus.VERIFIED.value
+                session.commit()
+                self.logger.info(f"Company {company_id} marked as verified.")
+    
+    @error_handler
+    async def _flag_for_human_review(self, company_id: str, verification_id: str) -> None:
+        """
+        Flag the verification for human review in the database.
+        """
+        self.logger.info(f"Flagging company {company_id} verification {verification_id} for human review.")
+        # Placeholder: Implement actual DB flag logic
+        with self.get_session() as session:
+            company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
+            if company_orm:
+                company_orm.is_verified = False
+                company_orm.time_verification_process_started = datetime.now(timezone.utc)
+                company_orm.verification_status = CompanyVerificationStatus.HUMAN_REVIEW.value
+                session.commit()
+                self.logger.info(f"Company {company_id} flagged for human review.")
+
+
+    async def _notify_admins(self, company_id: str, verification_id: str) -> None:
+        """
+        Notify admins that a verification needs human review.
+        """
+        self.logger.info(f"Notifying admins for company {company_id} verification {verification_id}.")
+        # Placeholder: Implement actual notification logic
+        with self.get_session() as session:
+            company_orm: CompanyORM = session.query(CompanyORM).filter_by(company_id=company_id).first()
+            company_profile = Company(**company_orm.to_dict(include_relationships=True))
+            for employee in company_profile.employers:
+                if employee.is_admin and employee.is_verified:
+                    # TODO - create a template to send emails here
+                    email = employee.email
+                    subject = f"Company {company_profile.name.title()} verification needs human review"
+                    message = f"Company {company_profile.name.title()} verification needs human review. You will be notified once the verification is complete. You can also check the verification status on the platform.   "
+                    email = EmailModel(to_=str(email), subject_=subject, html_=message)
+                    await get_service('send_mail').send_mail_resend(email=email)
+                    
+
+
+    async def _reject_verification(self, company_id: str, reason: str) -> None:
+        """
+            Mark the verification as rejected in the database and log the reason.
+            Reasons for Rejections will be logged into the Documents Models.
+        """
+        with self.get_session() as session:
+            company_orm: CompanyORM = session.query(CompanyORM).filter_by(company_id=company_id).first()
+            if company_orm:
+                company_orm.is_verified = False
+                company_orm.verification_status = CompanyVerificationStatus.NOT_VERIFIED.value
+                session.commit()
+                self.logger.info(f"Company {company_id} verification rejected: {reason}")
+
+
+    async def get_cipc_record_by_company_id(self, company_id: str) -> Optional[CompanyCIPC]:
+        """
+
+        :param company_id:
+        :return:
+        """
+        with self.get_session() as session:
+            cipc_orm = session.query(CompanyCIPCORM).filter_byget(company_id=company_id).first()
+            return CompanyCIPC(**cipc_orm.to_dict()) if isinstance(cipc_orm, CompanyCIPCORM) else None
+
+    async def update_cipc_record(self, company_id: str, cipc_recourd: CompanyCIPC):
+        """
+        Update the CIPC record for a given company.
+
+        For each set field in cipc_recourd, update the corresponding ORM field.
+        Commit the session and return a refreshed copy of the updated record.
+        """
+        with self.get_session() as session:
+            cipc_orm = session.query(CompanyCIPCORM).filter_by(company_id=company_id).first()
+            if not cipc_orm:
+                raise ValueError(f"No CIPC record found for company_id: {company_id}")
+
+            update_data = cipc_recourd.dict(exclude_unset=True)
+
+            for field, value in update_data.items():
+                if hasattr(cipc_orm, field):
+                    setattr(cipc_orm, field, value)
+
+            session.commit()
+            session.refresh(cipc_orm)
+
+            return cipc_orm
+
+    async def create_cipc_record(self, cipc_data: CompanyCIPC) -> CompanyCIPC:
+        with self.get_session() as session:
+            session.add(CompanyORM(**cipc_data.model_dump()))
+            return cipc_data
+
+    async def create_verification_document(self, ver_document: CompanyVerificationDocument) -> CompanyVerificationDocument:
+        """
+
+        :param ver_document:
+        :return:
+        """
+        with self.get_session() as session:
+            session.add(CompanyVerificationDocumentORM(**ver_document.model_dump()))
+            return ver_document

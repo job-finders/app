@@ -50,9 +50,11 @@ class JobSeekerProfileORM(Base):
     profile_completion = Column(String(NAME_LEN), default="0")  # or Integer if more appropriate
     last_updated = Column(DateTime, default=utc_time)
     # Relationships
-    applications = relationship("JobApplicationORM", back_populates="jobseeker_profile")
 
+    applications = relationship("JobApplicationORM", back_populates="jobseeker_profile")
     interested_companies = relationship("SavedCandidatesORM", back_populates="candidate")
+    # Companies the Job Seeker is following
+    following_companies = relationship("CompanyFollowingORM", back_populates="jobseeker_follower")
 
     @classmethod
     def create_if_not_table(cls):
@@ -66,7 +68,7 @@ class JobSeekerProfileORM(Base):
             cls.__table__.drop(bind=engine)
 
 
-    def to_dict(self, include_relationship=False):
+    def to_dict(self, include_relationship: bool =False):
         return {
             "user_uid": self.user_uid,
 
@@ -99,5 +101,7 @@ class JobSeekerProfileORM(Base):
             "visibility": self.visibility,
             "profile_completion": int(self.profile_completion),
             "last_updated": self.last_updated,
-            "applications": [application.to_dict() for application in self.applications] if include_relationship else []
+            "applications": [application.to_dict() for application in self.applications] if include_relationship else [],
+            "interested_companies": [company.to_dict() for company in self.interested_companies] if include_relationship and self.interested_companies else [],
+            "following_companies": [company_follow.to_dict() for company_follow in self.following_companies] if include_relationship and self.self.following_companies else []
         }
