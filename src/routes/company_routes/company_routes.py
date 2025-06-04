@@ -33,44 +33,44 @@ def allowed_file(filename):
 @login_required
 async def create_company_profile(user: User):
     """Company profile creation endpoint"""
-    # Comprehensive list of countries relevant to South African job market
-
     company_controller = get_controller('company')
-
     countries = await company_controller.get_countries()
-    # Industries relevant to South African market
     industries = await company_controller.get_industries()
-    # TODO - Change to Industry Specific Tecg Options
     tech_options = await company_controller.get_tech_options()
     logger.info(f"Inside Company Profile Creator")
+
     if request.method == "GET":
         company_data = await company_controller.get_employer_created_company(uid=user.uid)
         if company_data:
             logger.info(f"Company is found : {company_data} lets go to view it")
-            flash(message="You already created a company", category="success")
+            flash(message="You already created a company. View or edit your company profile below.", category="info")
             return redirect(url_for('company.view_company'))
-
         context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options)
         logger.info("Will display a form to create a company")
         return render_template("company/create_company.html", **context)
+
+    # POST
+    form_data = request.form.to_dict()
+    form_data['tech_stack'] = request.form.getlist("tech_stack")
+    logger.info(f"Obtained Form Data for creating Company Profile and Employer Initial Profile : {form_data}")
     try:
-        # Validate incoming data using Pydantic model
-        form_data = request.form.to_dict()
-        # noinspection PyTypeChecker
-        form_data['tech_stack'] = request.form.getlist("tech_stack")
-        logger.info(f"Obtained Form Data for creating Company Profile and Employer Initial Profile : {form_data}")
         company_data = Company(**form_data)
         logger.info(f"Company Data casted into Pydantic for creating Company Data : {company_data}")
     except ValidationError as e:
         logger.error(f"Company validation error: {str(e)}")
-        flash("Invalid company data. Please check all fields.", "danger")
-        return redirect(url_for('company.create_company_profile'))
+        errors = e.errors()
+        for error in errors:
+            field = error['loc'][0]
+            msg = error['msg']
+            flash(f"{field.title()} error: {msg}", "danger")
+        context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options, form_data=form_data, errors=errors)
+        return render_template("company/create_company.html", **context), 400
     try:
-        # Attempt company creation through controller
         created_company: Company = await company_controller.create_company(company_data=company_data)
         if not created_company:
             flash(message="Unable to create Company - Maybe a Duplicate Company", category="danger")
-            return redirect(url_for('company.create_company_profile'))
+            context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options, form_data=form_data)
+            return render_template("company/create_company.html", **context), 400
         logger.info(f"Company Created : {created_company}")
         initial_employer_profile = Employer(
             user_uid=user.uid,
@@ -78,30 +78,29 @@ async def create_company_profile(user: User):
         logger.info(f"Trying to Register an Employer by calling register employer with initial employer profile : {initial_employer_profile}")
         create_employer_profile: Employer = await company_controller.register_employer(
             employer_data=initial_employer_profile)
-
         if not create_employer_profile:
             flash(message="Unable to create Employer Profile - Maybe a Duplicate Company", category="danger")
-            return redirect(url_for('company.create_company_profile'))
+            context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options, form_data=form_data)
+            return render_template("company/create_company.html", **context), 400
         logger.info(f"Successfully created Company & Employer Profiles")
     except ValueError as e:
         logger.error(f"Company creation conflict: {str(e)}")
         flash(str(e), "danger")
-        return render_template("company/create_company.html",
-                            error=str(e),
-                            current_user=user,
-                            form_data=request.form)
+        context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options, form_data=form_data, error=str(e))
+        return render_template("company/create_company.html", **context), 400
 
     if not (created_company and create_employer_profile):
         logger.error(f'Error creating company using company data : {company_data}')
-        flash(message="there was an problem creating your company please try again", category="danger")
-        return redirect(url_for("company.view_company"))
+        flash(message="There was a problem creating your company. Please try again.", category="danger")
+        context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options, form_data=form_data)
+        return render_template("company/create_company.html", **context), 400
 
     # Update user role if needed (assuming employers need company association)
     if user.role != "employer":
         users_controller = get_controller('users')
         await users_controller.update_user_role(user.uid, "employer")
 
-    flash("Company profile created successfully! - please create your employer profile next", "success")
+    flash("Company profile created successfully! Please create your employer profile next.", "success")
     return redirect(url_for("company.employer_profile"))
 
 
@@ -191,31 +190,30 @@ async def update_employer_profile(user: User):
         flash("Access denied: Only employers can update this profile.", "danger")
         return redirect(url_for("company.employer_profile"))
     company_controller = get_controller('company')
-    _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
-    if not _employer_profile:
+    employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+    if not employer_profile:
         flash("Please create your employer profile before updating.", "danger")
         return redirect(url_for("company.employer_profile"))
 
-    company_data: Company = await company_controller.get_company_by_id(_employer_profile.company_id)
+    company_data: Company = await company_controller.get_company_by_id(employer_profile.company_id)
     if not company_data:
         flash("Please create a company profile before updating employer details.", "danger")
         return redirect(url_for("company.create_company_profile"))
 
     if request.method == "POST":
         form = request.form
-
         # Update fields if present in the form
-        _employer_profile.full_name = form.get("full_name") or _employer_profile.full_name
-        _employer_profile.job_title = form.get("job_title") or _employer_profile.job_title
-        _employer_profile.department = form.get("department") or _employer_profile.department
-        _employer_profile.bio = form.get("bio") or _employer_profile.bio
-        _employer_profile.company_email = form.get("company_email") or _employer_profile.company_email
-        _employer_profile.personal_email = form.get("personal_email") or _employer_profile.personal_email
-        _employer_profile.phone_number = form.get("phone_number") or _employer_profile.phone_number
-        _employer_profile.alternate_phone = form.get("alternate_phone") or _employer_profile.alternate_phone
-        _employer_profile.linkedin_url = form.get("linkedin_url") or _employer_profile.linkedin_url
-        _employer_profile.twitter_handle = form.get("twitter_handle") or _employer_profile.twitter_handle
-        _employer_profile.signature = form.get("signature") or _employer_profile.signature
+        employer_profile.full_name = form.get("full_name") or employer_profile.full_name
+        employer_profile.job_title = form.get("job_title") or employer_profile.job_title
+        employer_profile.department = form.get("department") or employer_profile.department
+        employer_profile.bio = form.get("bio") or employer_profile.bio
+        employer_profile.company_email = form.get("company_email") or employer_profile.company_email
+        employer_profile.personal_email = form.get("personal_email") or employer_profile.personal_email
+        employer_profile.phone_number = form.get("phone_number") or employer_profile.phone_number
+        employer_profile.alternate_phone = form.get("alternate_phone") or employer_profile.alternate_phone
+        employer_profile.linkedin_url = form.get("linkedin_url") or employer_profile.linkedin_url
+        employer_profile.twitter_handle = form.get("twitter_handle") or employer_profile.twitter_handle
+        employer_profile.signature = form.get("signature") or employer_profile.signature
 
         # Date field
         hire_date = form.get("hire_date")
@@ -228,11 +226,20 @@ async def update_employer_profile(user: User):
         # Checkbox for hiring authority
         employer_profile.hiring_authority = "hiring_authority" in form
 
-        employer_profile.update_timestamp()
-        await company_controller.update_employer_profile(employer_profile)
-
-        flash("Employer profile updated successfully.", "success")
-        return redirect(url_for("company.update_employer_profile"))
+        try:
+            employer_profile.update_timestamp()
+            await company_controller.update_employer_profile(employer_profile)
+            flash("Employer profile updated successfully.", "success")
+            return redirect(url_for("company.update_employer_profile"))
+        except Exception as e:
+            flash(f"An error occurred while updating your profile: {str(e)}", "danger")
+            context = {
+                "current_user": user,
+                "employer_profile": employer_profile,
+                "company_data": company_data,
+                "form_data": form
+            }
+            return render_template("company/employer_profile.html", **context), 400
 
     context = {
         "current_user": user,
@@ -282,19 +289,25 @@ async def employer_profile(user: User):
     """
     logger.info(f"Inside View Employer Profile")
     company_controller = get_controller('company')
-    _employer_profile = await company_controller.get_employer_by_uid(user_id=user.uid)
-    company_data = {}
-    if _employer_profile and _employer_profile.company_id:
-        company_data = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
-    else:
-        logger.info(f"Everything failed lets create a company {user.uid}")
-        flash(message="Please create your company profile before you can continue", category="success")
+    employer_profile = await company_controller.get_employer_by_uid(user_id=user.uid)
+    if not employer_profile:
+        logger.info(f"No employer profile found for user {user.uid}")
+        flash(message="Please create your employer profile before you can continue.", category="warning")
+        return redirect(url_for('company.create_company_profile'))
+    if not employer_profile.company_id:
+        logger.info(f"Employer profile exists but no company_id for user {user.uid}")
+        flash(message="Please create your company profile before you can continue.", category="warning")
+        return redirect(url_for('company.create_company_profile'))
+    company_data = await company_controller.get_company_by_id(company_id=employer_profile.company_id)
+    if not company_data:
+        logger.info(f"No company data found for employer {employer_profile.employer_id}")
+        flash(message="Please create your company profile before you can continue.", category="warning")
         return redirect(url_for('company.create_company_profile'))
     context = {
         "current_user": user,
-        "employer": _employer_profile,
+        "employer": employer_profile,
         "company_data": company_data,
-        "current_year": datetime.now().year  # Add this
+        "current_year": datetime.now().year
     }
     return render_template("company/view_employer_profile.html", **context)
 
@@ -456,21 +469,23 @@ async def initiate_company_verification(user: User):
     # Check current verification status
     if company.verification_status == CompanyVerificationStatus.VERIFIED.value:
         flash("Company is already verified", "info")
-        return redirect(url_for('company.get_dashboard'))
+        status_info = await company_controller.get_verification_status(company.company_id)
+        return render_template('company/verification_status.html', company=company, status_info=status_info)
     if company.verification_status == CompanyVerificationStatus.PENDING.value:
         flash("Verification is already in progress", "warning")
-        return redirect(url_for('company.verification_status'))
+        status_info = await company_controller.get_verification_status(company.company_id)
+        return render_template('company/verification_status.html', company=company, status_info=status_info)
 
     # Handle document submission
     if request.method == 'POST':
         if 'documents' not in request.files:
             flash("No files selected", "danger")
-            return redirect(request.url)
+            return render_template('company/initiate_verification.html', company=company, allowed_extensions=ALLOWED_EXTENSIONS)
 
         files = request.files.getlist('documents')
         if len(files) == 0 or all(file.filename == '' for file in files):
             flash("No valid files selected", "danger")
-            return redirect(request.url)
+            return render_template('company/initiate_verification.html', company=company, allowed_extensions=ALLOWED_EXTENSIONS)
 
         # Process and save documents
         saved_files = []
@@ -483,7 +498,7 @@ async def initiate_company_verification(user: User):
 
         if not saved_files:
             flash("No valid documents uploaded", "danger")
-            return redirect(request.url)
+            return render_template('company/initiate_verification.html', company=company, allowed_extensions=ALLOWED_EXTENSIONS)
 
         # Initiate verification process
         verification_result = await company_controller.initiate_verification_process(
@@ -497,10 +512,11 @@ async def initiate_company_verification(user: User):
         else:
             flash("Documents received - AI verification in progress", "info")
 
-        return redirect(url_for('company.verification_status'))
+        status_info = await company_controller.get_verification_status(company.company_id)
+        return render_template('company/verification_status.html', company=company, status_info=status_info)
 
     # GET request - show upload form
-    return render_template('company/initiate_verification.html',company=company,allowed_extensions=ALLOWED_EXTENSIONS)
+    return render_template('company/initiate_verification.html', company=company, allowed_extensions=ALLOWED_EXTENSIONS)
 
 
 @company_bp.route('/verification-status')
@@ -558,45 +574,39 @@ async def employers(user: User):
 @company_bp.route("/me")
 @login_required
 async def get_dashboard(user: User):
-
-    # 1. Verify employer profile exists
     company_controller = get_controller('company')
     employer = await company_controller.get_employer_by_uid(user.uid)
 
     if not employer:
-        flash(message="You need to create Employer Profile Before you can Access your Dashboard", category="success")
+        flash(message="You need to create your Employer Profile before you can access your Dashboard.", category="warning")
         return redirect(url_for('company.employer_profile'))
     # 2. Get company data
     company: Company = await company_controller.get_company_by_id(employer.company_id)
     if not company:
-        flash(message="Please Created Company Profile", category="success")
+        flash(message="Please create your Company Profile before you can access your Dashboard.", category="warning")
         return redirect(url_for('company.create_company_profile'))
 
-    # 3. Fetch dashboard metrics
-    metrics = {
-        'saved_candidates': await company_controller.count_saved_candidates(employer.employer_id),
-        'verification_status': company.verification_status
-    }
     
     # 4. Get recent activity
-    recent_activity = {
-        'new_applications': await company_controller.get_recent_applications(company.company_id),
-        'saved_candidates': await company_controller.get_recent_saved_candidates(employer.employer_id)
-    }
+    # recent_activity = {
+    #     'new_applications': await company_controller.get_recent_applications(company.company_id),
+    #     'saved_candidates': await company_controller.get_recent_saved_candidates(employer.employer_id)
+    # }
     
-    # 5. Determine verification progress
+    # 5. Determine verification progress (for checklist/progress bar)
     verification_steps = [
         {'name': 'Employer Verified', 'complete': employer.is_verified},
-        {'name': 'Documents Submitted', 'complete': bool(company.documents_submitted)},
-        {'name': 'Company Verified', 'complete': company.verification_status == "verified"}
+        {'name': 'Documents Submitted', 'complete': bool(getattr(company, 'documents_submitted', False))},
+        {'name': 'Company Verified', 'complete': company.verification_status == CompanyVerificationStatus.VERIFIED.value}
     ]
     
-    return render_template(
-        "company/dashboard.html",
+    context = dict(
         current_user=user,
         company=company,
         employer=employer,
-        metrics=metrics,
-        recent_activity=recent_activity,
         verification_steps=verification_steps
+    )
+    return render_template(
+        "company/dashboard.html",
+        **context
     )

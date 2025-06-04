@@ -10,4 +10,3 @@ def init_csrf_protection(app):
 
     # Exempt API endpoints if needed
     csrf.exempt('api.*')
-    

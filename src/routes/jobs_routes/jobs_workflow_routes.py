@@ -1,11 +1,11 @@
 # src/routes/jobs_workflow.py
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from src.routes import flask_error_handler
-from src.authentication import admin_login, user_details, login_required
-from src.database.models.users import User
 
+from src.authentication import admin_login, login_required
 from src.database.models.jobs_model import Job, JobApplication
+from src.database.models.users import User
+from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
 
 jobs_workflow_route = Blueprint("jobs_workflow", __name__, url_prefix="/dashboard/jobs")
@@ -134,9 +134,7 @@ async def feature_job(user: User, job_id: str):
         It is typically called by an administrator or workflow AI to promote a job listing.
     
     Must become a paid feature in the future.
-
     Mark a job as featured.
-    
     """
     jobs_workflow_controller = get_controller('jobs_workflow')
     job = await jobs_workflow_controller.feature_job_listing(job_id)

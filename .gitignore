@@ -166,3 +166,7 @@ cython_debug/
 /.idea/sqldialects.xml
 /media/
 /cache/
+jobs_cache.sqlite
+.idea/jsLibraryMappings.xml
+static/3554e950877947b59633174a3c18e6b3.txtZone.Identifier
+static/images/banner.pngZone.Identifier

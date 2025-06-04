@@ -11,80 +11,110 @@
 {% endblock %}
 
 {% block content %}
-
-<div class="dashboard">
-  <!-- Status Summary Row -->
-  <div class="status-cards">
-    <div class="card verification-status">
-      <h3>Verification</h3>
-      <div class="status-badge {{ company.verification_status }}"></div>
-      {% if company.verification_status != "verified" %}
-        <a href="{{ url_for('company.initiate_company_verification') }}" class="btn">
-          Complete Verification
-        </a>
-      {% endif %}
+<div class="container my-4">
+  <h1 class="mb-4">Company Dashboard</h1>
+  <div class="row g-4 mb-4">
+    <!-- Verification Status Card -->
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Verification</h5>
+          <span class="badge bg-{% if company.verification_status == 'verified' %}success{% elif company.verification_status == 'pending' %}warning{% else %}secondary{% endif %}">
+            {{ company.verification_status|capitalize }}
+          </span>
+          {% if company.verification_status != "verified" %}
+            <a href="{{ url_for('company.initiate_company_verification') }}" class="btn btn-outline-primary btn-sm mt-3">
+              Complete Verification
+            </a>
+          {% endif %}
+        </div>
+      </div>
     </div>
-    
-    <div class="card jobs-summary">
-      <h3>Active Jobs</h3>
-      <div class="count">{{ company.active_jobs }}</div>
-      <a href="{{ url_for('company.manage_jobs') }}">View All</a>
+    <!-- Active Jobs Card -->
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Active Jobs</h5>
+          <p class="display-6 fw-bold">{{ company.active_jobs }}</p>
+          <a href="{{ url_for('company.manage_jobs') }}" class="btn btn-outline-info btn-sm">View All</a>
+        </div>
+      </div>
     </div>
-    
-    <div class="card candidates-summary">
-      <h3>Saved Candidates</h3>
-      <div class="count">{{ metrics.saved_candidates }}</div>
-      <a href="{{ url_for('company.candidate_management') }}">Browse</a>
+    <!-- Saved Candidates Card -->
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Saved Candidates</h5>
+          <p class="display-6 fw-bold">{{ company.total_saved_candidates }}</p>
+          <a href="{{ url_for('company.candidate_management') }}" class="btn btn-outline-success btn-sm">Browse</a>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Verification Progress -->
-  <div class="verification-progress">
-    <h2>Verification Steps</h2>
-    <div class="steps">
+  <div class="mb-5">
+    <h4>Verification Steps</h4>
+    <ul class="list-group list-group-horizontal">
       {% for step in verification_steps %}
-        <div class="step {% if step.complete %}completed{% endif %}">
-          {{ loop.index }}. {{ step.name }}
-        </div>
+      <li class="list-group-item flex-fill text-center {% if step.complete %}list-group-item-success{% else %}list-group-item-secondary{% endif %}">
+        {{ loop.index }}. {{ step.name }}
+      </li>
       {% endfor %}
-    </div>
+    </ul>
   </div>
 
   <!-- Recent Activity -->
-  <div class="recent-activity">
-    <h2>Recent Activity</h2>
-    <div class="activity-list">
-      {% for app in company.recent_applications %}
-        <div class="activity-item">
-          <span class="icon">📄</span>
-            Job Title: {{ app.job.title }} -
-            Date Applied {{ app.applied_date }} -
-            Candidate Name {{ app.jobseeker_profile.first_name }}
-            <a href="#">
-                Review Application
-            </a>
-        </div>
-      {% endfor %}
-      {% for candidate in recent_activity.saved_candidates %}
-        <div class="activity-item">
-          <span class="icon">👤</span>
-          Saved candidate {{ candidate.name }}
-        </div>
-      {% endfor %}
+  <div class="row mb-5">
+    <div class="col-md-6">
+      <h5>Recent Applications</h5>
+      <ul class="list-group">
+        {% for app in company.recent_applications %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <span class="me-2 text-primary"><i class="ti ti-file-text"></i></span>
+            <strong>{{ app.job.title }}</strong> - {{ app.applied_date.strftime('%Y-%m-%d') }}<br>
+            Candidate: {{ app.jobseeker_profile.first_name }}
+          </div>
+          <a href="#" class="btn btn-sm btn-outline-secondary">Review</a>
+        </li>
+        {% else %}
+        <li class="list-group-item">No recent applications.</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="col-md-6">
+      <h5>Recently Saved Candidates</h5>
+      <ul class="list-group">
+        {% for candidate in company.saved_candidates[:5] %}
+        <li class="list-group-item d-flex align-items-center">
+          <span class="me-2 text-success"><i class="ti ti-user"></i></span>
+          {{ candidate.name }}
+        </li>
+        {% else %}
+        <li class="list-group-item">No recently saved candidates.</li>
+        {% endfor %}
+      </ul>
     </div>
   </div>
+
   <!-- Quick Actions -->
-  <div class="quick-actions">
-    <a href="{{ url_for('company.manage_jobs') }}" class="action-card">
-      ➕ Post New Job
-    </a>
-    <a href="{{ url_for('company.candidate_management') }}" class="action-card">
-      🔍 Find Candidates
-    </a>
-    <a href="{{ url_for('company.application_analytics') }}" class="action-card">
-      📊 View Analytics
-    </a>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <a href="{{ url_for('company.manage_jobs') }}" class="btn btn-lg btn-outline-primary w-100">
+        <i class="ti ti-plus"></i> Post New Job
+      </a>
+    </div>
+    <div class="col-md-4">
+      <a href="{{ url_for('company.candidate_management') }}" class="btn btn-lg btn-outline-success w-100">
+        <i class="ti ti-search"></i> Find Candidates
+      </a>
+    </div>
+    <div class="col-md-4">
+      <a href="{{ url_for('company.application_analytics') }}" class="btn btn-lg btn-outline-info w-100">
+        <i class="ti ti-chart-bar"></i> View Analytics
+      </a>
+    </div>
   </div>
 </div>
-
 {% endblock %}

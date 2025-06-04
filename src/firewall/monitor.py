@@ -17,7 +17,37 @@ SQLI_PATTERNS = [
     r";\s*#",
     r"union\s+select",
     r"exec\s*\(",
-    r"waitfor\s+delay"
+    r"waitfor\s+delay",
+    r"or\s+1=1",  # or 1=1
+    r"or\s+'1'='1'",  # or '1'='1'
+    r"or\s+\"1\"=\"1\"",  # or "1"="1"
+    r"and\s+1=1",  # and 1=1
+    r"and\s+'1'='1'",  # and '1'='1'
+    r"and\s+\"1\"=\"1\"",  # and "1"="1"
+    r"select\s+.*\s+from",  # select ... from
+    r"insert\s+into",  # insert into
+    r"update\s+.*\s+set",  # update ... set
+    r"delete\s+from",  # delete from
+    r"drop\s+table",  # drop table
+    r"drop\s+database",  # drop database
+    r"information_schema",  # information_schema
+    r"sleep\s*\(",  # sleep(
+    r"benchmark\s*\(",  # benchmark(
+    r"load_file\s*\(",  # load_file(
+    r"outfile",  # outfile
+    r"--",  # SQL comment
+    r"#",  # SQL comment
+    r"/\*",  # SQL comment start
+    r"\*/",  # SQL comment end
+    r"char\s*\(",  # char(
+    r"cast\s*\(",  # cast(
+    r"convert\s*\(",  # convert(
+    r"having\s+",  # having clause
+    r"order\s+by",  # order by
+    r"group\s+by",  # group by
+    r"xp_cmdshell",  # SQL Server command shell
+    r"sp_executesql",  # SQL Server dynamic SQL
+    r"0x[0-9a-fA-F]+",  # Hex encoded values
 ]
 
 

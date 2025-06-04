@@ -23,29 +23,27 @@ def _get_controller_map():
     }
 
 def get_controller(controller_name: str):
-    """Helper function to get controller from factory"""
-    # Get controller map from cache
-    # Check if already cached in this request
+    """
+        Helper function to get controller from factory
+        # Get controller map from cache
+        # Check if already cached in this request
+    """
     if not hasattr(g, '_controllers'):
         g._controllers = {}
     elif controller_name in g._controllers:
         return g._controllers[controller_name]
-
+    # Returns Controller Map
     controller_map = _get_controller_map()
-
     # Validate controller name
     if controller_name not in controller_map:
         raise ValueError(f"Unknown controller: {controller_name}. "
                          f"Valid options: {', '.join(controller_map.keys())}")
-
     # Get factory from app context
     factory = getattr(current_app, 'extensions', {}).get('controller_factory')
     if not factory:
         raise RuntimeError("Controller factory not initialized in app context")
-
     # Get controller getter method name
     getter_name = controller_map[controller_name]
-
     # Get controller instance
     try:
         controller = getattr(factory, getter_name)()
@@ -57,7 +55,6 @@ def get_controller(controller_name: str):
     except Exception as e:
         raise RuntimeError(f"Error getting controller {controller_name}: {str(e)}") from e
 
-
 def get_service(service_name: str):
     """Helper function to get service from factory"""
     factory = current_app.service_factory
@@ -68,36 +65,28 @@ def get_service(service_name: str):
         'scraper': factory.get_junction_scraper,
         'notifications': factory.get_notifications_controller,
     }
-
     if service_name not in service_map:
         raise ValueError(f"Unknown service: {service_name}")
-
     return service_map[service_name]()
 
 
 def inject_controller(controller_name: str):
     """Decorator to inject controller into route function"""
-
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             controller = get_controller(controller_name)
             return f(controller, *args, **kwargs)
-
         return decorated_function
-
     return decorator
 
 
 def inject_service(service_name: str):
     """Decorator to inject service into route function"""
-
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             service = get_service(service_name)
             return f(service, *args, **kwargs)
-
         return decorated_function
-
     return decorator

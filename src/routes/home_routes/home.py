@@ -1,17 +1,16 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, send_file
 from pydantic import ValidationError
 
-from src.cache.route_cache import cache_response
 from src.authentication import user_details
-from src.database.models.users import User
-from src.routes import flask_error_handler
 from src.database.models.notifications import CreateNotifications
 from src.database.models.seo import create_tags
+from src.database.models.users import User
 from src.logger import init_logger
-
-from src.routes.utils import (fetch_and_cache_logo, create_context, not_found, redirect_apply_page)
+from src.routes import flask_error_handler
+from src.routes.utils import (fetch_and_cache_logo, create_context, not_found)
 from src.utils import format_title
 from src.utils.route_helpers import get_service
+
 home_route = Blueprint('home', __name__)
 home_logger = init_logger("home_logger")
 
@@ -30,7 +29,6 @@ async def serve_logo(job_ref: str):
     if not file_path or not file_path.exists():
         home_logger.error(f"File not found or invalid: {file_path}")
         abort(404)
-
     return send_file(file_path, mimetype="image/png")
 
 

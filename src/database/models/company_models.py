@@ -60,6 +60,7 @@ class Company(BaseModel):
     is_verified: Optional[bool] = Field(default=False)
     time_verification_request_sent: Optional[datetime] = Field(default=None)
     verification_status: str = Field(default=CompanyVerificationStatus.PENDING.value)
+    saved_candidates: Optional[list['SavedCandidates']] = Field(default_factory=list)
 
 
     @field_validator('tech_stack', mode='before')
@@ -83,7 +84,11 @@ class Company(BaseModel):
             return [tech.strip() for tech in v.split(',') if tech.strip()]
 
         return v
-
+    @property
+    def total_saved_candidates(self) -> int:
+        """Total saved candidates"""
+        return len(self.saved_candidates) if self.saved_candidates else 0
+    
     # Computed job statistics properties
     @property
     def total_jobs(self) -> int:
