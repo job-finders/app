@@ -1,56 +1,6 @@
 import os
-from flask import Flask, flash, render_template
-from src.utils import template_folder, static_folder, format_title, format_description, intcomma, datetimeformat, \
-    current_year
-from src.factories.controller_factory import ControllerFactory
-from src.factories.service_factory import ServiceFactory
+from flask import Flask
 
-
-def create_app(config):
-    """Flask application factory"""
-    app = Flask(__name__)
-    app.url_map.strict_slashes = False
-    app.template_folder = template_folder()
-    app.static_folder = static_folder()
-    app.config['SECRET_KEY'] = config.SECRET_KEY
-    app.config['BASE_URL'] = "https://jobfinders.site"
-
-    # Configure upload settings
-    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
-    app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-    with app.app_context():
-        # Initialize service and controller factories
-        service_factory = ServiceFactory(app)
-        controller_factory = ControllerFactory(app, service_factory)
-
-        # Store factories in app for access in routes
-        app.service_factory = service_factory
-        app.controller_factory = controller_factory
-
-        # Run boot sequence
-        from src.main.boot import boot
-        boot()
-
-        # Initialize scraper if needed
-        scraper = service_factory.get_junction_scraper()
-        scraper.init_app(app)
-
-        _setup_error_handler(app)
-        # Register blueprints
-        _register_blueprints(app)
-
-        # Register template filters
-        _register_template_filters(app)
-
-        # Clean Controllers Upon Exit
-        @app.teardown_appcontext
-        def shutdown_controllers(exception=None):
-            if controller_factory := app.extensions.get('controller_factory'):
-                controller_factory.close_all()
-
-    return app
 
 
 def _register_blueprints(app):
@@ -73,13 +23,12 @@ def _register_blueprints(app):
         jobseeker_profiles_bp, resume_routes, jobseeker_applications_route,
         cron_route, ats_tool_route, company_bp, company_search_routes
     ]
-
     for blueprint in blueprints:
         app.register_blueprint(blueprint)
 
-
 def _register_template_filters(app):
     """Register Jinja2 template filters"""
+    from src.utils import format_title, format_description, intcomma, datetimeformat, current_year
     app.jinja_env.filters['title'] = format_title
     app.jinja_env.filters['description'] = format_description
     app.jinja_env.filters['intcomma'] = intcomma
@@ -90,15 +39,55 @@ def _register_template_filters(app):
     def round_filter(value, precision=0):
         return round(value, precision)
 
+# Create App Method
+def create_app(config):
+    """Flask application factory"""
+    from src.utils import template_folder, static_folder
+    app = Flask(__name__)
+    app.url_map.strict_slashes = False
+    app.template_folder = template_folder()
+    app.static_folder = static_folder()
+    app.config['SECRET_KEY'] = config.SECRET_KEY
+    app.config['BASE_URL'] = "https://jobfinders.site"
 
-# noinspection PyMethodMayBeStatic
-def _setup_error_handler(app: Flask):
-    @app.errorhandler(404)
-    def page_not_found(error):
-        flash(message="we where unable to find the resource you where looking for", category="danger")
-        return render_template('index.html'), 404
+    # Configure upload settings
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
+    app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    @app.errorhandler(500)
-    def internal_server_error(error):
-        flash(message="Internal Server Error Please try again later", category="danger")
-        return render_template('index.html'), 500
+    with app.app_context():
+        # Initialize service and controller factories
+        from src.factories.controller_factory import ControllerFactory
+        from src.factories.service_factory import ServiceFactory
+        service_factory = ServiceFactory(app)
+        controller_factory = ControllerFactory(app, service_factory)
+
+        # Store factories in app for access in routes
+        app.service_factory = service_factory
+        app.controller_factory = controller_factory
+
+        # Run boot sequence
+        from src.main.boot import boot
+        boot()
+
+        # Initialize scraper if needed
+        scraper = service_factory.get_junction_scraper()
+        scraper.init_app(app)
+
+        # Registering Error Handling
+        from src.main.error_handling import register_error_handlers
+        register_error_handlers(app)
+
+        # Register blueprints
+        _register_blueprints(app)
+
+        # Register template filters
+        _register_template_filters(app)
+
+        # Clean Controllers Upon Exit
+        @app.teardown_appcontext
+        def shutdown_controllers(exception=None):
+            if _controller_factory := app.extensions.get('controller_factory'):
+                _controller_factory.close_all()
+
+    return app

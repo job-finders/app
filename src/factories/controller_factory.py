@@ -1,15 +1,15 @@
 # src/factories/controller_factory.py
 import threading
-import weakref
 import time
 from typing import Dict, Any
-from src.controllers.jobs import JobsSearchController, JobsWorkflowController
-from src.controllers.resumes import ResumeController
-from src.controllers.company import CompanyController
-from src.controllers.users import UsersController
-from src.controllers.ats import ATSToolController
-from src.controllers.jobseekers import JobSeekerProfilesController
+
 from src.controllers.agents import EmployerAgentsController, EmployeeAgentsController
+from src.controllers.ats import ATSToolController
+from src.controllers.company import CompanyController
+from src.controllers.jobs import JobsSearchController, JobsWorkflowController
+from src.controllers.jobseekers import JobSeekerProfilesController
+from src.controllers.resumes import ResumeController
+from src.controllers.users import UsersController
 
 
 class ControllerFactory:

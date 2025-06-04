@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Response, make_response
+
+from src.database.constants import utc_time
 from src.logger import init_logger
 from src.authentication import login_required, user_details
 from src.database.models.users import User
 from src.database.models import Role
 from src.utils.route_helpers import get_controller
 
-auth_route = Blueprint("auth", __name__, template_folder="templates")
+auth_route = Blueprint("auth", __name__, template_folder="templates", url_prefix="/auth")
 auth_logger = init_logger('auth_logger')
 
 async def create_response(redirect_url, message=None, category=None) -> Response:
@@ -14,7 +16,6 @@ async def create_response(redirect_url, message=None, category=None) -> Response
     if message and category:
         flash(message=message, category=category)
     return response
-
 
 
 @auth_route.route("/login", methods=["GET", "POST"])
@@ -44,7 +45,7 @@ async def login(user: User):
         else:
             response = await create_response(url_for('jobseekers.dashboard'))
 
-        expiration = datetime.utcnow() + timedelta(minutes=remember_me_delay)
+        expiration = utc_time() + timedelta(minutes=remember_me_delay)
         response.set_cookie('auth', value=user.uid, expires=expiration, httponly=True)
         flash("Login successful", "success")
         return response
@@ -58,16 +59,18 @@ async def logout(user: User):
     # Clear the session and the 'auth' cookie
     session.clear()
     response = make_response(redirect(url_for("auth.login")))
-
     # Expire the auth cookie
     response.set_cookie('auth', '', expires=0, httponly=True)
-
     flash("Logged out successfully", "info")
-
     return response
 
 @auth_route.route("/subscribe", methods=["POST", "GET"])
-async def subscribe():
+@user_details
+async def subscribe(user: User):
+
+    if user:
+        flash(message="You have been logged out", category="danger")
+        return redirect(url_for("auth.logout"))
 
     if request.method.casefold() == "get":
         return render_template('register.html')
@@ -110,7 +113,6 @@ async def subscribe():
 
     flash("Subscription successful! You are now logged in.", "success")
     return response
-
 
 
 @auth_route.route("/password-reset", methods=["GET", "POST"])

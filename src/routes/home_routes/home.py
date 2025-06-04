@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, send_file
 from pydantic import ValidationError
 
+from src.cache.route_cache import cache_response
 from src.authentication import user_details
 from src.database.models.users import User
 from src.routes import flask_error_handler
@@ -20,7 +21,7 @@ home_logger = init_logger("home_logger")
 @home_route.get("/media/logos/<job_ref>.png")
 async def serve_logo(job_ref: str):
     """Serve a job logo that is cached or fetch it if not present."""
-    job = junction_scrapper.jobs.get(job_ref)
+    job = get_service('scraper').jobs.get(job_ref)
     if not job:
         home_logger.error(f"Job not found: {job_ref}")
         abort(404)
