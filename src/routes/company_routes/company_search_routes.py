@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
 
+from src.routes import flask_error_handler
 from src.database.models.employer_models import Employer
 from src.authentication import login_required, user_details
 from src.database.models.company_models import CompanyVerificationStatus, Company
@@ -13,6 +14,7 @@ company_search_routes = Blueprint('company_search', __name__, url_prefix='/compa
 
 
 @company_search_routes.get('/view/<string:company_id>')
+@flask_error_handler
 @login_required
 async def view_company_by_company_id(user: User, company_id: str):
     """
@@ -69,6 +71,7 @@ async def view_company_by_company_id(user: User, company_id: str):
     )
     
 @company_search_routes.get('/list')
+@flask_error_handler
 @user_details
 async def list_companies(user: User):
     """
@@ -86,6 +89,7 @@ async def list_companies(user: User):
 
 
 @company_search_routes.get('/employees')
+@flask_error_handler
 @login_required
 async def get_employer_details(user: User):
     """

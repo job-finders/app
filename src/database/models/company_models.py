@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Optional, List, Union
 from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, ConfigDict
 
-from database.models.jobseeker_profile import JobSeekerProfile
+from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.constants import utc_time
 
 

@@ -6,6 +6,7 @@ from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError
 from werkzeug.utils import secure_filename
 
+from src.routes import flask_error_handler
 from src.authentication import login_required
 from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate, CompanyCIPC, \
     CompanyVerificationDocument
@@ -113,7 +114,16 @@ async def edit_company_profile(user: User):
     """Render company profile edit form"""
     company_controller = get_controller('company')
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+    if not _employer_profile:
+        flash("Employer profile not found. Please create your employer profile first.", "danger")
+        return redirect(url_for("company.create_company_profile"))
+    if not _employer_profile.company_id:
+        flash("No company associated with your employer profile. Please create a company profile.", "danger")
+        return redirect(url_for("company.create_company_profile"))
     company = await company_controller.get_company_by_id(_employer_profile.company_id)
+    if not company:
+        flash("Company not found. Please create your company profile.", "danger")
+        return redirect(url_for("company.create_company_profile"))
 
     return render_template('company/company_editor.html',
                            company=company,
@@ -191,12 +201,12 @@ async def update_company_profile(user: User):
 async def update_employer_profile(user: User):
     if user.role != "employer":
         flash("Access denied: Only employers can update this profile.", "danger")
-        return redirect(url_for("company.employer_profile"))
+        return redirect(url_for("company.view_employer_profile"))
     company_controller = get_controller('company')
     employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
     if not employer_profile:
         flash("Please create your employer profile before updating.", "danger")
-        return redirect(url_for("company.employer_profile"))
+        return redirect(url_for("company.view_employer_profile"))
 
     company_data: Company = await company_controller.get_company_by_id(employer_profile.company_id)
     if not company_data:
@@ -253,36 +263,39 @@ async def update_employer_profile(user: User):
 
 
 @company_bp.route("/profile", methods=["GET"])
+@flask_error_handler
 @login_required
 async def view_company(user: User):
     """Company profile viewing endpoint"""
-    if user.role != "employer":
-        logger.error(f"Company lookup error: User is not an Employer at any company")
-        return redirect(url_for("company.employer_profile"))
+    if not hasattr(user, "role") or user.role != "employer":
+        logger.error("Company lookup error: User is not an Employer at any company or role missing")
+        flash("You must be an employer to view this page.", "danger")
+        return redirect(url_for("company.view_employer_profile"))
+
     company_controller = get_controller('company')
-    _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+    _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=getattr(user, "uid", None))
+    if not _employer_profile or not hasattr(_employer_profile, "company_id") or not _employer_profile.company_id:
+        logger.info("Unable to Retrieve Employer Profile from Database or company_id missing")
+        flash("Please create your Employer Profile", "danger")
+        return redirect(url_for("company.view_employer_profile"))
 
-
-    if not _employer_profile:
-        err = f"Please Create your Employer Profile"
-        logger.info("Unable to Retrieve Employer Profile from Database")
-        flash(err, "danger")
-        return redirect(url_for("company.employer_profile"))
     logger.info(f"view_company : Retrieved Employer Profile : {_employer_profile}")
     company_data: Company = await company_controller.get_company_by_id(company_id=_employer_profile.company_id)
     if not company_data:
-        logger.info(f"Error looking up Company with Company ID: {_employer_profile.company_id}")
-        flash(message="looks like you have not yet created a company associated with your employer profile, please create it", category='danger')
+        logger.info(f"Error looking up Company with Company ID: {getattr(_employer_profile, 'company_id', None)}")
+        flash("Looks like you have not yet created a company associated with your employer profile, please create it", "danger")
         return redirect(url_for('company.create_company_profile'))
+
     context = {
         "current_user": user,
         "employer_profile": _employer_profile,
-        "company": company_data}
+        "company": company_data
+    }
 
     return render_template("company/view_company_profile.html", **context)
 
-
 @company_bp.route("/employer/profile", methods=["GET"])
+@flask_error_handler
 @login_required
 async def view_employer_profile(user: User):
     """
@@ -317,6 +330,7 @@ async def view_employer_profile(user: User):
 
 
 @company_bp.route("/jobs", methods=["GET", "POST"])
+@flask_error_handler
 @login_required
 async def manage_jobs(user: User):
     """Job post management (mirrors ATS tool pattern)"""
@@ -324,16 +338,16 @@ async def manage_jobs(user: User):
     if not user.role == "employer":
         flash(message="You are not associated with any company please create a company in order to continue",
         category="danger")
-        return redirect(url_for('company.employer_profile'))
+        return redirect(url_for('company.view_employer_profile'))
     company_controller = get_controller('company')
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
     if not _employer_profile:
         flash("Please create your employer profile before posting or viewing jobs", "danger")
-        return redirect(url_for('company.employer_profile'))
+        return redirect(url_for('company.view_employer_profile'))
 
     if not (_employer_profile.is_valid and _employer_profile.is_verified):
         flash("Please verify your employer profile before posting or viewing jobs", "danger")
-        return redirect(url_for('company.employer_profile'))
+        return redirect(url_for('company.view_employer_profile'))
 
     if request.method == "GET":
         # get methods allows employer to view jobs
@@ -357,6 +371,7 @@ async def manage_jobs(user: User):
     return redirect(url_for("company.manage_jobs"))
 
 @company_bp.route("/candidates", methods=["GET", "POST"])
+@flask_error_handler
 @login_required
 async def candidate_management(user: User):
     """Candidate shortlisting (extends ATS functionality)"""
@@ -389,6 +404,7 @@ async def candidate_management(user: User):
     
 
 @company_bp.route("/analytics/applications", methods=["GET"])
+@flask_error_handler
 @login_required
 async def application_analytics(user: User):
     """Hiring analytics dashboard (integrates with ATS reports)"""
@@ -400,13 +416,14 @@ async def application_analytics(user: User):
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_uid=user.uid)
     if not _employer_profile or not (_employer_profile.is_valid and _employer_profile.is_verified):
         flash(message="Your Employer Profile is either not complete or not verified", category="danger")
-        return redirect(url_for('company.employer_profile'))
+        return redirect(url_for('company.view_employer_profile'))
 
     analytics: JobApplicationDashboard = await company_controller.get_application_analytics(company_id=_employer_profile.company_id)
     context = dict(current_user=user, analytics=analytics)
     return render_template("company/analytics.html", **context)
 
 @company_bp.route("/verify-employer-profile", methods=["POST"])
+@flask_error_handler
 @login_required
 async def initiate_employer_verification(user: User):
     """Start company verification process"""
@@ -414,24 +431,25 @@ async def initiate_employer_verification(user: User):
     employer_orm = await company_controller.get_employer_by_uid(user_uid=user.uid)
     if not employer_orm:
         flash(message="please create the employer profile first", category='danger')
-        return redirect(url_for("company.employer_profile"))
+        return redirect(url_for("company.view_employer_profile"))
 
     employer = Employer(**employer_orm.to_dict())
 
     if not employer.is_valid:
         flash(message="please ensure your employer profile is complete before attemmpting verification", category="danger")
-        return redirect(url_for("company.employer_profile"))
+        return redirect(url_for("company.view_employer_profile"))
     try:
         response = await company_controller.initiate_employer_profile_verification(employer_id=employer.employer_id)
     except ValueError as e:
         flash(message=str(e), category="danger")
-        return redirect(url_for("company.employer_profile"))
+        return redirect(url_for("company.view_employer_profile"))
     
     # await send_verification_email(request.user_email, token)
     flash("Verification initiated - check your email", "success")
-    return redirect(url_for("company.employer_profile"))
+    return redirect(url_for("company.view_employer_profile"))
 
 @company_bp.route("/do-verify-employer-profile/<string:token>/<string:employer_id>", methods=["GET"])
+@flask_error_handler
 async def verify_employer_profile(token: str, employer_id: str):
     """
     The employer lands here after clicking the verification link in the email.
@@ -459,6 +477,7 @@ async def verify_employer_profile(token: str, employer_id: str):
 
 
 @company_bp.route('/submit-company-verification', methods=['GET', 'POST'])
+@flask_error_handler
 @login_required
 async def initiate_company_verification(user: User):
     """Endpoint for comprehensive company verification submission"""
@@ -473,7 +492,7 @@ async def initiate_company_verification(user: User):
     employer = await company_controller.get_employer_by_uid(user.uid)
     if not employer or not employer.company_id:
         flash("Complete your employer profile first", "danger")
-        return redirect(url_for('company.employer_profile'))
+        return redirect(url_for('company.view_employer_profile'))
 
     company: Company = await company_controller.get_company_by_id(employer.company_id)
 
@@ -574,6 +593,7 @@ async def initiate_company_verification(user: User):
     )
 
 @company_bp.route('/verification-status')
+@flask_error_handler
 @login_required
 async def verification_status(user: User):
     """Show current verification status"""
@@ -588,6 +608,7 @@ async def verification_status(user: User):
     return render_template('company/verification_status.html',company=company,status_info=status_info)
 
 @company_bp.route("/billing")
+@flask_error_handler
 async def billing():
     return render_template("company/billing.html")  # Placeholder template
 
@@ -596,6 +617,7 @@ async def settings():
     return render_template("company/settings.html")  # Placeholder template
 
 @company_bp.route("/employers")
+@flask_error_handler
 @login_required
 async def employers_list(user: User):
     """
@@ -603,13 +625,13 @@ async def employers_list(user: User):
     """
     if user.role != "employer":
         flash("You must be an employer to view this page", "danger")
-        return redirect(url_for("company.employer_profile"))
+        return redirect(url_for("company.view_employer_profile"))
     # Fetch company data associated with the user
     company_controller = get_controller('company')
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
     if not _employer_profile:
         flash("You do not have an employer profile", "danger")
-        return redirect(url_for("company.employer_profile"))
+        return redirect(url_for("company.view_employer_profile"))
 
     # This would typically fetch from the database
     employers = await company_controller.get_all_company_employers(company_id=_employer_profile.company_id)
@@ -622,6 +644,7 @@ async def employers_list(user: User):
     return render_template("company/employers.html",**context)
 
 @company_bp.route("/me")
+@flask_error_handler
 @login_required
 async def get_dashboard(user: User):
     company_controller = get_controller('company')
@@ -629,7 +652,7 @@ async def get_dashboard(user: User):
 
     if not employer:
         flash(message="You need to create your Employer Profile before you can access your Dashboard.", category="warning")
-        return redirect(url_for('company.employer_profile'))
+        return redirect(url_for('company.view_employer_profile'))
     # 2. Get company data
     company: Company = await company_controller.get_company_by_id(employer.company_id)
     if not company:

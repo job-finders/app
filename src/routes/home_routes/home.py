@@ -18,6 +18,7 @@ home_logger = init_logger("home_logger")
 # Route definitions
 
 @home_route.get("/media/logos/<job_ref>.png")
+@flask_error_handler
 async def serve_logo(job_ref: str):
     """Serve a job logo that is cached or fetch it if not present."""
     job = get_service('scraper').jobs.get(job_ref)

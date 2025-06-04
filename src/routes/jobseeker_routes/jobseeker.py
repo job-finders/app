@@ -16,6 +16,7 @@ async def get_user_cv(uid):
 
 
 @jobseeker_route.route("/ai/cv/optimize", methods=["POST"])
+@flask_error_handler
 @login_required
 async def optimize_cv(user: User):
     # TODO - please Note this is just an API

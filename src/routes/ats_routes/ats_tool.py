@@ -1,5 +1,6 @@
 from flask import Blueprint, request, render_template
 
+from src.routes import flask_error_handler
 from src.authentication import login_required
 from src.database.models.users import User
 from src.logger import init_logger
@@ -9,6 +10,7 @@ ats_tool_route = Blueprint('ats', __name__,  url_prefix='/ats-tool')
 ats_logger = init_logger("ats_tool")
 
 @ats_tool_route.route("/ats-match", methods=["POST"])
+@flask_error_handler
 @login_required
 async def ats_match(user: User):
     """
@@ -34,6 +36,7 @@ async def ats_match(user: User):
 
 
 @ats_tool_route.route("/resume-quality", methods=["POST"])
+@flask_error_handler
 @login_required
 async def resume_quality(user: User):
     """
@@ -63,6 +66,7 @@ async def resume_quality(user: User):
 
 
 @ats_tool_route.route("/keyword-extract", methods=["POST"])
+@flask_error_handler
 @login_required
 async def keyword_extract(user: User):
     """
@@ -93,6 +97,7 @@ async def keyword_extract(user: User):
 
 
 @ats_tool_route.route("/categorize-keywords", methods=["POST"])
+@flask_error_handler
 @login_required
 async def categorize_keywords(user: User):
     """
@@ -120,6 +125,7 @@ async def categorize_keywords(user: User):
 
 
 @ats_tool_route.route("/ats-tools", methods=["GET", "POST"])
+@flask_error_handler
 @login_required
 async def ats_tools(user: User):
     """
@@ -160,6 +166,7 @@ async def ats_tools(user: User):
 
 
 @ats_tool_route.route("/summary-generator", methods=["POST"])
+@flask_error_handler
 @login_required
 async def summary_generator(user: User):
     """
@@ -184,6 +191,7 @@ async def summary_generator(user: User):
 
 
 @ats_tool_route.route("/top-skills", methods=["POST"])
+@flask_error_handler
 @login_required
 async def top_skills(user: User):
     """
@@ -208,6 +216,7 @@ async def top_skills(user: User):
 
 
 @ats_tool_route.route("/api/ats-score", methods=["POST"])
+@flask_error_handler
 @login_required
 async def ats_score_api(user: User):
     """
@@ -232,6 +241,7 @@ async def ats_score_api(user: User):
 
 
 @ats_tool_route.route("/api/ats-score-json", methods=["POST"])
+@flask_error_handler
 @login_required
 async def ats_score_api_json(user: User):
     """
@@ -254,6 +264,7 @@ async def ats_score_api_json(user: User):
 
 
 @ats_tool_route.route("/parse-metadata", methods=["POST"])
+@flask_error_handler
 @login_required
 async def parse_metadata(user: User):
     """
@@ -273,6 +284,7 @@ async def parse_metadata(user: User):
 
 
 @ats_tool_route.route("/improvement-suggestions", methods=["POST"])
+@flask_error_handler
 @login_required
 async def improvement_suggestions(user: User):
     """

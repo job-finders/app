@@ -35,6 +35,7 @@ async def get_location_options(user_id: str, cv_ids: list[str]) -> list[str]:
 
 
 @jobseeker_applications_route.route('/api/ats-check', methods=['POST'])
+@flask_error_handler
 @login_required
 async def api_ats_check(user: User):
     """
@@ -80,6 +81,7 @@ async def api_ats_check(user: User):
 
 
 @jobseeker_applications_route.route('/api/cover-draft', methods=['POST'])
+@flask_error_handler
 @login_required
 async def api_cover_draft(user: User):
     """
@@ -118,6 +120,7 @@ async def api_cover_draft(user: User):
         return jsonify({"error": "Failed to generate cover draft"}), 500
 
 @jobseeker_applications_route.route('/jobs/aaply/<string:job_id>', methods=['GET'])
+@flask_error_handler
 @login_required
 async def apply_for_job(user: User, job_id: str):
     """

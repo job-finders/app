@@ -15,55 +15,37 @@ class UnauthorizedError(Exception):
         self.message = message
         super().__init__(self.message)
 
-
 def flask_error_handler(view_func):
+    error_map = {
+        BadRequest: ("Bad Request", 400),
+        NotFound: ("Not Found", 404),
+        Unauthorized: ("Unauthorized", 401),
+        UnauthorizedError: ("Unauthorized", 403),
+        InternalServerError: ("Internal Server Error", 500),
+    }
+
+    def handle_exception(e, method_name=None):
+        error_type = type(e)
+        error_name, status = error_map.get(error_type, ("Internal Server Error", 500))
+        log_func = error_logger.error if status != 500 else error_logger.exception
+        prefix = f"[{method_name}] " if method_name else ""
+        log_func(f"{prefix}{error_name}: {e}")
+        message = str(e) if status != 500 else "An unexpected error occurred"
+        return jsonify({"error": error_name, "message": message}), status
+
     @functools.wraps(view_func)
     async def async_wrapper(*args, **kwargs):
         method_name = view_func.__name__
         try:
             return await view_func(*args, **kwargs)
-        except BadRequest as e:
-            error_logger.error(f"[{method_name}] Bad Request: {e}")
-            return jsonify({"error": "Bad Request", "message": str(e)}), 400
-        except NotFound as e:
-            error_logger.error(f"[{method_name}] Not Found: {e}")
-            return jsonify({"error": "Not Found", "message": str(e)}), 404
-        except Unauthorized as e:
-            error_logger.error(f"[{method_name}] Unauthorized: {e}")
-            return jsonify({"error": "Unauthorized", "message": str(e)}), 401
-        except UnauthorizedError as e:
-            error_logger.error(f"[{method_name}] UnauthorizedError: {e}")
-            return jsonify({"error": "Unauthorized", "message": str(e)}), 403
-        except InternalServerError as e:
-            error_logger.error(f"[{method_name}] Internal Server Error: {e}")
-            return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
         except Exception as e:
-            error_logger.exception(f"[{method_name}] Unexpected Error: {e}")
-            return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}), 500
-    return async_wrapper
-
+            return handle_exception(e, method_name)
 
     @functools.wraps(view_func)
     def sync_wrapper(*args, **kwargs):
         try:
             return view_func(*args, **kwargs)
-        except BadRequest as e:
-            error_logger.error(f"Bad Request: {e}")
-            return jsonify({"error": "Bad Request", "message": str(e)}), 400
-        except NotFound as e:
-            error_logger.error(f"Not Found: {e}")
-            return jsonify({"error": "Not Found", "message": str(e)}), 404
-        except Unauthorized as e:
-            error_logger.error(f"Unauthorized: {e}")
-            return jsonify({"error": "Unauthorized", "message": str(e)}), 401
-        except UnauthorizedError as e:
-            error_logger.error(f"UnauthorizedError: {e}")
-            return jsonify({"error": "Unauthorized", "message": str(e)}), 403
-        except InternalServerError as e:
-            error_logger.error(f"Internal Server Error: {e}")
-            return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
         except Exception as e:
-            error_logger.error(f"Unexpected Error: {e}")
-            return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}), 500
+            return handle_exception(e)
 
     return async_wrapper if inspect.iscoroutinefunction(view_func) else sync_wrapper

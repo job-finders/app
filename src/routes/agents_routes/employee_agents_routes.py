@@ -1,6 +1,7 @@
 # routes/employee_agents.py
 from flask import Blueprint, request, jsonify
 
+from src.routes import flask_error_handler
 from src.authentication import login_required
 from src.database.models.users import User
 from src.utils.route_helpers import get_controller
@@ -9,6 +10,7 @@ employee_agents_route = Blueprint('employee_agents', __name__, url_prefix='/agen
 
 
 @employee_agents_route.route("/jobs/<string:job_id>/match-analysis", methods=["POST"])
+@flask_error_handler
 @login_required
 async def analyze_job_match(user: User, job_id: str):
     """
@@ -43,6 +45,7 @@ async def analyze_job_match(user: User, job_id: str):
 
 
 @employee_agents_route.route("/jobs/<string:job_id>/cover-letter", methods=["POST"])
+@flask_error_handler
 @login_required
 async def generate_cover_letter(user: User, job_id: str):
 

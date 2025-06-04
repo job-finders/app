@@ -170,8 +170,8 @@ async def ats_check(user: User):
 
 
 @resume_routes.route("/edit/<string:cv_id>", methods=["GET", "POST"])
-@login_required
 @flask_error_handler
+@login_required
 async def edit_cv(user: User, cv_id: str):
     resume_controller = get_controller('resume')
     if request.method == "POST":
@@ -270,8 +270,8 @@ def _format_pydantic_error(e: ValidationError) -> str:
 
 
 @resume_routes.route("/upload", methods=["GET", "POST"])
-@login_required
 @flask_error_handler
+@login_required
 async def upload_cv(user: User):
 
     if request.method == "POST":
@@ -297,8 +297,8 @@ async def upload_cv(user: User):
     return render_template("jobseekers/upload_cv.html", **context)
 
 @resume_routes.route("/view/<string:cv_id>")
-@login_required
 @flask_error_handler
+@login_required
 async def view_cv(user: User, cv_id: str):
 
     cv = await resume_controller.get_cv_by_id(cv_id)
@@ -308,8 +308,8 @@ async def view_cv(user: User, cv_id: str):
 
 
 @resume_routes.route("/delete/<string:cv_id>", methods=["POST"])
-@login_required
 @flask_error_handler
+@login_required
 async def delete_cv(user: User, cv_id: str):
 
     try:
@@ -322,8 +322,8 @@ async def delete_cv(user: User, cv_id: str):
 
 
 @resume_routes.route("/list")
-@login_required
 @flask_error_handler
+@login_required
 async def list_cvs(user: User):
 
     cvs = await resume_controller.list_cvs_for_user(user_uid=user.uid)

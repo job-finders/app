@@ -1,7 +1,7 @@
 # routes/agents.py
 
 from flask import Blueprint, request, jsonify
-
+from src.routes import flask_error_handler
 from src.database.models import Job
 from src.database.models.agent_models import JobPostInsights
 from src.agents.employer import EnhanceJobPostOutput
@@ -15,6 +15,7 @@ agents_logger = init_logger("agents_tool")
 
 
 @employer_agents_route.route("/jobs/enhance-job-post", methods=["POST"])
+@flask_error_handler
 @login_required
 async def enhance_job_post(user: User):
     """
@@ -53,6 +54,7 @@ async def enhance_job_post(user: User):
 
 # NEW AGENT ENDPOINT - Job Post Analysis
 @employer_agents_route.route("/jobs/analyze-job-post/<string:job_id>", methods=["POST"])
+@flask_error_handler
 @login_required
 async def analyze_job_post(user: User, job_id: str):
     """

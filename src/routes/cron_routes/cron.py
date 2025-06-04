@@ -2,7 +2,7 @@ import requests
 from flask import Blueprint, jsonify
 from flask import url_for
 
-
+from src.routes import flask_error_handler
 from src.agents.blog.article_creator_agent import ArticleCreatorAgent
 from src.agents.blog.feedback_collector import FeedbackCollector
 from src.agents.blog.gap_analyzer_agent import GapAnalyzerAgent
@@ -32,6 +32,7 @@ def ping_indexnow(url_list: list[str], key: str, key_location: str):
 
 
 @cron_route.get('/ping-index-now')
+@flask_error_handler
 async def cron_ping_index_now():
     """
     https://jobfinders.site/_cron/ping-index-now
@@ -45,6 +46,7 @@ async def cron_ping_index_now():
     return result
 
 @cron_route.get('/scrape-junction')
+@flask_error_handler
 async def scrape_junction():
     """sumary_line
         Need to Actual scrape online for jobs     
@@ -56,6 +58,7 @@ async def scrape_junction():
     await junction_scrapper.scrape_and_store_jobs()
 
 @cron_route.route("/create-article", methods=["GET"])
+@flask_error_handler
 async def create_article_pipeline():
     existing_posts = await BlogPostReaderAgent().run()
     content_gaps = await GapAnalyzerAgent().run(existing_posts)

@@ -94,6 +94,7 @@ async def create_profile(user: User):
 
 
 @jobseeker_profiles_bp.route("/me")
+@flask_error_handler
 @login_required
 async def view_profile(user: User):
     job_seeker_profile_controller = get_controller('job_seeker_profile')
@@ -108,6 +109,7 @@ async def view_profile(user: User):
 
 
 @jobseeker_profiles_bp.route("/edit", methods=["GET", "POST"])
+@flask_error_handler
 @login_required
 async def edit_profile(user: User):
     # Fetch config options for form
@@ -163,6 +165,7 @@ async def edit_profile(user: User):
 
 
 @jobseeker_profiles_bp.route("/delete", methods=["POST"])
+@flask_error_handler
 @login_required
 async def delete_profile(user: User):
     job_seeker_profile_controller = get_controller('job_seeker_profile')
@@ -175,6 +178,7 @@ async def delete_profile(user: User):
 
 
 @jobseeker_profiles_bp.route("/search")
+@flask_error_handler
 @login_required
 async def search_profiles(user:User):
     """could be used by employers and other seekers"""
@@ -186,6 +190,7 @@ async def search_profiles(user:User):
 
 
 @jobseeker_profiles_bp.route("/upload-picture", methods=["POST"])
+@flask_error_handler
 @login_required
 async def upload_picture(user: User):
     if 'file' not in request.files:
@@ -208,6 +213,7 @@ async def upload_picture(user: User):
 
 
 @jobseeker_profiles_bp.route("/role/<string:role>")
+@flask_error_handler
 @login_required
 async def list_profiles_by_role(user: User, role: str):
     job_seeker_profile_controller = get_controller('job_seeker_profile')
@@ -218,6 +224,7 @@ async def list_profiles_by_role(user: User, role: str):
 
 
 @jobseeker_profiles_bp.route('/activity/metrics')
+@flask_error_handler
 @login_required
 async def get_activity_metrics(user: User):
     job_seeker_profile_controller = get_controller('job_seeker_profile')
