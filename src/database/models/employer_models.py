@@ -104,6 +104,13 @@ class Employer(BaseModel):
     company: Optional[Company] = None
     saved_candidates: Optional[List[SavedCandidates]] = Field(default_factory=list)
 
+    @property
+    def account_age(self):
+        """Calculate the age of the account in days"""
+        if self.created_at:
+            return (utc_time() - self.created_at).days
+        return 0
+
     class Config:
         from_attributes = True
         json_encoders = {

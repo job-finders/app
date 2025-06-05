@@ -6,20 +6,21 @@ from datetime import datetime, timezone, timedelta
 from flask import Flask, render_template
 from sqlalchemy import exists
 
+from src.database.sql.company import CompanyFollowingORM, CompanyORM
 from src.controllers.controller import Controllers, error_handler
 from src.database.models.jobs_model import Job, JobApplication, JobApplicationStatusEnum
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.sql.analytics import (UserSearchActivityORM, JobViewActivityORM, ApplicationStepORM,
                                         RedisActivityClient, ActivityProcessor)
-from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM, CompanyFollowingORM, CompanyORM
+from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.emailer import EmailModel
-from src.main import jobs_controller, send_mail, job_seeker_profile_controller
+from utils.route_helpers import get_service, get_controller
 
 
 class UserEngagementController(Controllers):
     """
-    to improve user engagement this class will
+    to improve user Engagement this class will
         1. create job alerts - for matching jobs.
         2. will send application status updates for applied jobs.
         3. send emails informing employers and jobseekers of coming deadlines.
@@ -40,7 +41,7 @@ class UserEngagementController(Controllers):
         :param email:
         :return:
         """
-        await send_mail.send_mail_resend(email=email)
+        await get_service('send_mail').send_mail_resend(email=email)
 
     async def _compose_matching_jobs_email_body(self, matching_jobs: list[Job], profile: JobSeekerProfile) -> str:
         """
@@ -82,8 +83,9 @@ class UserEngagementController(Controllers):
             profiles = session.query(JobSeekerProfileORM).filter_by(alerts_enabled=True).all()
 
             for i in range(0, len(profiles), 50):
+                # Sending Job Alerts 50 Profiles at a time.
                 batch = profiles[i:i + 50]
-                tasks = [await self._process_user_profile(p) for p in batch]
+                tasks = [self._process_user_profile(p) for p in batch]
                 batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
                 for res in batch_results:
@@ -101,7 +103,9 @@ class UserEngagementController(Controllers):
         try:
             profile = JobSeekerProfile(**profile_orm.to_dict())
             # TODO - consider integrating the alerts with the Job Match Scores
-            jobs = await jobs_controller.get_personalized_job_recommendations(profile.user_id)
+
+            jobs_search_controller = get_controller("jobs_search")
+            jobs = await jobs_search_controller.get_personalized_job_recommendations(profile.user_id)
 
             if not jobs:
                 return None
@@ -155,11 +159,13 @@ class UserEngagementController(Controllers):
     async def _process_status_update(self, application_orm: JobApplicationORM):
         """Process individual status update"""
         try:
+            job_seeker_profile_controller = get_controller('job_seeker_profile')
+            job_search_controller = get_controller('jobs_search')
             job_application = JobApplication(**application_orm.to_dict())
             user_profile = await job_seeker_profile_controller.get_profile_by_uid(user_uid=job_application.user_id)
 
             if not job_application.job:
-                job_application.job = await jobs_controller.get_job_by_id(job_id=job_application.job_id)
+                job_application.job = await job_search_controller.get_job_by_id(job_id=job_application.job_id)
 
             email_content = await self._compose_status_email(
                 job_application,
@@ -400,7 +406,7 @@ class UserEngagementController(Controllers):
 
     @error_handler
     async def log_application_step(self, application_id: str, step_name: str):
-        """Log application progress step"""
+        """Log Application progress step"""
         self.redis.log_activity('step', {
             'application_id': application_id,
             'step_name': step_name,

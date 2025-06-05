@@ -3,6 +3,7 @@ import threading
 import time
 from typing import Dict, Any
 
+from controllers.analytics import UserEngagementController
 from src.controllers.agents import EmployerAgentsController, EmployeeAgentsController
 from src.controllers.ats import ATSToolController
 from src.controllers.company import CompanyController
@@ -123,6 +124,13 @@ class ControllerFactory:
     def get_admin_controller(self) -> AdminController:
         """Get AdminController instance"""
         return self._get_controller('admin', AdminController)
+    def get_user_engagement_controller(self) -> UserEngagementController:
+        """
+            USer Engagement Controller
+
+        :return:
+        """
+        return self._get_controller('user_engagement', UserEngagementController)
 
     def _get_controller(self, name: str, controller_class):
         """Thread-safe controller getter with double-checked locking"""

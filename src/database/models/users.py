@@ -1,6 +1,7 @@
 import re
 import uuid
 from datetime import datetime, timezone
+from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, EmailStr, field_validator
@@ -9,6 +10,12 @@ from src.database.constants import utc_time
 
 from src.utils import format_reference  # assuming this is your own utility function
 from src.utils.route_helpers import get_service
+
+class RolesEnum(Enum):
+    EMPLOYER = "employer"
+    JOBSEEKER = "seeker"
+    ADMIN = "admin"
+    SUPER_ADMIN = "super_admin"
 
 class Roles(BaseModel):
     id: str

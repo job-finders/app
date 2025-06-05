@@ -51,7 +51,9 @@ class JobSeekerProfileORM(Base):
     last_updated = Column(DateTime, default=utc_time)
     # Relationships
 
+    # List of job applications submitted by the Job Seeker
     applications = relationship("JobApplicationORM", back_populates="jobseeker_profile")
+    # List of records showing records where companies saved the candidate for further onsideration
     interested_companies = relationship("SavedCandidatesORM", back_populates="candidate")
     # Companies the Job Seeker is following
     following_companies = relationship("CompanyFollowingORM", back_populates="jobseeker_follower")

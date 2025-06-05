@@ -189,13 +189,9 @@ class JobSeekerProfilesController(Controllers):
     ) -> list[JobSeekerProfile]:
         """Fetch all profiles matching a given role."""
         with self.get_session() as session:
-            items = (
-                session
-                .query(JobSeekerProfileORM)
-                .filter_by(role=role)
-                .all()
-            )
-            return [JobSeekerProfile.model_validate(i) for i in items]
+            job_seeker_orm_list: list[JobSeekerProfileORM] = session.query(JobSeekerProfileORM).filter_by(role=role).all()
+            # Do Not Include Relationships in Lists only on Specific User Profile request
+            return [JobSeekerProfile(**profile_orm.to_dict()) for profile_orm in job_seeker_orm_list]
 
     @error_handler
     async def get_default_work_locations(self) -> list[Configuration]:

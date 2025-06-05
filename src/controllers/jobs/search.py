@@ -1,5 +1,6 @@
 import math
 import re
+from abc import ABC
 from datetime import datetime, timedelta, timezone
 from math import ceil
 from typing import Optional
@@ -21,17 +22,15 @@ from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, 
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.resume import JobSeekerCVORM
 
-# Escape the title first
-
-
 
 # noinspection DuplicatedCode
 class JobsSearchController(Controllers):
-    """sumary_line
+    """
+    Summary Line
     
-    Keyword arguments:
-    argument -- description
-    Return: return_description
+        Keyword arguments:
+        argument -- description
+        Return: return_description
     """
     
     
@@ -547,103 +546,103 @@ class JobsSearchController(Controllers):
 
             return [Job(**job.to_dict()) for job in jobs]
 
-    @error_handler
-    async def get_personalized_job_recommendations(self, user_id: str) -> list[Job]:
-        """
-        Generate personalized job recommendations for a jobseeker.
-
-        The recommendation engine considers various aspects of the user's profile,
-        including job title preferences, industries of interest, location preferences,
-        remote work preferences, relevant skills from their primary CV, and salary expectations.
-        It excludes jobs the user has already applied for and prioritizes active, non-expired jobs.
-
-        Args:
-            user_id (str): Unique identifier of the jobseeker.
-
-        Returns:
-            list[Job]: A list of recommended job postings, ordered by relevance.
-        """
-
-        with self.get_session() as session:
-            # Get user profile and CV data
-            profile_orm: JobSeekerProfileORM = session.query(JobSeekerProfileORM).get(user_id)
-            cv_orm: JobSeekerCVORM = session.query(JobSeekerCVORM).filter_by(user_uid=user_id, is_primary=True).first()
-
-            profile = JobSeekerProfile(**profile_orm.to_dict())
-            cv = JobSeekerCV(**cv_orm.to_dict())
-
-            if not profile or not cv:
-                return []
-
-            # Base query with common filters
-            query = session.query(JobsORM).filter(
-                JobsORM.status == JobStatusEnum.ACTIVE.value,
-                JobsORM.expires_at > datetime.now(timezone.utc)
-            )
-            applied_jobs_orm_list = session.query(JobApplicationORM).filter_by(user_id=user_id).all()
-            applied_jobs_list = [JobApplication(**applied_job_orm.to_dict()) for applied_job_orm in  applied_jobs_orm_list if applied_job_orm]
-            # Exclude already applied jobs
-            applied_job_ids = [applied_job.job_id for applied_job in applied_jobs_list]
-            if applied_job_ids:
-                query = query.filter(JobsORM.job_id.notin_(applied_job_ids))
-
-            # Job Title Preferences
-            if profile.job_titles_of_interest:
-                title_conds = [JobsORM.title.ilike(f"%{title}%") for title in profile.job_titles_of_interest]
-                query = query.filter(or_(*title_conds))
-
-            # Industry Preferences
-            if profile.industries_of_interest:
-                query = query.filter(JobsORM.category.op('&&')(profile.industries_of_interest))
-
-            # Location Preferences
-            location_conds = []
-            if profile.location:
-                location_conds.extend([
-                    JobsORM.city.ilike(f"%{profile.location}%"),
-                    JobsORM.province.ilike(f"%{profile.location}%")
-                ])
-            if profile.locations_of_interest:
-                for loc in profile.locations_of_interest:
-                    location_conds.extend([
-                        JobsORM.city.ilike(f"%{loc}%"),
-                        JobsORM.province.ilike(f"%{loc}%")
-                    ])
-            if location_conds:
-                query = query.filter(or_(*location_conds))
-
-            # Remote Preference
-            if profile.remote_preference:
-                query = query.filter(JobsORM.remote_policy.in_(["REMOTE", "HYBRID"]))
-
-            # Skills Matching (from CV)
-            if cv.skills:
-                skill_conds = [
-                    cond
-                    for skill in cv.skills
-                    for cond in [
-                        JobsORM.required_skills.contains([skill]),
-                        JobsORM.preferred_skills.contains([skill])
-                    ]
-                ]
-
-                query = query.filter(or_(*skill_conds))
-
-            # Salary Expectations (from CV if available)
-            if profile.expected_salary:
-                query = query.filter(
-                    JobsORM.salary_min >= profile.expected_salary * 0.7,
-                    JobsORM.salary_max <= profile.expected_salary * 1.3
-                )
-
-            # Order by relevance factors
-            results = query.order_by(
-                JobsORM.posted_at.desc(),
-                JobsORM.is_featured.desc(),
-                JobsORM.application_count.desc()
-            ).limit(100).all()
-
-            return [Job(**job.to_dict()) for job in results]
+    # @error_handler
+    # async def get_personalized_job_recommendations(self, user_id: str) -> list[Job]:
+    #     """
+    #     Generate personalized job recommendations for a jobseeker.
+    #
+    #     The recommendation engine considers various aspects of the user's profile,
+    #     including job title preferences, industries of interest, location preferences,
+    #     remote work preferences, relevant skills from their primary CV, and salary expectations.
+    #     It excludes jobs the user has already applied for and prioritizes active, non-expired jobs.
+    #
+    #     Args:
+    #         user_id (str): Unique identifier of the jobseeker.
+    #
+    #     Returns:
+    #         list[Job]: A list of recommended job postings, ordered by relevance.
+    #     """
+    #
+    #     with self.get_session() as session:
+    #         # Get user profile and CV data
+    #         profile_orm: JobSeekerProfileORM = session.query(JobSeekerProfileORM).get(user_id)
+    #         cv_orm: JobSeekerCVORM = session.query(JobSeekerCVORM).filter_by(user_uid=user_id, is_primary=True).first()
+    #
+    #         profile = JobSeekerProfile(**profile_orm.to_dict())
+    #         cv = JobSeekerCV(**cv_orm.to_dict())
+    #
+    #         if not profile or not cv:
+    #             return []
+    #
+    #         # Base query with common filters
+    #         query = session.query(JobsORM).filter(
+    #             JobsORM.status == JobStatusEnum.ACTIVE.value,
+    #             JobsORM.expires_at > datetime.now(timezone.utc)
+    #         )
+    #         applied_jobs_orm_list = session.query(JobApplicationORM).filter_by(user_id=user_id).all()
+    #         applied_jobs_list = [JobApplication(**applied_job_orm.to_dict()) for applied_job_orm in  applied_jobs_orm_list if applied_job_orm]
+    #         # Exclude already applied jobs
+    #         applied_job_ids = [applied_job.job_id for applied_job in applied_jobs_list]
+    #         if applied_job_ids:
+    #             query = query.filter(JobsORM.job_id.notin_(applied_job_ids))
+    #
+    #         # Job Title Preferences
+    #         if profile.job_titles_of_interest:
+    #             title_conds = [JobsORM.title.ilike(f"%{title}%") for title in profile.job_titles_of_interest]
+    #             query = query.filter(or_(*title_conds))
+    #
+    #         # Industry Preferences
+    #         if profile.industries_of_interest:
+    #             query = query.filter(JobsORM.category.op('&&')(profile.industries_of_interest))
+    #
+    #         # Location Preferences
+    #         location_conds = []
+    #         if profile.location:
+    #             location_conds.extend([
+    #                 JobsORM.city.ilike(f"%{profile.location}%"),
+    #                 JobsORM.province.ilike(f"%{profile.location}%")
+    #             ])
+    #         if profile.locations_of_interest:
+    #             for loc in profile.locations_of_interest:
+    #                 location_conds.extend([
+    #                     JobsORM.city.ilike(f"%{loc}%"),
+    #                     JobsORM.province.ilike(f"%{loc}%")
+    #                 ])
+    #         if location_conds:
+    #             query = query.filter(or_(*location_conds))
+    #
+    #         # Remote Preference
+    #         if profile.remote_preference:
+    #             query = query.filter(JobsORM.remote_policy.in_(["REMOTE", "HYBRID"]))
+    #
+    #         # Skills Matching (from CV)
+    #         if cv.skills:
+    #             skill_conds = [
+    #                 cond
+    #                 for skill in cv.skills
+    #                 for cond in [
+    #                     JobsORM.required_skills.contains([skill]),
+    #                     JobsORM.preferred_skills.contains([skill])
+    #                 ]
+    #             ]
+    #
+    #             query = query.filter(or_(*skill_conds))
+    #
+    #         # Salary Expectations (from CV if available)
+    #         if profile.expected_salary:
+    #             query = query.filter(
+    #                 JobsORM.salary_min >= profile.expected_salary * 0.7,
+    #                 JobsORM.salary_max <= profile.expected_salary * 1.3
+    #             )
+    #
+    #         # Order by relevance factors
+    #         results = query.order_by(
+    #             JobsORM.posted_at.desc(),
+    #             JobsORM.is_featured.desc(),
+    #             JobsORM.application_count.desc()
+    #         ).limit(100).all()
+    #
+    #         return [Job(**job.to_dict()) for job in results]
 
     @error_handler
     async def calculate_job_match_score(self, job_id: str, user_id: str) -> dict:

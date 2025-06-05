@@ -5,6 +5,8 @@ from functools import wraps
 # src/utils/route_helpers.py
 from flask import g, current_app
 
+from logger import init_logger
+
 
 # Cache the controller map since it's static
 @lru_cache(maxsize=1)
@@ -21,6 +23,7 @@ def _get_controller_map():
         'employer_agents': 'get_employer_agents_controller',
         'employee_agents': 'get_employee_agents_controller',
         'admin_controller': 'get_admin_controller',
+        'user_engagement': 'get_user_engagement_controller',
     }
 
 def get_controller(controller_name: str):
@@ -68,10 +71,11 @@ def get_service(service_name: str):
         'scraper': factory.get_junction_scraper,
         'notifications': factory.get_notifications_controller,
         "company_document_loader": factory.get_company_document_loader,
+        "logger": init_logger
     }
     if service_name not in service_map:
         raise ValueError(f"Unknown service: {service_name}")
-    return service_map[service_name]()
+    return service_map[service_name]
 
 
 def inject_controller(controller_name: str):

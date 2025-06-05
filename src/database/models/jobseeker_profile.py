@@ -2,6 +2,9 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 from typing import Optional, List
 from datetime import datetime
 
+from database.models.company_models import SavedCandidates, CompanyFollowing
+from database.models.jobs_model import JobApplication
+
 
 class JobSeekerProfile(BaseModel):
     user_uid: str  # FK to User.uid
@@ -45,6 +48,13 @@ class JobSeekerProfile(BaseModel):
     profile_completion: Optional[int] = 0
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 
+    # List of job applications submitted by the Job Seeker
+    applications: Optional[list[JobApplication]] = Field(default_factory=list, description="List of JobApplications for Jobseeker")
+    # List of records showing records where companies saved the candidate for further onsideration
+    interested_companies: Optional[List[SavedCandidates]] = Field(default_factory=list, description="List of companies the job seeker is interested in")
+    # Companies the Job Seeker is following
+    following_companies: Optional[List[CompanyFollowing]] = Field(default_factory=list, description="List of records showing companies the job seeker is following")
+
     # --- Validators ---
     @field_validator("job_titles_of_interest", "industries_of_interest", "locations_of_interest", "freelance_skills", mode="before")
     def remove_empty_items(cls, v):
@@ -57,6 +67,12 @@ class JobSeekerProfile(BaseModel):
         if v and not v.strip():
             raise ValueError("Availability cannot be blank")
         return v
+    @property
+    def can_send_job_recommendations(self) -> bool:
+        """
+            Determines if the job seeker can receive job recommendations based on their profile settings.
+        """
+        return self.alerts_enabled and self.receive_company_updates
 
     model_config = {
         "json_encoders": {

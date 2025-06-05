@@ -1,22 +1,37 @@
-from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Optional
+import asyncio
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from datetime import datetime, timezone, timedelta
 from enum import Enum
+from functools import partial
+from typing import List, Dict, Optional
 
-from flask import Flask
+from flask import Flask, render_template, session
+from pydantic import BaseModel, Field
 from sqlalchemy import func, case, or_, text
 
-from database.constants import utc_time
-from src.database.sql.company import CompanyORM
-from src.database.sql.analytics import UserSearchActivityORM
-from src.database.sql.users import UserORM
-from src.database.sql.jobseeker_profile import JobSeekerProfileORM
+from controllers.admin.user_security_engines import JobSeekerRuleEngine, EmployerRuleEngine
+from database.models.admin_models import UserStatusFlagEnum, FlaggedUser, AdminModel, RiskRecommendation
+from database.models.employer_models import Employer
+from database.models.resume import JobSeekerCV
+from database.models.users import RolesEnum
+from database.sql.admin_sql import FlaggedUserORM, AdminRecommendationORM, AdminORM
+from emailer import EmailModel
 from src.controllers.controller import error_handler, Controllers
-from src.database.models.jobs_model import Job, Company, JobApplication, JobApprovalStatusEnum
-from src.database.sql.jobs_sql import JobsORM, JobApprovalRequestORM, JobVersionHistoryORM, JobApplicationORM
-from utils.route_helpers import get_controller
+from src.database.constants import utc_time
+from src.database.models.jobs_model import Job, Company, JobApprovalStatusEnum, JobStatusEnum
+from src.database.models.jobseeker_profile import JobSeekerProfile
+from src.database.sql.analytics import UserSearchActivityORM
+from src.database.sql.company import CompanyORM
+from src.database.sql.jobs_sql import JobsORM, JobApprovalRequestORM, JobVersionHistoryORM, JobApplicationORM, \
+    JobCategoryORM
+from src.database.sql.jobseeker_profile import JobSeekerProfileORM
+from src.database.sql.users import UserORM
+from src.utils.route_helpers import get_controller, get_service
 
+
+class JobRecommenderResult(BaseModel):
+    profile : JobSeekerProfile
+    recommended_jobs: List[Job]
 
 class AdminPermissionLevel(Enum):
     """
@@ -37,8 +52,7 @@ class AdminPermissionLevel(Enum):
     SUPER_ADMIN = "super_admin"
 
 
-@dataclass
-class AdminActionResult:
+class AdminActionResult(BaseModel):
     """
     Standardized structure for returning results from admin service actions.
 
@@ -55,6 +69,7 @@ class AdminActionResult:
     success: bool
     message: str
     data: Optional[Dict] = None
+    list_data: Optional[list[JobRecommenderResult]] = Field(default_factory=list)
     errors: Optional[List[str]] = None
 
 
@@ -111,6 +126,180 @@ class AdminServiceInterface(ABC):
         :raises NotImplementedError: If the method is not implemented by a subclass.
         """
         pass
+
+
+class JobRecommendationService(AdminServiceInterface):
+    """
+
+    """
+    def __init__(self, session_factory):
+        self.session_factory = session_factory
+        self.job_seekers_profile_controller = get_controller('job_seeker_profile')
+        self.users_controller = get_controller('users')
+        self.resume_controller = get_controller('resume')
+        self.logger = get_service('logger')(self.__class__.__name__)
+
+
+    def execute(self, action: str, **kwargs) -> AdminActionResult:
+        """Execute job moderation action"""
+        actions = {
+            'recommend_jobs': self.all_jobseekers_recommendations_executor,
+        }
+
+        if action not in actions:
+            return AdminActionResult(success=False, message=f"Unknown action: {action}")
+
+        # noinspection PyTypeChecker
+        return actions[action](**kwargs)
+
+
+
+    @error_handler
+    async def all_jobseekers_recommendations_executor(self) -> AdminActionResult:
+        """
+        :return:
+        """
+        job_seeker_profiles: list[JobSeekerProfile] = self.job_seekers_profile_controller.list_profiles_by_role(role=RolesEnum.JOBSEEKER.value)
+
+        profiles_we_can_send_recommendations = [profile for profile in job_seeker_profiles if profile.can_send_job_recommendations]
+
+        errors = []
+
+        success : list[JobRecommenderResult] = []
+
+        for i in range(0, len(profiles_we_can_send_recommendations), 50):
+            batch = profiles_we_can_send_recommendations[i:i + 50]
+            tasks = [self.get_personalized_job_recommendations(profile=profile) for profile in batch]
+            batch_results: list[Exception | JobRecommenderResult] = await asyncio.gather(*tasks, return_exceptions=True)
+            for res in batch_results:
+                if isinstance(res, Exception):
+                    errors.append(res)
+                else:
+                    success.append(res)
+
+
+        for error in errors:
+            self.logger.error(error)
+
+        # returns a list of Profiles and Recommended Jobs so the Admin Controller can send the Emails.
+        return AdminActionResult(success=len(success) > 1,message="Job Recommendations Processed", list_data=success)
+
+
+    @error_handler
+    async def get_personalized_job_recommendations(self, profile: JobSeekerProfile) -> JobRecommenderResult:
+        """
+            For each Profile this Method Returns Jobs Of Interest.
+        :param profile:
+        :return:
+        """
+
+        resume = await self.resume_controller.get_primary_resume(user_id=profile.user_uid)
+        if not resume:
+            return []
+
+        with self.session_factory() as session:
+
+            query = self._get_base_job_query(session=session)
+
+            applied_job_ids = self._get_applied_job_ids(session=session, user_id=profile.user_uid)
+
+            if applied_job_ids:
+                query = query.filter(JobsORM.job_id.notin_(applied_job_ids))
+
+            self._apply_user_preferences(query=query, profile=profile, resume=resume)
+
+            similar_titles = self._get_similar_job_titles(session, applied_job_ids)
+            if similar_titles:
+                self._apply_similar_titles_filter(query, similar_titles)
+
+            results = query.order_by(
+                JobsORM.posted_at.desc(),
+                JobsORM.is_featured.desc(),
+                JobsORM.application_count.desc()
+            ).limit(100).all()
+
+            _result_dict = JobRecommenderResult(profile=profile, recommended_jobs=[Job(**job.to_dict()) for job in results])
+            return _result_dict
+
+    @error_handler
+    def _get_base_job_query(self, session):
+        return session.query(JobsORM).filter(
+            JobsORM.status == JobStatusEnum.ACTIVE.value,
+            JobsORM.expires_at > datetime.now(timezone.utc)
+        )
+
+    @error_handler
+    def _get_applied_job_ids(self, session, user_id: str) -> list[str]:
+        applied_jobs = session.query(JobApplicationORM).filter_by(user_id=user_id).all()
+        return [job.job_id for job in applied_jobs if job]
+
+    @error_handler
+    def _get_similar_job_titles(self, session, applied_job_ids: list[str]) -> list[str]:
+        if not applied_job_ids:
+            return []
+
+        applied_jobs = session.query(JobsORM).filter(JobsORM.job_id.in_(applied_job_ids)).all()
+        titles = [job.title for job in applied_jobs if job.title]
+        return list(set(titles))  # Deduplicate
+
+    @error_handler
+    def _apply_user_preferences(self, query, profile: JobSeekerProfile, resume: JobSeekerCV):
+        """
+            Apply User Preferences takes Profiles and Resumes Into Account in order to match Jobs.
+        :param query:
+        :param profile:
+        :param resume:
+        :return:
+        """
+
+        if profile.job_titles_of_interest:
+            title_conds = [JobsORM.title.ilike(f"%{title}%") for title in profile.job_titles_of_interest]
+            query = query.filter(or_(*title_conds))
+
+        if profile.industries_of_interest:
+            # Supports Partial Matches Between Industries and Categories
+            filters = []
+            for value in profile.industries_of_interest:
+                filters.append(JobCategoryORM.name.ilike(f"%{value}%"))
+                filters.append(JobCategoryORM.slug.ilike(f"%{value}%"))
+            query = query.join(JobsORM.category).filter(or_(*filters))
+
+        location_conds = []
+        if profile.location:
+            location_conds.extend([
+                JobsORM.city.ilike(f"%{profile.location}%"),
+                JobsORM.province.ilike(f"%{profile.location}%")
+            ])
+        for loc in profile.locations_of_interest or []:
+            location_conds.extend([
+                JobsORM.city.ilike(f"%{loc}%"),
+                JobsORM.province.ilike(f"%{loc}%")
+            ])
+        # noinspection DuplicatedCode
+        if location_conds:
+            query = query.filter(or_(*location_conds))
+
+        if profile.remote_preference:
+            query = query.filter(JobsORM.remote_policy.in_(["REMOTE", "HYBRID"]))
+
+        if resume.skills:
+            skill_conds = [cond for skill in resume.skills for cond in [
+                JobsORM.required_skills.contains([skill]),JobsORM.preferred_skills.contains([skill])]]
+
+            query = query.filter(or_(*skill_conds))
+
+        if profile.expected_salary:
+            query = query.filter(
+                JobsORM.salary_min >= profile.expected_salary * 0.7,
+                JobsORM.salary_max <= profile.expected_salary * 1.3
+            )
+
+    @error_handler
+    def _apply_similar_titles_filter(self, query, similar_titles: list[str]):
+        if similar_titles:
+            title_conds = [JobsORM.title.ilike(f"%{title}%") for title in similar_titles]
+            query = query.filter(or_(*title_conds))
+
 
 class JobModerationService(AdminServiceInterface):
     """
@@ -768,121 +957,67 @@ class SecurityService(AdminServiceInterface):
 
     def __init__(self, session_factory):
         self.session_factory = session_factory
+        self.company_controller = get_controller('company')
+        self.users_controller = get_controller('users')
+        self.jobseekers_controller = get_controller('job_seeker_profile')
+        self.logger = get_service("logger")(self.__class__.__name__)
 
-    def execute(self, security_event: str, **kwargs) -> AdminActionResult:
+    async def execute(self, security_event: str, **kwargs) -> AdminActionResult:
         """Execute analytics operations"""
         security_events = {
-            'jobseeker_risk': self._analyze_jobseeker_risk,
             'flag_unusual_user_activity' : self._flag_unusual_user_activity,
+            'apply_user_risk_recommendations': self._apply_user_risk_recommendations,
         }
 
         if security_event not in security_events:
-            return AdminActionResult(False, f"Unknown security event type: {security_event}")
-        return security_events[security_event](**kwargs)
+            return AdminActionResult(success=False, message=f"Unknown security event type: {security_event}")
+        # noinspection PyTypeChecker
+        return await security_events[security_event](**kwargs)
 
-    def _analyze_jobseeker_risk(self, user_id: str) -> AdminActionResult:
-        """Analyze user behavior for potential misuse or abuse"""
-        try:
-            with self.session_factory() as session:
-                app_stats = session.query(
-                    func.count(JobApplicationORM.application_id),
-                    func.min(JobApplicationORM.applied_date),
-                    func.max(JobApplicationORM.applied_date)
-                ).filter_by(user_id=user_id).first()
+    async def _apply_user_risk_recommendations(self, admin_uid: str) -> AdminActionResult:
+        """
+        Applies risk recommendations for all flagged users by storing them as recommended actions.
 
-                search_stats = session.query(
-                    func.count(UserSearchActivityORM.id),
-                    func.avg(UserSearchActivityORM.result_count)
-                ).filter_by(user_id=user_id).first()
+        This does not change user account status. Instead, it logs a recommendation that an admin can act on.
+        Returns a list of (reference_id, recommended_action) tuples.
 
-                activity_data = {
-                    "application_metrics": {
-                        "total": app_stats[0] if app_stats else 0,
-                        "time_span": (app_stats[2] - app_stats[1]).total_seconds() if app_stats and app_stats[0] > 0 else 0
-                    },
-                    "search_metrics": {
-                        "total_searches": search_stats[0] if search_stats else 0,
-                        "avg_results": float(search_stats[1]) if search_stats and search_stats[1] else 0
-                    },
-                    "risk_score": self._calculate_risk_score(app_stats, search_stats)
-                }
+        # Several Algorithms will be affected by the recommendations stored here.
+        """
+        with self.session_factory() as session:
+            admin_orm = session.query(AdminORM).first()
+            admin_model: AdminModel = AdminModel(**admin_orm.to_dict(include_relationships=True)) if admin_orm else None
 
-                return AdminActionResult(True, "User activity analysis completed", activity_data)
-        except Exception as e:
-            return AdminActionResult(False, f"Error analyzing user activity: {str(e)}")
+            actions_to_store = []
+            for ref_id, recommendation in admin_model.user_risk_recommendations.items():
+                action = AdminRecommendationORM(
+                    reference_id=ref_id,
+                    recommended_action=recommendation.value,
+                    recommended_by=admin_uid,
+                    recommended_at=utc_time(),
+                    reason="Automated risk assessment based on flag history"
+                )
+                actions_to_store.append(action)
+            # Storing User Recommendations.
+            session.add_all(actions_to_store)
+        _message = f"Successfully applied User Recommendations in Bulk {len(actions_to_store)} Where Affected by this action"
+        return AdminActionResult(success=True, message=_message, data=admin_model.user_risk_recommendations)
 
-    @staticmethod
-    def _calculate_risk_score(app_stats, search_stats):
-        """Calculate composite user risk score"""
-        try:
-            if not app_stats or not search_stats:
-                return 0
-
-            app_rate = app_stats[0] / ((app_stats[2] - app_stats[1]).total_seconds() / 3600 + 1) if app_stats[0] > 0 else 0
-            search_intensity = search_stats[0] / (search_stats[1] or 1)
-            return min(100, int(app_rate * 10 + search_intensity * 5))
-        except Exception:
-            return 0
-
-    def _flag_unusual_employer_activity(self, employer: EmployerORM, company: CompanyORM) -> list[tuple[str, str]]:
-        flags = []
-        # Rule 1: Unverified company posting jobs
-        if not company.is_verified and company.total_jobs > 0:
-            flags.append((employer.uid, "Unverified company posting jobs"))
-        # Rule 2: High volume job posts on new account
-        account_age = (datetime.utcnow() - employer.user.created_at).days
-        if account_age <= 2 and company.total_jobs >= 5:
-            flags.append((employer.uid, "High job volume from new account"))
-        # Rule 3: Low response rate
-        if company.total_applications >= 10 and company.application_response_rate < 10:
-            flags.append((employer.uid, "Low application response rate"))
-        # Rule 4: Unrealistically fast hiring
-        if company.avg_hiring_time < 1 and company.total_jobs >= 3:
-            flags.append((employer.uid, "Suspiciously short hiring times"))
-        # Rule 5: Saving candidates without posting jobs
-        if company.total_jobs == 0 and company.total_saved_candidates > 5:
-            flags.append((employer.uid, "Saving candidates without job posts"))
-
-        return flags
-
-    def _flag_unusual_jobseeker_activity(self, jobseeker: JobSeekerORM) -> list[tuple[str, str]]:
-        flags = []
-        applications = jobseeker.applications or []
-
-        # Rule 1: Excessive application volume
-        recent_apps = [app for app in applications if (datetime.utcnow() - app.applied_at).days <= 1]
-        if len(recent_apps) > 10:
-            flags.append((jobseeker.uid, "Too many job applications in 24h"))
-
-        # Rule 2: Repeated applications to the same job
-        job_app_map = {}
-        for app in applications:
-            job_app_map.setdefault(app.job_id, []).append(app)
-        for job_id, apps in job_app_map.items():
-            if len(apps) > 2:
-                flags.append((jobseeker.uid, f"Repeated applications to job {job_id}"))
-
-        return flags
-
-    def _flag_unusual_user_activity(self):
+    async def _flag_unusual_user_activity(self) -> AdminActionResult:
         flagged_users = []
-        users_controller = get_controller('users')
-        jobseekers_controller = get_controller('job_seeker_profile')
-        resume = get_controller('resume')
+        employer_user_accounts = await self.users_controller.get_users_by_role(role=RolesEnum.EMPLOYER.value)
+        jobseekers_user_accounts = await self.users_controller.get_users_by_role(role=RolesEnum.JOBSEEKER.value)
 
-        jobs_workflow_controller = get_controller('jobs_workflow')
+        for user in employer_user_accounts:
+            employer = await self.company_controller.get_employer_by_uid(user_id=user.uid)
+            company = await  self.company_controller.get_company_by_employer_id(employer.employer_id) if employer else None
 
-        for user in self.db.get_all_users():
-            if user.role == "employer":
-                employer = self.db.get_employer_by_uid(user.uid)
-                company = employer.company if employer else None
-                if employer and company:
-                    flagged_users.extend(self._flag_unusual_employer_activity(employer, company))
+            if employer and company:
+                flagged_users.extend(self._flag_unusual_employer_activity(employer, company))
 
-            elif user.role == "jobseeker":
-                jobseeker = self.db.get_jobseeker_by_uid(user.uid)
-                if jobseeker:
-                    flagged_users.extend(self._flag_unusual_jobseeker_activity(jobseeker))
+        for user in jobseekers_user_accounts:
+            jobseeker = self.jobseekers_controller.get_profile_by_uid(user_uid=user.uid)
+            if jobseeker:
+                flagged_users.extend(self._flag_unusual_jobseeker_activity(jobseeker))
 
         if flagged_users:
             for uid, reason in flagged_users:
@@ -890,7 +1025,57 @@ class SecurityService(AdminServiceInterface):
         else:
             self.logger.info("No unusual activity detected.")
 
-        return flagged_users
+        return AdminActionResult(success=True,message="succcessfully flagged users", list_data=flagged_users)
+
+
+    def should_flag_user(
+            session,
+            reference_id: str,
+            reason: str,
+            cooldown_days: int = 7
+    ) -> bool:
+        """
+        Checks whether a flag for the given user and reason has been raised
+        within the cooldown period. Returns True if it's safe to flag again.
+
+        Args:
+            session: SQLAlchemy session
+            reference_id: The ID of the user (employer or jobseeker)
+            reason: The reason for flagging
+            cooldown_days: Days to wait before re-flagging the same issue
+
+        Returns:
+            bool: True if the user should be flagged again
+        """
+        recent_flag = (
+            session.query(FlaggedUserORM)
+            .filter(
+                FlaggedUserORM.reference_id == reference_id,
+                FlaggedUserORM.reason == reason
+            )
+            .order_by(FlaggedUserORM.date_flagged_at.desc())
+            .first()
+        )
+
+        if recent_flag:
+            delta = datetime.utcnow() - recent_flag.date_flagged_at
+            if delta.days < cooldown_days:
+                return False  # Too soon to re-flag for the same reason
+        return True
+
+    @error_handler
+    def _flag_unusual_employer_activity(self, employer: Employer, company: Company) -> list[tuple[str, str]]:
+        with self.session_factory() as session:
+            should_flag_user = partial(self.should_flag_user, session=session, reference_id=employer.employer_id)
+            engine = EmployerRuleEngine(employer, company)
+            return engine.evaluate(should_flag_user)
+
+    @error_handler
+    def _flag_unusual_jobseeker_activity(self, jobseeker: JobSeekerProfile) -> list[tuple[str, str]]:
+        with self.session_factory() as session:
+            should_flag_user = partial(self.should_flag_user, session=session, reference_id=jobseeker.uid)
+            engine = JobSeekerRuleEngine(jobseeker)
+            return engine.evaluate(should_flag_user)
 
 
 class AdminController(Controllers):
@@ -1024,6 +1209,7 @@ class AdminController(Controllers):
         self.compliance_service = ComplianceService(self.get_session)
         self.analytics_service = AnalyticsService(self.get_session)
         self.security_service = SecurityService(self.get_session)
+        self.job_recommendation_service = JobRecommendationService(self.get_session)
 
     def init_app(self, app: Flask):
         super().init_app(app=app)
@@ -1037,10 +1223,67 @@ class AdminController(Controllers):
                     JobApprovalRequestORM.requested_at < cutoff
                 ).delete()
                 session.commit()
-
-                return AdminActionResult(True, f"Cleaned up {deleted} old approvals", {"deleted_count": deleted})
+                return AdminActionResult(success=True, message=f"Cleaned up {deleted} old approvals", data={"deleted_count": deleted})
         except Exception as e:
-            return AdminActionResult(False, f"Error cleaning up approvals: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error cleaning up approvals: {str(e)}")
+
+    @error_handler
+    async def send_job_alerts_to_users(self, job_ids: List[str]) -> AdminActionResult:
+        """Send job alerts to users based on their preferences"""
+        profiles_job_alerts: list[JobRecommenderResult] = await self.job_recommendation_service.execute("recommend_jobs")
+        alerts_tasks = []
+
+        for recommendation in profiles_job_alerts:
+            email_template = await self._compose_matching_jobs_email_body(recommended_jobs=recommendation.recommended_jobs, profile=recommendation.profile)
+            _comp_email = dict(
+                _html=email_template, _to=recommendation.profile.email, _subject="Recommended Job Alerts - Jobfinders.site"
+            )
+            email_message = EmailModel(**_comp_email)
+            alerts_tasks.append(self._send_alert(email=email_message))
+
+        results = await asyncio.gather(*alerts_tasks, return_exceptions=True)
+        is_success_count = sum(1 for res in results if not isinstance(res, Exception))
+
+        return AdminActionResult(success=is_success_count > 1, message=f" {str(is_success_count)}Job Alerts where Sent")
+
+
+    @staticmethod
+    async def _format_salary(job: Job) -> str:
+        """Helper for salary formatting"""
+        if job.salary_confidential:
+            return "Competitive Salary"
+        if job.salary_min and job.salary_max:
+            return f"{job.salary_currency} {job.salary_min:,.0f} - {job.salary_max:,.0f}"
+        return "Salary Not Disclosed"
+
+
+    async def _compose_matching_jobs_email_body(self, recommended_jobs: list[Job], profile: JobSeekerProfile) -> str:
+        """
+        Generate HTML email body using template and job data
+        """
+        with self.app.app_context():
+            job_data = [{
+                'title': job.title,
+                'company': job.company.name if job.company else "Confidential",
+                'location': job.location,
+                'type': job.position_type.replace('_', ' ').title(),
+                'remote': job.remote_policy.title(),
+                'salary': await self._format_salary(job),
+                'description': job.description[:200] + '...' if job.description else "",
+                'url': job.application_url,
+                'deadline': job.application_deadline.strftime('%Y-%m-%d') if job.application_deadline else "ASAP"
+            } for job in recommended_jobs if job.is_active]
+            context = dict(first_name=profile.first_name, jobs=job_data, count=len(job_data))
+            return render_template('jobseekers/email/job_alert.html', **context)
+
+    @staticmethod
+    async def _send_alert(email: EmailModel):
+        """
+        :param email:
+        :return:
+        """
+        await get_service('send_mail')().send_mail_resend(email=email)
+
 
     # Job Moderation Methods
     @error_handler
@@ -1122,9 +1365,36 @@ class AdminController(Controllers):
         return self.analytics_service.execute('engagement')
 
     @error_handler
-    def flag_unusual_user_activity(self, user_id: str) -> AdminActionResult:
+    async def flag_unusual_user_activity(self, admin_uid: str) -> AdminActionResult:
         """Detect suspicious user behavior patterns"""
-        return self.analytics_service.execute('user_activity', user_id=user_id)
+        action_result: AdminActionResult = await self.security_service.execute('flag_unusual_user_activity')
+        flagged_users_models = []
+        if action_result.success:
+            for reference_id, message in action_result.list_data:
+                flagged_users_models.append(FlaggedUserORM(**FlaggedUser(reference_id=reference_id, reason=message,flagged_by=admin_uid).model_dump()))
+
+        with self.get_session() as session:
+            session.add_all(flagged_users_models)
+
+        return AdminActionResult(success=action_result.success, message=action_result.message, list_data=flagged_users_models)
+
+    @error_handler
+    async def evaluate_user_risks(self, admin_uid: str) -> AdminActionResult:
+        """
+        Run risk evaluations on flagged users and log admin recommendations.
+        """
+        try:
+            recommendations = await self.security_service.execute('apply_user_risk_recommendations', admin_uid=admin_uid)
+
+            return AdminActionResult(
+                success=True,
+                message="Risk recommendations generated.",
+                list_data=recommendations)
+
+        except Exception as e:
+            return AdminActionResult(
+                success=False,
+                message=f"Failed to generate risk recommendations: {str(e)}")
 
     @error_handler
     def get_job_audit_log(self, job_id: str) -> AdminActionResult:
@@ -1191,12 +1461,11 @@ class AdminController(Controllers):
                 } for company in unverified_companies]
 
                 return AdminActionResult(
-                    True,
-                    f"Found {len(unverified_companies)} companies needing verification",
-                    {"companies": companies_data}
-                )
+                    success=True,
+                    message=f"Found {len(unverified_companies)} companies needing verification",data={"companies": companies_data})
+
         except Exception as e:
-            return AdminActionResult(False, f"Error reviewing company verifications: {str(e)}")
+            return AdminActionResult(success=False,message=f"Error reviewing company verifications: {str(se)}")
 
 
     @error_handler
