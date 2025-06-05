@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 class SectionImprovement(BaseModel):
     """
+
     Represents a specific section of the CV where improvements can be made to better align with the job description
     or improve ATS compatibility.
 
