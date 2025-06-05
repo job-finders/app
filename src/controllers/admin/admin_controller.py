@@ -9,7 +9,7 @@ from flask import Flask, render_template, session
 from pydantic import BaseModel, Field
 from sqlalchemy import func, case, or_, text
 
-from src.controllers.admin.user_security_engines import JobSeekerRuleEngine, EmployerRuleEngine
+from src.controllers.admin.security_rules import JobSeekerRuleEngine, EmployerRuleEngine
 from src.database.models.admin_models import UserStatusFlagEnum, FlaggedUser, AdminModel, RiskRecommendation
 from src.database.models.employer_models import Employer
 from src.database.models.resume import JobSeekerCV
@@ -18,7 +18,7 @@ from src.database.sql.admin_sql import FlaggedUserORM, AdminRecommendationORM, A
 from src.emailer import EmailModel
 from src.controllers.controller import error_handler, Controllers
 from src.database.constants import utc_time
-from src.database.models.jobs_model import Job, Company, JobApprovalStatusEnum, JobStatusEnum
+from src.database.models.jobs_model import Job, Company, JobApprovalStatusEnum, JobStatusEnum, JobApplication
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.sql.analytics import UserSearchActivityORM
 from src.database.sql.company import CompanyORM
@@ -973,6 +973,12 @@ class SecurityService(AdminServiceInterface):
             return AdminActionResult(success=False, message=f"Unknown security event type: {security_event}")
         # noinspection PyTypeChecker
         return await security_events[security_event](**kwargs)
+
+
+
+
+
+
 
     async def _apply_user_risk_recommendations(self, admin_uid: str) -> AdminActionResult:
         """

@@ -162,7 +162,7 @@ class JobSeekerCV(BaseModel):
     profile_image_url: Optional[HttpUrl] = None
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
-
+    jobseeker_profile: Optional[list['JobSeekerProfile']] = Field(default_factory=list)
 
     @validator('professional_title')
     def title_must_not_be_empty(cls, v):
@@ -277,6 +277,22 @@ class JobSeekerCV(BaseModel):
 
         return "\n\n".join(sections)
 
+    @property
+    def resume_has_boilerplate(self) -> bool:
+        """
+        Checks if the resume contains boilerplate or fake data (e.g., lorem ipsum, repeated patterns).
+        """
+        if not self.ats_description:
+            return False
+
+        lower = self.ats_description
+
+        boilerplate_phrases = [
+            "lorem ipsum", "your name here", "insert experience", "n/a", "no experience",
+            "generic title", "template content", "objective goes here"
+        ]
+        match_count = sum(1 for phrase in boilerplate_phrases if phrase in lower)
+        return match_count >= 2
 
     class Config:
         # Allow the model to use `datetime` fields as ISO format strings when serialized

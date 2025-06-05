@@ -12,8 +12,8 @@ from src.database.sql import Base, engine
 class JobSeekerCVORM(Base):
     __tablename__ = 'jobseeker_cvs'
 
-    cv_id = Column(String(36), primary_key=True, unique=True, index=True)
-    user_uid = Column(String(36), nullable=False, index=True)
+    cv_id = Column(String(ID_LEN), primary_key=True, unique=True, index=True)
+    user_uid = Column(ForeignKey('jobseeker_profiles.user_uid'), nullable=False, index=True)
     is_primary = Column(Boolean, default=False)
     professional_title = Column(String(255), nullable=False)
     summary = Column(Text, nullable=True)
@@ -37,6 +37,7 @@ class JobSeekerCVORM(Base):
     publications = relationship("PublicationORM", back_populates="cv", cascade="all, delete-orphan")
     awards = relationship("AwardORM", back_populates="cv", cascade="all, delete-orphan")
     custom_sections = relationship("CustomSectionORM", back_populates="cv", cascade="all, delete-orphan")
+    jobseeker_profile = relationship("JobSeekerProfileORM", back_populates="resumes_list")
 
     @classmethod
     def create_if_not_table(cls):
@@ -72,7 +73,8 @@ class JobSeekerCVORM(Base):
             "projects": [proj.to_dict() for proj in self.projects] if include_relationship and self.projects else [],
             "publications": [pub.to_dict() for pub in self.publications] if include_relationship and self.publications else [],
             "awards": [award.to_dict() for award in self.awards] if include_relationship and self.awards else [],
-            "custom_sections": [cust.to_dict() for cust in self.custom_sections] if include_relationship and self.custom_sections else []
+            "custom_sections": [cust.to_dict() for cust in self.custom_sections] if include_relationship and self.custom_sections else [],
+            "jobseeker_profile": [prof_to_dict() for prof in self.jobseeker_profile] if include_relationship and self.jobseeker_profile else []
         }
 
 class ExperienceORM(Base):

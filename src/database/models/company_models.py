@@ -1,7 +1,8 @@
 import json
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
+from difflib import SequenceMatcher
 from enum import Enum
 from typing import Optional, List, Union
 from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, ConfigDict
@@ -187,6 +188,37 @@ class Company(BaseModel):
             title_count[job.title] = title_count.get(job.title, 0) + 1
 
         return sorted(title_count, key=title_count.get, reverse=True)[:3]
+    # Security Rules
+    @property
+    def has_duplicate_job_descriptions(self):
+        """
+
+        :return:
+        """
+        descriptions = [job.description for job in self.jobs if job.description]
+        for i in range(len(descriptions)):
+            for j in range(i + 1, len(descriptions)):
+                similarity = SequenceMatcher(None, descriptions[i], descriptions[j]).ratio()
+                if similarity > 0.9:
+                    return True
+        return False
+
+    @property
+    def has_multiple_edits_in_last_hour(self):
+        """Detect if Multiple edits were made to jobs in the last hour"""
+        if not self.jobs:
+            return False
+
+        recent_posts = sorted(self.jobs, key=lambda j: j.updated_at, reverse=True)
+        for i in range(1, len(recent_posts)):
+            delta = recent_posts[i - 1].updated_at - recent_posts[i].updated_at
+            if delta < timedelta(minutes=5):  # multiple edits within 5 mins
+                return True
+        return False
+
+
+
+
 
     class Config:
         from_attributes = True

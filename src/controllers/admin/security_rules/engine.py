@@ -33,10 +33,9 @@ class EmployerRuleEngine:
         ]
 
 
-class JobseekerRuleEngine:
-    def __init__(self, jobseeker, security_service, config_path="rules.yaml"):
+class JobSeekerRuleEngine:
+    def __init__(self, jobseeker,config_path="rules.yaml"):
         self.jobseeker = jobseeker
-        self.security_service = security_service
         self.context = self
         self.rules = self._load_rules(config_path)
 

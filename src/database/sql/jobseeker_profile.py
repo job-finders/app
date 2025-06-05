@@ -13,7 +13,6 @@ class JobSeekerProfileORM(Base):
     __tablename__ = "jobseeker_profiles"
 
     user_uid = Column(String(ID_LEN), ForeignKey("users.uid"), primary_key=True)
-
     email : str = Column(String(NAME_LEN), index=True)
     # Job Seeker need to enable Job Alerts in order to get alerts based on their preferences
     alerts_enabled: bool = Column(Boolean, default=False)
@@ -57,6 +56,8 @@ class JobSeekerProfileORM(Base):
     interested_companies = relationship("SavedCandidatesORM", back_populates="candidate")
     # Companies the Job Seeker is following
     following_companies = relationship("CompanyFollowingORM", back_populates="jobseeker_follower")
+
+    resumes_list = relationship("JobSeekerCVORM", back_populates="jobseeker_profile", cascade="all, delete-orphan")
 
     @classmethod
     def create_if_not_table(cls):

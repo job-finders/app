@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 from typing import Optional, List
 from datetime import datetime
 
+from src.utils.route_helpers import get_controller
 
 
 class JobSeekerProfile(BaseModel):
@@ -52,6 +53,10 @@ class JobSeekerProfile(BaseModel):
     interested_companies: Optional[List['SavedCandidates']] = Field(default_factory=list, description="List of companies the job seeker is interested in")
     # Companies the Job Seeker is following
     following_companies: Optional[List['CompanyFollowing']] = Field(default_factory=list, description="List of records showing companies the job seeker is following")
+    resumes_list: Optional[list['JobSeekerCV']] = Field(default_factory=list)
+
+    ip_address: Optional[str] = Field(default=None, description="Last known IP address of the job) seeker")
+    device_finger_print: Optional[str] = Field(default=None, description="Device fingerprint for security checks")
 
     # --- Validators ---
     @field_validator("job_titles_of_interest", "industries_of_interest", "locations_of_interest", "freelance_skills", mode="before")
@@ -71,6 +76,42 @@ class JobSeekerProfile(BaseModel):
             Determines if the job seeker can receive job recommendations based on their profile settings.
         """
         return self.alerts_enabled and self.receive_company_updates
+
+    @property
+    def detect_burst_applications(self) -> bool:
+        """
+        Detects unusually fast application bursts (e.g. more than 10 within 60 seconds).
+        """
+        applications = self.applications or []
+        timestamps = sorted([app.applied_date for app in applications])
+
+        if len(timestamps) < 10:
+            return False
+
+        # Check if 10 applications happened within a 1-minute window
+        for i in range(len(timestamps) - 9):
+            delta = (timestamps[i + 9] - timestamps[i]).total_seconds()
+            if delta <= 60:
+                return True
+
+        return False
+
+    def detect_multiple_accounts(self) -> bool:
+        """
+        Checks if multiple accounts are associated with the same IP address or device fingerprint.
+        for the job seeker
+        """
+        if not self.ip_address and not self.device_finger_print:
+            return False
+        jobseekers_controller = get_controller('job_seeker_profile')
+        # Query other accounts sharing the same IP or device
+
+        job_seekers_list = jobseekers_controller.get_jobseekers_by_ip_address(self.ip_address)
+
+        for job_seeker in job_seekers_list:
+            if job_seeker.device_finger_print == self.device_finger_print and job_seeker.user_uid != self.user_uid:
+                return True
+        return False
 
     model_config = {
         "json_encoders": {

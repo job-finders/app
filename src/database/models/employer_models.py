@@ -7,6 +7,9 @@ from pydantic import BaseModel, Field, EmailStr, HttpUrl
 from src.database.models.company_models import SavedCandidates, Company
 from src.database.constants import utc_time
 
+def get_ip_location():
+    """insert a way to obtain the current ip location"""
+    return ""
 
 class Employer(BaseModel):
     """
@@ -25,6 +28,8 @@ class Employer(BaseModel):
     verification_token_expires_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=utc_time)
     updated_at: datetime = Field(default_factory=utc_time)
+    # TODO Update ip location everytime employer updates the model.
+    ip_location: Optional[str] = Field(default_factory=get_ip_location)
 
     # Personal information (all optional)
     full_name: Optional[str] = Field(
@@ -76,7 +81,6 @@ class Employer(BaseModel):
         max_length=50,
         description="Twitter username"
     )
-
     # Professional details (all optional)
     department: Optional[str] = Field(
         default=None,
@@ -103,6 +107,10 @@ class Employer(BaseModel):
 
     company: Optional[Company] = None
     saved_candidates: Optional[List[SavedCandidates]] = Field(default_factory=list)
+
+    def update_ip_location(self):
+        """run this method everytime a change is made on model"""
+        self.ip_location = get_ip_location()
 
     @property
     def account_age(self):
