@@ -1,7 +1,6 @@
 
 import functools
 import inspect
-
 from flask import jsonify, request, flash, redirect, url_for
 from werkzeug.exceptions import BadRequest, NotFound, Unauthorized, InternalServerError
 from src.logger import init_logger
@@ -21,8 +20,7 @@ def flask_error_handler(view_func):
         NotFound: ("Not Found", 404),
         Unauthorized: ("Unauthorized", 401),
         UnauthorizedError: ("Unauthorized", 403),
-        InternalServerError: ("Internal Server Error", 500),
-    }
+        InternalServerError: ("Internal Server Error", 500)}
 
     def handle_exception(e, method_name=None):
         error_type = type(e)

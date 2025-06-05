@@ -20,6 +20,7 @@ def _get_controller_map():
         'job_seeker_profile': 'get_job_seeker_profile_controller',
         'employer_agents': 'get_employer_agents_controller',
         'employee_agents': 'get_employee_agents_controller',
+        'admin_controller': 'get_admin_controller',
     }
 
 def get_controller(controller_name: str):
@@ -31,6 +32,7 @@ def get_controller(controller_name: str):
     if not hasattr(g, '_controllers'):
         g._controllers = {}
     elif controller_name in g._controllers:
+        # noinspection PyProtectedMember
         return g._controllers[controller_name]
     # Returns Controller Map
     controller_map = _get_controller_map()
@@ -48,6 +50,7 @@ def get_controller(controller_name: str):
     try:
         controller = getattr(factory, getter_name)()
         # Cache for current request
+        # noinspection PyProtectedMember
         g._controllers[controller_name] = controller
         return controller
     except AttributeError:

@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, send_file
 from pydantic import ValidationError
 
+from src.firewall.rate_limiting import rate_limit
 from src.authentication import user_details
 from src.database.models.notifications import CreateNotifications
 from src.database.models.seo import create_tags
@@ -18,6 +19,7 @@ home_logger = init_logger("home_logger")
 # Route definitions
 
 @home_route.get("/media/logos/<job_ref>.png")
+@rate_limit("120 per minute")
 @flask_error_handler
 async def serve_logo(job_ref: str):
     """Serve a job logo that is cached or fetch it if not present."""
@@ -34,6 +36,7 @@ async def serve_logo(job_ref: str):
 
 
 @home_route.get('/')
+@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
 async def get_home(user: User):
@@ -46,6 +49,7 @@ async def get_home(user: User):
     return response
 
 @home_route.get('/about')
+@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
 async def about(user: User):
@@ -56,6 +60,7 @@ async def about(user: User):
 
 
 @home_route.get('/contact')
+@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
 async def contact(user: User):
@@ -66,6 +71,7 @@ async def contact(user: User):
 
 
 @home_route.get('/terms')
+@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
 async def terms(user: User):
@@ -85,6 +91,7 @@ async def privacy(user: User):
     return render_template('terms.html', **context)
 
 @home_route.get('/documentation')
+@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
 async def documentation(user: User):
@@ -96,6 +103,7 @@ async def documentation(user: User):
 
 
 @home_route.get('/sister-sites')
+@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
 async def sister_sites(user: User):
@@ -106,6 +114,7 @@ async def sister_sites(user: User):
 
 
 @home_route.get('/faq')
+@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
 async def faq(user: User):
@@ -116,6 +125,7 @@ async def faq(user: User):
 
 
 @home_route.get('/linkedin-learning')
+@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
 async def linkedin_learning(user: User):
@@ -126,6 +136,7 @@ async def linkedin_learning(user: User):
 
 
 @home_route.post('/job-notifications/<string:search_term>')
+@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
 async def email_me(user: User, search_term: str):
@@ -156,6 +167,7 @@ async def email_me(user: User, search_term: str):
 
 
 @home_route.get('/email-verification/<string:verification_id>')
+@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
 async def verify_email(user: User, verification_id: str):

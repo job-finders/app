@@ -2,6 +2,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
+from src.firewall.rate_limiting import rate_limit
 from src.authentication import admin_login, login_required
 from src.database.models.jobs_model import Job, JobApplication
 from src.database.models.users import User
@@ -11,6 +12,7 @@ from src.utils.route_helpers import get_controller
 jobs_workflow_route = Blueprint("jobs_workflow", __name__, url_prefix="/dashboard/jobs")
 
 @jobs_workflow_route.get("/create")
+@rate_limit("20 per minute")
 @flask_error_handler
 @login_required
 async def show_create_form(user: User):
@@ -27,6 +29,7 @@ async def show_create_form(user: User):
     return render_template("jobs_workflow/create.html", current_user=user)
 
 @jobs_workflow_route.post("/create")
+@rate_limit("20 per minute")
 @flask_error_handler
 @login_required
 async def create_job(user: User):
@@ -65,6 +68,7 @@ async def create_job(user: User):
 
 
 @jobs_workflow_route.get("/<string:job_id>/edit")
+@rate_limit("10 per minute")
 @flask_error_handler
 @login_required
 async def show_edit_form(user: User, job_id: str):
@@ -80,6 +84,7 @@ async def show_edit_form(user: User, job_id: str):
     return render_template("jobs_workflow/edit.html", current_user=user, job=job)
 
 @jobs_workflow_route.post("/<string:job_id>/edit")
+@rate_limit("10 per minute")
 @flask_error_handler
 @login_required
 async def edit_job(user: User, job_id: str):
@@ -101,6 +106,7 @@ async def edit_job(user: User, job_id: str):
 
 
 @jobs_workflow_route.get("/<string:job_id>/archive")
+@rate_limit("10 per minute")
 @flask_error_handler
 @login_required
 async def archive_job(user: User, job_id: str):
@@ -126,6 +132,7 @@ async def archive_job(user: User, job_id: str):
 
 
 @jobs_workflow_route.get("/<string:job_id>/feature")
+@rate_limit("30 per minute")
 @flask_error_handler
 @login_required
 async def feature_job(user: User, job_id: str):
@@ -146,6 +153,7 @@ async def feature_job(user: User, job_id: str):
 
 
 @jobs_workflow_route.get("/approve/<string:approval_token>")
+@rate_limit("60 per minute")
 @flask_error_handler
 @admin_login
 async def approve_job(user: User, approval_token: str):
@@ -163,6 +171,7 @@ async def approve_job(user: User, approval_token: str):
 
 
 @jobs_workflow_route.get("/reject/<string:approval_token>")
+@rate_limit("60 per minute")
 @flask_error_handler
 @admin_login
 async def reject_job(user: User, approval_token: str):
@@ -182,6 +191,7 @@ async def reject_job(user: User, approval_token: str):
 
 
 @jobs_workflow_route.post("/<string:job_id>/apply")
+@rate_limit("120 per minute")
 @flask_error_handler
 @login_required
 async def submit_application(user: User, job_id: str):

@@ -9,6 +9,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 def _register_blueprints(app):
     """Register all route blueprints"""
+
     from src.routes.auth_routes import auth_route
     from src.routes.home_routes import home_route
     from src.routes.jobs_routes import jobs_workflow_route, jobs_search_route

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Response, make_response
 
+from src.firewall.rate_limiting import rate_limit
 from src.routes import flask_error_handler
 from src.database.constants import utc_time
 from src.logger import init_logger
@@ -20,6 +21,7 @@ async def create_response(redirect_url, message=None, category=None) -> Response
 
 
 @auth_route.route("/login", methods=["GET", "POST"])
+@rate_limit("10 per minute")
 @flask_error_handler
 @user_details
 async def login(user: User):
@@ -56,6 +58,7 @@ async def login(user: User):
 
 
 @auth_route.route("/logout")
+@rate_limit("10 per minute")
 @flask_error_handler
 @login_required
 async def logout(user: User):
@@ -68,6 +71,7 @@ async def logout(user: User):
     return response
 
 @auth_route.route("/subscribe", methods=["POST", "GET"])
+@rate_limit("5 per minute")
 @flask_error_handler
 @user_details
 async def subscribe(user: User):
@@ -120,6 +124,7 @@ async def subscribe(user: User):
 
 
 @auth_route.route("/password-reset", methods=["GET", "POST"])
+@rate_limit("2 per minute")
 @flask_error_handler
 async def password_reset():
     if request.method == "GET":

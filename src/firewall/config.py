@@ -1,4 +1,7 @@
 # src/config.py
+from datetime import timedelta
+
+
 class SecurityConfig:
     # Set in production
     SESSION_COOKIE_SECURE = True

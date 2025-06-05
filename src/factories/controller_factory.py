@@ -10,6 +10,7 @@ from src.controllers.jobs import JobsSearchController, JobsWorkflowController
 from src.controllers.jobseekers import JobSeekerProfilesController
 from src.controllers.resumes import ResumeController
 from src.controllers.users import UsersController
+from src.controllers.admin import AdminController
 
 
 class ControllerFactory:
@@ -119,6 +120,9 @@ class ControllerFactory:
     def get_employee_agents_controller(self) -> EmployeeAgentsController:
         """Get EmployeeAgentsController instance"""
         return self._get_controller('employee_agents', EmployeeAgentsController)
+    def get_admin_controller(self) -> AdminController:
+        """Get AdminController instance"""
+        return self._get_controller('admin', AdminController)
 
     def _get_controller(self, name: str, controller_class):
         """Thread-safe controller getter with double-checked locking"""

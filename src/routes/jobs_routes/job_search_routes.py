@@ -4,6 +4,7 @@ from typing import TypedDict, List
 
 from flask import Blueprint, render_template, request
 
+from src.firewall.rate_limiting import rate_limit
 from src.database.models.jobs_model import JobCategory
 from src.database.models.resume import JobSeekerCV
 from src.database.models import Job
@@ -95,6 +96,7 @@ jobs_search_route = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 # noinspection DuplicatedCode
 @jobs_search_route.get('/browse-jobs')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def list_jobs(user: User):
@@ -135,6 +137,7 @@ async def list_jobs(user: User):
 
 
 @jobs_search_route.get('/search')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def search_jobs(user: User):
@@ -184,6 +187,7 @@ async def search_jobs(user: User):
 
 
 @jobs_search_route.get('/categories')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def job_categories(user: User):
@@ -215,6 +219,7 @@ async def job_categories(user: User):
     return render_template('jobs/job_categories_list.html', **context)
 
 @jobs_search_route.get('/category/<string:category>')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def category_jobs(user: User, category: str):
@@ -251,6 +256,7 @@ async def category_jobs(user: User, category: str):
 
 
 @jobs_search_route.get('/full-job-detail/<string:job_id>')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def full_job_details(user: User, job_id: str):
@@ -280,6 +286,7 @@ async def full_job_details(user: User, job_id: str):
 
 
 @jobs_search_route.get('/<string:job_id>')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def job_details(user: User, job_id: str):
@@ -318,6 +325,7 @@ async def job_details(user: User, job_id: str):
     return render_template('jobs/job_detail.html', **context)
 
 @jobs_search_route.get('/location/<string:location>')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def jobs_by_location(user: User, location: str):
@@ -340,6 +348,7 @@ async def jobs_by_location(user: User, location: str):
 
 
 @jobs_search_route.get('/type/<string:job_type>')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def jobs_by_type(user: User, job_type: str):
@@ -374,6 +383,7 @@ async def jobs_by_type(user: User, job_type: str):
 
 # noinspection DuplicatedCode
 @jobs_search_route.get('/featured')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def featured_jobs(user: User):
@@ -405,6 +415,7 @@ async def featured_jobs(user: User):
 
 # noinspection DuplicatedCode
 @jobs_search_route.get('/recent')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def recent_jobs(user: User):
@@ -435,6 +446,7 @@ async def recent_jobs(user: User):
 
 
 @jobs_search_route.get('/salary')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def jobs_by_salary_range(user: User):
@@ -481,6 +493,7 @@ async def jobs_by_salary_range(user: User):
 
 
 @jobs_search_route.get('/company/<string:company_slug>')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def jobs_by_company(user: User, company_slug: str):
@@ -515,6 +528,7 @@ async def jobs_by_company(user: User, company_slug: str):
     return render_template('jobs/company.html', **context)
 
 @jobs_search_route.get('/title')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def jobs_by_title(user: User):
@@ -545,6 +559,7 @@ async def jobs_by_title(user: User):
 
 
 @jobs_search_route.get('/qualification')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def jobs_by_qualification(user: User):
@@ -577,6 +592,7 @@ async def jobs_by_qualification(user: User):
     return render_template('jobs/qualification.html', **context)
 
 @jobs_search_route.get('/reference/<string:reference>')
+@rate_limit("60 per minute")
 @flask_error_handler
 @user_details
 async def job_by_reference(user: User, reference: str):
