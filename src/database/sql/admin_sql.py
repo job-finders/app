@@ -36,9 +36,10 @@ class FlaggedUserORM(Base):
     date_flagged_at = Column(DateTime(timezone=True), default=utc_time)
     status = Column(String(20), nullable=False, default="flagged")  # e.g., "flagged", "resolved"
 
-    __table_args__ = (
-        UniqueConstraint("reference_id", "reason", name="uq_flaggeduser_reason_once"),
-    )
+    # NOTE USING We do not need the constraint since our evaluator method detects duplications
+    # __table_args__ = (
+    #     UniqueConstraint("reference_id", "reason", name="uq_flaggeduser_reason_once"),
+    # )
 
     @classmethod
     def create_if_not_table(cls):

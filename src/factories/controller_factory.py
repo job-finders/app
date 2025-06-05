@@ -3,7 +3,7 @@ import threading
 import time
 from typing import Dict, Any
 
-from controllers.analytics import UserEngagementController
+from src.controllers.analytics import UserEngagementController
 from src.controllers.agents import EmployerAgentsController, EmployeeAgentsController
 from src.controllers.ats import ATSToolController
 from src.controllers.company import CompanyController

@@ -231,7 +231,7 @@ async def create_search_context(user: User, search_term: str, page: int = 1, per
     :return: Rendered template response.
     """
 
-    jobs_filtered = [job for job in get_service('scraper').job_cache.values() if search_term_matches_any_field(job, search_term)]
+    jobs_filtered = [job for job in get_service('scraper')().job_cache.values() if search_term_matches_any_field(job, search_term)]
     context = await create_common_context(search_term, jobs_filtered, page, per_page)
     context.update(current_user=user)
     return render_template('job_listing.html', **context)
@@ -242,10 +242,10 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
     start_idx = (page - 1) * per_page
     jobs_paginated = job_list[start_idx: start_idx + per_page]
     provinces = list(SOUTH_AFRICA_PROVINCES.keys())
-    search_terms: list[str] = get_service('scraper').search_terms
+    search_terms: list[str] = get_service('scraper')().search_terms
 
     # Count job postings by category
-    job_counts = count_jobs_per_category(list(get_service('scraper').job_cache.values()))
+    job_counts = count_jobs_per_category(list(get_service('scraper')().job_cache.values()))
 
     # Enrich categories with job_count
     enriched_categories = []
@@ -297,7 +297,7 @@ async def create_context(user:User, search_term: str, page: int = 1, per_page: i
     :return: Rendered template response.
     """
     # Validate search term before filtering
-    if search_term not in  get_service('scraper').search_terms and search_term is not "home":
+    if search_term not in  get_service('scraper')().search_terms and search_term is not "home":
         return None
     category_search = await get_controller('jobs_search').search_jobs_by_category(category=search_term, page=page, page_size=per_page)
     jobs_list = category_search.get('jobs') if category_search else []
@@ -310,7 +310,7 @@ async def create_context(user:User, search_term: str, page: int = 1, per_page: i
 
     if search_term == "home":
         return render_template('index.html', **context)
-    elif search_term in get_service('scraper').search_terms:
+    elif search_term in get_service('scraper')().search_terms:
         return render_template('job_listing.html', **context)
     return None
 
@@ -359,7 +359,7 @@ async def gone(user:User, search_term: str):
 async def sub_job_detail(user: User, job: Job):
     """Render detailed job view with SEO tags and similar jobs."""
     seo = await create_seo_tags_for_job(job=job)
-    similar_jobs = await get_service('scraper').similar_jobs(search_term=job.search_term, title=job.title)
+    similar_jobs = await get_service('scraper')().similar_jobs(search_term=job.search_term, title=job.title)
     # utils_logger.info(f"Similar Jobs: {similar_jobs}")
     affiliate_template = random.choice(load_affiliate_templates())
 

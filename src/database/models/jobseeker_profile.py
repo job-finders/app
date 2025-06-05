@@ -2,8 +2,6 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 from typing import Optional, List
 from datetime import datetime
 
-from database.models.company_models import SavedCandidates, CompanyFollowing
-from database.models.jobs_model import JobApplication
 
 
 class JobSeekerProfile(BaseModel):
@@ -49,11 +47,11 @@ class JobSeekerProfile(BaseModel):
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 
     # List of job applications submitted by the Job Seeker
-    applications: Optional[list[JobApplication]] = Field(default_factory=list, description="List of JobApplications for Jobseeker")
+    applications: Optional[list['JobApplication']] = Field(default_factory=list, description="List of JobApplications for Jobseeker")
     # List of records showing records where companies saved the candidate for further onsideration
-    interested_companies: Optional[List[SavedCandidates]] = Field(default_factory=list, description="List of companies the job seeker is interested in")
+    interested_companies: Optional[List['SavedCandidates']] = Field(default_factory=list, description="List of companies the job seeker is interested in")
     # Companies the Job Seeker is following
-    following_companies: Optional[List[CompanyFollowing]] = Field(default_factory=list, description="List of records showing companies the job seeker is following")
+    following_companies: Optional[List['CompanyFollowing']] = Field(default_factory=list, description="List of records showing companies the job seeker is following")
 
     # --- Validators ---
     @field_validator("job_titles_of_interest", "industries_of_interest", "locations_of_interest", "freelance_skills", mode="before")

@@ -7,8 +7,8 @@ from flask import Flask
 from sqlalchemy import JSON, Index, event, Column, String, ForeignKey, Integer, DateTime, Boolean, DDL
 from datetime import datetime, timedelta, timezone
 
-from config import config_instance
-from controllers.controller import Controllers
+from src.config import config_instance
+from src.controllers.controller import Controllers
 from src.database.sql import Base
 from src.database.constants import ID_LEN, utc_time
 # ----------- Activity Processor -----------

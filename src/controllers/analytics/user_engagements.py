@@ -15,7 +15,7 @@ from src.database.sql.analytics import (UserSearchActivityORM, JobViewActivityOR
 from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.emailer import EmailModel
-from utils.route_helpers import get_service, get_controller
+from src.utils.route_helpers import get_service, get_controller
 
 
 class UserEngagementController(Controllers):

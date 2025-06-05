@@ -5,7 +5,7 @@ from functools import wraps
 # src/utils/route_helpers.py
 from flask import g, current_app
 
-from logger import init_logger
+from src.logger import init_logger
 
 
 # Cache the controller map since it's static

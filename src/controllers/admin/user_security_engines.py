@@ -1,14 +1,21 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable, Any, List
+from typing import Callable, Any, List, Tuple
 
 from src.database.models.jobseeker_profile import JobSeekerProfile
 
 
 @dataclass
 class SecurityRule:
+    """
+    Represents a security evaluation rule.
+
+    Attributes:
+        reason (str): A human-readable reason describing the rule.
+        evaluator (Callable[[], bool]): A no-argument function that returns True if the rule is triggered.
+    """
     reason: str
-    evaluator: Callable[[Any], bool]
+    evaluator: Callable[[], bool]
 
 class JobSeekerRuleEngine:
     def __init__(self, jobseeker: JobSeekerProfile):
@@ -40,21 +47,7 @@ class JobSeekerRuleEngine:
             job_app_map.setdefault(app.job_id, []).append(app)
         return any(len(apps) > 2 for apps in job_app_map.values())
 
-from typing import Callable, List, Tuple
-from dataclasses import dataclass
 
-
-@dataclass
-class SecurityRule:
-    """
-    Represents a security evaluation rule.
-
-    Attributes:
-        reason (str): A human-readable reason describing the rule.
-        evaluator (Callable[[], bool]): A no-argument function that returns True if the rule is triggered.
-    """
-    reason: str
-    evaluator: Callable[[], bool]
 
 
 class EmployerRuleEngine:
@@ -126,7 +119,7 @@ class EmployerRuleEngine:
         """
         flags = []
         for rule in self.rules:
-            if rule.evaluator() and should_flag_user(reason=rule.reason):
+            if rule.evaluator(self) and should_flag_user(reason=rule.reason):
                 flags.append((self.employer.employer_id, rule.reason))
         return flags
 
