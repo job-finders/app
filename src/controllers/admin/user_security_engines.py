@@ -1,5 +1,7 @@
+import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from difflib import SequenceMatcher
 from typing import Callable, Any, List, Tuple
 
 from src.database.models.jobseeker_profile import JobSeekerProfile
@@ -27,12 +29,15 @@ class JobSeekerRuleEngine:
             SecurityRule("Too many job applications in 24h", self._too_many_recent_apps),
             SecurityRule("Repeated applications to same job", self._repeated_job_apps),
             # More rules can be added here.
+            SecurityRule("Multiple accounts from same IP", self._multiple_accounts_same_ip),
+            SecurityRule("Unrealistic application timing", self._bot_like_application_speed),
+            SecurityRule("Suspicious resume content", self._suspicious_resume_detected),
         ]
 
     def evaluate(self, should_flag_user: Callable[[str], bool]) -> List[tuple[str, str]]:
         flags = []
         for rule in self.rules:
-            if rule.evaluator(self) and should_flag_user(reason=rule.reason):
+            if rule.evaluator() and should_flag_user(reason=rule.reason):
                 flags.append((self.jobseeker.uid, rule.reason))
         return flags
 
@@ -48,6 +53,26 @@ class JobSeekerRuleEngine:
         return any(len(apps) > 2 for apps in job_app_map.values())
 
 
+    def _multiple_accounts_same_ip(self) -> bool:
+        return len(self.other_users_with_ip) > 1
+
+    def _bot_like_application_speed(self) -> bool:
+        timestamps = sorted([app.applied_at for app in self.jobseeker.applications])
+        for i in range(1, len(timestamps)):
+            delta = (timestamps[i] - timestamps[i - 1]).total_seconds()
+            if delta < 1:  # less than 1 sec between apps
+                return True
+        return False
+
+    def _suspicious_resume_detected(self) -> bool:
+        """
+            Can USE AI to detect Suspicious Resume.
+        :return:
+        """
+        resume = self.jobseeker.resume_text or ""
+        boilerplate_phrases = ["I am a hardworking individual", "seeking a challenging role", "team player"]
+        matches = [phrase for phrase in boilerplate_phrases if phrase.lower() in resume.lower()]
+        return len(matches) > 1
 
 
 class EmployerRuleEngine:
@@ -101,6 +126,9 @@ class EmployerRuleEngine:
             SecurityRule("Low application response rate", self._low_response_rate),
             SecurityRule("Suspiciously short hiring times", self._fast_hiring_times),
             SecurityRule("Saving candidates without job posts", self._saving_candidates_without_jobs),
+            SecurityRule("Duplicate job descriptions detected", self._duplicate_job_descriptions),
+            SecurityRule("Location mismatch: job vs IP", self._location_mismatch),
+            SecurityRule("Rapid fire edits on job posts", self._rapid_edits),
         ]
 
     def evaluate(self, should_flag_user: Callable[[str], bool]) -> List[Tuple[str, str]]:
@@ -119,7 +147,7 @@ class EmployerRuleEngine:
         """
         flags = []
         for rule in self.rules:
-            if rule.evaluator(self) and should_flag_user(reason=rule.reason):
+            if rule.evaluator() and should_flag_user(reason=rule.reason):
                 flags.append((self.employer.employer_id, rule.reason))
         return flags
 
@@ -169,3 +197,47 @@ class EmployerRuleEngine:
             bool: True if total_jobs == 0 and 5+ candidates saved.
         """
         return self.company.total_jobs == 0 and self.company.total_saved_candidates > 5
+
+    def _duplicate_job_descriptions(self) -> bool:
+        descriptions = [job.description for job in self.company.jobs if job.description]
+        for i in range(len(descriptions)):
+            for j in range(i + 1, len(descriptions)):
+                similarity = SequenceMatcher(None, descriptions[i], descriptions[j]).ratio()
+                if similarity > 0.9:
+                    return True
+        return False
+
+    def _location_mismatch(self) -> bool:
+        """
+        Detect if the employer IP location and company location are semantically inconsistent.
+
+        Returns True if no matching part of the IP location is found in the company location.
+        """
+        if not self.company.location or not self.employer.ip_location:
+            return False
+
+        # Normalize strings (lowercase, remove punctuation)
+        def normalize(text):
+            return re.sub(r'[^\w\s]', '', text.lower())
+
+        company_location = normalize(self.company.location)
+        ip_location = normalize(self.employer.ip_location)
+
+        # Tokenize locations into words
+        company_tokens = set(company_location.split())
+        ip_tokens = set(ip_location.split())
+
+        # Check if there's any overlap
+        return company_tokens.isdisjoint(ip_tokens)
+
+    def _rapid_edits(self) -> bool:
+        if not self.company.jobs:
+            return False
+
+        recent_posts = sorted(self.company.jobs, key=lambda j: j.updated_at, reverse=True)
+        for i in range(1, len(recent_posts)):
+            delta = recent_posts[i - 1].updated_at - recent_posts[i].updated_at
+            if delta < timedelta(minutes=5):  # multiple edits within 5 mins
+                return True
+        return False
+

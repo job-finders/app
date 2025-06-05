@@ -66,6 +66,11 @@ class Company(BaseModel):
     saved_candidates: Optional[list['SavedCandidates']] = Field(default_factory=list)
     employers: Optional[list['Employer']] = Field(default_factory=list)
 
+    @property
+    def location(self) -> str:
+        """Formatted location string"""
+        parts = [self.city, self.province, self.country]
+        return ', '.join(part for part in parts if part)
 
     @field_validator('tech_stack', mode='before')
     @classmethod
