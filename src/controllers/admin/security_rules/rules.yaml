@@ -1,0 +1,29 @@
+employer_rules:
+  - reason: "Unverified company posting jobs"
+    enabled: true
+  - reason: "High job volume from new account"
+    enabled: true
+  - reason: "Low application response rate"
+    enabled: true
+  - reason: "Suspiciously short hiring times"
+    enabled: true
+  - reason: "Saving candidates without job posts"
+    enabled: true
+  - reason: "Copy-paste job ads"
+    enabled: true
+  - reason: "Inconsistent location data"
+    enabled: true
+  - reason: "Rapid edits to job posts"
+    enabled: true
+
+jobseeker_rules:
+  - reason: "Too many job applications in 24h"
+    enabled: true
+  - reason: "Repeated applications to same job"
+    enabled: true
+  - reason: "Multiple accounts from same IP"
+    enabled: true
+  - reason: "Unrealistic application timing"
+    enabled: true
+  - reason: "Suspicious resume content"
+    enabled: true
