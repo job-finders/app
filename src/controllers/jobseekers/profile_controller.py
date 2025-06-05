@@ -23,6 +23,10 @@ def allowed_file(filename: str, allowed_extensions: set) -> bool:
 
 
 class JobSeekerProfilesController(Controllers):
+    __dict__ = """
+        This Controller manages job seeker profiles, including creation,
+        retrieval, updating, deletion, and searching.
+    """
     def __init__(self, factory):
         super().__init__(factory)
 

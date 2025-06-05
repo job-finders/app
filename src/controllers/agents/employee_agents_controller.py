@@ -15,14 +15,42 @@ from src.logger import init_logger
 from src.utils.route_helpers import get_controller
 
 class EmployeeAgentsController(Controllers):
+    """
+    Controller responsible for AI-assisted job matching, CV optimization, and cover letter generation for jobseekers.
+
+    This controller interacts with user, resume, and job services to facilitate intelligent agent-based
+    features such as:
+      - Matching candidate profiles to jobs
+      - Generating tailored cover letters
+      - Optimizing CVs for better ATS (Applicant Tracking System) performance
+
+    Dependencies:
+        - `users_controller`: For fetching user information.
+        - `resume_controller`: For fetching and managing CVs.
+        - `job_search_controller`: For retrieving job details.
+        - `ApplicationCoachAgent`: AI agent for job match analysis.
+        - `CoverLetterAgent`: AI agent for generating tailored cover letters.
+        - Logging and error handling decorators.
+
+    Side Effects:
+        - Logs important events (e.g., analysis or generation triggers).
+        - Raises errors when users, jobs, or CVs are missing.
+        - Delegates computation to agent services with async execution.
+
+    Args:
+        factory: Dependency injection factory used for controller/service instantiation.
+    """
+
     def __init__(self, factory):
+        """
+        Initializes the EmployeeAgentsController and sets up logging.
+
+        Args:
+            factory: Dependency injection factory.
+        """
         super().__init__(factory)
         self.logger = init_logger("EmployeeAgentsController")
 
-    def init_app(self, app):
-        super().init_app(app)
-        # App-specific initialization
-        # self.cache.init_app(app)
 
     @error_handler
     async def analyze_job_match(
@@ -73,6 +101,7 @@ class EmployeeAgentsController(Controllers):
 
         # Run the agent
         agent = ApplicationCoachAgent(user_id=user_id)
+        # noinspection PyTypeChecker
         return await agent.run(input_model=input_data)
 
     @error_handler

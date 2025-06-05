@@ -7,6 +7,7 @@ from enum import Enum
 from flask import Flask
 from sqlalchemy import func, case, or_, text
 
+from database.constants import utc_time
 from src.database.sql.company import CompanyORM
 from src.database.sql.analytics import UserSearchActivityORM
 from src.database.sql.users import UserORM
@@ -14,10 +15,22 @@ from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.controllers.controller import error_handler, Controllers
 from src.database.models.jobs_model import Job, Company, JobApplication, JobApprovalStatusEnum
 from src.database.sql.jobs_sql import JobsORM, JobApprovalRequestORM, JobVersionHistoryORM, JobApplicationORM
+from utils.route_helpers import get_controller
 
 
 class AdminPermissionLevel(Enum):
-    """Define admin permission levels"""
+    """
+    Enum representing different levels of administrative access.
+
+    These levels are used to control access to administrative features across the system,
+    allowing fine-grained role-based permission enforcement.
+
+    Members:
+        VIEWER (str): Read-only access, typically used for monitoring or auditing.
+        MODERATOR (str): Can perform moderation tasks such as reviewing flagged content.
+        ADMIN (str): Has broader access, including managing users and content.
+        SUPER_ADMIN (str): Full access, including system-level configurations and overrides.
+    """
     VIEWER = "viewer"
     MODERATOR = "moderator"
     ADMIN = "admin"
@@ -26,7 +39,19 @@ class AdminPermissionLevel(Enum):
 
 @dataclass
 class AdminActionResult:
-    """Standardized response for admin actions"""
+    """
+    Standardized structure for returning results from admin service actions.
+
+    This object is returned by all admin services and encapsulates the outcome of
+    an operation, including whether it succeeded, a user-readable message, and
+    optionally any resulting data or error details.
+
+    Attributes:
+        success (bool): Indicates whether the operation was successful.
+        message (str): A human-readable message describing the result.
+        data (Optional[Dict]): Additional payload data from the action (e.g., a report or entity info).
+        errors (Optional[List[str]]): A list of errors encountered during the operation, if any.
+    """
     success: bool
     message: str
     data: Optional[Dict] = None
@@ -34,15 +59,153 @@ class AdminActionResult:
 
 
 class AdminServiceInterface(ABC):
-    """Interface for admin services"""
+    """
+    Abstract base class for defining administrative service interfaces.
+
+    This interface enforces a common structure for all admin-related services,
+    such as compliance checks, moderation workflows, and reporting utilities.
+
+    Subclasses must implement the `execute()` method to define the service's
+    core behavior, typically triggered via an admin command or UI action.
+
+    Expected Usage:
+        This interface should be inherited by concrete service classes like:
+            - ComplianceService
+            - JobModerationService
+            - UserAuditTrailService
+        These services should encapsulate admin operations that involve complex
+        business logic, data aggregation, or multi-step workflows.
+
+    Dependencies:
+        - AdminActionResult: A standardized result wrapper used by all admin services
+          to return success/failure status, messages, and optional payloads.
+
+    Side Effects:
+        - Implementation-dependent (e.g., may include DB writes, external API calls, or
+          real-time notifications, depending on subclass implementation).
+
+    Methods:
+        execute(*args, **kwargs)
+            Abstract method to be implemented by subclasses.
+
+            Args:
+                *args: Positional arguments specific to the implementing service.
+                **kwargs: Keyword arguments required for execution logic.
+
+            Returns:
+                AdminActionResult: Structured result indicating the outcome of the operation.
+
+            Raises:
+                NotImplementedError: If called directly from the interface without subclass implementation.
+    """
 
     @abstractmethod
     def execute(self, *args, **kwargs) -> AdminActionResult:
+        """
+        Execute the main logic of the admin service.
+
+        :param args: Variable positional arguments specific to the implementing class.
+        :param kwargs: Keyword arguments required for executing the admin operation.
+        :return: AdminActionResult containing success status, message, and optional data.
+        :rtype: AdminActionResult
+        :raises NotImplementedError: If the method is not implemented by a subclass.
+        """
         pass
 
-
 class JobModerationService(AdminServiceInterface):
-    """Service for job moderation operations"""
+    """
+    Service class responsible for job moderation workflows within the admin interface.
+
+    This service allows administrators to manage job postings through actions such as
+    approving, rejecting, flagging, and bulk updating job statuses. It also provides
+    mechanisms to detect suspicious or anomalous job listings based on company verification
+    and known spam patterns.
+
+    Dependencies:
+        - session_factory (Callable): A function that returns a SQLAlchemy session context.
+        - Models:
+            - JobsORM
+            - CompanyORM
+            - JobApprovalRequestORM
+        - Enums:
+            - JobApprovalStatusEnum
+        - Response Wrapper:
+            - AdminActionResult
+
+    Side Effects:
+        - Writes to the database (status changes, audit trails).
+        - May modify or create job approval request records.
+        - No external API calls.
+
+    Methods:
+        __init__(session_factory)
+            Initializes the service with a SQLAlchemy session factory.
+
+        execute(action, **kwargs)
+            Dispatches the moderation action based on the provided string key.
+
+            Args:
+                action (str): Action to perform. Must be one of:
+                    - 'approve'
+                    - 'reject'
+                    - 'flag'
+                    - 'bulk_update'
+                    - 'detect_anomalies'
+                **kwargs: Additional arguments required by the specific action.
+
+            Returns:
+                AdminActionResult: Encapsulated result of the operation.
+
+        _approve_job(job_id, reviewer_id)
+            Approves a job that has been flagged or is pending review.
+
+            Args:
+                job_id (str): ID of the job to approve.
+                reviewer_id (str): Admin ID performing the approval.
+
+            Returns:
+                AdminActionResult: Result of the approval process.
+
+        _reject_job(job_id, reviewer_id, reason)
+            Rejects a job posting and provides a reason.
+
+            Args:
+                job_id (str): ID of the job to reject.
+                reviewer_id (str): Admin ID performing the rejection.
+                reason (str): Reason for rejecting the job.
+
+            Returns:
+                AdminActionResult: Result of the rejection process.
+
+        _flag_job(job_id, reason, reporter_id)
+            Flags a job for further review by administrators.
+
+            Args:
+                job_id (str): ID of the job to flag.
+                reason (str): Justification for the flag.
+                reporter_id (str): ID of the user/admin flagging the job.
+
+            Returns:
+                AdminActionResult: Result of the flagging operation.
+
+        _bulk_update_status(job_ids, new_status)
+            Updates the statuses of multiple jobs at once.
+
+            Args:
+                job_ids (List[str]): List of job IDs to update.
+                new_status (str): New status to apply. Must be one of:
+                    ['active', 'archived', 'pending_review']
+
+            Returns:
+                AdminActionResult: Summary of the bulk update operation.
+
+        _detect_anomalous_postings()
+            Identifies potentially suspicious job postings.
+
+            Returns:
+                AdminActionResult: A list of jobs flagged as anomalous based on spam keywords
+                or company verification status.
+    """
 
     def __init__(self, session_factory):
         self.session_factory = session_factory
@@ -178,7 +341,79 @@ class JobModerationService(AdminServiceInterface):
 
 
 class ComplianceService(AdminServiceInterface):
-    """Service for compliance and regulatory operations"""
+    """
+    Service for performing compliance and regulatory reporting across the job platform.
+
+    This controller provides tools to assess compliance with South African B-BBEE standards,
+    generate employment equity reports, analyze pay equity across gender and experience levels,
+    and detect potential bias in the hiring pipeline. It enables administrators to monitor
+    and enforce fair employment practices.
+
+    Dependencies:
+        - `session_factory` (Callable): A factory that provides a SQLAlchemy session.
+        - Models:
+            - `JobsORM`
+            - `CompanyORM`
+            - `JobSeekerProfileORM`
+            - `JobApplicationORM`
+        - Result Wrapper:
+            - `AdminActionResult`: Used for standardized success/failure responses.
+
+    Side Effects:
+        - Performs read-only operations on the database.
+        - No DB writes, session persistence, or external API usage.
+
+    Methods:
+        __init__(session_factory)
+            Initializes the service with a SQLAlchemy session factory.
+
+        execute(report_type: str, **kwargs) -> AdminActionResult
+            Dispatches the specified compliance reporting method.
+
+            Args:
+                report_type (str): Type of compliance report to generate. Must be one of:
+                    - 'bee_compliance'
+                    - 'employment_equity'
+                    - 'pay_equity'
+                    - 'bias_analysis'
+                **kwargs: Arguments required for the specific report method (e.g., `job_id`, `company_id`).
+
+            Returns:
+                AdminActionResult: Encapsulates success state, message, and data (if any).
+
+        _check_bee_compliance(job_id: str) -> AdminActionResult
+            Evaluates B-BBEE (Broad-Based Black Economic Empowerment) compliance for a given job's company.
+
+            Args:
+                job_id (str): ID of the job whose company's B-BBEE compliance is to be checked.
+
+            Returns:
+                AdminActionResult: Compliance data including black ownership, skills development, and status.
+
+        _generate_employment_equity_report() -> AdminActionResult
+            Creates a snapshot report of gender and disability representation among job seekers.
+
+            Returns:
+                AdminActionResult: Equity statistics including gender breakdown and disability count.
+
+        _generate_pay_equity_report(company_id: str) -> AdminActionResult
+            Aggregates salary ranges across different genders and experience levels within a company.
+
+            Args:
+                company_id (str): ID of the company to analyze.
+
+            Returns:
+                AdminActionResult: Grouped salary distribution report by demographic.
+
+        _analyze_application_biases(job_id: str) -> AdminActionResult
+            Detects potential bias in the job application process for a given job based on gender rejection rates.
+
+            Args:
+                job_id (str): ID of the job to analyze.
+
+            Returns:
+                AdminActionResult: Breakdown of applications and rejection rates across demographics.
+    """
 
     def __init__(self, session_factory):
         self.session_factory = session_factory
@@ -297,7 +532,73 @@ class ComplianceService(AdminServiceInterface):
 
 
 class AnalyticsService(AdminServiceInterface):
-    """Service for analytics and reporting"""
+    """
+    Service for executing administrative analytics operations on the JobFinders platform.
+
+    This service provides a unified interface for gathering system-level and user engagement metrics,
+    retrieving audit logs, and producing reports to assist administrators in monitoring platform health
+    and user behavior.
+
+    Dependencies:
+        - `session_factory`: A callable that returns a SQLAlchemy session.
+        - Models:
+            - `JobsORM`
+            - `UserORM`
+            - `UserSearchActivityORM`
+            - `JobApplicationORM`
+            - `JobVersionHistoryORM`
+        - `AdminActionResult`: A standardized result object indicating success, message, and optional payload.
+
+    Side Effects:
+        - Read-only DB queries for all analytics.
+        - No writes or session modifications.
+        - No external API calls.
+
+    Methods:
+        __init__(session_factory)
+            Initialize the service with a SQLAlchemy session factory.
+
+        execute(metric_type: str, **kwargs) -> AdminActionResult
+            Dispatches the analytics task based on the given metric type.
+
+            Args:
+                metric_type (str): One of ['system_health', 'engagement', 'audit_log', 'company_stats'].
+                **kwargs: Additional keyword arguments passed to the corresponding method.
+
+            Returns:
+                AdminActionResult: Object containing success status, message, and optional data payload.
+
+        _generate_system_health_report() -> AdminActionResult
+            Collects platform-wide system health statistics including job count, user activity, and mock performance metrics.
+
+            Returns:
+                AdminActionResult: System health report with timestamp and summary statistics.
+
+        _analyze_platform_engagement() -> AdminActionResult
+            Measures engagement levels, including DAU (Daily Active Users), feature usage, and weekly retention.
+
+            Returns:
+                AdminActionResult: Engagement metrics with usage and retention insights.
+
+        _get_job_audit_log(job_id: str) -> AdminActionResult
+            Retrieves the version history and modification log of a specific job post.
+
+            Args:
+                job_id (str): Unique identifier for the job.
+
+            Returns:
+                AdminActionResult: Chronological audit history including timestamps, change sets, and modifying users.
+
+        _calculate_retention(session) -> float
+            Computes the weekly user retention rate.
+
+            Args:
+                session: Active SQLAlchemy session used to query user records.
+
+            Returns:
+                float: A decimal representing the weekly retention rate, or 0 if no data is available.
+    """
+
 
     def __init__(self, session_factory):
         self.session_factory = session_factory
@@ -307,13 +608,15 @@ class AnalyticsService(AdminServiceInterface):
         metrics = {
             'system_health': self._generate_system_health_report,
             'engagement': self._analyze_platform_engagement,
-            'user_activity': self._flag_unusual_user_activity,
-            'audit_log': self._get_job_audit_log
+            'audit_log': self._get_job_audit_log,
+            'company_stats': self._company_statistics,
+
         }
 
         if metric_type not in metrics:
             return AdminActionResult(False, f"Unknown metric type: {metric_type}")
 
+        # noinspection PyArgumentList
         return metrics[metric_type](**kwargs)
 
     def _generate_system_health_report(self) -> AdminActionResult:
@@ -362,40 +665,6 @@ class AnalyticsService(AdminServiceInterface):
         except Exception as e:
             return AdminActionResult(False, f"Error analyzing platform engagement: {str(e)}")
 
-    def _flag_unusual_user_activity(self, user_id: str) -> AdminActionResult:
-        """Detect suspicious user behavior patterns"""
-        try:
-            with self.session_factory() as session:
-                # Check application patterns
-                app_stats = session.query(
-                    func.count(JobApplicationORM.application_id),
-                    func.min(JobApplicationORM.applied_date),
-                    func.max(JobApplicationORM.applied_date)
-                ).filter_by(user_id=user_id).first()
-
-                # Check search activity
-                search_stats = session.query(
-                    func.count(UserSearchActivityORM.id),
-                    func.avg(UserSearchActivityORM.result_count)
-                ).filter_by(user_id=user_id).first()
-
-                activity_data = {
-                    "application_metrics": {
-                        "total": app_stats[0] if app_stats else 0,
-                        "time_span": (app_stats[2] - app_stats[1]).total_seconds() if app_stats and app_stats[
-                            0] > 0 else 0
-                    },
-                    "search_metrics": {
-                        "total_searches": search_stats[0] if search_stats else 0,
-                        "avg_results": float(search_stats[1]) if search_stats and search_stats[1] else 0
-                    },
-                    "risk_score": self._calculate_risk_score(app_stats, search_stats)
-                }
-
-                return AdminActionResult(True, "User activity analysis completed", activity_data)
-        except Exception as e:
-            return AdminActionResult(False, f"Error analyzing user activity: {str(e)}")
-
     def _get_job_audit_log(self, job_id: str) -> AdminActionResult:
         """Get complete modification history for a job"""
         try:
@@ -416,7 +685,8 @@ class AnalyticsService(AdminServiceInterface):
         except Exception as e:
             return AdminActionResult(False, f"Error retrieving audit log: {str(e)}")
 
-    def _calculate_retention(self, session):
+    @staticmethod
+    def _calculate_retention(session):
         """Calculate weekly user retention rate"""
         try:
             retention_data = session.query(
@@ -441,28 +711,319 @@ class AnalyticsService(AdminServiceInterface):
         except Exception:
             return 0
 
-    def _calculate_risk_score(self, app_stats, search_stats):
-        """Calculate composite risk score 0-100"""
+
+class SecurityService(AdminServiceInterface):
+    __doc__="""
+    SecurityService is responsible for detecting, analyzing, and flagging suspicious or risky behavior
+    by both jobseekers and employers on the platform. It provides analytics and heuristic evaluations
+    to assist administrators in identifying abuse patterns such as spam applications, fraudulent job posts,
+    and other forms of platform misuse.
+
+    This service builds on AdminServiceInterface and leverages internal ORM models and analytics rules
+    to return actionable admin results.
+
+    Attributes:
+        session_factory (Callable): A factory function that returns a SQLAlchemy session instance.
+        db (DatabaseService): Inherited or injected dependency used for accessing user/employer/jobseeker records.
+        logger (Logger): Inherited or injected logging utility for recording security events.
+
+    Methods:
+        execute(security_event: str, **kwargs) -> AdminActionResult:
+            Dispatches execution to the appropriate security handler based on the event type.
+
+        _analyze_jobseeker_risk(user_id: str) -> AdminActionResult:
+            Analyzes application frequency and search patterns to assign a composite risk score to a jobseeker.
+
+        _calculate_risk_score(app_stats, search_stats) -> int:
+            Calculates a normalized risk score based on application rate and search activity intensity.
+
+        _flag_unusual_employer_activity(employer: EmployerORM, company: CompanyORM) -> list[tuple[str, str]]:
+            Applies predefined rules to detect suspicious behavior by employer accounts.
+
+        _flag_unusual_jobseeker_activity(jobseeker: JobSeekerORM) -> list[tuple[str, str]]:
+            Applies predefined rules to detect abusive or bot-like activity by jobseekers.
+
+        _flag_unusual_user_activity() -> list[tuple[str, str]]:
+            Iterates through all users and applies relevant heuristics to flag unusual behavior.
+            Logs flagged cases for administrative review.
+
+    Dependencies:
+        - JobApplicationORM: ORM model for tracking job applications.
+        - UserSearchActivityORM: ORM model for logging job search behavior.
+        - JobSeekerORM, EmployerORM, CompanyORM: ORM models representing user roles and entities.
+        - get_controller: Used to access other controllers like users, resumes, and job workflow logic.
+
+    Side Effects:
+        - Logs suspicious activity using `self.logger`.
+        - Reads from the database to compute stats and evaluate conditions.
+        - Returns structured results for admin panel consumption.
+
+    Example:
+        >>> service = SecurityService(session_factory)
+        >>> result = service.execute("jobseeker_risk", user_id="abc123")
+        >>> print(result.success, result.message, result.data)
+    """
+
+
+
+    def __init__(self, session_factory):
+        self.session_factory = session_factory
+
+    def execute(self, security_event: str, **kwargs) -> AdminActionResult:
+        """Execute analytics operations"""
+        security_events = {
+            'jobseeker_risk': self._analyze_jobseeker_risk,
+            'flag_unusual_user_activity' : self._flag_unusual_user_activity,
+        }
+
+        if security_event not in security_events:
+            return AdminActionResult(False, f"Unknown security event type: {security_event}")
+        return security_events[security_event](**kwargs)
+
+    def _analyze_jobseeker_risk(self, user_id: str) -> AdminActionResult:
+        """Analyze user behavior for potential misuse or abuse"""
+        try:
+            with self.session_factory() as session:
+                app_stats = session.query(
+                    func.count(JobApplicationORM.application_id),
+                    func.min(JobApplicationORM.applied_date),
+                    func.max(JobApplicationORM.applied_date)
+                ).filter_by(user_id=user_id).first()
+
+                search_stats = session.query(
+                    func.count(UserSearchActivityORM.id),
+                    func.avg(UserSearchActivityORM.result_count)
+                ).filter_by(user_id=user_id).first()
+
+                activity_data = {
+                    "application_metrics": {
+                        "total": app_stats[0] if app_stats else 0,
+                        "time_span": (app_stats[2] - app_stats[1]).total_seconds() if app_stats and app_stats[0] > 0 else 0
+                    },
+                    "search_metrics": {
+                        "total_searches": search_stats[0] if search_stats else 0,
+                        "avg_results": float(search_stats[1]) if search_stats and search_stats[1] else 0
+                    },
+                    "risk_score": self._calculate_risk_score(app_stats, search_stats)
+                }
+
+                return AdminActionResult(True, "User activity analysis completed", activity_data)
+        except Exception as e:
+            return AdminActionResult(False, f"Error analyzing user activity: {str(e)}")
+
+    @staticmethod
+    def _calculate_risk_score(app_stats, search_stats):
+        """Calculate composite user risk score"""
         try:
             if not app_stats or not search_stats:
                 return 0
 
-            app_rate = app_stats[0] / ((app_stats[2] - app_stats[1]).total_seconds() / 3600 + 1) if app_stats[
-                                                                                                        0] > 0 else 0
+            app_rate = app_stats[0] / ((app_stats[2] - app_stats[1]).total_seconds() / 3600 + 1) if app_stats[0] > 0 else 0
             search_intensity = search_stats[0] / (search_stats[1] or 1)
             return min(100, int(app_rate * 10 + search_intensity * 5))
         except Exception:
             return 0
 
+    def _flag_unusual_employer_activity(self, employer: EmployerORM, company: CompanyORM) -> list[tuple[str, str]]:
+        flags = []
+        # Rule 1: Unverified company posting jobs
+        if not company.is_verified and company.total_jobs > 0:
+            flags.append((employer.uid, "Unverified company posting jobs"))
+        # Rule 2: High volume job posts on new account
+        account_age = (datetime.utcnow() - employer.user.created_at).days
+        if account_age <= 2 and company.total_jobs >= 5:
+            flags.append((employer.uid, "High job volume from new account"))
+        # Rule 3: Low response rate
+        if company.total_applications >= 10 and company.application_response_rate < 10:
+            flags.append((employer.uid, "Low application response rate"))
+        # Rule 4: Unrealistically fast hiring
+        if company.avg_hiring_time < 1 and company.total_jobs >= 3:
+            flags.append((employer.uid, "Suspiciously short hiring times"))
+        # Rule 5: Saving candidates without posting jobs
+        if company.total_jobs == 0 and company.total_saved_candidates > 5:
+            flags.append((employer.uid, "Saving candidates without job posts"))
+
+        return flags
+
+    def _flag_unusual_jobseeker_activity(self, jobseeker: JobSeekerORM) -> list[tuple[str, str]]:
+        flags = []
+        applications = jobseeker.applications or []
+
+        # Rule 1: Excessive application volume
+        recent_apps = [app for app in applications if (datetime.utcnow() - app.applied_at).days <= 1]
+        if len(recent_apps) > 10:
+            flags.append((jobseeker.uid, "Too many job applications in 24h"))
+
+        # Rule 2: Repeated applications to the same job
+        job_app_map = {}
+        for app in applications:
+            job_app_map.setdefault(app.job_id, []).append(app)
+        for job_id, apps in job_app_map.items():
+            if len(apps) > 2:
+                flags.append((jobseeker.uid, f"Repeated applications to job {job_id}"))
+
+        return flags
+
+    def _flag_unusual_user_activity(self):
+        flagged_users = []
+        users_controller = get_controller('users')
+        jobseekers_controller = get_controller('job_seeker_profile')
+        resume = get_controller('resume')
+
+        jobs_workflow_controller = get_controller('jobs_workflow')
+
+        for user in self.db.get_all_users():
+            if user.role == "employer":
+                employer = self.db.get_employer_by_uid(user.uid)
+                company = employer.company if employer else None
+                if employer and company:
+                    flagged_users.extend(self._flag_unusual_employer_activity(employer, company))
+
+            elif user.role == "jobseeker":
+                jobseeker = self.db.get_jobseeker_by_uid(user.uid)
+                if jobseeker:
+                    flagged_users.extend(self._flag_unusual_jobseeker_activity(jobseeker))
+
+        if flagged_users:
+            for uid, reason in flagged_users:
+                self.logger.warning(f"[Suspicious Activity] User {uid}: {reason}")
+        else:
+            self.logger.info("No unusual activity detected.")
+
+        return flagged_users
+
 
 class AdminController(Controllers):
-    """Refactored Admin Controller with service-oriented architecture"""
+    __doc__ ="""
+    Controller for administrative operations, moderation, compliance, analytics, and security.
+
+    This controller provides a unified interface for system administrators to perform job moderation,
+    compliance checks, analytics, security monitoring, and data export. It orchestrates various
+    service classes and exposes methods for both synchronous and asynchronous admin workflows.
+
+    Dependencies:
+        - Models: CompanyORM, JobsORM, JobApprovalRequestORM, JobVersionHistoryORM, JobApplicationORM,
+          JobSeekerProfileORM, UserORM, UserSearchActivityORM
+        - Services: JobModerationService, ComplianceService, AnalyticsService, SecurityService
+        - Configuration: SQLAlchemy session factory, Flask app, logging, and controller registry
+
+    Attributes:
+        job_moderation_service (JobModerationService): Handles job approval, rejection, flagging, and anomaly detection.
+        compliance_service (ComplianceService): Handles B-BBEE, employment equity, pay equity, and bias analysis.
+        analytics_service (AnalyticsService): Provides system health, engagement, and audit log analytics.
+        security_service (SecurityService): Monitors and flags suspicious user and employer activity.
+
+    Methods:
+        __init__(factory)
+            Initialize the controller with a session factory and service instances.
+
+        init_app(app: Flask)
+            Register the controller with a Flask application.
+
+        cleanup_old_approvals() -> AdminActionResult
+            Delete job approval requests older than 30 days.
+            Side effects: DB deletes.
+
+        approve_job(job_id: str, reviewer_id: str) -> AdminActionResult
+            Approve a flagged job posting.
+            Inputs: job_id (str), reviewer_id (str)
+            Side effects: DB updates.
+
+        reject_job(job_id: str, reviewer_id: str, reason: str) -> AdminActionResult
+            Reject a job posting with a reason.
+            Inputs: job_id (str), reviewer_id (str), reason (str)
+            Side effects: DB updates.
+
+        flag_job(job_id: str, reason: str, reporter_id: str) -> AdminActionResult
+            Flag a job for admin review.
+            Inputs: job_id (str), reason (str), reporter_id (str)
+            Side effects: DB inserts/updates.
+
+        bulk_update_job_status(job_ids: List[str], new_status: str) -> AdminActionResult
+            Bulk update job statuses.
+            Inputs: job_ids (List[str]), new_status (str)
+            Side effects: DB updates.
+
+        detect_anomalous_job_postings() -> AdminActionResult
+            Identify suspicious jobs using multi-factor analysis.
+            Output: List of anomalous job postings.
+
+        get_pending_approvals() -> AdminActionResult
+            List all jobs needing moderation.
+            Output: List of pending jobs.
+
+        check_bee_compliance(job_id: str) -> AdminActionResult
+            Check B-BBEE compliance for a job's company.
+            Inputs: job_id (str)
+            Output: Compliance data.
+
+        generate_employment_equity_report() -> AdminActionResult
+            Generate employment equity report.
+            Output: Gender and disability statistics.
+
+        generate_pay_equity_report(company_id: str) -> AdminActionResult
+            Analyze salary distributions for pay equity.
+            Inputs: company_id (str)
+            Output: Salary distribution data.
+
+        analyze_application_biases(job_id: str) -> AdminActionResult
+            Detect discrimination patterns in hiring.
+            Inputs: job_id (str)
+            Output: Demographic breakdown and rejection rates.
+
+        generate_system_health_report() -> AdminActionResult
+            Monitor platform health metrics.
+            Output: Job, user, and performance statistics.
+
+        analyze_platform_engagement() -> AdminActionResult
+            Track key engagement metrics.
+            Output: User activity and feature usage.
+
+        flag_unusual_user_activity(user_id: str) -> AdminActionResult
+            Detect suspicious user behavior patterns.
+            Inputs: user_id (str)
+            Output: Risk analysis.
+
+        get_job_audit_log(job_id: str) -> AdminActionResult
+            Get modification history for a job.
+            Inputs: job_id (str)
+            Output: List of job version changes.
+
+        export_user_data(user_id: str) -> AdminActionResult
+            Export user data for GDPR compliance.
+            Inputs: user_id (str)
+            Output: User profile, search, and application data.
+
+        export_company_data(company_id: str) -> AdminActionResult
+            Export company data for GDPR compliance.
+            Inputs: company_id (str)
+            Output: Company data with relationships.
+
+        review_company_verifications() -> AdminActionResult
+            Identify companies needing verification checks.
+            Output: List of unverified or flagged companies.
+
+        get_admin_dashboard_data(user: User) -> AdminActionResult
+            Gather and return comprehensive dashboard data for system admins.
+            Inputs: user (User)
+            Output: Aggregated statistics for dashboard display.
+
+    Returns:
+        AdminActionResult: Standardized response object with success status, message, data, and errors.
+
+    Side Effects:
+        - Database reads, writes, updates, and deletes.
+        - Logging of suspicious activity.
+        - May trigger external API calls via services (if implemented).
+
+    """
 
     def __init__(self, factory):
         super().__init__(factory)
         self.job_moderation_service = JobModerationService(self.get_session)
         self.compliance_service = ComplianceService(self.get_session)
         self.analytics_service = AnalyticsService(self.get_session)
+        self.security_service = SecurityService(self.get_session)
 
     def init_app(self, app: Flask):
         super().init_app(app=app)
@@ -594,21 +1155,15 @@ class AdminController(Controllers):
     @error_handler
     def export_company_data(self, company_id: str) -> AdminActionResult:
         """GDPR-compliant company data export"""
-        try:
-            with self.get_session() as session:
-                company = session.query(CompanyORM).get(company_id)
+        from utils.route_helpers import get_controller
+        company_controller = get_controller('company')
+        company = company_controller.get_company_by_id(company_id)
+        export_data = {
+            "company_data": company.to_dict(include_relationships=True),
+            "exported_at": utc_time()
+        }
 
-                if not company:
-                    return AdminActionResult(False, "Company not found")
-
-                export_data = {
-                    "company_data": company.to_dict(include_relationships=True),
-                    "exported_at": datetime.utcnow().isoformat()
-                }
-
-                return AdminActionResult(True, "Company data exported successfully", export_data)
-        except Exception as e:
-            return AdminActionResult(False, f"Error exporting company data: {str(e)}")
+        return AdminActionResult(True, "Company data exported successfully", export_data)
 
     @error_handler
     def review_company_verifications(self) -> AdminActionResult:
@@ -642,3 +1197,70 @@ class AdminController(Controllers):
                 )
         except Exception as e:
             return AdminActionResult(False, f"Error reviewing company verifications: {str(e)}")
+
+
+    @error_handler
+    async def get_admin_dashboard_data(self, user: "User"):
+        """
+        Gather and return comprehensive dashboard data for system admins.
+        Uses detailed data from other controller methods/services.
+        """
+        try:
+            # User stats
+            user_stats_result = self.analytics_service.execute('system_health')
+            user_stats = user_stats_result.data.get("user_stats", {}) if user_stats_result.success else {}
+
+            # Resume stats
+            ee_report_result = self.compliance_service.execute('employment_equity')
+            resume_stats = {
+                "total": ee_report_result.data.get("gender_distribution", {}).get("total", None),
+                "completed": None  # Add more detailed resume stats if available from another service
+            } if ee_report_result.success else {}
+
+            # Job stats
+            job_stats_result = self.analytics_service.execute('system_health')
+            job_stats = job_stats_result.data.get("job_stats", {}) if job_stats_result.success else {}
+
+            # Company stats
+            company_stats = {
+                "total": None,
+                "verified": None
+            }
+            try:
+                with self.get_session() as session:
+                    company_stats["total"] = session.query(func.count(CompanyORM.id)).scalar()
+                    company_stats["verified"] = session.query(func.count(CompanyORM.id)).filter_by(verified=True).scalar()
+            except Exception:
+                pass
+
+            # Application stats
+            application_stats = {
+                "total": None
+            }
+            try:
+                with self.get_session() as session:
+                    application_stats["total"] = session.query(func.count(JobApplicationORM.application_id)).scalar()
+            except Exception:
+                pass
+
+            # System health
+            system_health = user_stats_result.data if user_stats_result.success else {}
+
+            # Engagement
+            engagement_result = self.analytics_service.execute('engagement')
+            engagement = engagement_result.data if engagement_result.success else {}
+
+            dashboard_data = {
+                "user_stats": user_stats,
+                "resume_stats": resume_stats,
+                "job_stats": job_stats,
+                "company_stats": company_stats,
+                "application_stats": application_stats,
+                "system_health": system_health,
+                "engagement": engagement,
+                "generated_at": datetime.utcnow().isoformat(),
+            }
+            return AdminActionResult(True, "Admin dashboard data loaded", dashboard_data)
+        except Exception as e:
+            return AdminActionResult(False, f"Error loading dashboard data: {str(e)}")
+

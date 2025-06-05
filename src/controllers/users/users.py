@@ -10,6 +10,45 @@ from src.controllers.controller import Controllers
 
 
 class UsersController(Controllers):
+    __dict__ = """        
+        UsersController handles all user-related operations for the application.
+    
+        Responsibilities:
+        - Loading users from the database and converting ORM objects to Pydantic models.
+        - Creating new users, ensuring uniqueness by UID.
+        - Fetching users by UID or email.
+        - Authenticating users by email and password, updating last login timestamp.
+        - Updating user details and roles with validation.
+        - Deleting users by UID.
+        - Searching users by name or email.
+        - Fetching users by specific roles.
+        - (Stub) Sending password reset links via email.
+    
+        Requirements:
+        - SQLAlchemy session management via `get_session()`.
+        - UserORM SQLAlchemy model for database operations.
+        - User Pydantic model for data validation and serialization.
+        - Error handling via the `error_handler` decorator.
+        - Logging via `self.logger`.
+        - EmailModel for email-related operations (for password reset).
+        - The controller expects a factory object for initialization.
+        - The controller does not commit changes to the database; commit is handled externally.
+    
+        Methods:
+        - init_app(app: Flask): Initialize the controller with a Flask app.
+        - load_users(): Load all users from the database.
+        - create_user(user_data: User): Create a new user.
+        - get_user_by_uid(uid: str): Fetch a user by UID.
+        - get_user_by_email(email: str): Fetch a user by email.
+        - login_user(email: str, password: str): Authenticate a user.
+        - update_user(uid: str, data: dict): Update user details.
+        - update_user_role(user_id: str, role: str): Update a user's role with validation.
+        - delete_user(uid: str): Delete a user by UID.
+        - search_users(search_term: str): Search users by name or email.
+        - get_users_by_role(role: str): Fetch users by role.
+        - send_reset_link(email: EmailModel): (Stub) Send a password reset link.
+    
+    """
     def __init__(self, factory):
         super().__init__(factory)
         self.users: list[User] = list()

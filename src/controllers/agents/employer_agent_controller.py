@@ -24,6 +24,27 @@ from src.utils.route_helpers import get_service
 
 
 class EmployerAgentsController(Controllers):
+    """
+    Controller for AI-powered employer tools, including job post enhancement, summarization,
+    and company document verification.
+
+    This controller enables employers to automate and improve job posts, evaluate the strength
+    of their listings, and verify their company's authenticity using intelligent agent services.
+
+    Dependencies:
+        - EnhanceJobPostAgent
+        - JobPostIntelligenceAgent
+        - JobSummaryAgent
+        - DocumentVerificationAgent
+        - SQLAlchemy session (via self.get_session)
+        - Logging, configuration, and database ORM classes
+
+    Side Effects:
+        - Writes to job and company tables in the database
+        - Triggers AI agents that can modify or enhance data
+        - Logs user and system actions
+    """
+
     def __init__(self, factory):
         super().__init__(factory)
 
@@ -34,6 +55,21 @@ class EmployerAgentsController(Controllers):
 
     @error_handler
     async def enhance_job_post(self, user_id: str, input_data: dict) -> EnhanceJobPostOutput:
+        """
+        Enhance a job post using AI by improving content, formatting, and SEO elements.
+
+        Args:
+            user_id (str): ID of the employer requesting enhancement.
+            input_data (dict): Raw job post input fields. Must match EnhanceJobPostInput schema.
+
+        Returns:
+            EnhanceJobPostOutput: Enhanced job post content including title, description, requirements,
+            and auto-generated fields like expiration dates.
+
+        Raises:
+            ValueError: If required fields are missing or agent fails.
+        """
+
         self.logger.info(f"Enhancing job post for user: {user_id}")
         input_model = EnhanceJobPostInput(**input_data)
 
@@ -46,11 +82,26 @@ class EmployerAgentsController(Controllers):
             result.expires_at = (datetime.now(timezone.utc) + timedelta(days=60)).isoformat()
         if not result.application_deadline:
             result.application_deadline = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        return result
 
     @error_handler
     async def analyze_job_post(self, user_id: str, job_id: str) -> JobPostInsights:
-        self.logger.info(f"Analyzing job post for user: {user_id}, job: {job_id}")
+        """
+        Analyze an existing job post and generate insights on clarity, inclusiveness, and SEO.
 
+        Args:
+            user_id (str): ID of the employer requesting the analysis.
+            job_id (str): ID of the job post to analyze.
+
+        Returns:
+            JobPostInsights: AI-generated feedback on how to improve the job post.
+
+        Raises:
+            ValueError: If job is not found.
+            PermissionError: If the user does not own the job post.
+        """
+
+        self.logger.info(f"Analyzing job post for user: {user_id}, job: {job_id}")
         # Fetch the job from database
         with self.get_session() as session:
             job_orm = session.get(JobsORM, job_id)
@@ -69,9 +120,23 @@ class EmployerAgentsController(Controllers):
 
     @error_handler
     async def create_job_summary(self, user_id: str, job_id: str) -> JobSummaryOutput:
-        """     
-            Create a summary for a job post using the JobSummaryAgent.    
         """
+        Generate a concise and effective job summary for SEO and job board visibility.
+
+        This method invokes the JobSummaryAgent and updates the database with the resulting
+        summary and SEO-friendly description.
+
+        Args:
+            user_id (str): ID of the employer requesting the summary.
+            job_id (str): ID of the job to summarize.
+
+        Returns:
+            JobSummaryOutput: Generated summary and SEO description fields.
+
+        Raises:
+            ValueError: If the job is not found.
+        """
+
         self.logger.info(f"Creating job summary for user: {user_id}, job: {job_id}")
 
         # Fetch the job from database
@@ -95,8 +160,25 @@ class EmployerAgentsController(Controllers):
             # noinspection PyTypeChecker
             return job_summary
 
-
+    @error_handler
     async def analyze_company_documents_for_authenticity(self, company_id: str):
+        """
+        Run an AI-based verification process on a company's official documents.
+
+        This method verifies a company's identity and legal compliance by running
+        document checks using AI agents, and updates the company's verification status.
+
+        Args:
+            company_id (str): ID of the company to verify.
+
+        Returns:
+            None
+
+        Side Effects:
+            - Updates verification timestamps and statuses in DB.
+            - Runs AI document evaluation agents.
+            - Logs all steps and errors.
+        """
 
         self.logger.info(f"Starting company verification for {company_id}")
         with self.get_session() as session:
@@ -135,8 +217,24 @@ class EmployerAgentsController(Controllers):
             session.add(company_orm)
             session.commit()
 
-
+    @error_handler
     async def run_document_verification_agents(self, company_orm: CompanyORM, session):
+        """
+        Run AI document agents on each company document to assess legitimacy and consistency.
+
+        This method processes various uploaded documents, checks against company registration
+        data (e.g., CIPC records), and persists AI findings.
+
+        Args:
+            company_orm (CompanyORM): SQLAlchemy ORM object for the company.
+            session: SQLAlchemy session object for database transactions.
+
+        Side Effects:
+            - Stores agent output in the database.
+            - Updates document statuses and adds notes.
+            - Commits all changes per document.
+        """
+
         self.logger.info(f"Running AI document verification for company {company_orm.company_id}")
 
         documents_list: list[CompanyVerificationDocumentORM] = session.query(CompanyVerificationDocumentORM).filter_by(company_id=company_orm.company_id).all()
@@ -166,9 +264,26 @@ class EmployerAgentsController(Controllers):
             session.add(doc)
         session.commit()
 
-    @staticmethod
-    def reduce_verification_output(ai_output: DocumentVerificationOutPut) -> Tuple[str, Optional[str]]:
-        # Determine document status
+    @error_handler
+    def reduce_verification_output(self, ai_output: DocumentVerificationOutPut) -> Tuple[str, Optional[str]]:
+        """
+        Derive a verification status and summary notes from raw AI output.
+
+        Args:
+            ai_output (DocumentVerificationOutPut): AI results from analyzing a company document.
+
+        Returns:
+            Tuple[str, Optional[str]]:
+                - status: One of ["approved", "rejected", "human_review"]
+                - notes: Detailed human-readable analysis from the AI output
+
+        Logic includes:
+            - Validity checks
+            - Director and ID matches
+            - CIPC verification
+            - Suspicion flags and reviewer comments
+        """
+
         if ai_output.requires_human_review or ai_output.is_suspicious:
             status = "human_review"
         elif not ai_output.is_document_valid:

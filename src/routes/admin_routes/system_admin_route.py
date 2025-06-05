@@ -1,5 +1,5 @@
 # routes/employee_agents.py
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 
 from src.routes import flask_error_handler
 from src.authentication import login_required, admin_login
@@ -9,7 +9,6 @@ from src.utils.route_helpers import get_controller
 system_admin_route = Blueprint('system_admin', __name__, url_prefix='/system/admin/v1')
 
 
-
 @system_admin_route.route("/dashboard", methods=["GET"])
 @flask_error_handler
 @admin_login
@@ -17,15 +16,14 @@ async def get_admin_dashboard(user: User):
     """
     Admin endpoint to retrieve the admin dashboard data.
     :param user: The admin user making the request.
-    :return: JSON response with dashboard data.
+    :return: Rendered admin dashboard template.
     """
     admin_controller = get_controller('admin_controller')
-    result = await admin_controller.get_admin_dashboard_data(uid=user.uid)
+    result = await admin_controller.get_admin_dashboard_data(user=user)
 
-
-    # We need to return a jinja template showing the system admin dashboard where the admin can see all the data
-    # And Perform Administrative tasks
-
+    return render_template('admin/dashboard.html',
+                           dashboard_data=result.data,
+                           admin_user=user)
 
 @system_admin_route.route("/users/<string:user_id>/reset-password", methods=["POST"])
 @flask_error_handler

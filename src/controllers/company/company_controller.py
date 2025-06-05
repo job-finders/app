@@ -19,15 +19,47 @@ from src.database.sql.jobs_sql import JobsORM
 from src.database.sql.users import UserORM
 from src.emailer import EmailModel
 from src.logger import init_logger
-from src.utils.route_helpers import get_service
+from src.utils.route_helpers import get_service, get_controller
 
 
 class CompanyController(Controllers):
-    """Handles employer profiles and company-related operations"""
+    __doc__ = """    
+    CompanyController handles all business logic related to company and employer management within the platform.
+    
+        Responsibilities:
+        - Company CRUD: Create, retrieve, update, and search for companies, including fetching by ID or name, and searching by substring.
+        - Employer CRUD: Register, retrieve, and update employer profiles, including linking employers to companies and managing their verification status.
+        - Job Management: Retrieve jobs for a company, filter by status, and post new jobs (with verification checks).
+        - Candidate Management: Retrieve and save candidates (CVs) for employers.
+        - Verification Workflow: Initiate and manage company and employer verification processes, including document storage, AI/ML analysis, human review, and notification flows.
+        - Analytics: Fetch application analytics and generate talent pool reports for companies.
+        - Industry, Country, and Tech Options: Provide static lists for industries, countries, and technology stacks.
+        - CIPC Records: Manage CIPC (Companies and Intellectual Property Commission) records for companies.
+        - Email Notifications: Send verification and notification emails to employers and admins.
+    
+        Requirements/Dependencies:
+        - Database session management (SQLAlchemy ORM models for Company, Employer, Job, User, etc.).
+        - Pydantic models for data validation and serialization.
+        - Flask for request context, URL generation, and template rendering.
+        - Email service for sending notifications.
+        - Logger for activity and error tracking.
+        - AI/ML service for document analysis (integration point for future enhancements).
+        - Utility helpers for controller and service access.
+    
+        Error Handling:
+        - Uses a decorator to handle and log errors for all async controller methods.
+    
+        Note:
+        - Some methods contain placeholders for future implementation (e.g., AI/ML document analysis, admin notifications).
+        - Relationships between models (e.g., company-employer, company-jobs) are handled via ORM and Pydantic serialization.
+    
+    """
     
     def __init__(self,factory):
         super().__init__(factory)
         self.logger = init_logger("CompanyController")
+        self.jobs_workflow_controller = get_controller('jobs_workflow')
+        self.resume_controller = get_controller('resume')
 
 
     def init_app(self, app: Flask):
@@ -532,7 +564,8 @@ class CompanyController(Controllers):
         return await self._get_company_verification_status_from_db(company_id)
 
 
-    async def get_industries(self):
+    @staticmethod
+    async def get_industries():
         industries = [
             "Information Technology", "Finance and Banking", "Mining and Resources",
             "Agriculture", "Manufacturing", "Healthcare", "Education", "Tourism and Hospitality",
@@ -544,7 +577,8 @@ class CompanyController(Controllers):
         return industries
 
 
-    async def get_countries(self):
+    @staticmethod
+    async def get_countries():
         countries = [
             "South Africa", "Botswana", "Lesotho", "Eswatini", "Namibia", "Zimbabwe",
             "Zambia", "Mozambique", "Malawi", "Angola", "Kenya", "Nigeria", "Ghana",
@@ -553,7 +587,8 @@ class CompanyController(Controllers):
         ]
         return countries
 
-    async def get_tech_options(self):
+    @staticmethod
+    async def get_tech_options():
         tech_options = [
             "Python", "JavaScript", "Java", "C#", "PHP", "C++", "Ruby", "Swift", "Go",
             "TypeScript", "Kotlin", "Rust", "SQL", "HTML/CSS", "React", "Angular", "Vue.js",
@@ -595,6 +630,8 @@ class CompanyController(Controllers):
         Analyze documents using AI/ML to determine validity.
         Returns a dict with keys: is_valid (bool), needs_human_review (bool), reason (str, optional)
         """
+        # TODO: Refactor this to work with Actual AI Service at the Moment the AI Service is implemented but not
+        # Compatible with the Controller Method
         self.logger.info(f"Analyzing documents with AI: {document_paths}")
         # Placeholder: Always return needs_human_review for now
         return {"is_valid": False, "needs_human_review": True, "reason": "AI review required"}
