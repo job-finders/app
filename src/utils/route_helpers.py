@@ -5,8 +5,6 @@ from functools import wraps
 # src/utils/route_helpers.py
 from flask import g, current_app
 
-from src.logger import init_logger
-
 
 # Cache the controller map since it's static
 @lru_cache(maxsize=1)
@@ -61,23 +59,50 @@ def get_controller(controller_name: str):
     except Exception as e:
         raise RuntimeError(f"Error getting controller {controller_name}: {str(e)}") from e
 
-def get_service(service_name: str):
-    """Helper function to get service from factory"""
-    # factory = current_app.service_factory
-    factory = getattr(current_app, 'extensions', {}).get('service_factory')
-    service_map = {
-        'send_mail': factory.get_send_mail,
-        'encryptor': factory.get_encryptor,
-        'scraper': factory.get_junction_scraper,
-        'notifications': factory.get_notifications_controller,
-        "company_document_loader": factory.get_company_document_loader,
-        "logger": factory.get_init_logger,
-        "ip_address": factory.get_ip_address
+# Cache the service map since it's static
+@lru_cache(maxsize=1)
+def _get_service_map():
+    """Static service mapping configuration"""
+    return {
+        'send_mail': 'get_send_mail',
+        'encryptor': 'get_encryptor',
+        'scraper': 'get_junction_scraper',
+        'notifications': 'get_notifications_controller',
+        'company_document_loader': 'get_company_document_loader',
+        'logger': 'get_init_logger',
+        'ip_address': 'get_ip_address',
     }
-    if service_name not in service_map:
-        raise ValueError(f"Unknown service: {service_name}")
-    return service_map[service_name]
 
+
+# noinspection DuplicatedCode
+def get_service(service_name: str):
+    """
+    Helper function to get service from factory
+    Uses request-level caching for performance
+    """
+    if not hasattr(g, '_services'):
+        g._services = {}
+    elif service_name in g._services:
+        # noinspection PyProtectedMember
+        return g._services[service_name]
+
+    service_map = _get_service_map()
+    if service_name not in service_map:
+        raise ValueError(f"Unknown service: {service_name}. "
+                         f"Valid options: {', '.join(service_map.keys())}")
+
+    factory = getattr(current_app, 'extensions', {}).get('service_factory')
+    if not factory:
+        raise RuntimeError("Service factory not initialized in app context")
+    getter_name = service_map[service_name]
+    try:
+        service = getattr(factory, getter_name)()
+        g._services[service_name] = service
+        return service
+    except AttributeError:
+        raise RuntimeError(f"Factory missing method: {getter_name}") from None
+    except Exception as e:
+        raise RuntimeError(f"Error getting service {service_name}: {str(e)}") from e
 
 def inject_controller(controller_name: str):
     """Decorator to inject controller into route function"""
@@ -88,7 +113,6 @@ def inject_controller(controller_name: str):
             return f(controller, *args, **kwargs)
         return decorated_function
     return decorator
-
 
 def inject_service(service_name: str):
     """Decorator to inject service into route function"""
