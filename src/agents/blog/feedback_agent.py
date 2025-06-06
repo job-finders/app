@@ -4,7 +4,7 @@ from src.database.models.feedback_analysis import FeedbackAnalysisSummary, Artic
 from collections import defaultdict
 
 def analyze_feedback() -> FeedbackAnalysisSummary:
-    entries = db_session.query(BlogFeedbackORM).all()
+    # entries = db_session.query(BlogFeedbackORM).all()
     if not entries:
         return FeedbackAnalysisSummary(
             high_performing_topics=[], underperforming_topics=[],

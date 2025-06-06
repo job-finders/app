@@ -1,8 +1,8 @@
 # src/factories/service_factory.py
 from typing import Dict, Any
 
-from services.hashnode.hashnode_agemt_interface import HashnodeAgentCommandRegistry
-from services.hashnode.hashnode_client import HashnodeService
+from src.services.hashnode.hashnode_agemt_interface import HashnodeAgentCommandRegistry
+from src.services.hashnode.hashnode_client import HashnodeService
 from src.services.ip_address_service import get_ip_address
 from src.logger import init_logger
 from src.emailer import SendMail

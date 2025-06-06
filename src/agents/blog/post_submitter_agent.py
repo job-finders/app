@@ -1,6 +1,6 @@
 # agents/blog/post_submitter_agent.py
 from src.agents.base import BaseAgent
-from services.hashnode.hashnode_client import HashnodeClient
+from src.services.hashnode.hashnode_client import HashnodeClient
 
 
 class BlogPostSubmitterAgent(BaseAgent):
