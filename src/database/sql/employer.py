@@ -53,6 +53,7 @@ class EmployerORM(Base):
     responsibilities = Column(JSON, nullable=True)  # Store as JSON array
     hiring_authority = Column(Boolean, default=False)
     signature = Column(Text, nullable=True)
+    ip_address = Column(String(NAME_LEN))
 
 
 
@@ -97,6 +98,7 @@ class EmployerORM(Base):
             "responsibilities": self.responsibilities,
             "hiring_authority": self.hiring_authority,
             "signature": self.signature,
+            "ip_address": self.ip_address,
 
             # Include nested company data & saved_canndidates if loaded
             "company": self.company.to_dict(include_relationships=False) if self.company and include_relationships else None,

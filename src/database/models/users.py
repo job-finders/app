@@ -93,14 +93,14 @@ class User(BaseModel):
         :return: Boolean indicating if password matches
         """
 
-        return get_service('encryptor').compare_hashes(hash=self.password_hash, password=password)
+        return get_service('encryptor')().compare_hashes(hash=self.password_hash, password=password)
 
     @classmethod
     def create(cls, name: str, email: str, password: str, role: str) -> "User":
         """
         Create a new User instance with a hashed password.
         """
-        hashed = get_service('encryptor').create_hash(password)
+        hashed = get_service('encryptor')().create_hash(password)
         # noinspection PyTypeChecker
         return cls(name=name, email=email, password_hash=hashed, role=role)
 

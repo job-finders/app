@@ -63,15 +63,16 @@ def get_controller(controller_name: str):
 
 def get_service(service_name: str):
     """Helper function to get service from factory"""
-    factory = current_app.service_factory
-
+    # factory = current_app.service_factory
+    factory = getattr(current_app, 'extensions', {}).get('service_factory')
     service_map = {
         'send_mail': factory.get_send_mail,
         'encryptor': factory.get_encryptor,
         'scraper': factory.get_junction_scraper,
         'notifications': factory.get_notifications_controller,
         "company_document_loader": factory.get_company_document_loader,
-        "logger": init_logger
+        "logger": factory.get_init_logger,
+        "ip_address": factory.get_ip_address
     }
     if service_name not in service_map:
         raise ValueError(f"Unknown service: {service_name}")

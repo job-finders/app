@@ -23,7 +23,7 @@ from src.logger import init_logger
 class UserSearchActivityORM(Base):
     __tablename__ = 'user_search_activities'
     id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_id'), index=True)
+    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_uid'), index=True)
     search_term = Column(String(255))
     filters = Column(JSON)
     result_count = Column(Integer)
@@ -33,7 +33,7 @@ class UserSearchActivityORM(Base):
 class JobViewActivityORM(Base):
     __tablename__ = 'job_view_activities'
     id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_id'), index=True)
+    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_uid'), index=True)
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)
     view_start = Column(DateTime(timezone=True))
     view_end = Column(DateTime(timezone=True))
@@ -58,11 +58,11 @@ class ArchivedActivityORM(Base):
     data = Column(JSON)
     archived_at = Column(DateTime(timezone=True), default=utc_time())
 
-
-# Create indexes
-event.listen(UserSearchActivityORM.__table__, 'after_create',
-             lambda *args: DDL("CREATE INDEX ix_search_term ON user_search_activities (search_term(50))")
-             )
+#
+# # Create indexes
+# event.listen(UserSearchActivityORM.__table__, 'after_create',
+#              lambda *args: DDL("CREATE INDEX ix_search_term ON user_search_activities (search_term(50))")
+#              )
 
 
 class RedisActivityClient:

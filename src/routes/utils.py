@@ -377,3 +377,14 @@ def redirect_apply_page(job: Job):
     if not job.job_link:
         return redirect(url_for('home.get_home'), code=302)
     return redirect(job.job_link, code=200)
+
+
+
+def get_client_ip(_request) -> str:
+    """Extract the IP address of the current user making the request."""
+    if _request.headers.get('X-Forwarded-For'):
+        # This handles the case where you're behind a proxy or load balancer
+        ip = _request.headers['X-Forwarded-For'].split(',')[0].strip()
+    else:
+        ip = _request.remote_addr
+    return ip

@@ -8,6 +8,7 @@ from src.database.constants import ID_LEN, NAME_LEN, utc_time
 from src.database.sql import Base, engine
 
 
+
 class CompanyORM(Base):
     """Represents an employer/company in the system"""
     __tablename__ = 'companies'
@@ -52,6 +53,7 @@ class CompanyORM(Base):
     is_verified = Column(Boolean, default=False)
     time_verification_process_started = Column(DateTime(timezone=True), nullable=True)
     verification_status = Column(String(16), default="pending")
+    ip_address = Column(String(NAME_LEN))
 
     @classmethod
     def create_if_not_table(cls):

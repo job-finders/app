@@ -1,15 +1,11 @@
 from datetime import datetime
 from typing import Optional, List
 from uuid import uuid4
-
 from pydantic import BaseModel, Field, EmailStr, HttpUrl
-
 from src.database.models.company_models import SavedCandidates, Company
 from src.database.constants import utc_time
+from src.utils.route_helpers import get_service
 
-def get_ip_location():
-    """insert a way to obtain the current ip location"""
-    return ""
 
 class Employer(BaseModel):
     """
@@ -29,7 +25,7 @@ class Employer(BaseModel):
     created_at: datetime = Field(default_factory=utc_time)
     updated_at: datetime = Field(default_factory=utc_time)
     # TODO Update ip location everytime employer updates the model.
-    ip_location: Optional[str] = Field(default_factory=get_ip_location)
+    ip_address: Optional[str] = Field(default_factory=lambda : get_service("ip_address")())
 
     # Personal information (all optional)
     full_name: Optional[str] = Field(
@@ -108,9 +104,9 @@ class Employer(BaseModel):
     company: Optional[Company] = None
     saved_candidates: Optional[List[SavedCandidates]] = Field(default_factory=list)
 
-    def update_ip_location(self):
+    def update_ip(self):
         """run this method everytime a change is made on model"""
-        self.ip_location = get_ip_location()
+        self.ip_address = get_ip_address()
 
     @property
     def account_age(self):
@@ -119,11 +115,6 @@ class Employer(BaseModel):
             return (utc_time() - self.created_at).days
         return 0
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
 
     @property
     def is_valid(self) -> bool:
@@ -145,3 +136,8 @@ class Employer(BaseModel):
         """Update the 'updated_at' timestamp"""
         self.updated_at = utc_time()
 
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }

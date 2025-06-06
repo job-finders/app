@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, Confi
 
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.constants import utc_time
+from src.utils.route_helpers import get_service
 
 
 def format_reference(ref: str) -> str:
@@ -66,7 +67,7 @@ class Company(BaseModel):
     jobs: Optional[list['Job']] = Field(default_factory=list)  # Forward reference
     saved_candidates: Optional[list['SavedCandidates']] = Field(default_factory=list)
     employers: Optional[list['Employer']] = Field(default_factory=list)
-
+    ip_address: Optional[str] = Field(default_factory=lambda : get_service("ip_address")())
     @property
     def location(self) -> str:
         """Formatted location string"""

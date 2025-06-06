@@ -8,7 +8,7 @@ EMPLOYER_RULE_REGISTRY = {
     "Suspiciously short hiring times": lambda ctx: ctx.company.avg_hiring_time < 1 and ctx.company.total_jobs >= 3,
     "Saving candidates without job posts": lambda ctx: ctx.company.total_jobs == 0 and ctx.company.total_saved_candidates > 5,
     "Copy-paste job ads": lambda ctx: ctx.company.has_duplicate_job_descriptions,  # assume method exists
-    "Inconsistent location data": lambda ctx: not any(part.lower() in ctx.employer.ip_location.lower() for part in ctx.company.location.split(", ")),
+    "Inconsistent location data": lambda ctx: ctx.employer.ip_address !=  ctx.company.ip_address,
     "Rapid edits to job posts": lambda ctx: ctx.company.has_multiple_edits_in_last_hour,  # assumes helper
 }
 
