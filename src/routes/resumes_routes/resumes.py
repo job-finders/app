@@ -2,7 +2,8 @@ import asyncio
 from datetime import date, datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from pydantic import ValidationError
-from src.authentication import login_required
+
+from src.authentication import login_required, jobseeker_login
 from src.database.models.users import User
 
 from src.routes import flask_error_handler
@@ -136,8 +137,8 @@ def lenient_cv_parse(data: dict) -> JobSeekerCV:
 
 # Add to your routes
 @resume_routes.route("/api/ats-check", methods=["POST"])
-@login_required
 @flask_error_handler
+@jobseeker_login
 async def ats_check(user: User):
     """Real-time ATS analysis endpoint"""
     try:
@@ -171,7 +172,7 @@ async def ats_check(user: User):
 
 @resume_routes.route("/edit/<string:cv_id>", methods=["GET", "POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def edit_cv(user: User, cv_id: str):
     resume_controller = get_controller('resume')
     if request.method == "POST":
@@ -271,7 +272,7 @@ def _format_pydantic_error(e: ValidationError) -> str:
 
 @resume_routes.route("/upload", methods=["GET", "POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def upload_cv(user: User):
 
     if request.method == "POST":
@@ -281,6 +282,7 @@ async def upload_cv(user: User):
             cv_data = JobSeekerCV(**raw_data)
 
             # Call controller
+            resumes_controller = get_controller("resume")
             result = await resume_controller.create_cv(
                 user_uid=user.uid,
                 data=cv_data
@@ -298,9 +300,9 @@ async def upload_cv(user: User):
 
 @resume_routes.route("/view/<string:cv_id>")
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def view_cv(user: User, cv_id: str):
-
+    resume_controller = get_controller("resume")
     cv = await resume_controller.get_cv_by_id(cv_id)
     ats_report = await _get_ats_report(cv=cv)
     context = dict(current_user=user, cv=cv, ats_report=ats_report)
@@ -309,10 +311,11 @@ async def view_cv(user: User, cv_id: str):
 
 @resume_routes.route("/delete/<string:cv_id>", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def delete_cv(user: User, cv_id: str):
 
     try:
+        resume_controller = get_controller("resume")
         await resume_controller.delete_cv(cv_id)
         flash("CV deleted successfully", "success")
     except Exception as e:
@@ -323,9 +326,9 @@ async def delete_cv(user: User, cv_id: str):
 
 @resume_routes.route("/list")
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def list_cvs(user: User):
-
+    resume_controller = get_controller("resume")
     cvs = await resume_controller.list_cvs_for_user(user_uid=user.uid)
     context = dict(current_user=user, cvs=cvs)
     return render_template("jobseekers/cv/cv_list.html", **context)

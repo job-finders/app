@@ -1,9 +1,9 @@
 from pydantic import ValidationError
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
-from authentication import user_details
+
 from src.routes import flask_error_handler
-from src.authentication import login_required, jobseeker_login
+from src.authentication import login_required, jobseeker_login, user_details
 from src.database.models.users import User
 
 from src.database.models.jobseeker_profile import JobSeekerProfile
