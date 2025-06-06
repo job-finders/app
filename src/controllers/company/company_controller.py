@@ -615,24 +615,6 @@ class CompanyController(Controllers):
         ]
         return tech_options
 
-    async def _get_verification_status_from_db(self, company_id: str):
-        """Fetch verification status and related info for a company from the database."""
-        with self.get_session() as session:
-            company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
-            if not company_orm:
-                return {
-                    'company_id': company_id,
-                    'verification_status': 'not_found',
-                    'is_verified': False,
-                    'time_verification_request_sent': None
-                }
-            return {
-                'company_id': company_orm.company_id,
-                'verification_status': company_orm.verification_status,
-                'is_verified': company_orm.is_verified,
-                'time_verification_request_sent': company_orm.time_verification_request_sent.isoformat() if company_orm.time_verification_request_sent else None
-            }
-
     async def _store_verification_documents(self, company_id: str, document_paths: list, user_id: str) -> str:
         """
         Store verification documents in the database and return a verification ID.
@@ -641,7 +623,8 @@ class CompanyController(Controllers):
         self.logger.info(f"Storing verification documents for company {company_id}: {document_paths}")
         # Return a mock verification ID
         return f"verif-{company_id}-{datetime.now().timestamp()}"
-    
+
+
     @error_handler
     async def _analyze_documents_with_ai(self, company_id: str ) -> dict:
         """
@@ -650,9 +633,22 @@ class CompanyController(Controllers):
         """
         # TODO: Refactor this to work with Actual AI Service at the Moment the AI Service is implemented but not
         # Compatible with the Controller Method
-        self.logger.info(f"Analyzing documents with AI: {document_paths}")
+        # self.logger.info(f"Analyzing documents with AI: {document_paths}")
         # Placeholder: Always return needs_human_review for now
         return {"is_valid": False, "needs_human_review": True, "reason": "AI review required"}
+
+    @error_handler
+    async def auto_verify_company_documents(self):
+        """
+        This task may run in celery or task scheduler.
+            fetch documents that have not been reviewed or without recommendations -
+            check if company profiles have been properlu completed and verified.
+            send the documents to a company agent document verifier.
+        :return:
+        """
+        self.logger.info("Executing auto verify company docs from ap scheduler")
+        pass
+
 
     @error_handler
     async def _mark_company_verified(self, company_id: str) -> None:
@@ -701,8 +697,6 @@ class CompanyController(Controllers):
                     message = f"Company {company_profile.name.title()} verification needs human review. You will be notified once the verification is complete. You can also check the verification status on the platform.   "
                     email = EmailModel(to_=str(email), subject_=subject, html_=message)
                     await get_service('send_mail').send_mail_resend(email=email)
-                    
-
 
     async def _reject_verification(self, company_id: str, reason: str) -> None:
         """

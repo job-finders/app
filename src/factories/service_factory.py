@@ -1,6 +1,7 @@
 # src/factories/service_factory.py
 from typing import Dict, Any
 
+from src.services.http_service.http_request_service import HttpRequestService
 from src.services.hashnode.hashnode_agemt_interface import HashnodeAgentCommandRegistry
 from src.services.hashnode.hashnode_client import HashnodeService
 from src.services.ip_address_service import get_ip_address
@@ -125,6 +126,19 @@ class ServiceFactory:
             self._services['hashnode_command_registry'] = HashnodeAgentCommandRegistry(service)
         return self._services['hashnode_command_registry']
 
+    def get_http_request_service(self) -> HttpRequestService:
+        """
+        Get or create a singleton instance of the HttpRequestService.
+
+        This service can be used to send sync/async HTTP requests to external APIs.
+        """
+        if 'http_request' not in self._services:
+            self._services['http_request'] = HttpRequestService()
+        return self._services['http_request']
+
+    #########################################################
+    # internal use
+    #########################################################
     def clear_cache(self):
         """Clear all cached service instances"""
         self._services.clear()

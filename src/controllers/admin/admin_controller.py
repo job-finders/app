@@ -5,27 +5,27 @@ from enum import Enum
 from functools import partial
 from typing import List, Dict, Optional
 
-from flask import Flask, render_template, session
+from flask import Flask, render_template
 from pydantic import BaseModel, Field
 from sqlalchemy import func, case, or_, text
 
 from src.controllers.admin.security_rules import JobSeekerRuleEngine, EmployerRuleEngine
-from src.database.models.admin_models import UserStatusFlagEnum, FlaggedUser, AdminModel, RiskRecommendation
-from src.database.models.employer_models import Employer
-from src.database.models.resume import JobSeekerCV
-from src.database.models.users import RolesEnum
-from src.database.sql.admin_sql import FlaggedUserORM, AdminRecommendationORM, AdminORM
-from src.emailer import EmailModel
 from src.controllers.controller import error_handler, Controllers
 from src.database.constants import utc_time
-from src.database.models.jobs_model import Job, Company, JobApprovalStatusEnum, JobStatusEnum, JobApplication
+from src.database.models.admin_models import FlaggedUser, AdminModel
+from src.database.models.employer_models import Employer
+from src.database.models.jobs_model import Job, Company, JobApprovalStatusEnum, JobStatusEnum
 from src.database.models.jobseeker_profile import JobSeekerProfile
+from src.database.models.resume import JobSeekerCV
+from src.database.models.users import RolesEnum, User
+from src.database.sql.admin_sql import FlaggedUserORM, AdminRecommendationORM, AdminORM
 from src.database.sql.analytics import UserSearchActivityORM
 from src.database.sql.company import CompanyORM
 from src.database.sql.jobs_sql import JobsORM, JobApprovalRequestORM, JobVersionHistoryORM, JobApplicationORM, \
     JobCategoryORM
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.users import UserORM
+from src.emailer import EmailModel
 from src.utils.route_helpers import get_controller, get_service
 
 
@@ -1220,7 +1220,7 @@ class AdminController(Controllers):
     def init_app(self, app: Flask):
         super().init_app(app=app)
 
-    def cleanup_old_approvals(self) -> AdminActionResult:
+    async def cleanup_old_approvals(self) -> AdminActionResult:
         """Cleanup job approvals older than 30 days"""
         try:
             with self.get_session() as session:
@@ -1234,7 +1234,7 @@ class AdminController(Controllers):
             return AdminActionResult(success=False, message=f"Error cleaning up approvals: {str(e)}")
 
     @error_handler
-    async def send_job_alerts_to_users(self, job_ids: List[str]) -> AdminActionResult:
+    async def send_job_alerts_to_users(self) -> AdminActionResult:
         """Send job alerts to users based on their preferences"""
         profiles_job_alerts: list[JobRecommenderResult] = await self.job_recommendation_service.execute("recommend_jobs")
         alerts_tasks = []
@@ -1313,7 +1313,7 @@ class AdminController(Controllers):
         return self.job_moderation_service.execute('bulk_update', job_ids=job_ids, new_status=new_status)
 
     @error_handler
-    def detect_anomalous_job_postings(self) -> AdminActionResult:
+    async def detect_anomalous_job_postings(self) -> AdminActionResult:
         """Identify suspicious jobs using multi-factor analysis"""
         return self.job_moderation_service.execute('detect_anomalies')
 
@@ -1369,6 +1369,18 @@ class AdminController(Controllers):
     def analyze_platform_engagement(self) -> AdminActionResult:
         """Track key engagement metrics"""
         return self.analytics_service.execute('engagement')
+    @error_handler
+    def get_system_admin(self) -> AdminActionResult:
+        """
+            returns system admin user
+        :return:
+        """
+        with self.get_session() as session:
+            admin_user_orm = session.query(UserORM).filter_by(role=RolesEnum.SYSTEM_ADMIN.value).first()
+            data = User(**admin_user_orm.to_dict()) if isinstance(admin_user_orm, UserORM) else None
+            return AdminActionResult(success=isinstance(data, User), message="Successfully ran get_system_admin",
+                                     data=data)
+
 
     @error_handler
     async def flag_unusual_user_activity(self, admin_uid: str) -> AdminActionResult:

@@ -6,7 +6,6 @@ from flask import g, Flask, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 
-
 def _register_blueprints(app):
     """Register all route blueprints"""
 
@@ -210,5 +209,17 @@ def create_app(config):
             from src.firewall.auditing import log_security_event
             log_security_event(request, response)
             return response
+
+        ############################################
+        ## AP SCHEDULER INTERGRATION
+        ############################################
+        from src.tasks.task_scheduler.ap_scheduler import create_scheduler
+        from src.tasks.task_scheduler.admin_ap_scheduler import schedule_company_tasks
+
+        scheduler = create_scheduler(app=app)
+
+        # This Schedules Admin Jobs that are suppose to run in AP Scheduler
+        schedule_company_tasks(scheduler=scheduler, app=app)
+        scheduler.start()
 
     return app

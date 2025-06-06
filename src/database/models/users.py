@@ -15,7 +15,8 @@ class RolesEnum(Enum):
     EMPLOYER = "employer"
     JOBSEEKER = "seeker"
     ADMIN = "admin"
-    SUPER_ADMIN = "super_admin"
+    SYSTEM_ADMIN = "system_admin"
+
 
 class Roles(BaseModel):
     id: str

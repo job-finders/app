@@ -1,3 +1,5 @@
+import inspect
+from typing import Callable
 import redis
 import pickle
 import functools

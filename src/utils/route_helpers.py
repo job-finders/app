@@ -73,7 +73,9 @@ def _get_service_map():
         'logger': 'get_init_logger',
         'ip_address': 'get_ip_address',
         'hashnode': 'get_hashnode_service',
-        'hashnode_commander': 'get_hashnode_command_registry'
+        'hashnode_commander': 'get_hashnode_command_registry',
+        'http_request': 'get_http_request_service',
+
     }
 
 
