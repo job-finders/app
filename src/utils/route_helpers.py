@@ -72,6 +72,8 @@ def _get_service_map():
         'company_document_loader': 'get_company_document_loader',
         'logger': 'get_init_logger',
         'ip_address': 'get_ip_address',
+        'hashnode': 'get_hashnode_service',
+        'hashnode_commander': 'get_hashnode_command_registry'
     }
 
 

@@ -73,7 +73,15 @@ class ServiceFactory:
         return self._services['logger']
 
     def get_hashnode_service(self) -> HashnodeService:
-        """Get HashnodeService instance"""
+        """
+        Get or create a singleton instance of HashnodeService.
+
+        Requires the Hashnode API token, which should be configured in the app config.
+
+        Returns:
+            HashnodeService: Instance for interacting with Hashnode APIs.
+        :return:
+        """
         if 'hashnode_service' not in self._services:
             token = self.app.config.get("HASHNODE_API_TOKEN")
             if not token:
@@ -82,7 +90,36 @@ class ServiceFactory:
         return self._services['hashnode_service']
 
     def get_hashnode_command_registry(self) -> HashnodeAgentCommandRegistry:
-        """Get HashnodeAgentCommandRegistry for AI agent access"""
+        """
+        Retrieve or initialize the HashnodeAgentCommandRegistry used by AI agents
+        to interact with the Hashnode blogging platform.
+
+        This registry exposes structured command metadata and function bindings
+        that can be introspected or called by intelligent agents (e.g., LLMs or task runners)
+        to perform actions like:
+        - Fetching user info
+        - Retrieving blog posts
+        - Creating new posts
+        - Updating existing posts
+
+        The registry wraps the `HashnodeService`, which handles low-level API communication.
+        It is lazily instantiated and cached in `_services`.
+
+        Returns:
+            HashnodeAgentCommandRegistry: The registry instance exposing Hashnode command functions.
+
+        Raises:
+            RuntimeError: If the HashnodeService could not be initialized (e.g., missing token config).
+
+        Example:
+            registry = factory.get_hashnode_command_registry()
+            commands = registry.get_commands()
+            result = await commands["create_post"]["fn"](CreatePostInput(...))
+
+        Notes for AI Agents:
+            Use this interface to dynamically list available commands, understand input requirements,
+            and call blogging operations without hardcoding logic.
+        """
         if 'hashnode_command_registry' not in self._services:
             service = self.get_hashnode_service()
             self._services['hashnode_command_registry'] = HashnodeAgentCommandRegistry(service)
