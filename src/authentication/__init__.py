@@ -108,7 +108,6 @@ def user_details(route_function):
     """Inject user object into route if available (can be None)."""
     @wraps(route_function)
     async def wrapper(*args, **kwargs):
-        user = await resolve_user_from_cookie()
+        user = await resolve_user_from_jwt_cookie()
         return await route_function(user, *args, **kwargs)
-
     return wrapper

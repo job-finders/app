@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
 
-from src.authentication import employer_login
+from src.authentication import employer_login, user_details
 from src.database.models.company_models import CompanyVerificationStatus, Company
 from src.database.models.employer_models import Employer
 from src.database.models.users import User
@@ -70,11 +70,12 @@ async def view_company_by_company_id(user: User, company_id: str):
         saved_cvs=saved_cvs     
     )
     
-@company_search_routes.get('/list')
+@company_search_routes.get('/browse')
 @flask_error_handler
-@employer_login
+@user_details
 async def list_companies(user: User):
     """
+        This is a Public Route to view Public Details About All Available Companies and their jobs
     :param user:
     :return:
     """
