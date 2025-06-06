@@ -40,6 +40,45 @@ class HashnodeAgentCommandRegistry:
         self.service = service
 
     def get_commands(self):
+        """
+        Retrieve the dictionary of available commands that the Hashnode agent can perform.
+
+        Each command entry maps a command name to a dictionary containing:
+        - `fn`: The asynchronous callable function implementing the command.
+        - `description`: A human-readable explanation of what the command does.
+        - `input_model`: The expected input data model (typically a Pydantic model) defining required and optional parameters.
+
+        ---
+        Returns:
+            dict[str, dict]: A mapping where keys are command names (str), and values are command metadata dictionaries.
+
+        Example return value structure:
+        {
+            "get_user_info": {
+                "fn": <async function>,
+                "description": "Get the current Hashnode user and publication information",
+                "input_model": None
+            },
+            "create_post": {
+                "fn": <async function>,
+                "description": "Create a new post on Hashnode",
+                "input_model": CreatePostInput
+            },
+            ...
+        }
+
+        ---
+        Usage:
+            commands = registry.get_commands()
+            create_post_cmd = commands["create_post"]
+            result = await create_post_cmd["fn"](CreatePostInput(...))
+
+        ---
+        Notes for AI Agents:
+        - Use this method to introspect what operations can be called dynamically.
+        - Input models help validate and construct the necessary arguments before invocation.
+        """
+
         return {
             "get_user_info": {
                 "fn": self.service.get_user_info,
