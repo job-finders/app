@@ -1,13 +1,12 @@
-from flask import Blueprint, render_template, jsonify
-
 from flask import Blueprint, render_template
+from flask import jsonify
 
+from src.authentication import jobseeker_login
 from src.database.models.resume import JobSeekerCV
-from src.authentication import login_required
 from src.database.models.users import User
-
 from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
+
 jobseeker_route = Blueprint('jobseekers', __name__,  url_prefix="/jobseeker")
 
 
@@ -17,7 +16,7 @@ async def get_user_cv(uid):
 
 @jobseeker_route.route("/ai/cv/optimize", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def optimize_cv(user: User):
     # TODO - please Note this is just an API
     resume_controller = get_controller('resume')
@@ -30,7 +29,7 @@ async def optimize_cv(user: User):
 
 @jobseeker_route.route('/dashboard', methods=['GET'])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def dashboard(user: User):
     """
     :param user:
@@ -45,16 +44,19 @@ async def dashboard(user: User):
 
 @jobseeker_route.route('/apply', methods=['GET'])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def apply(user: User):
+    """Job Seekers retrieves their job application form here - this form will obtain the relevant job data
+    from the request"""
     context = dict(current_user=user)
     return render_template("jobseekers/apply.html", **context)
 
 
 @jobseeker_route.route('/saved-jobs', methods=['GET'])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def saved_jobs(user: User):
+    """Retrives a list of jobs bookmaerked by the job seeker"""
     context = dict(current_user=user)
     return render_template("jobseekers/saved_jobs.html", **context)
 
@@ -63,7 +65,8 @@ async def saved_jobs(user: User):
 
 @jobseeker_route.route('/notifications', methods=['GET'])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def notifications(user: User):
+    """Job Seekers Specific Notifitions"""
     context = dict(current_user=user)
     return render_template("jobseekers/notifications.html", **context)

@@ -1,7 +1,7 @@
 from flask import Blueprint, request, render_template
 
 from src.routes import flask_error_handler
-from src.authentication import login_required
+from src.authentication import login_required, jobseeker_login
 from src.database.models.users import User
 from src.logger import init_logger
 from src.utils.route_helpers import get_controller
@@ -11,7 +11,7 @@ ats_logger = init_logger("ats_tool")
 
 @ats_tool_route.route("/ats-match", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def ats_match(user: User):
     """
     Perform ATS match scoring based on uploaded resume and provided job description.
@@ -37,7 +37,7 @@ async def ats_match(user: User):
 
 @ats_tool_route.route("/resume-quality", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def resume_quality(user: User):
     """
     Analyze the quality of an uploaded resume and return structured improvement insights.
@@ -67,7 +67,7 @@ async def resume_quality(user: User):
 
 @ats_tool_route.route("/keyword-extract", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def keyword_extract(user: User):
     """
     Extract key and weighted keywords from a resume file.
@@ -98,7 +98,7 @@ async def keyword_extract(user: User):
 
 @ats_tool_route.route("/categorize-keywords", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def categorize_keywords(user: User):
     """
     Categorize extracted resume keywords into logical groups (e.g., technical, soft skills).
@@ -126,7 +126,7 @@ async def categorize_keywords(user: User):
 
 @ats_tool_route.route("/ats-tools", methods=["GET", "POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def ats_tools(user: User):
     """
     Unified endpoint for multiple ATS tools including match scoring, quality check,
@@ -167,7 +167,7 @@ async def ats_tools(user: User):
 
 @ats_tool_route.route("/summary-generator", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def summary_generator(user: User):
     """
     Generates a professional resume summary from an uploaded resume.
@@ -192,7 +192,7 @@ async def summary_generator(user: User):
 
 @ats_tool_route.route("/top-skills", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def top_skills(user: User):
     """
     Extracts and returns top skills from a resume.
@@ -217,7 +217,7 @@ async def top_skills(user: User):
 
 @ats_tool_route.route("/api/ats-score", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def ats_score_api(user: User):
     """
     API endpoint that returns raw ATS score (non-HTML) based on resume and job description.

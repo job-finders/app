@@ -9,6 +9,7 @@ class Role(str, Enum):
     ADMIN = "admin"
     EMPLOYER = "employer"
     SEEKER = "seeker"
+    SYSTEM_ADMIN = "system_admin"
 
     @classmethod
     def is_valid_role(cls, role_str: str) -> bool:

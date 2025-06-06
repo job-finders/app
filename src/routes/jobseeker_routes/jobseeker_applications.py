@@ -2,14 +2,15 @@ import asyncio
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from pydantic import ValidationError
-from src.database.models.resume import JobSeekerCV
-from src.logger import init_logger
-from src.database.models.jobs_model import JobApplication, Job, ATSReport
-from src.routes import flask_error_handler
 
+from src.authentication import jobseeker_login
+from src.database.models.jobs_model import JobApplication, Job, ATSReport
+from src.database.models.resume import JobSeekerCV
 from src.database.models.users import User
-from src.authentication import login_required
+from src.logger import init_logger
+from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
+
 jobseeker_applications_route = Blueprint("jobseeker_applications", __name__, url_prefix="/jobseeker/applications")
 applications_logger = init_logger("Job-Applications")
 
@@ -36,7 +37,7 @@ async def get_location_options(user_id: str, cv_ids: list[str]) -> list[str]:
 
 @jobseeker_applications_route.route('/api/ats-check', methods=['POST'])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def api_ats_check(user: User):
     """
     Perform an ATS (Applicant Tracking System) compatibility check.
@@ -82,7 +83,7 @@ async def api_ats_check(user: User):
 
 @jobseeker_applications_route.route('/api/cover-draft', methods=['POST'])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def api_cover_draft(user: User):
     """
     Generate a cover letter draft using AI tools based on CV and job data.
@@ -121,7 +122,7 @@ async def api_cover_draft(user: User):
 
 @jobseeker_applications_route.route('/jobs/aaply/<string:job_id>', methods=['GET'])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def apply_for_job(user: User, job_id: str):
     """
     Job application landing page (GET).
@@ -212,7 +213,7 @@ async def apply_for_job(user: User, job_id: str):
 
 @jobseeker_applications_route.route("/submit/<job_id>", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def submit_application(job_id: str, user: User):
     """
     Finalizes and submits a job application.
@@ -267,7 +268,7 @@ async def submit_application(job_id: str, user: User):
 
 @jobseeker_applications_route.route("/withdraw-application/<string:application_id>", methods=["GET"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def withdraw_application(user: User, application_id: str):
     """
     Withdraw a submitted job application.
@@ -318,7 +319,7 @@ async def withdraw_application(user: User, application_id: str):
 
 @jobseeker_applications_route.route("/", methods=["GET"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def list_applications(user: User):
     """
     Display a list of all jobs the user has applied to.
@@ -336,7 +337,7 @@ async def list_applications(user: User):
 
 @jobseeker_applications_route.route("/<string:application_id>", methods=["GET"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def view_application(application_id: str, user: User):
     """
     View a specific job application by its ID. Shows job details, submitted CV, cover letter,
@@ -380,7 +381,7 @@ async def view_application(application_id: str, user: User):
 
 @jobseeker_applications_route.route("/<string:application_id>/edit", methods=["GET"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def edit_application(application_id: str, user: User):
     jobs_search_controller = get_controller('jobs_search')
     application = await jobs_search_controller.get_job_application_by_id(application_id)
@@ -408,7 +409,7 @@ async def edit_application(application_id: str, user: User):
 
 @jobseeker_applications_route.route("/<string:application_id>/edit", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def submit_edited_application(application_id: str, user: User):
     form = await request.form
     selected_cv_id = form.get("cv_id")

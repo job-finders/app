@@ -1,9 +1,9 @@
 # routes/employee_agents.py
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, jsonify, render_template
 
-from src.routes import flask_error_handler
-from src.authentication import login_required, admin_login
+from src.authentication import system_admin_login
 from src.database.models.users import User
+from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
 
 system_admin_route = Blueprint('system_admin', __name__, url_prefix='/system/admin/v1')
@@ -11,7 +11,7 @@ system_admin_route = Blueprint('system_admin', __name__, url_prefix='/system/adm
 
 @system_admin_route.route("/dashboard", methods=["GET"])
 @flask_error_handler
-@admin_login
+@system_admin_login
 async def get_admin_dashboard(user: User):
     """
     Admin endpoint to retrieve the admin dashboard data.
@@ -27,7 +27,7 @@ async def get_admin_dashboard(user: User):
 
 @system_admin_route.route("/users/<string:user_id>/reset-password", methods=["POST"])
 @flask_error_handler
-@admin_login
+@system_admin_login
 async def reset_user_password(user: User, user_id: str):
     """
     Admin endpoint to reset a user's password.
@@ -46,7 +46,7 @@ async def reset_user_password(user: User, user_id: str):
 
 @system_admin_route.route("/users/<string:user_id>/deactivate", methods=["POST"])
 @flask_error_handler
-@admin_login
+@system_admin_login
 async def deactivate_user(user: User, user_id: str):
     """
     Admin endpoint to deactivate a user account.

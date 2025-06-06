@@ -2,10 +2,11 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
-from src.firewall.rate_limiting import rate_limit
-from src.authentication import admin_login, login_required
+
+from src.authentication import login_required, employer_login, system_admin_login, jobseeker_login
 from src.database.models.jobs_model import Job, JobApplication
 from src.database.models.users import User
+from src.firewall.rate_limiting import rate_limit
 from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
 
@@ -14,7 +15,7 @@ jobs_workflow_route = Blueprint("jobs_workflow", __name__, url_prefix="/dashboar
 @jobs_workflow_route.get("/create")
 @rate_limit("20 per minute")
 @flask_error_handler
-@login_required
+@employer_login
 async def show_create_form(user: User):
     """
     This route is used to render the form for creating a new job post.
@@ -31,7 +32,7 @@ async def show_create_form(user: User):
 @jobs_workflow_route.post("/create")
 @rate_limit("20 per minute")
 @flask_error_handler
-@login_required
+@employer_login
 async def create_job(user: User):
     """
         The Job Submission Workflow started at the Agent Routes - where a partial Job Definition was created.
@@ -70,7 +71,7 @@ async def create_job(user: User):
 @jobs_workflow_route.get("/<string:job_id>/edit")
 @rate_limit("10 per minute")
 @flask_error_handler
-@login_required
+@employer_login
 async def show_edit_form(user: User, job_id: str):
     """
     This route is used to render the form for editing an existing none live job post.
@@ -86,7 +87,7 @@ async def show_edit_form(user: User, job_id: str):
 @jobs_workflow_route.post("/<string:job_id>/edit")
 @rate_limit("10 per minute")
 @flask_error_handler
-@login_required
+@employer_login
 async def edit_job(user: User, job_id: str):
     """
     Once the Job is submitted to the Database, through the create_job method,
@@ -108,7 +109,7 @@ async def edit_job(user: User, job_id: str):
 @jobs_workflow_route.get("/<string:job_id>/archive")
 @rate_limit("10 per minute")
 @flask_error_handler
-@login_required
+@employer_login
 async def archive_job(user: User, job_id: str):
     """
         This route is used to archive a job post, making it no longer active.
@@ -134,7 +135,7 @@ async def archive_job(user: User, job_id: str):
 @jobs_workflow_route.get("/<string:job_id>/feature")
 @rate_limit("30 per minute")
 @flask_error_handler
-@login_required
+@employer_login
 async def feature_job(user: User, job_id: str):
     """
     This route is used to feature a job post, making it more visible on the platform.
@@ -155,7 +156,7 @@ async def feature_job(user: User, job_id: str):
 @jobs_workflow_route.get("/approve/<string:approval_token>")
 @rate_limit("60 per minute")
 @flask_error_handler
-@admin_login
+@system_admin_login
 async def approve_job(user: User, approval_token: str):
     """
     This will be called by the system administrator or workflow AI in order to approve a job post.
@@ -173,7 +174,7 @@ async def approve_job(user: User, approval_token: str):
 @jobs_workflow_route.get("/reject/<string:approval_token>")
 @rate_limit("60 per minute")
 @flask_error_handler
-@admin_login
+@system_admin_login
 async def reject_job(user: User, approval_token: str):
     """
         This will be called by the system administrator or workflow AI in order to reject a job post.
@@ -193,7 +194,7 @@ async def reject_job(user: User, approval_token: str):
 @jobs_workflow_route.post("/<string:job_id>/apply")
 @rate_limit("120 per minute")
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def submit_application(user: User, job_id: str):
     """
     The workflow for submitting a job application. started at the agents routes, where a candidate 

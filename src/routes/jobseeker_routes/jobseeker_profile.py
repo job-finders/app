@@ -1,8 +1,9 @@
 from pydantic import ValidationError
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
+from authentication import user_details
 from src.routes import flask_error_handler
-from src.authentication import login_required
+from src.authentication import login_required, jobseeker_login
 from src.database.models.users import User
 
 from src.database.models.jobseeker_profile import JobSeekerProfile
@@ -52,8 +53,13 @@ def parse_profile_form(form_data, user_uid):
 
 @jobseeker_profiles_bp.route("/create", methods=["GET", "POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def create_profile(user: User):
+    """
+        Job Seekers Profile can be called only by Job Seekers
+    :param user:
+    :return:
+    """
     # Fetch config options for form
 
     job_seeker_profile_controller = get_controller('job_seeker_profile')
@@ -95,7 +101,7 @@ async def create_profile(user: User):
 
 @jobseeker_profiles_bp.route("/me")
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def view_profile(user: User):
     job_seeker_profile_controller = get_controller('job_seeker_profile')
     profile: JobSeekerProfile = await job_seeker_profile_controller.get_profile_by_uid(user_uid=user.uid)
@@ -110,7 +116,7 @@ async def view_profile(user: User):
 
 @jobseeker_profiles_bp.route("/edit", methods=["GET", "POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def edit_profile(user: User):
     # Fetch config options for form
     job_seeker_profile_controller = get_controller('job_seeker_profile')
@@ -166,7 +172,7 @@ async def edit_profile(user: User):
 
 @jobseeker_profiles_bp.route("/delete", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def delete_profile(user: User):
     job_seeker_profile_controller = get_controller('job_seeker_profile')
     result = await job_seeker_profile_controller.delete_profile(user_uid=user.uid)
@@ -181,7 +187,12 @@ async def delete_profile(user: User):
 @flask_error_handler
 @login_required
 async def search_profiles(user:User):
-    """could be used by employers and other seekers"""
+    """
+        could be used by employers and other seekers
+        This is a view only endpoint that displays None Sensitive Information.
+
+        TODO - consider displaying here a public endpoint accessible through google. for profiles marked visible.
+    """
     query = request.args.get("q", "")
     job_seeker_profile_controller = get_controller('job_seeker_profile')
     profiles: list[JobSeekerProfile] = await job_seeker_profile_controller.search_profiles(query=query)
@@ -191,8 +202,9 @@ async def search_profiles(user:User):
 
 @jobseeker_profiles_bp.route("/upload-picture", methods=["POST"])
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def upload_picture(user: User):
+    """This will Upload a picture into a profile of a job seeker"""
     if 'file' not in request.files:
         flash("No file part in request.", "danger")
         return redirect(request.referrer)
@@ -214,8 +226,14 @@ async def upload_picture(user: User):
 
 @jobseeker_profiles_bp.route("/role/<string:role>")
 @flask_error_handler
-@login_required
+@user_details
 async def list_profiles_by_role(user: User, role: str):
+    """
+        This is a public accessible endpoint listing only public profiles.
+    :param user:
+    :param role:
+    :return:
+    """
     job_seeker_profile_controller = get_controller('job_seeker_profile')
     profiles = await job_seeker_profile_controller.list_profiles_by_role(role)
 
@@ -225,8 +243,13 @@ async def list_profiles_by_role(user: User, role: str):
 
 @jobseeker_profiles_bp.route('/activity/metrics')
 @flask_error_handler
-@login_required
+@jobseeker_login
 async def get_activity_metrics(user: User):
+    """
+        Each Job Seeker can review their Activity in this endpoint.
+    :param user:
+    :return:
+    """
     job_seeker_profile_controller = get_controller('job_seeker_profile')
     return await job_seeker_profile_controller.track_job_search_activity(user.user_id)
 

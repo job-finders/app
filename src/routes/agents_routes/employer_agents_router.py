@@ -5,7 +5,7 @@ from src.routes import flask_error_handler
 from src.database.models import Job
 from src.database.models.agent_models import JobPostInsights
 from src.agents.employer import EnhanceJobPostOutput
-from src.authentication import login_required
+from src.authentication import login_required, employer_login
 from src.database.models.users import User
 from src.logger import init_logger
 from src.utils.route_helpers import get_controller
@@ -16,7 +16,7 @@ agents_logger = init_logger("agents_tool")
 
 @employer_agents_route.route("/jobs/enhance-job-post", methods=["POST"])
 @flask_error_handler
-@login_required
+@employer_login
 async def enhance_job_post(user: User):
     """
         partial_job_data = {
@@ -55,7 +55,7 @@ async def enhance_job_post(user: User):
 # NEW AGENT ENDPOINT - Job Post Analysis
 @employer_agents_route.route("/jobs/analyze-job-post/<string:job_id>", methods=["POST"])
 @flask_error_handler
-@login_required
+@employer_login
 async def analyze_job_post(user: User, job_id: str):
     """
         given an existing job post analyze it and return

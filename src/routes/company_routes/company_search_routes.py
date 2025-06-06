@@ -1,11 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
 
-from src.routes import flask_error_handler
-from src.database.models.employer_models import Employer
-from src.authentication import login_required, user_details
+from src.authentication import employer_login
 from src.database.models.company_models import CompanyVerificationStatus, Company
+from src.database.models.employer_models import Employer
 from src.database.models.users import User
 from src.logger import init_logger
+from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
 
 company_search_routes = Blueprint('company_search', __name__, url_prefix='/company')
@@ -15,7 +15,7 @@ company_search_routes = Blueprint('company_search', __name__, url_prefix='/compa
 
 @company_search_routes.get('/view/<string:company_id>')
 @flask_error_handler
-@login_required
+@employer_login
 async def view_company_by_company_id(user: User, company_id: str):
     """
         Search for companies based on the user's input.
@@ -72,7 +72,7 @@ async def view_company_by_company_id(user: User, company_id: str):
     
 @company_search_routes.get('/list')
 @flask_error_handler
-@user_details
+@employer_login
 async def list_companies(user: User):
     """
     :param user:
@@ -90,7 +90,7 @@ async def list_companies(user: User):
 
 @company_search_routes.get('/employees')
 @flask_error_handler
-@login_required
+@employer_login
 async def get_employer_details(user: User):
     """
     Fetches the employer details for a given company ID.

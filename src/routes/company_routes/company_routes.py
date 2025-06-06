@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from werkzeug.utils import secure_filename
 
 from src.routes import flask_error_handler
-from src.authentication import login_required
+from src.authentication import login_required, employer_login
 from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate, CompanyCIPC, \
     CompanyVerificationDocument
 from src.database.models.employer_models import Employer
@@ -109,7 +109,7 @@ async def create_company_profile(user: User):
 
 
 @company_bp.route('/profile/edit', methods=['GET'])
-@login_required
+@employer_login
 async def edit_company_profile(user: User):
     """Render company profile edit form"""
     company_controller = get_controller('company')
@@ -131,7 +131,7 @@ async def edit_company_profile(user: User):
 
 
 @company_bp.route('/profile/update', methods=['POST'])
-@login_required
+@employer_login
 async def update_company_profile(user: User):
     """Process company profile updates"""
     company_controller = get_controller('company')
@@ -197,7 +197,7 @@ async def update_company_profile(user: User):
 
 
 @company_bp.route("/update-employer", methods=["GET", "POST"])
-@login_required
+@employer_login
 async def update_employer_profile(user: User):
     if user.role != "employer":
         flash("Access denied: Only employers can update this profile.", "danger")
@@ -264,7 +264,7 @@ async def update_employer_profile(user: User):
 
 @company_bp.route("/profile", methods=["GET"])
 @flask_error_handler
-@login_required
+@employer_login
 async def view_company(user: User):
     """Company profile viewing endpoint"""
     if not hasattr(user, "role") or user.role != "employer":
@@ -296,7 +296,7 @@ async def view_company(user: User):
 
 @company_bp.route("/employer/profile", methods=["GET"])
 @flask_error_handler
-@login_required
+@employer_login
 async def view_employer_profile(user: User):
     """
         this route allows the employer to view their own profile
@@ -331,7 +331,7 @@ async def view_employer_profile(user: User):
 
 @company_bp.route("/jobs", methods=["GET", "POST"])
 @flask_error_handler
-@login_required
+@employer_login
 async def manage_jobs(user: User):
     """Job post management (mirrors ATS tool pattern)"""
 
@@ -372,7 +372,7 @@ async def manage_jobs(user: User):
 
 @company_bp.route("/candidates", methods=["GET", "POST"])
 @flask_error_handler
-@login_required
+@employer_login
 async def candidate_management(user: User):
     """Candidate shortlisting (extends ATS functionality)"""
 
@@ -405,7 +405,7 @@ async def candidate_management(user: User):
 
 @company_bp.route("/analytics/applications", methods=["GET"])
 @flask_error_handler
-@login_required
+@employer_login
 async def application_analytics(user: User):
     """Hiring analytics dashboard (integrates with ATS reports)"""
 
@@ -424,7 +424,7 @@ async def application_analytics(user: User):
 
 @company_bp.route("/verify-employer-profile", methods=["POST"])
 @flask_error_handler
-@login_required
+@employer_login
 async def initiate_employer_verification(user: User):
     """Start company verification process"""
     company_controller = get_controller('company')
@@ -478,7 +478,7 @@ async def verify_employer_profile(token: str, employer_id: str):
 
 @company_bp.route('/submit-company-verification', methods=['GET', 'POST'])
 @flask_error_handler
-@login_required
+@employer_login
 async def initiate_company_verification(user: User):
     """Endpoint for comprehensive company verification submission"""
     # Authorization check
@@ -594,7 +594,7 @@ async def initiate_company_verification(user: User):
 
 @company_bp.route('/verification-status')
 @flask_error_handler
-@login_required
+@employer_login
 async def verification_status(user: User):
     """Show current verification status"""
     company_controller = get_controller('company')
@@ -609,7 +609,8 @@ async def verification_status(user: User):
 
 @company_bp.route("/billing")
 @flask_error_handler
-async def billing():
+@employer_login
+async def billing(user: User):
     return render_template("company/billing.html")  # Placeholder template
 
 @company_bp.route("/settings")
@@ -618,7 +619,7 @@ async def settings():
 
 @company_bp.route("/employers")
 @flask_error_handler
-@login_required
+@employer_login
 async def employers_list(user: User):
     """
     List all employers associated with the company

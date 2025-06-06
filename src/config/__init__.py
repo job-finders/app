@@ -44,6 +44,15 @@ class RedisSettings(BaseSettings):
         extra="ignore"
     )
 
+class JwtSecrets(BaseSettings):
+    SECRET_KEY: str = Field(..., alias='JWT_SECRET')
+    ALGO: str = Field(..., alias='JWT_ALGO')
+    model_config = SettingsConfigDict(
+        env_file=".env.developer",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
 
 class Settings(BaseSettings):
     APP_NAME: str = "Job Finders"
@@ -58,6 +67,7 @@ class Settings(BaseSettings):
     REDIS: RedisSettings = Field(default_factory=RedisSettings)
     ACTIVITY_RETENTION_DAYS: int = 180
     ACTIVITY_CACHE_TTL: int = 3600  # 1 hour
+    JWT_SECRETS: JwtSecrets = Field(default_factory=JwtSecrets)
 
     model_config = SettingsConfigDict(
         env_file=".env.developer",

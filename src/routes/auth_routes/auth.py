@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Response, make_response
 
+from src.authentication.jwt_helper import create_jwt
 from src.firewall.rate_limiting import rate_limit
 from src.routes import flask_error_handler
 from src.database.constants import utc_time
@@ -35,10 +36,10 @@ async def login(user: User):
         password = request.form.get("password")
         remember_me = request.form.get("remember_me")
 
-        thirty_minutes = 30
+        sixty_minutes = 60
         thirty_days = 30 * 24 * 60  # 30 days × 24 hours × 60 minutes
 
-        remember_me_delay = thirty_days if remember_me else thirty_minutes
+        remember_me_delay = thirty_days if remember_me else sixty_minutes
         users_controller = get_controller('users')
         user = await users_controller.login_user(email=email, password=password)
         if not user:
@@ -50,7 +51,9 @@ async def login(user: User):
             response = await create_response(url_for('jobseekers.dashboard'))
 
         expiration = utc_time() + timedelta(minutes=remember_me_delay)
-        response.set_cookie('auth', value=user.uid, expires=expiration, httponly=True)
+        jwt_token = create_jwt(user.model_dump(exclude={'password_hash'}))
+        response.set_cookie('access_token', value=jwt_token, expires=expiration, httponly=True, secure=True, samesite="Lax")
+
         flash("Login successful", "success")
         return response
 
@@ -66,7 +69,7 @@ async def logout(user: User):
     session.clear()
     response = make_response(redirect(url_for("auth.login")))
     # Expire the auth cookie
-    response.set_cookie('auth', '', expires=0, httponly=True)
+    response.set_cookie('access_token', '', expires=0, httponly=True)
     flash("Logged out successfully", "info")
     return response
 
@@ -116,8 +119,9 @@ async def subscribe(user: User):
     # Automatically log the user in
     response = make_response(redirect(url_for("home.get_home")))
     expiration = datetime.now(timezone.utc) + timedelta(minutes=30)
+    jwt_token = create_jwt(user.model_dump(exclode={'password_hash'}))
 
-    response.set_cookie("auth", value=user.uid, expires=expiration, httponly=True)
+    response.set_cookie("access_token", value=jwt_token, expires=expiration, httponly=True, secure=True, samesite="Lax")
 
     flash("Subscription successful! You are now logged in.", "success")
     return response

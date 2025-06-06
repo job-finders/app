@@ -1,112 +1,114 @@
+import re
 from functools import wraps
-
 from flask import request, redirect, url_for, flash
 
+from src.authentication.jwt_helper import decode_jwt
 from src.database.models import Role
 from src.logger import init_logger
 from src.database.models.users import User
 from src.database.sql import Session
 from src.database.sql.users import UserORM
 
-
-
 auth_logger = init_logger('auth_logger')
-# Your route handlers go here
 
-async def get_user_details(uid: str) -> User:
-    """Get the details for a user by their ID."""
+# UUID validation to avoid unnecessary DB hits
+UUID_REGEX = re.compile(r'^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$', re.I)
 
-    # Assuming you have a database session and engine configured
+def is_valid_uid(uid: str | None) -> bool:
+    return bool(uid and UUID_REGEX.fullmatch(uid))
+
+async def get_user_details(uid: str) -> User | None:
+    """Query the database for a user by UID."""
+    if not is_valid_uid(uid):
+        auth_logger.warning(f"Rejected malformed UID: {uid}")
+        return None
+
     with Session() as session:
-        # Perform the query to retrieve the user based on the uid
         user = session.query(UserORM).filter(UserORM.uid == uid).first()
+        if user:
+            auth_logger.info(f"Authenticated UID {uid}: {user.to_dict()}")
+            return User(**user.to_dict())
+        else:
+            auth_logger.info(f"No user found for UID {uid}")
+            return None
 
-        auth_logger.info(f"Is the Authenticator able to get user details : {user.to_dict() if user else None}")
-        return User(**user.to_dict()) if user else None
 
+async def resolve_user_from_jwt_cookie() -> User | None:
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+
+    payload = decode_jwt(token)
+    if not payload:
+        return None
+
+    uid = payload.get("sub")
+    role = payload.get("role")
+
+    # Optionally, skip DB and construct user from token if data is complete
+    user = await get_user_details(uid) if uid else None
+    return user
+
+async def resolve_user_from_cookie() -> User | None:
+    """Resolve user from auth cookie."""
+    uid = request.cookies.get('auth')
+    auth_logger.info(f"Found UID Cookie: {uid}")
+    return await get_user_details(uid)
+
+
+# ==========================
+#        DECORATORS
+# ==========================
 
 def login_required(route_function):
     @wraps(route_function)
-    async def decorated_function(*args, **kwargs):
-        auth_cookie = request.cookies.get('auth')
-        if auth_cookie:
-            user = await get_user_details(auth_cookie)
-            if user:
-                try:
-                    # Only pass user to the route function, not additional args
-                    return await route_function(user)
-                except TypeError as e:
-                    auth_logger.error(f"TypeError in route: {str(e)}", exc_info=True)
-                    flash(f"Error processing request: {str(e)}", "danger")
-                    return redirect(url_for('home.get_home'))
-            else:
-                flash("User may not be authorized or logged in", "danger")
-                return redirect(url_for('home.get_home'))
-        return redirect(url_for('auth.login'))
+    async def wrapper(*args, **kwargs):
+        user = await resolve_user_from_jwt_cookie()
+        if user:
+            return await route_function(user, *args, **kwargs)
 
-    return decorated_function
+        flash("Login required", "danger")
+        return redirect(url_for("auth.login"))
+    return wrapper
 
-def require_role(required_role: Role):
-    """
-    Generic decorator to restrict route access by user role.
-    """
 
+
+def roles_required(*allowed_role: str):
+    """Ensure the user has one of the allowed roles."""
     def decorator(route_function):
         @wraps(route_function)
-        async def decorated_function(*args, **kwargs):
-            auth_cookie = request.cookies.get('auth')
+        async def wrapper(*args, **kwargs):
+            user = await resolve_user_from_jwt_cookie()
+            if user and user.role in allowed_role:
+                return await route_function(user, *args, **kwargs)
 
-            if not auth_cookie:
-                flash("You must be logged in.", "warning")
-                return redirect(url_for('auth.get_auth'))
+            flash("Access denied: insufficient privileges.", "danger")
+            return redirect(url_for("home.get_home"))
 
-            try:
-                user = await get_user_details(auth_cookie)
-                if user and user.role == required_role:
-                    return await route_function(user, *args, **kwargs)
-
-                flash(f"Access denied: {required_role.value.capitalize()}s only.", "danger")
-                return redirect(url_for('home.get_home'))
-
-            except Exception:
-                flash("An unexpected error occurred.", "danger")
-                return redirect(url_for('home.get_home'))
-
-        return decorated_function
-
+        return wrapper
     return decorator
 
-# noinspection DuplicatedCode
+def system_admin_login(route_function):
+    """Ensure the user is an admin (company context)."""
+    return roles_required(Role.SYSTEM_ADMIN.value)(route_function)
+
 def admin_login(route_function):
-    """used to authenticate company admins only """
+    """Ensure the user is an admin (company context)."""
+    return roles_required(Role.ADMIN.value)(route_function)
 
-    @wraps(route_function)
-    async def decorated_function(*args, **kwargs):
-        auth_cookie = request.cookies.get('auth')
-        if auth_cookie:
-            # Assuming you have a function to retrieve the user details based on the uid
-            user = await get_user_details(auth_cookie)
-            try:
-                if user and user.role and Role.ADMIN.value:
-                    return await route_function(user, *args, **kwargs)  # Inject user as a parameter
-                flash(message="User may not be Authorized or Logged In", category="danger")
-                return redirect(url_for('home.get_home'))
-            except TypeError as e:
-                flash(message='Error making request please try again later', category="danger")
-                return redirect(url_for('home.get_home'))
-        return redirect(url_for('auth.get_auth'))  # Redirect to login page if not logged in
+def employer_login(route_function):
+    """Add on Company and Employer Routes"""
+    return roles_required(Role.EMPLOYER.value)(route_function)
 
-    return decorated_function
-
-
+def jobseeker_login(route_function):
+    """Add on JobSeeker Only Routes"""
+    return roles_required(Role.SEEKER.value)(route_function)
 
 def user_details(route_function):
+    """Inject user object into route if available (can be None)."""
     @wraps(route_function)
-    async def decorated_function(*args, **kwargs):
-        uid = request.cookies.get('auth')
-        auth_logger.info(f"Found UID Cookie: {uid}")
-        user: User | None = await get_user_details(uid=uid) if uid else None
-
+    async def wrapper(*args, **kwargs):
+        user = await resolve_user_from_cookie()
         return await route_function(user, *args, **kwargs)
 
-    return decorated_function
+    return wrapper
