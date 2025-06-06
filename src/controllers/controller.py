@@ -20,7 +20,7 @@ class Controllers:
     def __init__(self, factory, session_maker=Session):
         self.factory = factory
         self.session_maker = session_maker
-        self.sessions = [session_maker() for _ in range(self.session_limit)]
+        self.sessions = []
         self.logger = init_logger(self.__class__.__name__)
         self.app: Flask | None = None
         self.deepseek_api_key: str | None  = None
@@ -44,10 +44,10 @@ class Controllers:
         session_limit = self.app.config.get('session_limit', self.session_limit)
         self.deepseek_api_key = self.app.config.get('DEEPSEEK_API_KEY')
 
-        # Reinitialize sessions if configuration changed
-        if session_maker and session_limit != self.session_limit:
-            self.session_limit = session_limit
-            self._initialize_sessions()
+        # # Reinitialize sessions if configuration changed
+        # if session_maker and session_limit != self.session_limit:
+        #     self.session_limit = session_limit
+        #     self._initialize_sessions()
 
 
     def close(self):

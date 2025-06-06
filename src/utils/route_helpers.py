@@ -49,6 +49,7 @@ def get_controller(controller_name: str):
     getter_name = controller_map[controller_name]
     # Get controller instance
     try:
+        # NOTE: Here we get and Initialize a Controller which is Ussually a Class
         controller = getattr(factory, getter_name)()
         # Cache for current request
         # noinspection PyProtectedMember
@@ -96,7 +97,8 @@ def get_service(service_name: str):
         raise RuntimeError("Service factory not initialized in app context")
     getter_name = service_map[service_name]
     try:
-        service = getattr(factory, getter_name)()
+        # NOTE: Services gets called where they are needed cause they often need extra data to run.
+        service = getattr(factory, getter_name)
         g._services[service_name] = service
         return service
     except AttributeError:
