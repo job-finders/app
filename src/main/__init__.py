@@ -214,12 +214,12 @@ def create_app(config):
         ## AP SCHEDULER INTERGRATION
         ############################################
         from src.tasks.task_scheduler.ap_scheduler import create_scheduler
-        from src.tasks.task_scheduler.admin_ap_scheduler import schedule_company_tasks
+        from src.tasks.task_scheduler.admin_ap_scheduler import schedule_app_tasks
 
         scheduler = create_scheduler(app=app)
 
         # This Schedules Admin Jobs that are suppose to run in AP Scheduler
-        schedule_company_tasks(scheduler=scheduler, app=app)
+        schedule_app_tasks(scheduler=scheduler, app=app)
         scheduler.start()
 
     return app

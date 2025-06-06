@@ -1,35 +1,77 @@
 import asyncio
-
 from src.utils.route_helpers import get_controller, get_service
 
-def schedule_company_tasks(scheduler, app):
-    """Schedule periodic company-related background tasks"""
+def schedule_app_tasks(scheduler, app):
+    """Schedule all periodic tasks that need Flask context."""
 
-    logger = get_service("logger")()("company_tasks")
-    logger.info("###### Initializing company background ######")
+    logger = get_service("logger")()("app_scheduler")
+    logger.info("###### Initializing App Scheduler ######")
+
+    admin_controller = get_controller("admin_controller")
     company_controller = get_controller("company")
 
-    def async_job_wrapper(coro):
+    def async_job_wrapper(job_name, coro):
         def wrapper():
             with app.app_context():
                 try:
-                    logger.info("Running auto document verification job")
+                    logger.info(f"Running scheduled job: {job_name}")
                     asyncio.run(coro())
                 except Exception as e:
-                    logger.error(f"Document verification job failed: {e}", exc_info=True)
+                    logger.error(f"Scheduled job '{job_name}' failed: {e}", exc_info=True)
         return wrapper
 
-    """
-        This task may run in celery or task scheduler.
-        fetch documents that have not been reviewed or without recommendations -
-        check if company profiles have been properlu completed and verified.
-        send the documents to a company agent document verifier.
-    """
+    # === Company Jobs ===
     scheduler.add_job(
-        async_job_wrapper(company_controller.auto_verify_company_documents),
-        'interval',
+        async_job_wrapper("document_verification", company_controller.auto_verify_company_documents),
+        trigger='interval',
         minutes=30,
         id='document_verification',
         replace_existing=True
     )
-    logger.info("Scheduled: document_verification every 30 Minutes")
+
+    # === Former Celery Beat Jobs ===
+    scheduler.add_job(
+        async_job_wrapper("clean_up_old_job_approvals", admin_controller.cleanup_old_approvals),
+        trigger='cron',
+        minute=0,
+        hour='*',
+        id='clean_up_old_job_approvals',
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        async_job_wrapper("send_job_alerts", admin_controller.send_job_alerts_to_users),
+        trigger='cron',
+        minute=0,
+        hour=9,
+        id='send_job_alerts',
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        async_job_wrapper("flag_unusual_user_activity", admin_controller.flag_unusual_user_activity),
+        trigger='interval',
+        minutes=45,
+        id='flag_unusual_user_activity',
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        async_job_wrapper("evaluate_user_risks", admin_controller.evaluate_user_risks),
+        trigger='cron',
+        hour=2,
+        minute=30,
+        id='evaluate_user_risks',
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        async_job_wrapper("detect_anomalous_jobs", admin_controller.detect_anomalous_job_postings),
+        trigger='cron',
+        hour=3,
+        minute=0,
+        id='detect_anomalous_jobs',
+        replace_existing=True
+    )
+
+    logger.info("Scheduled: All tasks initialized in app scheduler.")

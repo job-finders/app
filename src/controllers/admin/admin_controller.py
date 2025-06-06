@@ -137,7 +137,7 @@ class JobRecommendationService(AdminServiceInterface):
         self.job_seekers_profile_controller = get_controller('job_seeker_profile')
         self.users_controller = get_controller('users')
         self.resume_controller = get_controller('resume')
-        self.logger = get_service('logger')(self.__class__.__name__)
+        self.logger = get_service('logger')()(self.__class__.__name__)
 
 
     def execute(self, action: str, **kwargs) -> AdminActionResult:
@@ -410,7 +410,7 @@ class JobModerationService(AdminServiceInterface):
         }
 
         if action not in actions:
-            return AdminActionResult(False, f"Unknown action: {action}")
+            return AdminActionResult(success=False, message=f"Unknown action: {action}")
 
         return actions[action](**kwargs)
 
@@ -420,11 +420,11 @@ class JobModerationService(AdminServiceInterface):
             with self.session_factory() as session:
                 request = session.query(JobApprovalRequestORM).filter_by(job_id=job_id).first()
                 if not request:
-                    return AdminActionResult(False, "No approval request exists for this job")
+                    return AdminActionResult(success=False, message="No approval request exists for this job")
 
                 job = session.query(JobsORM).get(job_id)
                 if not job:
-                    return AdminActionResult(False, "Job not found")
+                    return AdminActionResult(success=False, message="Job not found")
 
                 job.status = "active"
                 request.status = JobApprovalStatusEnum.APPROVED
@@ -432,9 +432,9 @@ class JobModerationService(AdminServiceInterface):
                 request.reviewed_at = datetime.utcnow()
 
                 session.commit()
-                return AdminActionResult(True, "Job approved successfully", {"job_id": job_id})
+                return AdminActionResult(success=True, message="Job approved successfully", data={"job_id": job_id})
         except Exception as e:
-            return AdminActionResult(False, f"Error approving job: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error approving job: {str(e)}")
 
     def _reject_job(self, job_id: str, reviewer_id: str, reason: str) -> AdminActionResult:
         """Reject a job posting with reason"""
@@ -442,11 +442,11 @@ class JobModerationService(AdminServiceInterface):
             with self.session_factory() as session:
                 request = session.query(JobApprovalRequestORM).filter_by(job_id=job_id).first()
                 if not request:
-                    return AdminActionResult(False, "No approval request exists for this job")
+                    return AdminActionResult(success=False, message="No approval request exists for this job")
 
                 job = session.query(JobsORM).get(job_id)
                 if not job:
-                    return AdminActionResult(False, "Job not found")
+                    return AdminActionResult(success=False, message="Job not found")
 
                 job.status = "archived"
                 request.status = JobApprovalStatusEnum.REJECTED
@@ -455,9 +455,9 @@ class JobModerationService(AdminServiceInterface):
                 request.reviewed_at = datetime.utcnow()
 
                 session.commit()
-                return AdminActionResult(True, "Job rejected successfully", {"job_id": job_id, "reason": reason})
+                return AdminActionResult(success=True, message="Job rejected successfully", data={"job_id": job_id, "reason": reason})
         except Exception as e:
-            return AdminActionResult(False, f"Error rejecting job: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error rejecting job: {str(e)}")
 
     def _flag_job(self, job_id: str, reason: str, reporter_id: str) -> AdminActionResult:
         """Flag a job for admin review"""
@@ -465,7 +465,7 @@ class JobModerationService(AdminServiceInterface):
             with self.session_factory() as session:
                 job = session.query(JobsORM).get(job_id)
                 if not job:
-                    return AdminActionResult(False, "Job not found")
+                    return AdminActionResult(success=False, message="Job not found")
 
                 if not job.approval_request:
                     request = JobApprovalRequestORM(
@@ -480,15 +480,15 @@ class JobModerationService(AdminServiceInterface):
                     job.approval_request.review_notes = reason
 
                 session.commit()
-                return AdminActionResult(True, "Job flagged successfully", {"job_id": job_id})
+                return AdminActionResult(success=True, message="Job flagged successfully", data={"job_id": job_id})
         except Exception as e:
-            return AdminActionResult(False, f"Error flagging job: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error flagging job: {str(e)}")
 
     def _bulk_update_status(self, job_ids: List[str], new_status: str) -> AdminActionResult:
         """Bulk update job statuses"""
         valid_statuses = ['active', 'archived', 'pending_review']
         if new_status not in valid_statuses:
-            return AdminActionResult(False, f"Invalid status. Allowed: {valid_statuses}")
+            return AdminActionResult(success=False, message=f"Invalid status. Allowed: {valid_statuses}")
 
         try:
             with self.session_factory() as session:
@@ -496,9 +496,9 @@ class JobModerationService(AdminServiceInterface):
                     {JobsORM.status: new_status}
                 )
                 session.commit()
-                return AdminActionResult(True, f"Updated {updated} jobs", {"updated_count": updated})
+                return AdminActionResult(success=True, message=f"Updated {updated} jobs", data={"updated_count": updated})
         except Exception as e:
-            return AdminActionResult(False, f"Error updating jobs: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error updating jobs: {str(e)}")
 
     def _detect_anomalous_postings(self) -> AdminActionResult:
         """Detect suspicious job postings"""
@@ -531,77 +531,77 @@ class JobModerationService(AdminServiceInterface):
 
 class ComplianceService(AdminServiceInterface):
     """
-    Service for performing compliance and regulatory reporting across the job platform.
+        Service for performing compliance and regulatory reporting across the job platform.
 
-    This controller provides tools to assess compliance with South African B-BBEE standards,
-    generate employment equity reports, analyze pay equity across gender and experience levels,
-    and detect potential bias in the hiring pipeline. It enables administrators to monitor
-    and enforce fair employment practices.
+        This controller provides tools to assess compliance with South African B-BBEE standards,
+        generate employment equity reports, analyze pay equity across gender and experience levels,
+        and detect potential bias in the hiring pipeline. It enables administrators to monitor
+        and enforce fair employment practices.
 
-    Dependencies:
-        - `session_factory` (Callable): A factory that provides a SQLAlchemy session.
-        - Models:
-            - `JobsORM`
-            - `CompanyORM`
-            - `JobSeekerProfileORM`
-            - `JobApplicationORM`
-        - Result Wrapper:
-            - `AdminActionResult`: Used for standardized success/failure responses.
+        Dependencies:
+            - `session_factory` (Callable): A factory that provides a SQLAlchemy session.
+            - Models:
+                - `JobsORM`
+                - `CompanyORM`
+                - `JobSeekerProfileORM`
+                - `JobApplicationORM`
+            - Result Wrapper:
+                - `AdminActionResult`: Used for standardized success/failure responses.
 
-    Side Effects:
-        - Performs read-only operations on the database.
-        - No DB writes, session persistence, or external API usage.
+        Side Effects:
+            - Performs read-only operations on the database.
+            - No DB writes, session persistence, or external API usage.
 
-    Methods:
-        __init__(session_factory)
-            Initializes the service with a SQLAlchemy session factory.
+        Methods:
+            __init__(session_factory)
+                Initializes the service with a SQLAlchemy session factory.
 
-        execute(report_type: str, **kwargs) -> AdminActionResult
-            Dispatches the specified compliance reporting method.
+            execute(report_type: str, **kwargs) -> AdminActionResult
+                Dispatches the specified compliance reporting method.
 
-            Args:
-                report_type (str): Type of compliance report to generate. Must be one of:
-                    - 'bee_compliance'
-                    - 'employment_equity'
-                    - 'pay_equity'
-                    - 'bias_analysis'
-                **kwargs: Arguments required for the specific report method (e.g., `job_id`, `company_id`).
+                Args:
+                    report_type (str): Type of compliance report to generate. Must be one of:
+                        - 'bee_compliance'
+                        - 'employment_equity'
+                        - 'pay_equity'
+                        - 'bias_analysis'
+                    **kwargs: Arguments required for the specific report method (e.g., `job_id`, `company_id`).
 
-            Returns:
-                AdminActionResult: Encapsulates success state, message, and data (if any).
+                Returns:
+                    AdminActionResult: Encapsulates success state, message, and data (if any).
 
-        _check_bee_compliance(job_id: str) -> AdminActionResult
-            Evaluates B-BBEE (Broad-Based Black Economic Empowerment) compliance for a given job's company.
+            _check_bee_compliance(job_id: str) -> AdminActionResult
+                Evaluates B-BBEE (Broad-Based Black Economic Empowerment) compliance for a given job's company.
 
-            Args:
-                job_id (str): ID of the job whose company's B-BBEE compliance is to be checked.
+                Args:
+                    job_id (str): ID of the job whose company's B-BBEE compliance is to be checked.
 
-            Returns:
-                AdminActionResult: Compliance data including black ownership, skills development, and status.
+                Returns:
+                    AdminActionResult: Compliance data including black ownership, skills development, and status.
 
-        _generate_employment_equity_report() -> AdminActionResult
-            Creates a snapshot report of gender and disability representation among job seekers.
+            _generate_employment_equity_report() -> AdminActionResult
+                Creates a snapshot report of gender and disability representation among job seekers.
 
-            Returns:
-                AdminActionResult: Equity statistics including gender breakdown and disability count.
+                Returns:
+                    AdminActionResult: Equity statistics including gender breakdown and disability count.
 
-        _generate_pay_equity_report(company_id: str) -> AdminActionResult
-            Aggregates salary ranges across different genders and experience levels within a company.
+            _generate_pay_equity_report(company_id: str) -> AdminActionResult
+                Aggregates salary ranges across different genders and experience levels within a company.
 
-            Args:
-                company_id (str): ID of the company to analyze.
+                Args:
+                    company_id (str): ID of the company to analyze.
 
-            Returns:
-                AdminActionResult: Grouped salary distribution report by demographic.
+                Returns:
+                    AdminActionResult: Grouped salary distribution report by demographic.
 
-        _analyze_application_biases(job_id: str) -> AdminActionResult
-            Detects potential bias in the job application process for a given job based on gender rejection rates.
+            _analyze_application_biases(job_id: str) -> AdminActionResult
+                Detects potential bias in the job application process for a given job based on gender rejection rates.
 
-            Args:
-                job_id (str): ID of the job to analyze.
+                Args:
+                    job_id (str): ID of the job to analyze.
 
-            Returns:
-                AdminActionResult: Breakdown of applications and rejection rates across demographics.
+                Returns:
+                    AdminActionResult: Breakdown of applications and rejection rates across demographics.
     """
 
     def __init__(self, session_factory):
@@ -617,7 +617,7 @@ class ComplianceService(AdminServiceInterface):
         }
 
         if report_type not in reports:
-            return AdminActionResult(False, f"Unknown report type: {report_type}")
+            return AdminActionResult(success=False, message=f"Unknown report type: {report_type}")
 
         return reports[report_type](**kwargs)
 
@@ -627,11 +627,11 @@ class ComplianceService(AdminServiceInterface):
             with self.session_factory() as session:
                 job = session.query(JobsORM).get(job_id)
                 if not job:
-                    return AdminActionResult(False, "Job not found")
+                    return AdminActionResult(success=False, message="Job not found")
 
                 company = session.query(CompanyORM).get(job.company_id)
                 if not company:
-                    return AdminActionResult(False, "Company not found")
+                    return AdminActionResult(success=False, message="Company not found")
 
                 compliance_data = {
                     'black_ownership': company.black_ownership_percent,
@@ -639,9 +639,9 @@ class ComplianceService(AdminServiceInterface):
                     'compliance_status': 'compliant' if company.bbbee_level else 'non-compliant'
                 }
 
-                return AdminActionResult(True, "B-BBEE compliance check completed", compliance_data)
+                return AdminActionResult(success=True, message="B-BBEE compliance check completed", data=compliance_data)
         except Exception as e:
-            return AdminActionResult(False, f"Error checking B-BBEE compliance: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error checking B-BBEE compliance: {str(e)}")
 
     def _generate_employment_equity_report(self) -> AdminActionResult:
         """Generate EE report for regulatory compliance"""
@@ -691,9 +691,9 @@ class ComplianceService(AdminServiceInterface):
                     } for d in salary_data]
                 }
 
-                return AdminActionResult(True, "Pay equity report generated", report_data)
+                return AdminActionResult(success=True, message="Pay equity report generated", data=report_data)
         except Exception as e:
-            return AdminActionResult(False, f"Error generating pay equity report: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error generating pay equity report: {str(e)}")
 
     def _analyze_application_biases(self, job_id: str) -> AdminActionResult:
         """Detect potential discrimination patterns in hiring process"""
@@ -803,7 +803,7 @@ class AnalyticsService(AdminServiceInterface):
         }
 
         if metric_type not in metrics:
-            return AdminActionResult(False, f"Unknown metric type: {metric_type}")
+            return AdminActionResult(success=False, message=f"Unknown metric type: {metric_type}")
 
         # noinspection PyArgumentList
         return metrics[metric_type](**kwargs)
@@ -830,9 +830,9 @@ class AnalyticsService(AdminServiceInterface):
                     "generated_at": datetime.utcnow().isoformat()
                 }
 
-                return AdminActionResult(True, "System health report generated", health_data)
+                return AdminActionResult(success=True, message="System health report generated",data=health_data)
         except Exception as e:
-            return AdminActionResult(False, f"Error generating system health report: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error generating system health report: {str(e)}")
 
     def _analyze_platform_engagement(self) -> AdminActionResult:
         """Track key engagement metrics"""
@@ -847,12 +847,12 @@ class AnalyticsService(AdminServiceInterface):
                         "searches": session.query(func.count(UserSearchActivityORM.id)).scalar(),
                         "applications": session.query(func.count(JobApplicationORM.application_id)).scalar()
                     },
-                    "generated_at": datetime.utcnow().isoformat()
+                    "generated_at": datetime.now(timezone.utc).isoformat()
                 }
 
-                return AdminActionResult(True, "Platform engagement analysis completed", engagement_data)
+                return AdminActionResult(success=True, message="Platform engagement analysis completed",data=engagement_data)
         except Exception as e:
-            return AdminActionResult(False, f"Error analyzing platform engagement: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error analyzing platform engagement: {str(e)}")
 
     def _get_job_audit_log(self, job_id: str) -> AdminActionResult:
         """Get complete modification history for a job"""
@@ -870,9 +870,9 @@ class AnalyticsService(AdminServiceInterface):
                     } for v in versions]
                 }
 
-                return AdminActionResult(True, "Job audit log retrieved", audit_data)
+                return AdminActionResult(success=True, message="Job audit log retrieved", data=audit_data)
         except Exception as e:
-            return AdminActionResult(False, f"Error retrieving audit log: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error retrieving audit log: {str(e)}")
 
     @staticmethod
     def _calculate_retention(session):
@@ -960,7 +960,7 @@ class SecurityService(AdminServiceInterface):
         self.company_controller = get_controller('company')
         self.users_controller = get_controller('users')
         self.jobseekers_controller = get_controller('job_seeker_profile')
-        self.logger = get_service("logger")(self.__class__.__name__)
+        self.logger = get_service("logger")()(self.__class__.__name__)
 
     async def execute(self, security_event: str, **kwargs) -> AdminActionResult:
         """Execute analytics operations"""
@@ -1333,10 +1333,10 @@ class AdminController(Controllers):
                     "requested_at": job.approval_request.requested_at.isoformat() if job.approval_request.requested_at else None
                 } for job in pending_jobs]
 
-                return AdminActionResult(True, f"Found {len(pending_jobs)} pending approvals",
-                                         {"pending_jobs": pending_data})
+                return AdminActionResult(success=True, message=f"Found {len(pending_jobs)} pending approvals",
+                                         data={"pending_jobs": pending_data})
         except Exception as e:
-            return AdminActionResult(False, f"Error retrieving pending approvals: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error retrieving pending approvals: {str(e)}")
 
     # Compliance Methods
     @error_handler
@@ -1433,12 +1433,12 @@ class AdminController(Controllers):
                     "profile": profile.to_dict() if profile else {},
                     "search_activities": [a.to_dict() for a in activities],
                     "applications": [a.to_dict() for a in applications],
-                    "exported_at": datetime.utcnow().isoformat()
+                    "exported_at": datetime.now(timezone.utc).isoformat()
                 }
 
-                return AdminActionResult(True, "User data exported successfully", export_data)
+                return AdminActionResult(success=True, message="User data exported successfully", data=export_data)
         except Exception as e:
-            return AdminActionResult(False, f"Error exporting user data: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error exporting user data: {str(e)}")
 
     @error_handler
     def export_company_data(self, company_id: str) -> AdminActionResult:
@@ -1461,7 +1461,7 @@ class AdminController(Controllers):
                 unverified_companies = session.query(CompanyORM).filter(
                     or_(
                         CompanyORM.is_verified == False,
-                        CompanyORM.id.in_(
+                        CompanyORM.company_id.in_(
                             session.query(JobsORM.company_id)
                             .join(JobApprovalRequestORM)
                             .filter(JobApprovalRequestORM.status == JobApprovalStatusEnum.FLAGGED)
@@ -1515,8 +1515,8 @@ class AdminController(Controllers):
             }
             try:
                 with self.get_session() as session:
-                    company_stats["total"] = session.query(func.count(CompanyORM.id)).scalar()
-                    company_stats["verified"] = session.query(func.count(CompanyORM.id)).filter_by(verified=True).scalar()
+                    company_stats["total"] = session.query(func.count(CompanyORM.company_id)).scalar()
+                    company_stats["verified"] = session.query(func.count(CompanyORM.company_id)).filter_by(verified=True).scalar()
             except Exception:
                 pass
 
@@ -1545,9 +1545,9 @@ class AdminController(Controllers):
                 "application_stats": application_stats,
                 "system_health": system_health,
                 "engagement": engagement,
-                "generated_at": datetime.utcnow().isoformat(),
+                "generated_at": datetime.now(timezone.utc).isoformat(),
             }
-            return AdminActionResult(True, "Admin dashboard data loaded", dashboard_data)
+            return AdminActionResult(success=True, message="Admin dashboard data loaded", data=dashboard_data)
         except Exception as e:
-            return AdminActionResult(False, f"Error loading dashboard data: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error loading dashboard data: {str(e)}")
 

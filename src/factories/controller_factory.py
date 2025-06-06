@@ -123,7 +123,7 @@ class ControllerFactory:
         return self._get_controller('employee_agents', EmployeeAgentsController)
     def get_admin_controller(self) -> AdminController:
         """Get AdminController instance"""
-        return self._get_controller('admin', AdminController)
+        return self._get_controller('admin_controller', AdminController)
 
     def get_user_engagement_controller(self) -> UserEngagementController:
         """
