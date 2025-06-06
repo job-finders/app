@@ -1,6 +1,8 @@
 # src/factories/service_factory.py
 from typing import Dict, Any
 
+from services.hashnode.hashnode_agemt_interface import HashnodeAgentCommandRegistry
+from services.hashnode.hashnode_client import HashnodeService
 from src.services.ip_address_service import get_ip_address
 from src.logger import init_logger
 from src.emailer import SendMail
@@ -69,6 +71,23 @@ class ServiceFactory:
         if "logger" not in self._services:
             self._services["logger"] = init_logger
         return self._services['logger']
+
+    def get_hashnode_service(self) -> HashnodeService:
+        """Get HashnodeService instance"""
+        if 'hashnode_service' not in self._services:
+            token = self.app.config.get("HASHNODE_API_TOKEN")
+            if not token:
+                raise ValueError("HASHNODE_API_TOKEN not set in config")
+            self._services['hashnode_service'] = HashnodeService(token)
+        return self._services['hashnode_service']
+
+    def get_hashnode_command_registry(self) -> HashnodeAgentCommandRegistry:
+        """Get HashnodeAgentCommandRegistry for AI agent access"""
+        if 'hashnode_command_registry' not in self._services:
+            service = self.get_hashnode_service()
+            self._services['hashnode_command_registry'] = HashnodeAgentCommandRegistry(service)
+        return self._services['hashnode_command_registry']
+
     def clear_cache(self):
         """Clear all cached service instances"""
         self._services.clear()

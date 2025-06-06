@@ -1,7 +1,7 @@
 # agents/blog/post_submitter_agent.py
 from src.agents.base import BaseAgent
-from src.services.hashnode_client import HashnodeClient
-from pydantic import BaseModel
+from services.hashnode.hashnode_client import HashnodeClient
+
 
 class BlogPostSubmitterAgent(BaseAgent):
     async def run(self, article):

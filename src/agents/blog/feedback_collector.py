@@ -1,6 +1,6 @@
 # agents/blog/feedback_collector.py
 from src.agents.base import BaseAgent
-from src.services.hashnode_client import HashnodeClient
+from services.hashnode.hashnode_client import HashnodeClient
 
 class FeedbackCollector(BaseAgent):
     async def run(self):

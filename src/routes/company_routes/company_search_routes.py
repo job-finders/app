@@ -105,6 +105,9 @@ async def get_employer_details(user: User):
         company_id = _employee_profile.company_id
         employee_list: list[Employer] = await company_controller.get_employees_by_company_id(company_id=company_id)
         #TODO - need to finalize this route
+        context = dict(current_user=user, employee_list=employee_list)
+        return render_template('company/company_employees.html', **context)
+
     except Exception as e:
         init_logger().error(f"Error fetching employer details: {e}")
         return None

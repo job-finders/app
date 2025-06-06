@@ -1,6 +1,6 @@
 # agents/blog/reader_agent.py
 from src.agents.base import BaseAgent
-from src.services.hashnode_client import HashnodeClient
+from services.hashnode.hashnode_client import HashnodeClient
 
 class BlogPostReaderAgent(BaseAgent):
     async def run(self):
