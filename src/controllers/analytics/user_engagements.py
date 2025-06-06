@@ -41,7 +41,7 @@ class UserEngagementController(Controllers):
         :param email:
         :return:
         """
-        await get_service('send_mail').send_mail_resend(email=email)
+        await get_service('send_mail')().send_mail_resend(email=email)
 
     async def _compose_matching_jobs_email_body(self, matching_jobs: list[Job], profile: JobSeekerProfile) -> str:
         """
@@ -74,6 +74,7 @@ class UserEngagementController(Controllers):
     @error_handler
     async def send_job_alert_notifications(self) -> dict:
         """
+        # TODO - remove from here Moved to Services
         Send personalized job alerts in batches of 50
         Returns status dictionary with success/failure counts
         """

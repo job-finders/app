@@ -291,6 +291,7 @@ class CompanyUpdate(BaseModel):
     twitter_handle: Optional[str] = None
     logo_url: Optional[HttpUrl] = None
     is_public: Optional[bool] = None
+    ip_address: Optional[None] = None
 
     # # Reuse validators from main Company model
     # _validate_phone = field_validator("phone_number", mode="before")(Company.__fields__["phone_number"].validate)

@@ -88,6 +88,8 @@ class CompanyController(Controllers):
             if company_orm:
                 raise ValueError(f"Company with this name already exists {_name.title()}")
 
+            # Updating IP Address
+            company_data.ip_address = get_service('ip_address')()
             session.add(CompanyORM(**company_data.model_dump()))
 
             return company_data
@@ -122,6 +124,10 @@ class CompanyController(Controllers):
             if session.query(EmployerORM).filter_by(user_uid=employer_data.user_uid).first():
                 raise ValueError("Employer profile exists for this user")
                 
+            # Updating IP Address
+            _ip_address = get_service('ip_address')()
+            employer_data.ip_address = _ip_address
+            self.logger.info(f"Retrieved IP Address : {_ip_address}")
             # Dump the Employer Model without the relationships
             employer_orm = EmployerORM(**employer_data.model_dump(exclude={'company', 'saved_candidates'}))
             if not employer_orm:
@@ -325,6 +331,10 @@ class CompanyController(Controllers):
             if not employer_orm:
                 return None
 
+            # Updating IP Address
+            _ip_address = get_service('ip_address')()
+            employer_profile.ip_address = _ip_address
+            self.logger.info(f"Retrieved IP Address : {_ip_address}")
             # Convert Pydantic model to dict, excluding relationships
             exclude_fields = {"company", "saved_candidates", "created_at", "updated_at"}
             update_data = employer_profile.model_dump(exclude=exclude_fields)
@@ -362,6 +372,13 @@ class CompanyController(Controllers):
             if not company_orm:
                 raise ValueError("Company not found")
 
+
+            if not update_data.ip_address:
+                # Updating IP Address
+                _ip_address = get_service('ip_address')()
+                self.logger.info(f"Retrieved IP Address : {_ip_address}")
+                update_data.ip_address = _ip_address
+
             # Convert Pydantic model to dict, excluding unset fields
             update_dict = update_data.model_dump(exclude_unset=True)
 
@@ -370,6 +387,7 @@ class CompanyController(Controllers):
                 if hasattr(company_orm, key):
                     if value:
                         setattr(company_orm, key, value)
+
 
             # Update timestamp
             company_orm.updated_at = func.now()

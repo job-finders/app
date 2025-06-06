@@ -96,6 +96,7 @@ class CompanyORM(Base):
             "is_verified": self.is_verified,
             "time_verification_process_started": self.time_verification_process_started.isoformat() if self.time_verification_process_started else None,
             "verification_status": self.verification_status,
+            "ip_address": self.ip_address,
 
             "jobs": [job.to_dict(include_relationships=False) for job in self.jobs] if self.jobs and include_relationships else [],
             "saved_candidates": [candidate.to_dict(include_relationships=False) for candidate in self.saved_candidates] if include_relationships else [],

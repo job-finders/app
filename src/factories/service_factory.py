@@ -1,6 +1,7 @@
 # src/factories/service_factory.py
 from typing import Dict, Any
 
+from src.services.ip_address_service import get_ip_address
 from src.logger import init_logger
 from src.emailer import SendMail
 from src.controllers.encryptor import Encryptor
@@ -8,15 +9,6 @@ from src.scrappers import JunctionScraper
 from src.controllers.notifications import NotificationsController
 from src.utils.file_uploads import CompanyDocumentsService
 
-def get_ip_address() -> str:
-    """insert a way to obtain the current ip location"""
-    from src.routes.utils import get_client_ip
-    from flask import request, current_app
-    try:
-        with current_app.app_context():
-            return get_client_ip(_request=request)
-    except Exception as e:
-        return "0.0.0.0"
 
 
 class ServiceFactory:
@@ -66,12 +58,17 @@ class ServiceFactory:
         if "company_document_loader" not in self._services:
             self._services["company_document_loader"] = CompanyDocumentsService()
         return self._services["company_document_loader"]
+
     def get_ip_address(self):
+
         if "ip_address" not in self._services:
             self._services["ip_address"] = get_ip_address()
+        return self._services["ip_address"]
+
     def get_init_logger(self):
         if "logger" not in self._services:
             self._services["logger"] = init_logger
+        return self._services['logger']
     def clear_cache(self):
         """Clear all cached service instances"""
         self._services.clear()

@@ -124,10 +124,10 @@ class ControllerFactory:
     def get_admin_controller(self) -> AdminController:
         """Get AdminController instance"""
         return self._get_controller('admin', AdminController)
+
     def get_user_engagement_controller(self) -> UserEngagementController:
         """
             USer Engagement Controller
-
         :return:
         """
         return self._get_controller('user_engagement', UserEngagementController)
