@@ -284,41 +284,113 @@ class Job(BaseModel):
 
     @computed_field
     @property
-    def job_quality_score(self) -> float:
-        """Calculate overall job quality score (0-100)
-        Based on completeness, readability, and other quality indicators
+    def external_link_count(self) -> int:
         """
+        Count number of external links in job description.
+        Acceptable max = 1. More than 1 may be spammy.
+        """
+        if not self.description:
+            return 0
+
+        # Extract all anchor hrefs
+        hrefs = re.findall(r'<a\s+(?:[^>]*?\s+)?href=["\'](.*?)["\']', self.description, flags=re.IGNORECASE)
+
+        # Filter for external links (http/https and not internal/mailto)
+        external_links = [
+            url for url in hrefs
+            if url.startswith("http://") or url.startswith("https://")
+        ]
+
+        return len(external_links)
+
+    @computed_field
+    @property
+    def job_quality_score(self) -> float:
+        """
+        Calculate overall job quality score (0-100)
+        Based on completeness, readability, quality signals, and spam penalty.
+        """
+
         # Base score from completeness (0-70 points)
         completeness_score = (self.job_completeness_score / 10) * 70
 
         # Readability bonus (0-15 points)
         readability_score = 15 if self.readability_is_ok else 0
 
-        # Additional quality indicators (0-15 points)
+        # Quality indicators bonus (up to 15 points)
         quality_bonus = 0
-
-        # Well-structured description
         if self.description and len(self.description.split()) > 100:
             quality_bonus += 3
-
-        # Has company info
         if self.company:
             quality_bonus += 3
-
-        # Clear salary range
         if self.salary_min and self.salary_max:
             quality_bonus += 3
-
-        # Detailed requirements
         if len(self.required_skills) >= 3:
             quality_bonus += 3
-
-        # Professional application process
         if self.application_url or "email" in self.application_instructions.lower():
             quality_bonus += 3
 
-        total_score = completeness_score + readability_score + quality_bonus
-        return round(min(total_score, 100), 1)
+        # --- SPAM PENALTY ---
+        spam_score = self.spam_severity_score if hasattr(self, "spam_severity_score") else 0
+        spam_penalty = spam_score * 3  # Max 30 points off
+
+        total_score = completeness_score + readability_score + quality_bonus - spam_penalty
+
+        return round(max(min(total_score, 100), 0), 1)
+
+    @computed_field
+    @property
+    def spam_severity_score(self):
+        spam_keywords = [
+            "work from home",
+            "quick money",
+            "no experience needed",
+            "earn fast",
+            "make money online",
+            "click here",
+            "limited time offer",
+            "guaranteed income",
+            "get rich quick",
+        ]
+
+        # Combine into single searchable string
+        content = " ".join(self.job_keyword_listing)
+
+        # Count number of matches
+        spam_count = sum(content.count(keyword) for keyword in spam_keywords)
+
+        # Convert spam_count to severity score (scaled max at 10)
+        return min(int(spam_count * 1.5), 10)
+
+    @computed_field
+    @property
+    def is_spammy_job(self) -> bool:
+        """
+        Returns True if the spam severity score is 6 or higher.
+        This is based on the number and repetition of known spam keywords.
+        """
+
+        return self.spam_severity_score >= 6
+
+    @computed_field
+    @property
+    def job_keyword_listing(self) -> list[str]:
+        """
+        Returns a list of keywords (including duplicates) from important job fields.
+        Includes required_skills, preferred_skills, and words from the description.
+        """
+        keywords = []
+        # Add required and preferred skills
+        if self.required_skills:
+            keywords.extend(self.required_skills)
+        if self.preferred_skills:
+            keywords.extend(self.preferred_skills)
+        # Add words from description (split on non-word chars)
+        if self.description:
+            keywords.extend(re.findall(r"\w+", self.description.lower()))
+        if self.title:
+            keywords.extend(re.findall(r"\w+", self.title.lower()))
+        return keywords
 
     @computed_field
     @property

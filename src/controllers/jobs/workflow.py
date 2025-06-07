@@ -1,6 +1,7 @@
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 import requests
 from Levenshtein import ratio as levenstein_ratio
@@ -67,17 +68,21 @@ class JobsWorkflowController(Controllers):
                                                  reviewer_id=reviewer_id)
 
     @error_handler
-    async def activate_job_listing(self, job_id: str, reviewer_id: str) -> Job | None:
+    async def activate_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
         """Activate job listing by resetting expiration date"""
         return await self.update_approval_status(job_id=job_id,
                                                  decision=JobStatusEnum.ACTIVE.value,
-                                                 reviewer_id=reviewer_id)
+                                                 reviewer_id=reviewer_id,
+                                                 validation_result=validation_result
+
+                                                 )
 
     @error_handler
-    async def reject_job_listing(self, job_id: str, reviewer_id: str) -> Job | None:
+    async def reject_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
         return await self.update_approval_status(job_id=job_id,
                                                  decision=JobApprovalStatusEnum.REJECTED.value,
-                                                 reviewer_id=reviewer_id)
+                                                 reviewer_id=reviewer_id,
+                                                 validation_result=validation_result)
 
     @error_handler
     async def _create_job(self, job: Job) -> Job | None:
@@ -117,7 +122,7 @@ class JobsWorkflowController(Controllers):
             'quality_metrics': {
                 'completeness_score': job.job_completeness_score,
                 'readability_ok': job.readability_is_ok,
-                'overall_quality': job.job_quality_score()
+                'overall_quality': job.job_quality_score
             }
         }
 
@@ -138,10 +143,11 @@ class JobsWorkflowController(Controllers):
             validation_result['warnings'].append(
                 "Job description may be difficult to read. Consider simplifying the language")
 
-        if job.job_quality_score() < 50:
+        if job.job_quality_score < 50:
             validation_result['requires_approval'] = True
             validation_result['errors'].append("Job quality score too low - requires manual review")
-        elif job.job_quality_score() < 70:
+
+        elif job.job_quality_score < 70:
             validation_result['warnings'].append("Low quality score may reduce job visibility")
 
         # Salary validation
@@ -208,6 +214,38 @@ class JobsWorkflowController(Controllers):
             job = await self.update_approval_status(job_id=draft_orm.job_id, status=JobApprovalStatusEnum.APPROVED.value)
 
         return job
+
+    @error_handler
+    def flag_job_post(self, job_id: str, reason: str, reporter_id: str) -> Job | None:
+        """
+            Could be triggered by Admin - or System.
+        :param job_id:
+        :param reason:
+        :param reporter_id:
+        :return:
+        """
+        with self.get_session() as session:
+            job = session.query(JobsORM).get(job_id)
+            if not job:
+                return None
+            if not job.approval_request:
+                request = JobApprovalRequestORM(
+                    requested_by=reporter_id,
+                    job_id=job_id,
+                    status=JobApprovalStatusEnum.FLAGGED.value,
+                    feedback=reason
+                )
+                session.add(request)
+            else:
+                job.approval_request.status = JobApprovalStatusEnum.FLAGGED.value
+                job.approval_request.review_notes = reason
+
+            session.commit()
+            return job
+
+
+
+
 
     @error_handler
     async def save_job_for_user(self, user_id: str, job_id: str) -> None|SavedJob :
@@ -1294,17 +1332,61 @@ class JobsWorkflowController(Controllers):
             ).all()
             return [Job(**job.to_dict()) for job in jobs]
 
+    @staticmethod
+    def format_validation_feedback(validation_result: dict) -> str:
+        """Convert validation results into human-readable feedback string."""
+        lines = []
+
+        if not validation_result:
+            return "No validation feedback available."
+
+        if validation_result.get("errors"):
+            lines.append("❌ Errors:")
+            lines.extend(f" - {err}" for err in validation_result["errors"])
+            lines.append("")  # spacer
+
+        if validation_result.get("warnings"):
+            lines.append("⚠️ Warnings:")
+            lines.extend(f" - {warn}" for warn in validation_result["warnings"])
+            lines.append("")
+
+        if validation_result.get("quality_metrics"):
+            qm = validation_result["quality_metrics"]
+            lines.append("📊 Quality Metrics:")
+            lines.append(f" - Completeness Score: {qm.get('completeness_score', 'N/A')}/10")
+            lines.append(f" - Readability OK: {'Yes' if qm.get('readability_ok') else 'No'}")
+            lines.append(f" - Overall Quality Score: {qm.get('overall_quality', 'N/A')}/100")
+            lines.append("")
+
+        return "\n".join(lines).strip()
 
     @error_handler
-    async def update_approval_status(self, job_id: str, decision: str, reviewer_id: str) -> Job:
-        """Update job approval status (Admin only)"""
+    async def update_approval_status(self,  job_id: str, decision: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job:
+        """Update job approval status (Admin only)
+
+        validation_result = {
+            'valid': True,
+            'errors': [],
+            'warnings': [],
+            'requires_approval': False,
+            'quality_metrics': {
+                'completeness_score': job.job_completeness_score,
+                'readability_ok': job.readability_is_ok,
+                'overall_quality': job.job_quality_score
+            }
+        }
+        """
         with self.get_session() as session:
             job = session.query(JobsORM).get(job_id)
             request = session.query(JobApprovalRequestORM).filter_by(job_id=job_id).first()
 
+            if validation_result:
+                request.feedback = self.format_validation_feedback(validation_result)
+
             if decision.lower() == JobApprovalStatusEnum.APPROVED.value:
                 job.status = JobStatusEnum.ACTIVE.value
                 request.status = JobApprovalStatusEnum.APPROVED.value
+
 
             elif decision.lower() == JobApprovalStatusEnum.REJECTED.value:
                 job.status = JobStatusEnum.ARCHIVED.value

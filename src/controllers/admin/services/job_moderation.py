@@ -156,12 +156,12 @@ class JobModerationService(AdminServiceInterface):
                 validation_result = await self.jobs_workflow.validate_job_post(job=job)
 
                 if validation_result.get('valid', False):
-                    approved_job = await self.jobs_workflow.activate_job_listing(
+                    approved_job = await self.jobs_workflow.activate_job_listing(validation_result=validation_result,
                         job_id=job.job_id, reviewer_id=self.system_admin.uid
                     )
                     results.append(approved_job)
                 else:
-                    rejected_job = await self.jobs_workflow.reject_job_listing(
+                    rejected_job = await self.jobs_workflow.reject_job_listing(validation_result=validation_result,
                         job_id=job.job_id, reviewer=self.system_admin.uid
                     )
                     results.append(rejected_job)
@@ -175,28 +175,75 @@ class JobModerationService(AdminServiceInterface):
         except Exception as e:
             return AdminActionResult(success=False, message=f"Error approving jobs: {str(e)}")
 
-    def _flag_job(self, job_id: str, reason: str, reporter_id: str) -> AdminActionResult:
-        """Flag a job for admin review"""
+    def flag_jobs(self) -> AdminActionResult:
+        """Flag a job for admin review based on multiple heuristics"""
         try:
+
             with self.session_factory() as session:
-                job = session.query(JobsORM).get(job_id)
+                job = session.query(JobsORM).filter_by(job_id=job_id).first()
                 if not job:
                     return AdminActionResult(success=False, message="Job not found")
 
-                if not job.approval_request:
-                    request = JobApprovalRequestORM(
-                        requested_by=reporter_id,
-                        job_id=job_id,
-                        status=JobApprovalStatusEnum.FLAGGED.value,
-                        feedback=reason
-                    )
-                    session.add(request)
-                else:
-                    job.approval_request.status = JobApprovalStatusEnum.FLAGGED.value
-                    job.approval_request.review_notes = reason
+                company = session.query(CompanyORM).filter_by(company_id=job.company_id).first()
+                spam_keywords = ["work from home", "quick money", "no experience needed", "earn fast"]
+                suspicious = False
+                reasons = []
 
-                session.commit()
-                return AdminActionResult(success=True, message="Job flagged successfully", data={"job_id": job_id})
+                # Spam keyword detection
+                if any(kw in (job.title or "").lower() or kw in (job.description or "").lower() for kw in spam_keywords):
+                    suspicious = True
+                    reasons.append("Contains spam keywords")
+
+                # Unverified company
+                if company and not company.is_verified:
+                    suspicious = True
+                    reasons.append("Unverified company")
+
+                # Unrealistic salary (example: > 10x median, or < minimum wage)
+                if hasattr(job, "salary") and (job.salary and (job.salary > 1_000_000 or job.salary < 1000)):
+                    suspicious = True
+                    reasons.append("Unrealistic salary")
+
+                # Missing required fields
+                if not job.description or not job.location:
+                    suspicious = True
+                    reasons.append("Missing required fields")
+
+                # Duplicate postings (using workflow controller)
+                if hasattr(self.jobs_workflow, "is_duplicate_posting"):
+                    if self.jobs_workflow.is_duplicate_posting(job):
+                        suspicious = True
+                        reasons.append("Duplicate posting")
+
+                # Too many external links
+                if job.description and job.description.count("http") > 3:
+                    suspicious = True
+                    reasons.append("Too many external links")
+
+                # Contact info in description
+                import re
+                if job.description and (re.search(r"\b\d{10,}\b", job.description) or re.search(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", job.description)):
+                    suspicious = True
+                    reasons.append("Contact info in description")
+
+                # New employer with many postings
+                if company and hasattr(self.jobs_workflow, "count_company_jobs"):
+                    if self.jobs_workflow.count_company_jobs(company.company_id) > 10 and not company.is_verified:
+                        suspicious = True
+                        reasons.append("New employer with many postings")
+
+                if suspicious:
+                    # Optionally, create a flag record or update job status
+                    if hasattr(self.jobs_workflow, "flag_job_listing"):
+                        self.jobs_workflow.flag_job_listing(job_id=job_id, reason="; ".join(reasons), reporter_id=reporter_id)
+                    return AdminActionResult(
+                        success=True,
+                        message="Job flagged for review: " + "; ".join(reasons),
+                        data={"job_id": job_id, "reasons": reasons}
+                    )
+                else:
+                    return AdminActionResult(success=False, message="No suspicious patterns detected", data={"job_id": job_id})
+
         except Exception as e:
             return AdminActionResult(success=False, message=f"Error flagging job: {str(e)}")
 
