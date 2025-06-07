@@ -1,536 +1,34 @@
 import asyncio
-from abc import ABC, abstractmethod
 from datetime import datetime, timezone, timedelta
-from enum import Enum
 from functools import partial
-from typing import List, Dict, Optional
+from typing import List
 
 from flask import Flask, render_template
-from pydantic import BaseModel, Field
 from sqlalchemy import func, case, or_, text
 
+from src.controllers.admin.services.job_moderation import JobModerationService
+from src.controllers.admin.services.job_recommendations import JobRecommendationService
+from src.controllers.admin.interfaces import AdminServiceInterface, AdminActionResult, JobRecommenderResult
 from src.controllers.admin.security_rules import JobSeekerRuleEngine, EmployerRuleEngine
 from src.controllers.controller import error_handler, Controllers
 from src.database.constants import utc_time
 from src.database.models.admin_models import FlaggedUser, AdminModel
 from src.database.models.employer_models import Employer
-from src.database.models.jobs_model import Job, Company, JobApprovalStatusEnum, JobStatusEnum
+from src.database.models.jobs_model import Job, Company, JobApprovalStatusEnum
 from src.database.models.jobseeker_profile import JobSeekerProfile
-from src.database.models.resume import JobSeekerCV
 from src.database.models.users import RolesEnum, User
 from src.database.sql.admin_sql import FlaggedUserORM, AdminRecommendationORM, AdminORM
 from src.database.sql.analytics import UserSearchActivityORM
 from src.database.sql.company import CompanyORM
-from src.database.sql.jobs_sql import JobsORM, JobApprovalRequestORM, JobVersionHistoryORM, JobApplicationORM, \
-    JobCategoryORM
+from src.database.sql.jobs_sql import JobsORM, JobApprovalRequestORM, JobVersionHistoryORM, JobApplicationORM
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.users import UserORM
 from src.emailer import EmailModel
 from src.utils.route_helpers import get_controller, get_service
 
 
-class JobRecommenderResult(BaseModel):
-    profile : JobSeekerProfile
-    recommended_jobs: List[Job]
-
-class AdminPermissionLevel(Enum):
-    """
-    Enum representing different levels of administrative access.
-
-    These levels are used to control access to administrative features across the system,
-    allowing fine-grained role-based permission enforcement.
-
-    Members:
-        VIEWER (str): Read-only access, typically used for monitoring or auditing.
-        MODERATOR (str): Can perform moderation tasks such as reviewing flagged content.
-        ADMIN (str): Has broader access, including managing users and content.
-        SUPER_ADMIN (str): Full access, including system-level configurations and overrides.
-    """
-    VIEWER = "viewer"
-    MODERATOR = "moderator"
-    ADMIN = "admin"
-    SUPER_ADMIN = "super_admin"
-
-
-class AdminActionResult(BaseModel):
-    """
-    Standardized structure for returning results from admin service actions.
-
-    This object is returned by all admin services and encapsulates the outcome of
-    an operation, including whether it succeeded, a user-readable message, and
-    optionally any resulting data or error details.
-
-    Attributes:
-        success (bool): Indicates whether the operation was successful.
-        message (str): A human-readable message describing the result.
-        data (Optional[Dict]): Additional payload data from the action (e.g., a report or entity info).
-        errors (Optional[List[str]]): A list of errors encountered during the operation, if any.
-    """
-    success: bool
-    message: str
-    data: Optional[Dict] = None
-    list_data: Optional[list[JobRecommenderResult]] = Field(default_factory=list)
-    errors: Optional[List[str]] = None
-
-
-class AdminServiceInterface(ABC):
-    """
-    Abstract base class for defining administrative service interfaces.
-
-    This interface enforces a common structure for all admin-related services,
-    such as compliance checks, moderation workflows, and reporting utilities.
-
-    Subclasses must implement the `execute()` method to define the service's
-    core behavior, typically triggered via an admin command or UI action.
-
-    Expected Usage:
-        This interface should be inherited by concrete service classes like:
-            - ComplianceService
-            - JobModerationService
-            - UserAuditTrailService
-        These services should encapsulate admin operations that involve complex
-        business logic, data aggregation, or multi-step workflows.
-
-    Dependencies:
-        - AdminActionResult: A standardized result wrapper used by all admin services
-          to return success/failure status, messages, and optional payloads.
-
-    Side Effects:
-        - Implementation-dependent (e.g., may include DB writes, external API calls, or
-          real-time notifications, depending on subclass implementation).
-
-    Methods:
-        execute(*args, **kwargs)
-            Abstract method to be implemented by subclasses.
-
-            Args:
-                *args: Positional arguments specific to the implementing service.
-                **kwargs: Keyword arguments required for execution logic.
-
-            Returns:
-                AdminActionResult: Structured result indicating the outcome of the operation.
-
-            Raises:
-                NotImplementedError: If called directly from the interface without subclass implementation.
-    """
-
-    @abstractmethod
-    def execute(self, *args, **kwargs) -> AdminActionResult:
-        """
-        Execute the main logic of the admin service.
-
-        :param args: Variable positional arguments specific to the implementing class.
-        :param kwargs: Keyword arguments required for executing the admin operation.
-        :return: AdminActionResult containing success status, message, and optional data.
-        :rtype: AdminActionResult
-        :raises NotImplementedError: If the method is not implemented by a subclass.
-        """
-        pass
-
-
-class JobRecommendationService(AdminServiceInterface):
-    """
-
-    """
-    def __init__(self, session_factory):
-        self.session_factory = session_factory
-        self.job_seekers_profile_controller = get_controller('job_seeker_profile')
-        self.users_controller = get_controller('users')
-        self.resume_controller = get_controller('resume')
-        self.logger = get_service('logger')()(self.__class__.__name__)
-
-
-    def execute(self, action: str, **kwargs) -> AdminActionResult:
-        """Execute job moderation action"""
-        actions = {
-            'recommend_jobs': self.all_jobseekers_recommendations_executor,
-        }
-
-        if action not in actions:
-            return AdminActionResult(success=False, message=f"Unknown action: {action}")
-
-        # noinspection PyTypeChecker
-        return actions[action](**kwargs)
-
-
-
-    @error_handler
-    async def all_jobseekers_recommendations_executor(self) -> AdminActionResult:
-        """
-        :return:
-        """
-        job_seeker_profiles: list[JobSeekerProfile] = self.job_seekers_profile_controller.list_profiles_by_role(role=RolesEnum.JOBSEEKER.value)
-
-        profiles_we_can_send_recommendations = [profile for profile in job_seeker_profiles if profile.can_send_job_recommendations]
-
-        errors = []
-
-        success : list[JobRecommenderResult] = []
-
-        for i in range(0, len(profiles_we_can_send_recommendations), 50):
-            batch = profiles_we_can_send_recommendations[i:i + 50]
-            tasks = [self.get_personalized_job_recommendations(profile=profile) for profile in batch]
-            batch_results: list[Exception | JobRecommenderResult] = await asyncio.gather(*tasks, return_exceptions=True)
-            for res in batch_results:
-                if isinstance(res, Exception):
-                    errors.append(res)
-                else:
-                    success.append(res)
-
-
-        for error in errors:
-            self.logger.error(error)
-
-        # returns a list of Profiles and Recommended Jobs so the Admin Controller can send the Emails.
-        return AdminActionResult(success=len(success) > 1,message="Job Recommendations Processed", list_data=success)
-
-
-    @error_handler
-    async def get_personalized_job_recommendations(self, profile: JobSeekerProfile) -> JobRecommenderResult:
-        """
-            For each Profile this Method Returns Jobs Of Interest.
-        :param profile:
-        :return:
-        """
-
-        resume = await self.resume_controller.get_primary_resume(user_id=profile.user_uid)
-        if not resume:
-            return []
-
-        with self.session_factory() as session:
-
-            query = self._get_base_job_query(session=session)
-
-            applied_job_ids = self._get_applied_job_ids(session=session, user_id=profile.user_uid)
-
-            if applied_job_ids:
-                query = query.filter(JobsORM.job_id.notin_(applied_job_ids))
-
-            self._apply_user_preferences(query=query, profile=profile, resume=resume)
-
-            similar_titles = self._get_similar_job_titles(session, applied_job_ids)
-            if similar_titles:
-                self._apply_similar_titles_filter(query, similar_titles)
-
-            results = query.order_by(
-                JobsORM.posted_at.desc(),
-                JobsORM.is_featured.desc(),
-                JobsORM.application_count.desc()
-            ).limit(100).all()
-
-            _result_dict = JobRecommenderResult(profile=profile, recommended_jobs=[Job(**job.to_dict()) for job in results])
-            return _result_dict
-
-    @error_handler
-    def _get_base_job_query(self, session):
-        return session.query(JobsORM).filter(
-            JobsORM.status == JobStatusEnum.ACTIVE.value,
-            JobsORM.expires_at > datetime.now(timezone.utc)
-        )
-
-    @error_handler
-    def _get_applied_job_ids(self, session, user_id: str) -> list[str]:
-        applied_jobs = session.query(JobApplicationORM).filter_by(user_id=user_id).all()
-        return [job.job_id for job in applied_jobs if job]
-
-    @error_handler
-    def _get_similar_job_titles(self, session, applied_job_ids: list[str]) -> list[str]:
-        if not applied_job_ids:
-            return []
-
-        applied_jobs = session.query(JobsORM).filter(JobsORM.job_id.in_(applied_job_ids)).all()
-        titles = [job.title for job in applied_jobs if job.title]
-        return list(set(titles))  # Deduplicate
-
-    @error_handler
-    def _apply_user_preferences(self, query, profile: JobSeekerProfile, resume: JobSeekerCV):
-        """
-            Apply User Preferences takes Profiles and Resumes Into Account in order to match Jobs.
-        :param query:
-        :param profile:
-        :param resume:
-        :return:
-        """
-
-        if profile.job_titles_of_interest:
-            title_conds = [JobsORM.title.ilike(f"%{title}%") for title in profile.job_titles_of_interest]
-            query = query.filter(or_(*title_conds))
-
-        if profile.industries_of_interest:
-            # Supports Partial Matches Between Industries and Categories
-            filters = []
-            for value in profile.industries_of_interest:
-                filters.append(JobCategoryORM.name.ilike(f"%{value}%"))
-                filters.append(JobCategoryORM.slug.ilike(f"%{value}%"))
-            query = query.join(JobsORM.category).filter(or_(*filters))
-
-        location_conds = []
-        if profile.location:
-            location_conds.extend([
-                JobsORM.city.ilike(f"%{profile.location}%"),
-                JobsORM.province.ilike(f"%{profile.location}%")
-            ])
-        for loc in profile.locations_of_interest or []:
-            location_conds.extend([
-                JobsORM.city.ilike(f"%{loc}%"),
-                JobsORM.province.ilike(f"%{loc}%")
-            ])
-        # noinspection DuplicatedCode
-        if location_conds:
-            query = query.filter(or_(*location_conds))
-
-        if profile.remote_preference:
-            query = query.filter(JobsORM.remote_policy.in_(["REMOTE", "HYBRID"]))
-
-        if resume.skills:
-            skill_conds = [cond for skill in resume.skills for cond in [
-                JobsORM.required_skills.contains([skill]),JobsORM.preferred_skills.contains([skill])]]
-
-            query = query.filter(or_(*skill_conds))
-
-        if profile.expected_salary:
-            query = query.filter(
-                JobsORM.salary_min >= profile.expected_salary * 0.7,
-                JobsORM.salary_max <= profile.expected_salary * 1.3
-            )
-
-    @error_handler
-    def _apply_similar_titles_filter(self, query, similar_titles: list[str]):
-        if similar_titles:
-            title_conds = [JobsORM.title.ilike(f"%{title}%") for title in similar_titles]
-            query = query.filter(or_(*title_conds))
-
-
-class JobModerationService(AdminServiceInterface):
-    """
-    Service class responsible for job moderation workflows within the admin interface.
-
-    This service allows administrators to manage job postings through actions such as
-    approving, rejecting, flagging, and bulk updating job statuses. It also provides
-    mechanisms to detect suspicious or anomalous job listings based on company verification
-    and known spam patterns.
-
-    Dependencies:
-        - session_factory (Callable): A function that returns a SQLAlchemy session context.
-        - Models:
-            - JobsORM
-            - CompanyORM
-            - JobApprovalRequestORM
-        - Enums:
-            - JobApprovalStatusEnum
-        - Response Wrapper:
-            - AdminActionResult
-
-    Side Effects:
-        - Writes to the database (status changes, audit trails).
-        - May modify or create job approval request records.
-        - No external API calls.
-
-    Methods:
-        __init__(session_factory)
-            Initializes the service with a SQLAlchemy session factory.
-
-        execute(action, **kwargs)
-            Dispatches the moderation action based on the provided string key.
-
-            Args:
-                action (str): Action to perform. Must be one of:
-                    - 'approve'
-                    - 'reject'
-                    - 'flag'
-                    - 'bulk_update'
-                    - 'detect_anomalies'
-                **kwargs: Additional arguments required by the specific action.
-
-            Returns:
-                AdminActionResult: Encapsulated result of the operation.
-
-        _approve_job(job_id, reviewer_id)
-            Approves a job that has been flagged or is pending review.
-
-            Args:
-                job_id (str): ID of the job to approve.
-                reviewer_id (str): Admin ID performing the approval.
-
-            Returns:
-                AdminActionResult: Result of the approval process.
-
-        _reject_job(job_id, reviewer_id, reason)
-            Rejects a job posting and provides a reason.
-
-            Args:
-                job_id (str): ID of the job to reject.
-                reviewer_id (str): Admin ID performing the rejection.
-                reason (str): Reason for rejecting the job.
-
-            Returns:
-                AdminActionResult: Result of the rejection process.
-
-        _flag_job(job_id, reason, reporter_id)
-            Flags a job for further review by administrators.
-
-            Args:
-                job_id (str): ID of the job to flag.
-                reason (str): Justification for the flag.
-                reporter_id (str): ID of the user/admin flagging the job.
-
-            Returns:
-                AdminActionResult: Result of the flagging operation.
-
-        _bulk_update_status(job_ids, new_status)
-            Updates the statuses of multiple jobs at once.
-
-            Args:
-                job_ids (List[str]): List of job IDs to update.
-                new_status (str): New status to apply. Must be one of:
-                    ['active', 'archived', 'pending_review']
-
-            Returns:
-                AdminActionResult: Summary of the bulk update operation.
-
-        _detect_anomalous_postings()
-            Identifies potentially suspicious job postings.
-
-            Returns:
-                AdminActionResult: A list of jobs flagged as anomalous based on spam keywords
-                or company verification status.
-    """
-
-    def __init__(self, session_factory):
-        self.session_factory = session_factory
-
-    def execute(self, action: str, **kwargs) -> AdminActionResult:
-        """Execute job moderation action"""
-        actions = {
-            'approve': self._approve_job,
-            'reject': self._reject_job,
-            'flag': self._flag_job,
-            'bulk_update': self._bulk_update_status,
-            'detect_anomalies': self._detect_anomalous_postings
-        }
-
-        if action not in actions:
-            return AdminActionResult(success=False, message=f"Unknown action: {action}")
-
-        return actions[action](**kwargs)
-
-    def _approve_job(self, job_id: str, reviewer_id: str) -> AdminActionResult:
-        """Approve a flagged job posting"""
-        try:
-            with self.session_factory() as session:
-                request = session.query(JobApprovalRequestORM).filter_by(job_id=job_id).first()
-                if not request:
-                    return AdminActionResult(success=False, message="No approval request exists for this job")
-
-                job = session.query(JobsORM).get(job_id)
-                if not job:
-                    return AdminActionResult(success=False, message="Job not found")
-
-                job.status = "active"
-                request.status = JobApprovalStatusEnum.APPROVED
-                request.reviewer_id = reviewer_id
-                request.reviewed_at = datetime.utcnow()
-
-                session.commit()
-                return AdminActionResult(success=True, message="Job approved successfully", data={"job_id": job_id})
-        except Exception as e:
-            return AdminActionResult(success=False, message=f"Error approving job: {str(e)}")
-
-    def _reject_job(self, job_id: str, reviewer_id: str, reason: str) -> AdminActionResult:
-        """Reject a job posting with reason"""
-        try:
-            with self.session_factory() as session:
-                request = session.query(JobApprovalRequestORM).filter_by(job_id=job_id).first()
-                if not request:
-                    return AdminActionResult(success=False, message="No approval request exists for this job")
-
-                job = session.query(JobsORM).get(job_id)
-                if not job:
-                    return AdminActionResult(success=False, message="Job not found")
-
-                job.status = "archived"
-                request.status = JobApprovalStatusEnum.REJECTED
-                request.reviewer_id = reviewer_id
-                request.review_notes = reason
-                request.reviewed_at = datetime.utcnow()
-
-                session.commit()
-                return AdminActionResult(success=True, message="Job rejected successfully", data={"job_id": job_id, "reason": reason})
-        except Exception as e:
-            return AdminActionResult(success=False, message=f"Error rejecting job: {str(e)}")
-
-    def _flag_job(self, job_id: str, reason: str, reporter_id: str) -> AdminActionResult:
-        """Flag a job for admin review"""
-        try:
-            with self.session_factory() as session:
-                job = session.query(JobsORM).get(job_id)
-                if not job:
-                    return AdminActionResult(success=False, message="Job not found")
-
-                if not job.approval_request:
-                    request = JobApprovalRequestORM(
-                        requested_by=reporter_id,
-                        job_id=job_id,
-                        status=JobApprovalStatusEnum.FLAGGED.value,
-                        feedback=reason
-                    )
-                    session.add(request)
-                else:
-                    job.approval_request.status = JobApprovalStatusEnum.FLAGGED.value
-                    job.approval_request.review_notes = reason
-
-                session.commit()
-                return AdminActionResult(success=True, message="Job flagged successfully", data={"job_id": job_id})
-        except Exception as e:
-            return AdminActionResult(success=False, message=f"Error flagging job: {str(e)}")
-
-    def _bulk_update_status(self, job_ids: List[str], new_status: str) -> AdminActionResult:
-        """Bulk update job statuses"""
-        valid_statuses = ['active', 'archived', 'pending_review']
-        if new_status not in valid_statuses:
-            return AdminActionResult(success=False, message=f"Invalid status. Allowed: {valid_statuses}")
-
-        try:
-            with self.session_factory() as session:
-                updated = session.query(JobsORM).filter(JobsORM.job_id.in_(job_ids)).update(
-                    {JobsORM.status: new_status}
-                )
-                session.commit()
-                return AdminActionResult(success=True, message=f"Updated {updated} jobs", data={"updated_count": updated})
-        except Exception as e:
-            return AdminActionResult(success=False, message=f"Error updating jobs: {str(e)}")
-
-    def _detect_anomalous_postings(self) -> AdminActionResult:
-        """Detect suspicious job postings"""
-        try:
-            with self.session_factory() as session:
-                anomalies = []
-
-                # Unverified companies
-                unverified = session.query(JobsORM).join(CompanyORM).filter(
-                    CompanyORM.verified == False
-                ).all()
-
-                # Spam patterns
-                spam_keywords = ["earn fast", "work from home", "no experience needed"]
-                spam_jobs = session.query(JobsORM).filter(
-                    or_(*[JobsORM.description.ilike(f"%{kw}%") for kw in spam_keywords])
-                ).all()
-
-                # Combine results
-                all_anomalies = list({j.job_id: j for j in unverified + spam_jobs}.values())
-
-                return AdminActionResult(
-                    True,
-                    f"Found {len(all_anomalies)} anomalous postings",
-                    {"anomalies": [{"job_id": j.job_id, "title": j.title} for j in all_anomalies]}
-                )
-        except Exception as e:
-            return AdminActionResult(False, f"Error detecting anomalies: {str(e)}")
-
-
 class ComplianceService(AdminServiceInterface):
-    """
+    __dict__ = """
         Service for performing compliance and regulatory reporting across the job platform.
 
         This controller provides tools to assess compliance with South African B-BBEE standards,
@@ -721,7 +219,7 @@ class ComplianceService(AdminServiceInterface):
 
 
 class AnalyticsService(AdminServiceInterface):
-    """
+    __doc__ = """
     Service for executing administrative analytics operations on the JobFinders platform.
 
     This service provides a unified interface for gathering system-level and user engagement metrics,
@@ -902,7 +400,7 @@ class AnalyticsService(AdminServiceInterface):
 
 
 class SecurityService(AdminServiceInterface):
-    __doc__="""
+    __doc__ = """
     SecurityService is responsible for detecting, analyzing, and flagging suspicious or risky behavior
     by both jobseekers and employers on the platform. It provides analytics and heuristic evaluations
     to assist administrators in identifying abuse patterns such as spam applications, fraudulent job posts,
@@ -1293,9 +791,13 @@ class AdminController(Controllers):
 
     # Job Moderation Methods
     @error_handler
-    def approve_job(self, job_id: str, reviewer_id: str) -> AdminActionResult:
-        """Approve a flagged job posting"""
-        return self.job_moderation_service.execute('approve', job_id=job_id, reviewer_id=reviewer_id)
+    def approve_jobs(self) -> AdminActionResult:
+
+        """
+        Every 30 Minutes the system will run and try to approve jobs that, have been posted by companies
+        """
+
+        return self.job_moderation_service.execute('approve')
 
     @error_handler
     def reject_job(self, job_id: str, reviewer_id: str, reason: str) -> AdminActionResult:
@@ -1456,6 +958,7 @@ class AdminController(Controllers):
     @error_handler
     def review_company_verifications(self) -> AdminActionResult:
         """Identify companies needing verification checks"""
+        # noinspection PyBroadException
         try:
             with self.get_session() as session:
                 unverified_companies = session.query(CompanyORM).filter(
@@ -1483,11 +986,10 @@ class AdminController(Controllers):
                     message=f"Found {len(unverified_companies)} companies needing verification",data={"companies": companies_data})
 
         except Exception as e:
-            return AdminActionResult(success=False,message=f"Error reviewing company verifications: {str(se)}")
-
+            return AdminActionResult(success=False,message=f"Error reviewing company verifications: {str(e)}")
 
     @error_handler
-    async def get_admin_dashboard_data(self, user: "User"):
+    async def get_admin_dashboard_data(self):
         """
         Gather and return comprehensive dashboard data for system admins.
         Uses detailed data from other controller methods/services.

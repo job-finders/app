@@ -33,9 +33,18 @@ def schedule_app_tasks(scheduler, app):
     scheduler.add_job(
         async_job_wrapper("clean_up_old_job_approvals", admin_controller.cleanup_old_approvals),
         trigger='cron',
+        day_of_week='sun',
+        hour=1,
         minute=0,
-        hour='*',
         id='clean_up_old_job_approvals',
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        async_job_wrapper("approve_jobs", admin_controller.approve_jobs),
+        trigger='interval',
+        minutes=30,
+        id='approve_jobs',
         replace_existing=True
     )
 
@@ -43,19 +52,23 @@ def schedule_app_tasks(scheduler, app):
         async_job_wrapper("send_job_alerts", admin_controller.send_job_alerts_to_users),
         trigger='cron',
         minute=0,
-        hour=9,
+        hour=7,
         id='send_job_alerts',
         replace_existing=True
     )
 
+
+    # Flagging suspicious activity
     scheduler.add_job(
         async_job_wrapper("flag_unusual_user_activity", admin_controller.flag_unusual_user_activity),
-        trigger='interval',
-        minutes=45,
+        trigger='cron',
+        hour=2,
+        minute=0,
         id='flag_unusual_user_activity',
         replace_existing=True
     )
 
+    # Evaluate risks based on that flag
     scheduler.add_job(
         async_job_wrapper("evaluate_user_risks", admin_controller.evaluate_user_risks),
         trigger='cron',

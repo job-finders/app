@@ -51,6 +51,7 @@ async def create_job(user: User):
     """
     data = request.form.to_dict()
     try:
+        # This MEthod works correctly.
         #    Will Ensure company can post jobs - will check if employer profile is verified, 
         #    and if company profile is verified.
         company_controller = get_controller('company')
@@ -162,7 +163,7 @@ async def approve_job(user: User, approval_token: str):
     This will be called by the system administrator or workflow AI in order to approve a job post.
     Approve a pending job post."""
     jobs_workflow_controller = get_controller('jobs_workflow')
-    result = await jobs_workflow_controller.approve_job(approval_token, approver=user)
+    result = await jobs_workflow_controller.approve_jobs(approval_token, )
     if result.success:
         flash("Job approved!", "success")
         return render_template("jobs_workflow/approval_success.html", job=result.data)

@@ -60,38 +60,24 @@ class JobsWorkflowController(Controllers):
             return Job(**job_orm.to_dict())
 
     @error_handler
-    async def de_activate_job_listing(self, job_id: str) -> Job | None:
+    async def de_activate_job_listing(self, job_id: str, reviewer_id: str) -> Job | None:
         """Mark job as inactive by setting expiration date to past"""
-        with self.get_session() as session:
-            job_orm = session.get(JobsORM, job_id)
-            if not job_orm:
-                return None
-
-            # Set expiration date to yesterday - this will de-activate a job listing
-            job_orm.status = JobStatusEnum.CLOSED.value
-            # Setting Expiration date to yesterday
-            new_expiration = datetime.now(timezone.utc) - timedelta(days=1)
-            job_orm.expiration_date = new_expiration.date()
-            job_orm.updated_at = datetime.now(timezone.utc)
-
-            return Job(**job_orm.to_dict())
+        return await self.update_approval_status(job_id=job_id,
+                                                 decision=JobStatusEnum.CLOSED.value,
+                                                 reviewer_id=reviewer_id)
 
     @error_handler
-    async def activate_job_listing(self, job_id: str) -> Job | None:
+    async def activate_job_listing(self, job_id: str, reviewer_id: str) -> Job | None:
         """Activate job listing by resetting expiration date"""
-        with self.get_session() as session:
-            job_orm = session.get(JobsORM, job_id)
-            if not job_orm:
-                return None
+        return await self.update_approval_status(job_id=job_id,
+                                                 decision=JobStatusEnum.ACTIVE.value,
+                                                 reviewer_id=reviewer_id)
 
-            job_orm.status = JobStatusEnum.ACTIVE.value  # Corrected typo
-            # Extend expiration by 30 days from now
-            new_expiration = datetime.now(timezone.utc) + timedelta(days=30)
-            job_orm.expiration_date = new_expiration.date()
-            job_orm.updated_at = datetime.now(timezone.utc)
-            session.commit()
-
-            return Job(**job_orm.to_dict())
+    @error_handler
+    async def reject_job_listing(self, job_id: str, reviewer_id: str) -> Job | None:
+        return await self.update_approval_status(job_id=job_id,
+                                                 decision=JobApprovalStatusEnum.REJECTED.value,
+                                                 reviewer_id=reviewer_id)
 
     @error_handler
     async def _create_job(self, job: Job) -> Job | None:
@@ -120,6 +106,108 @@ class JobsWorkflowController(Controllers):
 
         return await self._create_job(job_data | {"employer_id": employer.employer_id})
 
+    @error_handler
+    async def validate_job_post(self, job: Job) -> dict:
+        """Validate job post completeness and employer credibility"""
+        validation_result = {
+            'valid': True,
+            'errors': [],
+            'warnings': [],
+            'requires_approval': False,
+            'quality_metrics': {
+                'completeness_score': job.job_completeness_score,
+                'readability_ok': job.readability_is_ok,
+                'overall_quality': job.job_quality_score()
+            }
+        }
+
+        # Basic field validation
+        required_fields = ['title', 'city', 'province', 'country', 'category']
+        for field in required_fields:
+            if not getattr(job, field):
+                validation_result['errors'].append(f"Missing required field: {field}")
+
+        # Quality-based validation
+        if job.job_completeness_score < 6:
+            validation_result['errors'].append(
+                "Job post is incomplete. Please add more details (required skills, experience level, salary range)")
+        elif job.job_completeness_score < 8:
+            validation_result['warnings'].append("Consider adding more details to improve job visibility")
+
+        if not job.readability_is_ok:
+            validation_result['warnings'].append(
+                "Job description may be difficult to read. Consider simplifying the language")
+
+        if job.job_quality_score() < 50:
+            validation_result['requires_approval'] = True
+            validation_result['errors'].append("Job quality score too low - requires manual review")
+        elif job.job_quality_score() < 70:
+            validation_result['warnings'].append("Low quality score may reduce job visibility")
+
+        # Salary validation
+        if job.salary_min and job.salary_max:
+            if job.salary_min > job.salary_max:
+                validation_result['errors'].append("Salary minimum cannot exceed maximum")
+
+        # Employer validation
+        with self.get_session() as session:
+            # Check employer posting limits
+            posted_last_month = session.query(func.count(JobsORM.job_id)).filter(
+                JobsORM.company_id == job.company_id,
+                JobsORM.posted_at >= datetime.now(timezone.utc) - timedelta(days=30)
+            ).scalar()
+
+            if posted_last_month >= 10:  # Example limit
+                validation_result['requires_approval'] = True
+                validation_result['errors'].append("Employer posting limit reached")
+
+            # New employer approval requirement
+            if job.company_id:
+                company = session.query(CompanyORM).get(job.company_id)
+                if company and company.creation_date > datetime.now(timezone.utc) - timedelta(days=30):
+                    validation_result['requires_approval'] = True
+
+        validation_result['valid'] = len(validation_result['errors']) == 0
+        return validation_result
+
+    @error_handler
+    async def add_job_posting_workflow(self, job: Job) -> Job:
+        """Complete job submission workflow"""
+        with self.get_session() as session:
+            # Step 1: Save as draft
+            job.status = JobStatusEnum.DRAFT.value
+            draft_orm = JobsORM(**job.model_dump())
+            session.add(draft_orm)
+            session.flush()  # Get ID without commit
+
+            # Step 2: Generate preview
+            preview_data = await self._generate_job_preview(draft_orm)
+
+            # Step 3: Automatic categorization
+            draft_orm.category = await self._auto_categorize_job(draft_orm.title, draft_orm.description)
+
+            # Step 4: Salary benchmarking
+            benchmark = await self._get_salary_benchmark(
+                draft_orm.category,
+                draft_orm.city,
+                draft_orm.experience_level
+            )
+            if benchmark:
+                draft_orm.salary_min = benchmark.get('25_percentile', draft_orm.salary_min)
+                draft_orm.salary_max = benchmark.get('75_percentile', draft_orm.salary_max)
+
+            self._create_approval_request(draft_orm)
+
+            # Step 5: Approval check
+            validation = await self.validate_job_post(Job(**draft_orm.to_dict()))
+            session.commit()
+
+        if validation['requires_approval']:
+            job = await self.update_approval_status(job_id=draft_orm.job_id, status=JobApprovalStatusEnum.PENDING.value)
+        else:
+            job = await self.update_approval_status(job_id=draft_orm.job_id, status=JobApprovalStatusEnum.APPROVED.value)
+
+        return job
 
     @error_handler
     async def save_job_for_user(self, user_id: str, job_id: str) -> None|SavedJob :
@@ -289,7 +377,7 @@ class JobsWorkflowController(Controllers):
 
             return JobApplication(**applied_job_orm.to_dict())
 
-
+    @error_handler
     def _generate_summary_background(self, application_id: str):
             """Background task for AI summary generation"""
             with self.app.app_context():
@@ -363,7 +451,6 @@ class JobsWorkflowController(Controllers):
         if scores['location'] < 100:
             suggestions.append("Expand your preferred locations for more opportunities")
         return suggestions
-
 
     @error_handler
     async def validate_application_completeness(self, application: JobApplication) -> dict:
@@ -491,7 +578,6 @@ class JobsWorkflowController(Controllers):
                 'conversion_rate': conversion_rate
             })
 
-
     @error_handler
     async def generate_application_review_summary(self, application_id: str) -> str:
         """
@@ -571,85 +657,6 @@ class JobsWorkflowController(Controllers):
             except Exception as e:
                 self.logger.error(f"DeepSeek summary failed: {str(e)}")
                 return "Summary generation service unavailable"
-
-
-    @error_handler
-    async def validate_job_post(self, job: Job) -> dict:
-        """Validate job post completeness and employer credibility"""
-        validation_result = {
-            'valid': True,
-            'errors': [],
-            'requires_approval': False
-        }
-
-        # Basic field validation
-        required_fields = ['title', 'city', 'province', 'country', 'category']
-        for field in required_fields:
-            if not getattr(job, field):
-                validation_result['errors'].append(f"Missing required field: {field}")
-
-        # Salary validation
-        if job.salary_min and job.salary_max:
-            if job.salary_min > job.salary_max:
-                validation_result['errors'].append("Salary minimum cannot exceed maximum")
-
-        # Employer validation
-        with self.get_session() as session:
-            # Check employer posting limits
-            posted_last_month = session.query(func.count(JobsORM.job_id)).filter(
-                JobsORM.company_id == job.company_id,
-                JobsORM.posted_at >= datetime.now(timezone.utc) - timedelta(days=30)
-            ).scalar()
-
-            if posted_last_month >= 10:  # Example limit
-                validation_result['requires_approval'] = True
-                validation_result['errors'].append("Employer posting limit reached")
-
-        # New employer approval requirement
-        if job.company_id:
-            company = session.query(CompanyORM).get(job.company_id)
-            if company and company.creation_date > datetime.now(timezone.utc) - timedelta(days=30):
-                validation_result['requires_approval'] = True
-
-        validation_result['valid'] = len(validation_result['errors']) == 0
-        return validation_result
-
-    @error_handler
-    async def add_job_posting_workflow(self, job: Job) -> Job:
-        """Complete job submission workflow"""
-        with self.get_session() as session:
-            # Step 1: Save as draft
-            job.status = JobStatusEnum.DRAFT.value
-            draft_orm = JobsORM(**job.model_dump())
-            session.add(draft_orm)
-            session.flush()  # Get ID without commit
-
-            # Step 2: Generate preview
-            preview_data = await self._generate_job_preview(draft_orm)
-
-            # Step 3: Automatic categorization
-            draft_orm.category = await self._auto_categorize_job(draft_orm.title, draft_orm.description)
-
-            # Step 4: Salary benchmarking
-            benchmark = await self._get_salary_benchmark(
-                draft_orm.category,
-                draft_orm.city,
-                draft_orm.experience_level
-            )
-            if benchmark:
-                draft_orm.salary_min = benchmark.get('25_percentile', draft_orm.salary_min)
-                draft_orm.salary_max = benchmark.get('75_percentile', draft_orm.salary_max)
-
-            # Step 5: Approval check
-            validation = await self.validate_job_post(Job(**draft_orm.to_dict()))
-            if validation['requires_approval']:
-                job.status = JobStatusEnum.PENDING_APPROVAL.value
-                self._send_approval_request(draft_orm)
-            else:
-                job.status = JobStatusEnum.ACTIVE.value
-                draft_orm.posted_at = datetime.now(timezone.utc)
-
-            return Job(**draft_orm.to_dict())
 
     @error_handler
     async def detect_duplicate_jobs(self, job: Job) -> list[Job]:
@@ -839,9 +846,7 @@ class JobsWorkflowController(Controllers):
     async def _calculate_readability(self, text: str) -> float:
         """
         Calculate text readability using the Flesch Reading Ease formula.
-
         Formula: 206.835 - 1.015*(words/sentences) - 84.6*(syllables/words)
-
         Returns:
             float: Readability score between 0-100 (higher = easier to read)
         """
@@ -906,46 +911,47 @@ class JobsWorkflowController(Controllers):
 
         return max(1, count)
 
-    def _send_approval_request(self, draft_orm: JobsORM) -> None:
+
+    def _create_approval_request(self, draft_orm: JobsORM) -> None:
         """
-        Initiate and manage the job post approval workflow by:
-        1. Identifying appropriate approvers
-        2. Generating secure approval links
-        3. Sending notification emails
-        4. Creating audit records
-        5. Setting up approval tracking
+            Initiate and manage the job post approval workflow by:
+            1. Identifying appropriate approvers
+            2. Generating secure approval links
+            3. Sending notification emails
+            4. Creating audit records
+            5. Setting up approval tracking
 
-        Parameters:
-            draft_orm (JobsORM): The job post draft requiring approval
+            Parameters:
+                draft_orm (JobsORM): The job post draft requiring approval
 
-        Workflow:
-            1. Determine approval recipients based on:
-               - Company hierarchy (if employer has internal approval flow)
-               - System admins (for new/unverified companies)
-               - Category moderators (for specialized job categories)
-            2. Generate unique approval token with expiration
-            3. Store approval request in database
-            4. Send email notifications with approval/rejection links
-            5. Update job post status to 'pending_approval'
+            Workflow:
+                1. Determine approval recipients based on:
+                   - Company hierarchy (if employer has internal approval flow)
+                   - System admins (for new/unverified companies)
+                   - Category moderators (for specialized job categories)
+                2. Generate unique approval token with expiration
+                3. Store approval request in database
+                4. Send email notifications with approval/rejection links
+                5. Update job post status to 'pending_approval'
 
-        Notifications Include:
-            - Direct approval/rejection links with JWT tokens
-            - Job post summary
-            - Submit timestamp
-            - Applicant statistics (for renewal posts)
-            - Approval deadline
+            Notifications Include:
+                - Direct approval/rejection links with JWT tokens
+                - Job post summary
+                - Submit timestamp
+                - Applicant statistics (for renewal posts)
+                - Approval deadline
 
-        Security:
-            - Uses time-limited JWT tokens for authorization
-            - Encodes company ID and job ID in token
-            - Stores hashed token version in database
-            - Automatic invalidation after:
-              - Approval/rejection action
-              - Token expiration (7 days)
-              - Job post modification
+            Security:
+                - Uses time-limited JWT tokens for authorization
+                - Encodes company ID and job ID in token
+                - Stores hashed token version in database
+                - Automatic invalidation after:
+                  - Approval/rejection action
+                  - Token expiration (7 days)
+                  - Job post modification
 
-        Raises:
-            ApprovalWorkflowException: If critical failure in notification sending
+            Raises:
+                ApprovalWorkflowException: If critical failure in notification sending
         """
         with self.get_session() as session:
 
@@ -959,48 +965,19 @@ class JobsWorkflowController(Controllers):
             token_expiration = datetime.now(timezone.utc) + timedelta(days=7)
             draft = Job(**draft_orm.to_dict())
             # 3. Create approval request record
+            # Once the Employer edits the job which was flagged the status will switch to pending
+            # and will be legible for rechecking job to see if it meets requirements
             approval_request = JobApprovalRequestORM(
                 job_id=draft_orm.job_id,
                 token=approval_token,
                 token_expires=token_expiration,
                 requested_by=draft.company.company_id,
                 approvers=[u.user_id for u in approvers],
-                status='pending'
+                status=JobApprovalStatusEnum.FLAGGED.value
             )
             session.add(approval_request)
-
-            # 4.TODO - APPROVALS MUST BE DEALT WITH ON THE ADMIN DASHBOARD ONLY --
-            approval_link = url_for('jobs.approve_job', approval_token=approval_token, _external=True)
-            rejection_link = url_for('jobs.reject_job', approval_token=approval_token, _external=True)
-
-            email_body = f"""
-            <h2>Job Post Approval Required</h2>
-            <p><strong>Title:</strong> {draft.title}</p>
-            <p><strong>Company:</strong> {draft.company.name}</p>
-            <p><strong>Category:</strong> {draft.category}</p>
-            <p><strong>Submitted:</strong> {draft.posted_at.strftime('%Y-%m-%d %H:%M')}</p>
-    
-            <h3>Actions Required by {token_expiration.strftime('%Y-%m-%d')}</h3>
-            <p>
-                <a href="{approval_link}" style="color: green;">Approve Job Post</a> | 
-                <a href="{rejection_link}" style="color: red;">Request Changes</a>
-            </p>
-    
-            <h4>Post Preview</h4>
-            <div>{draft.description[:500]}...</div>
-            """
-
-            # TODO - Send Message using Send Mail - 5. Send notifications
-            # for approver in approvers:
-            #     msg = Message(
-            #         subject=f"Approval Required: {draft_orm.title}",
-            #         recipients=[approver.email],
-            #         html=email_body
-            #     )
-            #     self.mail.send(msg)
-            #
-            # 6. Update job status
-            draft_orm.status = JobStatusEnum.PENDING_APPROVAL.value
+            # This means the employer needs to be aware of the reasons why their job was flagged
+            draft_orm.status = JobStatusEnum.NEEDS_ATTENTION.value
             session.commit()
 
             self.logger.info(f"Sent approval request for job {draft_orm.job_id} to {len(approvers)} approvers")
@@ -1328,9 +1305,18 @@ class JobsWorkflowController(Controllers):
             if decision.lower() == JobApprovalStatusEnum.APPROVED.value:
                 job.status = JobStatusEnum.ACTIVE.value
                 request.status = JobApprovalStatusEnum.APPROVED.value
-            elif decision.lower() == JobStatusEnum.REJECTED.value:
+
+            elif decision.lower() == JobApprovalStatusEnum.REJECTED.value:
                 job.status = JobStatusEnum.ARCHIVED.value
                 request.status = JobApprovalStatusEnum.REJECTED.value
+
+            elif decision.lower() == JobApprovalStatusEnum.PENDING.value:
+                request.status = JobApprovalStatusEnum.PENDING.value
+                job.status = JobStatusEnum.PENDING_APPROVAL.value
+            elif decision.lower() == JobApprovalStatusEnum.FLAGGED.value:
+
+                request.status = JobApprovalStatusEnum.FLAGGED.value
+                job.status = JobStatusEnum.NEEDS_ATTENTION.value
 
             request.reviewer_id = reviewer_id
             request.reviewed_at = datetime.now(timezone.utc)

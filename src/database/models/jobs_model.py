@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDi
 from src.database.constants import utc_time
 from src.database.models.company_models import Company
 from src.database.models.employer_models import Employer
+import re
+from textstat import flesch_reading_ease
 
 def format_reference(ref: str) -> str:
     """Sample reference formatter - implement your logic"""
@@ -96,6 +98,7 @@ class JobStatusEnum(str, Enum):
     DRAFT = "draft"
     ACTIVE = "active"
     PENDING_APPROVAL = "pending"
+    NEEDS_ATTENTION = "needs_attention"
     ARCHIVED = "archived"
     CLOSED = "closed"
 
@@ -190,7 +193,7 @@ class Job(BaseModel):
     remote_policy: str = Field(pattern="ONSITE|HYBRID|REMOTE")
 
     category_id: Optional[str] = Field(default=None)
-    category: Optional[JobCategory] = Field(default={})  # Updated to JobCategory
+    category: Optional[JobCategory] = Field(default=None)  # Updated to JobCategory
     # Compensation
     salary_min: Optional[float] = Field(ge=0, default=None)
     salary_max: Optional[float] = Field(ge=0, default=None)
@@ -237,7 +240,85 @@ class Job(BaseModel):
 
     applications: list['JobApplication'] = Field(default_factory=list)
     saved_jobs: list['SavedJob'] = Field(default_factory=list)
-    category: JobCategory = Field(default={})
+
+
+    @computed_field
+    @property
+    def readability_is_ok(self) -> bool:
+        """Determines if the readability score of the job is acceptable.
+        Uses Flesch Reading Ease score - returns True if score >= 60 (standard readability)
+        """
+        completeness_threshold = 6
+        if self.job_completeness_score < completeness_threshold:
+            return False
+        # noinspection PyBroadException
+        try:
+            score = flesch_reading_ease(self.ats_description)
+            return score >= 60  # 60+ is considered standard readability
+        except Exception as e:
+            return False
+
+    @computed_field
+    @property
+    def job_completeness_score(self) -> int:
+        """Calculate job completeness on a score of 1 to 10"""
+        score = 0
+
+        # Essential fields (4 points total)
+        if self.title and len(self.title.strip()) >= 5: score += 1
+        if self.description and len(self.description.strip()) >= 50: score += 1
+        if self.application_instructions and len(self.application_instructions.strip()) >= 10: score += 1
+        if self.city and self.province and self.country: score += 1
+
+        # Important fields (3 points total)
+        if self.required_skills: score += 1
+        if self.experience_level: score += 1
+        if self.salary_min or self.salary_max: score += 1
+
+        # Nice-to-have fields (3 points total)
+        if self.preferred_skills: score += 1
+        if self.education_requirements: score += 1
+        if self.summary: score += 1
+
+        return min(score, 10)
+
+    @computed_field
+    @property
+    def job_quality_score(self) -> float:
+        """Calculate overall job quality score (0-100)
+        Based on completeness, readability, and other quality indicators
+        """
+        # Base score from completeness (0-70 points)
+        completeness_score = (self.job_completeness_score / 10) * 70
+
+        # Readability bonus (0-15 points)
+        readability_score = 15 if self.readability_is_ok else 0
+
+        # Additional quality indicators (0-15 points)
+        quality_bonus = 0
+
+        # Well-structured description
+        if self.description and len(self.description.split()) > 100:
+            quality_bonus += 3
+
+        # Has company info
+        if self.company:
+            quality_bonus += 3
+
+        # Clear salary range
+        if self.salary_min and self.salary_max:
+            quality_bonus += 3
+
+        # Detailed requirements
+        if len(self.required_skills) >= 3:
+            quality_bonus += 3
+
+        # Professional application process
+        if self.application_url or "email" in self.application_instructions.lower():
+            quality_bonus += 3
+
+        total_score = completeness_score + readability_score + quality_bonus
+        return round(min(total_score, 100), 1)
 
     @computed_field
     @property

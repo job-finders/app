@@ -158,7 +158,7 @@ class EmployerAgentsController(Controllers):
             job_orm.seo_description = job_summary.seo_description
             session.commit()
             # noinspection PyTypeChecker
-            return job_summary
+            return Job(**jom_orm.to_dict())
 
     @error_handler
     async def analyze_company_documents_for_authenticity(self, company_id: str):

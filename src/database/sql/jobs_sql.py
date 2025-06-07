@@ -379,6 +379,7 @@ class JobApplicationORM(Base):
     application_id = Column(String(ID_LEN), primary_key=True, index=True)
     user_id = Column(String(ID_LEN),ForeignKey('jobseeker_profiles.user_uid'), index=True)
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)  # Added ForeignKey
+    ats_report_id = Column(String(ID_LEN), ForeignKey('ats_reports.ats_report_id'), nullable=True, index=True)
     cv_id = Column(String(ID_LEN), index=True)
 
     # Relationship to Job
@@ -405,6 +406,7 @@ class JobApplicationORM(Base):
     validation_score = Column(Integer)
     missing_requirements = Column(JSON)
     review_summary = Column(Text)
+    ats_report = relationship("ATSReportORM", uselist=False, back_populates="job_application")
 
     def to_dict(self, include_relationship=False) -> dict:
         return {
@@ -412,6 +414,7 @@ class JobApplicationORM(Base):
             "user_id": self.user_id,
             "job_id": self.job_id,
             "job": self.job.to_dict() if self.job else None,  # Include job details
+            "ats_report_id": self.ats_report_id,
             "cv_id": self.cv_id,
             "applied_date": self.applied_date.isoformat() if self.applied_date else None,
             "cover_letter": self.cover_letter,
@@ -428,7 +431,8 @@ class JobApplicationORM(Base):
             "validation_score": self.validation_score,
             "missing_requirements": self.missing_requirements,
             "review_summary": self.review_summary,
-            "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationship else None
+            "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationship else None,
+            "ats_report": self.ats_report.to_dict() if self.ats_report and include_relationship else None,
         }
 
     # Rest of the existing methods...
@@ -481,7 +485,7 @@ class ATSReportORM(Base):
         }
 
 class JobApprovalRequestORM(Base):
-    """
+    __doc__ = """
     SQLAlchemy ORM model representing job approval requests submitted by companies.
 
     This table tracks the approval lifecycle of jobs that require administrative or delegated approval
