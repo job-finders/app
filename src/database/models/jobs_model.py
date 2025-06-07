@@ -1,4 +1,5 @@
 import uuid
+from collections import Counter
 from datetime import date, timezone, timedelta, datetime
 from enum import Enum
 from typing import Optional, Any
@@ -240,9 +241,118 @@ class Job(BaseModel):
 
     applications: list['JobApplication'] = Field(default_factory=list)
     saved_jobs: list['SavedJob'] = Field(default_factory=list)
+    ats_reports: list['ATSReport'] = Field(default_factory=list, description="List of ATS reports for this job")
 
+
+    @computed_field(return_type=int)
+    @property
+    def reviewed_applications_count(self) -> int:
+        """
+            Will Count the number of applications which have been reviewed already
+        :return:
+        """
+        reviewed_statuses = [JobApplicationStatusEnum.REJECTED.value, JobApplicationStatusEnum.HIRED.value,
+        JobApplicationStatusEnum.OFFER_EXTENDED.value, JobApplicationStatusEnum.WITHDRAWN.value]
+        return sum(1 for app in self.applications if app.application_stage in reviewed_statuses)
+
+    @computed_field(return_type=int)
+    @property
+    def in_progress_applications(self) -> int:
+        """
+            will count the number of applications which are in progress
+        :return:
+        """
+        in_progress_statuses = [JobApplicationStatusEnum.UNDER_REVIEW.value,JobApplicationStatusEnum.INTERVIEWING.value,
+                                JobApplicationStatusEnum.SHORTLISTED.value]
+        return sum(1 for app in self.applications if app.application_stage in in_progress_statuses)
+
+
+
+    @computed_field(return_type=Optional[int])
+    @property
+    def job_ats_score(self) -> Optional[int]:
+        """
+        Computes the average ATS match score for this job from all ATS Reports.
+        Returns None if there are no reports.
+        :return:
+        """
+        if not self.ats_reports or not self.ats_reports[0].score:
+            return None
+        total_score = sum(report.score for report in self.ats_reports)
+        avg_score = total_score / len(self.ats_reports)
+        return int(round(avg_score, 2))
 
     @computed_field
+    @property
+    def job_ats_match_rate(self) -> Optional[float]:
+        """
+        Percentage of ATS reports scoring above 60 (good matches).
+        """
+        if not self.ats_reports:
+            return None
+
+        matches = [r for r in self.ats_reports if r.score >= 60]
+        return round((len(matches) / len(self.ats_reports)) * 100, 1)
+
+    @computed_field
+    @property
+    def job_common_missing_keywords(self) -> list[str]:
+        """
+        Returns the top 5 most frequently missing keywords across all ATS reports.
+        """
+        if not self.ats_reports:
+            return []
+
+        keyword_counter = Counter()
+        for report in self.ats_reports:
+            keyword_counter.update(report.missing_keywords)
+
+        most_common = keyword_counter.most_common(5)
+        return [kw for kw, _ in most_common]
+
+    @computed_field
+    @property
+    def job_most_matched_keywords(self) -> list[str]:
+        from collections import Counter
+
+        counter = Counter()
+        for report in self.ats_reports:
+            counter.update(report.matched_keywords)
+        return [kw for kw, _ in counter.most_common(5)]
+
+    @computed_field
+    @property
+    def job_ats_feedback_snippets(self) -> list[str]:
+        """
+        Returns first 3 snippets of textual feedback from ATS reports.
+        """
+        return [report.feedback for report in self.ats_reports[:3]]
+
+    @computed_field
+    @property
+    def job_ats_score_distribution(self) -> dict:
+        """
+        Bucket ATS scores into ranges like:
+        {"0-20": 1, "21-40": 2, "41-60": 5, "61-80": 3, "81-100": 4}
+        """
+        from collections import defaultdict
+
+        buckets = defaultdict(int)
+        for report in self.ats_reports:
+            score = report.score
+            if score <= 20:
+                buckets["0-20"] += 1
+            elif score <= 40:
+                buckets["21-40"] += 1
+            elif score <= 60:
+                buckets["41-60"] += 1
+            elif score <= 80:
+                buckets["61-80"] += 1
+            else:
+                buckets["81-100"] += 1
+        return dict(buckets)
+
+    @computed_field(return_type=bool)
     @property
     def readability_is_ok(self) -> bool:
         """Determines if the readability score of the job is acceptable.
@@ -258,7 +368,7 @@ class Job(BaseModel):
         except Exception as e:
             return False
 
-    @computed_field
+    @computed_field(return_type=int)
     @property
     def job_completeness_score(self) -> int:
         """Calculate job completeness on a score of 1 to 10"""
@@ -282,7 +392,7 @@ class Job(BaseModel):
 
         return min(score, 10)
 
-    @computed_field
+    @computed_field(return_type=int)
     @property
     def external_link_count(self) -> int:
         """
@@ -303,9 +413,9 @@ class Job(BaseModel):
 
         return len(external_links)
 
-    @computed_field
+    @computed_field(return_type=int)
     @property
-    def job_quality_score(self) -> float:
+    def job_quality_score(self) -> int:
         """
         Calculate overall job quality score (0-100)
         Based on completeness, readability, quality signals, and spam penalty.
@@ -336,11 +446,11 @@ class Job(BaseModel):
 
         total_score = completeness_score + readability_score + quality_bonus - spam_penalty
 
-        return round(max(min(total_score, 100), 0), 1)
+        return int(round(max(min(total_score, 100), 0), 1))
 
-    @computed_field
+    @computed_field(return_type=int)
     @property
-    def spam_severity_score(self):
+    def spam_severity_score(self) -> int:
         spam_keywords = [
             "work from home",
             "quick money",
@@ -362,7 +472,7 @@ class Job(BaseModel):
         # Convert spam_count to severity score (scaled max at 10)
         return min(int(spam_count * 1.5), 10)
 
-    @computed_field
+    @computed_field(return_type=bool)
     @property
     def is_spammy_job(self) -> bool:
         """
@@ -372,7 +482,7 @@ class Job(BaseModel):
 
         return self.spam_severity_score >= 6
 
-    @computed_field
+    @computed_field(return_type=list[str])
     @property
     def job_keyword_listing(self) -> list[str]:
         """
@@ -392,7 +502,7 @@ class Job(BaseModel):
             keywords.extend(re.findall(r"\w+", self.title.lower()))
         return keywords
 
-    @computed_field
+    @computed_field(return_type=str)
     @property
     def salary(self) -> str:
         """Returns a formatted salary range string."""
@@ -405,23 +515,23 @@ class Job(BaseModel):
         else:
             return "Salary not specified"
 
-    @computed_field
+    @computed_field(return_type=int)
     @property
     def total_applications(self) -> int:
         return len(self.applications)
 
     # Computed Properties
-    @computed_field
+    @computed_field(return_type=bool)
     @property
     def is_active(self) -> bool:
         return self.status == "active" and self.expires_at > utc_time()
 
-    @computed_field
+    @computed_field(return_type=str)
     @property
     def location(self) -> str:
         return f"{self.city}, {self.province}, {self.country}"
 
-    @computed_field
+    @computed_field(return_type=str)
     @property
     def posted_by(self) -> str:
         return self.company.name if self.company else "Unknown"
@@ -569,6 +679,26 @@ class SavedJob(BaseModel):
 
 
 
+class ATSReport(BaseModel):
+    ats_report_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    job_id: str = Field(..., description="ID of the job the report is associated with")
+    cv_id: str = Field(..., description="ID of the CV used in the evaluation")
+    score: float = Field(..., ge=0, le=100, description="ATS score out of 100")
+    matched_keywords: list[str] = Field(default_factory=list, description="list of matched keywords found in CV")
+    missing_keywords: list[str] = Field(default_factory=list, description="list of important keywords not found in CV")
+    feedback: str = Field(..., description="Feedback based on the ATS evaluation")
+    created_at: datetime = Field(default_factory=lambda: utc_time(), description="Timestamp when the report was generated")
+    job_application: Optional['JobApplication'] = Field(default=None, description="Job Applications related to this ATS Report if Any")
+    job: Optional[Job] = Field(default=None, description="Job related to this ATS Report if Any")
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
+
+
+
 class JobApplicationStatusEnum(Enum):
     """
         statuses for job application life cycles
@@ -586,6 +716,7 @@ class JobApplication(BaseModel):
     application_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     job_id: str
+    ats_report_id: Optional[str]
     job: Optional[Job] = Field(None)  # Relationship to JobModel
     cv_id: Optional[str] = None
 
@@ -607,6 +738,7 @@ class JobApplication(BaseModel):
     validation_score: int = Field(default=0)
     missing_requirements: list[str] = Field(default_factory=list)
     review_summary: Optional[str] = Field(default=None)
+    ats_report: Optional[ATSReport] = Field(default=None)
 
     def is_recent_application(self):
         recent_cut_off_date = utc_time() - timedelta(days=7)
@@ -619,22 +751,8 @@ class JobApplication(BaseModel):
             date: lambda v: v.isoformat()
         }
 
-class ATSReport(BaseModel):
-    ats_report_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    job_id: str = Field(..., description="ID of the job the report is associated with")
-    cv_id: str = Field(..., description="ID of the CV used in the evaluation")
-    score: float = Field(..., ge=0, le=100, description="ATS score out of 100")
-    matched_keywords: list[str] = Field(default_factory=list, description="list of matched keywords found in CV")
-    missing_keywords: list[str] = Field(default_factory=list, description="list of important keywords not found in CV")
-    feedback: str = Field(..., description="Feedback based on the ATS evaluation")
-    created_at: datetime = Field(default_factory=lambda: utc_time(), description="Timestamp when the report was generated")
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
-
+        
 
 # Pydantic Models
 class StatusCounts(BaseModel):

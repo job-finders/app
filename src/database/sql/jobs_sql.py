@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import Column, String, Text, Date, Float, Integer, Boolean, ForeignKey, JSON, Index, DateTime, inspect, \
-    ARRAY, UUID, event
+    ARRAY, UUID, event, UniqueConstraint
 from sqlalchemy.orm import relationship, deferred
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -230,7 +230,8 @@ class JobsORM(Base):
     applications = relationship("JobApplicationORM", back_populates="job")
     saved_jobs = relationship("SavedJobORM", back_populates="job")
     category = relationship("JobCategoryORM", back_populates="jobs")
-    
+    ats_reports = relationship("ATSReportORM", back_populates="job")
+
     # Indexes
     __table_args__ = (
         Index('ix_job_search', 'title', 'city', 'position_type', 'experience_level'),
@@ -382,8 +383,6 @@ class JobApplicationORM(Base):
     ats_report_id = Column(String(ID_LEN), ForeignKey('ats_reports.ats_report_id'), nullable=True, index=True)
     cv_id = Column(String(ID_LEN), index=True)
 
-    # Relationship to Job
-    job = relationship("JobsORM", back_populates="applications")  # New relationship
     jobseeker_profile = relationship("JobSeekerProfileORM", back_populates="applications")
     # Rest of the existing columns...
     applied_date = Column(DateTime(timezone=True), default=utc_time)
@@ -406,7 +405,11 @@ class JobApplicationORM(Base):
     validation_score = Column(Integer)
     missing_requirements = Column(JSON)
     review_summary = Column(Text)
+
     ats_report = relationship("ATSReportORM", uselist=False, back_populates="job_application")
+    # Relationship to Job
+    job = relationship("JobsORM", back_populates="applications")  # New relationship
+
 
     def to_dict(self, include_relationship=False) -> dict:
         return {
@@ -452,14 +455,19 @@ class ATSReportORM(Base):
     __tablename__ = "ats_reports"
 
     ats_report_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
-    job_id = Column(String(ID_LEN), nullable=False)
-    cv_id = Column(String(ID_LEN), nullable=False)
+    job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), unique=False, nullable=False, index=True)
+    cv_id = Column(String(ID_LEN), unique=False, nullable=False, index=True)
     score = Column(Integer, nullable=False)
     matched_keywords = Column(JSON, nullable=False, default=list)
     missing_keywords = Column(JSON, nullable=False, default=list)
     feedback = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_time)
+    job_application = relationship("JobApplicationORM", back_populates="ats_report")
+    job = relationship("JobsORM", back_populates="ats_reports")
 
+    __table_args__ = (
+        UniqueConstraint('job_id', 'cv_id', name='uq_job_cv_pair'),
+    )
 
     @classmethod
     def create_if_not_table(cls):
@@ -472,7 +480,7 @@ class ATSReportORM(Base):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-    def to_dict(self) -> dict:
+    def to_dict(self, include_relationships: bool=False) -> dict:
         return {
             "ats_report_id": self.ats_report_id,
             "job_id": self.job_id,
@@ -482,6 +490,7 @@ class ATSReportORM(Base):
             "missing_keywords": self.missing_keywords,
             "feedback": self.feedback,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "job_application": self.job_application if include_relationships and self.job_application else None
         }
 
 class JobApprovalRequestORM(Base):

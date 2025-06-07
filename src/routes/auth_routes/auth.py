@@ -119,7 +119,7 @@ async def subscribe(user: User):
     # Automatically log the user in
     response = make_response(redirect(url_for("home.get_home")))
     expiration = datetime.now(timezone.utc) + timedelta(minutes=30)
-    jwt_token = create_jwt(user.model_dump(exclode={'password_hash'}))
+    jwt_token = create_jwt(user.model_dump(exclude={'password_hash'}))
 
     response.set_cookie("access_token", value=jwt_token, expires=expiration, httponly=True, secure=True, samesite="Lax")
 

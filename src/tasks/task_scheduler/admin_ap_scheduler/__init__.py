@@ -57,7 +57,6 @@ def schedule_app_tasks(scheduler, app):
         replace_existing=True
     )
 
-
     # Flagging suspicious activity
     scheduler.add_job(
         async_job_wrapper("flag_unusual_user_activity", admin_controller.flag_unusual_user_activity),

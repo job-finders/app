@@ -133,6 +133,105 @@
                 </div>
               </div>
 
+                <div class="card border-0 shadow-sm mb-4">
+                  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Job Quality Insights</h5>
+                    <span class="badge bg-{{ job.is_active ? 'success' : 'secondary' }}">
+                      {{ job.is_active ? 'Active' : 'Not Active' }}
+                    </span>
+                  </div>
+                  <div class="card-body">
+                    <div class="row mb-3">
+                      <div class="col-md-4 mb-2">
+                        <strong>Quality Score:</strong>
+                        <div class="progress" style="height: 20px;">
+                          <div class="progress-bar bg-info" role="progressbar" style="width: {{ job.job_quality_score }}%;" aria-valuenow="{{ job.job_quality_score }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ job.job_quality_score }}%
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-4 mb-2">
+                        <strong>Completeness:</strong>
+                        <span class="badge bg-{{ job.job_completeness_score >= 7 ? 'success' : 'warning' }}">
+                          {{ job.job_completeness_score }}/10
+                        </span>
+                      </div>
+                      <div class="col-md-4 mb-2">
+                        <strong>Readability:</strong>
+                        <span class="badge bg-{{ job.readability_is_ok ? 'success' : 'danger' }}">
+                          {{ job.readability_is_ok ? 'Good' : 'Needs Work' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="row mb-3">
+                      <div class="col-md-6">
+                        <strong>ATS Match Rate:</strong>
+                        <span>{{ job.job_ats_match_rate || 0 }}%</span>
+                        <div class="small text-muted">Candidates scoring above 60</div>
+                      </div>
+                      <div class="col-md-6">
+                        <strong>Top Missing Keywords:</strong>
+                        <ul class="list-inline mb-0">
+                          {% for kw in job.job_common_missing_keywords %}
+                            <li class="list-inline-item badge bg-secondary">{{ kw }}</li>
+                          {% endfor %}
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <strong>Spam Score:</strong>
+                      <span class="badge bg-{{ job.spam_severity_score >= 6 ? 'danger' : 'secondary' }}">
+                        {{ job.spam_severity_score }}/10
+                      </span>
+                      {% if job.is_spammy_job %}
+                        <div class="alert alert-warning mt-2">
+                          This job post may be flagged as spam due to excessive promotional language.
+                        </div>
+                      {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                      <strong>ATS Feedback Snippets:</strong>
+                      <ul class="list-group list-group-flush">
+                        {% for feedback in job.job_ats_feedback_snippets %}
+                          <li class="list-group-item">{{ feedback }}</li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+
+                    {% if not job.is_active %}
+                      <div class="alert alert-danger mt-4">
+                        <strong>Job Not Activated:</strong> This job has not gone live because of one or more quality issues.
+                        <ul class="mb-0 mt-2">
+                          {% if job.job_quality_score < 60 %}
+                            <li>Quality score is below acceptable threshold.</li>
+                          {% endif %}
+                          {% if job.spam_severity_score >= 6 %}
+                            <li>Potential spam indicators detected.</li>
+                          {% endif %}
+                          {% if not job.readability_is_ok %}
+                            <li>Readability of the job description is too low.</li>
+                          {% endif %}
+                        </ul>
+                      </div>
+                    {% endif %}
+
+                    <div class="mt-3 d-flex gap-2">
+                      <button class="btn btn-outline-primary">
+                        Improve Job Post
+                      </button>
+                      <button class="btn btn-outline-secondary">
+                        Edit Details
+                      </button>
+                      <button class="btn btn-outline-dark">
+                        Request Manual Review
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
               <div class="action-buttons text-right">
                 <a href="#" class="btn btn-sm btn-outline-secondary"
                    data-toggle="tooltip" title="Edit">

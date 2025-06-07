@@ -11,13 +11,13 @@
                 <!-- Logo -->
                 <div class="me-md-4 mb-3 mb-md-0">
                     {% if company.logo_url %}
-                    <img src="{{ company.logo_url }}" alt="{{ company.name }} logo"
+                        <img src="{{ company.logo_url }}" alt="{{ company.name }} logo"
                          class="rounded" style="width: 120px; height: 120px; object-fit: contain;">
                     {% else %}
-                    <div class="bg-light d-flex align-items-center justify-content-center rounded"
-                         style="width: 120px; height: 120px;">
-                        <i class="bi bi-building text-muted" style="font-size: 3rem;"></i>
-                    </div>
+                        <div class="bg-light d-flex align-items-center justify-content-center rounded"
+                             style="width: 120px; height: 120px;">
+                            <i class="bi bi-building text-muted" style="font-size: 3rem;"></i>
+                        </div>
                     {% endif %}
                 </div>
 
@@ -80,11 +80,10 @@
             </div>
         </div>
     </div>
-
     <!-- Main Content -->
     <div class="row g-4">
         <!-- Left Column: About & Contact -->
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-md-4 col-lg-4">
             <!-- About Card -->
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 py-3">
@@ -95,133 +94,65 @@
 
                     <!-- Tech Stack -->
                     {% if company.tech_stack %}
-                    <div class="mt-4">
-                        <h3 class="h6 fw-bold mb-3"><i class="bi bi-code-slash me-1"></i>Technology Stack</h3>
-                        <div class="d-flex flex-wrap gap-2">
-                            {% for tech in company.tech_stack %}
-                            <span class="badge bg-secondary py-2 px-3">{{ tech }}</span>
-                            {% endfor %}
+                        <div class="mt-4">
+                            <h3 class="h6 fw-bold mb-3"><i class="bi bi-code-slash me-1"></i>Technology Stack</h3>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for tech in company.tech_stack %}
+                                <span class="badge bg-secondary py-2 px-3">{{ tech }}</span>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </div>
                     {% endif %}
-                </div>
-            </div>
-
-            <!-- Contact Card -->
-            <div class="card border-0 shadow-sm mt-4">
-                <div class="card-header bg-white border-0 py-3">
-                    <h2 class="h5 mb-0 fw-bold"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Contact</h2>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <!-- Location -->
-                        <li class="list-group-item px-0 py-2">
-                            <div class="d-flex align-items-start">
-                                <div class="bg-primary-subtle p-2 rounded me-3">
-                                    <i class="bi bi-geo-alt text-primary"></i>
-                                </div>
-                                <div>
-                                    <p class="mb-0 small text-muted">Location</p>
-                                    <span>
-                                        {% if company.city %}{{ company.city }}{% endif %}
-                                        {% if company.province %}, {{ company.province }}{% endif %}
-                                        {% if company.country %}<br>{{ company.country }}{% endif %}
-                                    </span>
-                                </div>
-                            </div>
-                        </li>
-
-                        <!-- Email -->
-                        <li class="list-group-item px-0 py-2">
-                            <div class="d-flex align-items-start">
-                                <div class="bg-primary-subtle p-2 rounded me-3">
-                                    <i class="bi bi-envelope text-primary"></i>
-                                </div>
-                                <div>
-                                    <p class="mb-0 small text-muted">Contact Email</p>
-                                    {% if company.contact_email %}
-                                        <a href="mailto:{{ company.contact_email }}" class="text-decoration-none">
-                                            {{ company.contact_email }}
-                                        </a>
-                                    {% else %}
-                                        <span class="text-muted">Not provided</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </li>
-
-                        <!-- Phone -->
-                        <li class="list-group-item px-0 py-2">
-                            <div class="d-flex align-items-start">
-                                <div class="bg-primary-subtle p-2 rounded me-3">
-                                    <i class="bi bi-telephone text-primary"></i>
-                                </div>
-                                <div>
-                                    <p class="mb-0 small text-muted">Phone</p>
-                                    <span>{{ company.phone_number or 'Not provided' }}</span>
-                                </div>
-                            </div>
-                        </li>
-
-                        <!-- Social Media -->
-                        <li class="list-group-item px-0 py-2">
-                            <div class="d-flex align-items-start">
-                                <div class="bg-primary-subtle p-2 rounded me-3">
-                                    <i class="bi bi-share text-primary"></i>
-                                </div>
-                                <div>
-                                    <p class="mb-0 small text-muted">Social Media</p>
-                                    <div class="d-flex gap-2 mt-1">
-                                        {% if company.linkedin_url %}
-                                        <a href="{{ company.linkedin_url }}" class="text-decoration-none" target="_blank">
-                                            <i class="bi bi-linkedin fs-5 text-primary"></i>
-                                        </a>
-                                        {% endif %}
-                                        {% if company.twitter_handle %}
-                                        <a href="https://twitter.com/{{ company.twitter_handle }}" class="text-decoration-none" target="_blank">
-                                            <i class="bi bi-twitter fs-5 text-info"></i>
-                                        </a>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-                    </ul>
                 </div>
             </div>
         </div>
 
         <!-- Right Column: Stats & Performance -->
-        <div class="col-12 col-lg-8">
+        <div class="col-12 col-md-8 col-lg-8">
             <!-- Stats Summary -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-0 py-3">
-                    <h2 class="h5 mb-0 fw-bold"><i class="bi bi-bar-chart me-2 text-primary"></i>Company Stats</h2>
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap">
+                    <h2 class="h5 mb-2 mb-lg-0 fw-bold text-primary">
+                        <i class="bi bi-bar-chart me-2"></i>Company Stats
+                    </h2>
+
+                    <!-- Action Buttons (Visible on LG+) -->
+                    <div class="d-none d-lg-flex gap-2">
+                        <a href="#" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-plus-circle me-1"></i>New Job
+                        </a>
+                        <a href="#" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-list-task me-1"></i>All Jobs
+                        </a>
+                        <a href="#" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-star me-1"></i>Featured Jobs
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3">
+                    <div class="row g-4">
                         <div class="col-6 col-md-3">
-                            <div class="text-center p-2">
-                                <div class="display-5 fw-bold text-primary">{{ company.total_jobs }}</div>
-                                <div class="text-muted small">Total Jobs</div>
+                            <div class="text-center p-3 border rounded bg-light-subtle shadow-sm h-100">
+                                <div class="fs-2 fw-bold text-primary">{{ company.total_jobs }}</div>
+                                <div class="text-muted small mt-1">Total Jobs</div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="text-center p-2">
-                                <div class="display-5 fw-bold text-success">{{ company.active_jobs }}</div>
-                                <div class="text-muted small">Active Jobs</div>
+                            <div class="text-center p-3 border rounded bg-light-subtle shadow-sm h-100">
+                                <div class="fs-2 fw-bold text-success">{{ company.active_jobs }}</div>
+                                <div class="text-muted small mt-1">Active Jobs</div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="text-center p-2">
-                                <div class="display-5 fw-bold text-info">{{ company.total_applications }}</div>
-                                <div class="text-muted small">Applications</div>
+                            <div class="text-center p-3 border rounded bg-light-subtle shadow-sm h-100">
+                                <div class="fs-2 fw-bold text-info">{{ company.total_applications }}</div>
+                                <div class="text-muted small mt-1">Applications</div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="text-center p-2">
-                                <div class="display-5 fw-bold text-warning">{{ company.featured_jobs }}</div>
-                                <div class="text-muted small">Featured Jobs</div>
+                            <div class="text-center p-3 border rounded bg-light-subtle shadow-sm h-100">
+                                <div class="fs-2 fw-bold text-warning">{{ company.featured_jobs }}</div>
+                                <div class="text-muted small mt-1">Featured Jobs</div>
                             </div>
                         </div>
                     </div>
@@ -230,8 +161,14 @@
 
             <!-- Performance Metrics -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-0 py-3">
-                    <h2 class="h5 mb-0 fw-bold"><i class="bi bi-speedometer2 me-2 text-primary"></i>Hiring Performance</h2>
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap">
+                    <h2 class="h5 mb-2 mb-lg-0 fw-bold text-primary">
+                        <i class="bi bi-speedometer2 me-2"></i>Hiring Performance
+                    </h2>
+                    <!-- Applications Button (visible on lg+) -->
+                    <a href="#" class="btn btn-sm btn-outline-primary d-none d-lg-inline-flex">
+                        <i class="bi bi-folder2-open me-1"></i>View Applications
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
@@ -251,8 +188,7 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Hiring Time -->
+                        <!-- Hiring Speed -->
                         <div class="col-12 col-md-6">
                             <div class="p-3 bg-light rounded h-100">
                                 <h3 class="h6 fw-bold mb-3"><i class="bi bi-clock me-1"></i>Hiring Speed</h3>
@@ -277,8 +213,7 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Application Volume -->
+                        <!-- Applications per Job -->
                         <div class="col-12 col-md-6">
                             <div class="p-3 bg-light rounded h-100">
                                 <h3 class="h6 fw-bold mb-3"><i class="bi bi-people me-1"></i>Applications per Job</h3>
@@ -299,16 +234,38 @@
                             </div>
                         </div>
 
-                        <!-- Popular Roles -->
+                        <!-- Reviewed vs. In Progress -->
                         <div class="col-12 col-md-6">
+                            <div class="p-3 bg-light rounded h-100">
+                                <h3 class="h6 fw-bold mb-3"><i class="bi bi-list-check me-1"></i>Application Progress</h3>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="fs-3 fw-bold text-success">{{ company.total_reviewed_count }}</div>
+                                        <div class="text-muted small">Reviewed</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="fs-3 fw-bold text-warning">{{ company.total_in_progress_count }}</div>
+                                        <div class="text-muted small">In Progress</div>
+                                    </div>
+                                </div>
+                                <div class="progress mt-3" style="height: 8px;">
+                                    {% set total = company.total_reviewed_count + company.total_in_progress_count %}
+                                    {% set reviewed_pct = (company.total_reviewed_count / total * 100) if total > 0 else 0 %}
+                                    {% set in_progress_pct = (company.total_in_progress_count / total * 100) if total > 0 else 0 %}
+                                    <div class="progress-bar bg-success" style="width: {{ reviewed_pct }}%"></div>
+                                    <div class="progress-bar bg-warning" style="width: {{ in_progress_pct }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Popular Roles -->
+                        <div class="col-12">
                             <div class="p-3 bg-light rounded h-100">
                                 <h3 class="h6 fw-bold mb-3"><i class="bi bi-star me-1"></i>Popular Roles</h3>
                                 <div class="d-flex flex-wrap gap-2">
                                     {% if company.popular_job_titles %}
                                         {% for title in company.popular_job_titles %}
-                                        <span class="badge bg-primary-subtle text-primary py-2 px-3">
-                                            {{ title }}
-                                        </span>
+                                        <span class="badge bg-primary-subtle text-primary py-2 px-3">{{ title }}</span>
                                         {% endfor %}
                                     {% else %}
                                         <p class="text-muted mb-0">No popular roles yet</p>
@@ -320,6 +277,98 @@
                 </div>
             </div>
 
+
+        <!-- Insert after Performance Metrics card and before Recent Activity card -->
+
+        <!-- Saved Candidates & Security Section -->
+        <div class="row g-4 mb-4">
+            <!-- Saved Candidates Card -->
+            <div class="col-12 col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h2 class="h5 mb-0 fw-bold"><i class="bi bi-bookmark-star me-2 text-primary"></i>Saved Candidates</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-center py-4">
+                            <div class="text-center">
+                                <div class="display-3 fw-bold text-primary">{{ company.total_saved_candidates }}</div>
+                                <p class="text-muted mb-0">Candidates in your talent pool</p>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <a href="{{ url_for('company.candidate_management') }}" class="btn btn-outline-primary">
+                                View Talent Pool
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile & Security Card -->
+            <div class="col-12 col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h2 class="h5 mb-0 fw-bold"><i class="bi bi-shield-check me-2 text-primary"></i>Profile & Security</h2>
+                    </div>
+                    <div class="card-body">
+                        <!-- Profile Completeness -->
+                        <div class="mb-4">
+                            <h3 class="h6 fw-bold"><i class="bi bi-person-badge me-1"></i>Profile Completeness</h3>
+                            <div class="d-flex align-items-center">
+                                {% if company.is_valid %}
+                                <span class="badge bg-success me-2">Complete</span>
+                                <span class="small text-muted">Your profile meets all requirements</span>
+                                {% else %}
+                                <span class="badge bg-warning me-2">Incomplete</span>
+                                <span class="small text-muted">Add more details to your profile</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Verification Timeline -->
+                        {% if company.verification_status == 'pending' and company.time_verification_process_started %}
+                        <div class="mb-3">
+                            <h3 class="h6 fw-bold"><i class="bi bi-clock-history me-1"></i>Verification Started</h3>
+                            <p class="small mb-0">
+                                {{ company.time_verification_process_started.strftime('%b %d, %Y') }}
+                                <span class="text-muted">({{ (now() - company.time_verification_process_started).days }} days ago)</span>
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Security Alerts -->
+                        <div>
+                            <h3 class="h6 fw-bold"><i class="bi bi-shield-exclamation me-1"></i>Security Alerts</h3>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item px-0 py-2">
+                                    <div class="d-flex align-items-center">
+                                        {% if company.has_duplicate_job_descriptions %}
+                                        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+                                        <span class="small">Duplicate job descriptions detected</span>
+                                        {% else %}
+                                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                        <span class="small">No duplicate job descriptions</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                <li class="list-group-item px-0 py-2">
+                                    <div class="d-flex align-items-center">
+                                        {% if company.has_multiple_edits_in_last_hour %}
+                                        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+                                        <span class="small">Rapid job edits detected</span>
+                                        {% else %}
+                                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                        <span class="small">Normal editing activity</span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
             <!-- Recent Activity -->
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 py-3">
@@ -329,23 +378,23 @@
                     {% if company.recent_applications %}
                     <div class="list-group">
                         {% for application in company.recent_applications %}
-                        <div class="list-group-item border-0 py-3">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0 me-3">
-                                    <div class="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center"
-                                         style="width: 40px; height: 40px;">
-                                        <i class="bi bi-person text-primary"></i>
+                            <div class="list-group-item border-0 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0 me-3">
+                                        <div class="bg-primary-subtle rounded-circle d-flex align-items-center justify-content-center"
+                                             style="width: 40px; height: 40px;">
+                                            <i class="bi bi-person text-primary"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ application.candidate_name }} applied for {{ application.job_title }}</h6>
+                                        <p class="mb-0 small text-muted">
+                                            {{ application.applied_at.strftime('%b %d, %Y') }} •
+                                            Status: <span class="badge bg-info">{{ application.status }}</span>
+                                        </p>
                                     </div>
                                 </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{ application.candidate_name }} applied for {{ application.job_title }}</h6>
-                                    <p class="mb-0 small text-muted">
-                                        {{ application.applied_at.strftime('%b %d, %Y') }} •
-                                        Status: <span class="badge bg-info">{{ application.status }}</span>
-                                    </p>
-                                </div>
                             </div>
-                        </div>
                         {% endfor %}
                     </div>
                     {% else %}
@@ -356,7 +405,97 @@
                     {% endif %}
                 </div>
             </div>
+
+
+        </div>
+
+
+    <!-- Contact Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h2 class="h5 mb-0 fw-bold"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Contact</h2>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <!-- Location -->
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-start">
+                            <div class="bg-primary-subtle p-2 rounded me-3">
+                                <i class="bi bi-geo-alt text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small text-muted">Location</p>
+                                <span>
+                                    {% if company.city %}{{ company.city }}{% endif %}
+                                    {% if company.province %}, {{ company.province }}{% endif %}
+                                    {% if company.country %}<br>{{ company.country }}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- Email -->
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-start">
+                            <div class="bg-primary-subtle p-2 rounded me-3">
+                                <i class="bi bi-envelope text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small text-muted">Contact Email</p>
+                                {% if company.contact_email %}
+                                    <a href="mailto:{{ company.contact_email }}" class="text-decoration-none">
+                                        {{ company.contact_email }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Not provided</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- Phone -->
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-start">
+                            <div class="bg-primary-subtle p-2 rounded me-3">
+                                <i class="bi bi-telephone text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small text-muted">Phone</p>
+                                <span>{{ company.phone_number or 'Not provided' }}</span>
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- Social Media -->
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-start">
+                            <div class="bg-primary-subtle p-2 rounded me-3">
+                                <i class="bi bi-share text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small text-muted">Social Media</p>
+                                <div class="d-flex gap-2 mt-1">
+                                    {% if company.linkedin_url %}
+                                    <a href="{{ company.linkedin_url }}" class="text-decoration-none" target="_blank">
+                                        <i class="bi bi-linkedin fs-5 text-primary"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if company.twitter_handle %}
+                                    <a href="https://twitter.com/{{ company.twitter_handle }}" class="text-decoration-none" target="_blank">
+                                        <i class="bi bi-twitter fs-5 text-info"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
+    </div>
+
 </div>
+
 {% endblock %}

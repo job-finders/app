@@ -38,6 +38,52 @@
     </div>
 </div>
 
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Listing Quality Insights</h5>
+        <ul class="list-group list-group-flush small">
+
+          <!-- Completeness Label -->
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Completeness
+            {% if job.job_completeness_score >= 90 %}
+              <span class="badge bg-success">Very Complete</span>
+            {% elif job.job_completeness_score >= 70 %}
+              <span class="badge bg-primary">Complete</span>
+            {% elif job.job_completeness_score >= 50 %}
+              <span class="badge bg-warning text-dark">Partial</span>
+            {% else %}
+              <span class="badge bg-danger">Incomplete</span>
+            {% endif %}
+          </li>
+
+          <!-- Readability Label -->
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Readability
+            {% if job.readability_is_ok %}
+              <span class="badge bg-success">Clear</span>
+            {% else %}
+              <span class="badge bg-danger">Hard to Read</span>
+            {% endif %}
+          </li>
+
+          <!-- Overall Quality Label -->
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Overall Quality
+            {% if job.job_quality_score >= 85 %}
+              <span class="badge bg-success">Excellent</span>
+            {% elif job.job_quality_score >= 70 %}
+              <span class="badge bg-primary">Good</span>
+            {% elif job.job_quality_score >= 50 %}
+              <span class="badge bg-warning text-dark">Fair</span>
+            {% else %}
+              <span class="badge bg-danger">Needs Improvement</span>
+            {% endif %}
+          </li>
+
+        </ul>
+      </div>
+    </div>
 
   <div class="card mb-4">
     <div class="card-body">

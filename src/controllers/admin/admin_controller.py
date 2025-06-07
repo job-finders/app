@@ -709,7 +709,7 @@ class AdminController(Controllers):
 
     def __init__(self, factory):
         super().__init__(factory)
-        self.job_moderation_service = JobModerationService(self.get_session)
+        self.job_moderation_service = JobModerationService(self.get_session, system_admin=self.get_system_admin)
         self.compliance_service = ComplianceService(self.get_session)
         self.analytics_service = AnalyticsService(self.get_session)
         self.security_service = SecurityService(self.get_session)

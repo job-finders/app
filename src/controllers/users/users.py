@@ -129,7 +129,9 @@ class UsersController(Controllers):
             user = User(**user_orm.to_dict())
             if not user.check_password(password=password):
                 return None
-            user_orm.last_login = datetime.now(timezone.utc)
+            _last_login = datetime.now(timezone.utc)
+            user_orm.last_login = _last_login
+            user.last_login = _last_login
             return user
 
     @error_handler

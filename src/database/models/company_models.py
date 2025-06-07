@@ -6,6 +6,7 @@ from difflib import SequenceMatcher
 from enum import Enum
 from typing import Optional, List, Union
 from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, ConfigDict
+from scipy.fft import ifft2
 
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.constants import utc_time
@@ -68,30 +69,47 @@ class Company(BaseModel):
     saved_candidates: Optional[list['SavedCandidates']] = Field(default_factory=list)
     employers: Optional[list['Employer']] = Field(default_factory=list)
     ip_address: Optional[str] = Field(default_factory=lambda : get_service("ip_address")())
+
+
+    @property
+    def applications_stats_by_job(self):
+        """
+
+        :return:
+        """
+        if self.total_jobs == 0:
+            return 0, 0
+        _job_stat: dict[str, int] = {
+
+        }
+        application_stats_by_job = {
+            "job_title": {
+                "reviewed_applications":0,
+                "in_progress":0,
+            }
+        }
+        for job in self.jobs:
+            _job_stat['reviewed_applications'] = job.reviewed_applications_count
+            _job_stat['in_progress'] = job.in_progress_applications_count
+            application_stats_by_job[job.title] = _job_stat
+
+        return application_stats_by_job
+
+    @property
+    def total_reviewed_count(self):
+        return sum(job.reviewed_applications_count for job in self.jobs) if self.jobs else 0
+
+    @property
+    def total_in_progress_count(self):
+        return sum(job.in_progress_applications for job in self.jobs) if self.jobs else 0
+
     @property
     def location(self) -> str:
         """Formatted location string"""
         parts = [self.city, self.province, self.country]
         return ', '.join(part for part in parts if part)
 
-    @field_validator('tech_stack', mode='before')
-    @classmethod
-    def parse_tech_stack(cls, v):
-        """Handle different formats of tech_stack input"""
-        if v is None:
-            return None
-        if isinstance(v, list):
-            return v
-        if isinstance(v, str):
-            # Try to parse JSON string
-            if v.startswith('[') and v.endswith(']'):
-                try:
-                    return json.loads(v)
-                except json.JSONDecodeError:
-                    pass
-            # Handle comma-separated values
-            return [tech.strip() for tech in v.split(',') if tech.strip()]
-        return v
+
     @property
     def total_saved_candidates(self) -> int:
         """Total saved candidates"""
@@ -217,28 +235,6 @@ class Company(BaseModel):
                 return True
         return False
 
-
-
-
-
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
-
-    @field_validator("phone_number")
-    def validate_phone_number(cls, v):
-        if v and not re.match(r"^\+?[\d\s\-()]{7,20}$", v):
-            raise ValueError("Invalid phone number format")
-        return v
-
-    @field_validator("twitter_handle")
-    def validate_twitter_handle(cls, v):
-        if v and not re.match(r"^@?(\w){1,15}$", v):
-            raise ValueError("Invalid Twitter handle")
-        return v
-
     @property
     def is_valid(self) -> bool:
         """
@@ -272,6 +268,44 @@ class Company(BaseModel):
         ])
 
         return has_contact_info and has_location_info and has_descriptive_info
+
+    @field_validator("phone_number")
+    def validate_phone_number(cls, v):
+        if v and not re.match(r"^\+?[\d\s\-()]{7,20}$", v):
+            raise ValueError("Invalid phone number format")
+        return v
+
+    @field_validator("twitter_handle")
+    def validate_twitter_handle(cls, v):
+        if v and not re.match(r"^@?(\w){1,15}$", v):
+            raise ValueError("Invalid Twitter handle")
+        return v
+
+    @field_validator('tech_stack', mode='before')
+    @classmethod
+    def parse_tech_stack(cls, v):
+        """Handle different formats of tech_stack input"""
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            # Try to parse JSON string
+            if v.startswith('[') and v.endswith(']'):
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    pass
+            # Handle comma-separated values
+            return [tech.strip() for tech in v.split(',') if tech.strip()]
+        return v
+
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
 
 class CompanyUpdate(BaseModel):
     """Model for partial company updates"""
@@ -464,7 +498,6 @@ class CompanyFollowing(BaseModel):
    def follower_name(self) -> Optional[str]:
        """Get follower name if jobseeker data is loaded"""
        return self.jobseeker_follower.full_name if self.jobseeker_follower else None
-
 
 class CandidateStatus(str, Enum):
     SAVED = "saved"
