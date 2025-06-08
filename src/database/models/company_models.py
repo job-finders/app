@@ -534,3 +534,45 @@ class SavedCandidates(BaseModel):
         if v is not None and not isinstance(v, list):
             raise ValueError('Tags must be a list of strings')
         return v
+
+########################################################
+###3 COMPANY SETTINGS
+########################################################
+
+class CompanySettings(BaseModel):
+    company_id: str  # FK or UUID
+
+    # General
+    default_job_duration_days: int = 30
+    auto_publish_jobs: bool = False
+    job_visibility: str = "public"  # Enum in production
+    allow_featured_jobs: bool = True
+    max_open_jobs: int = 10
+
+    # Application
+    auto_response_enabled: bool = False
+    default_response_message: Optional[str] = "Thank you for your application."
+    require_cover_letter: bool = False
+    required_documents: list[str] = Field(default_factory=lambda: ["resume"])
+    questionnaire_enabled: bool = False
+    allow_withdrawals: bool = True
+
+    # Branding
+    email_sender_name: Optional[str] = None
+    email_signature: Optional[str] = None
+    custom_email_template_enabled: bool = False
+    custom_application_success_page_url: Optional[str] = None
+
+    # Team Access
+    team_invites_enabled: bool = True
+    max_recruiters: int = 5
+    recruiter_roles: Optional[dict] = Field(default_factory=dict)
+
+    # Notifications
+    weekly_digest_enabled: bool = True
+    slack_notifications_enabled: bool = False
+    slack_webhook_url: Optional[str] = None
+    notify_on_new_application: bool = True
+
+    class Config:
+        from_attributes = True

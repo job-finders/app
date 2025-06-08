@@ -1,0 +1,91 @@
+{% extends "company/layout/page.html" %}
+
+{% block title %}Company Settings | {{ company.name if company else "Recruitment Portal" }}{% endblock %}
+
+{% block meta_description %}
+Manage your recruitment activities: view verification status, active jobs, candidate analytics, and recent applications on your company dashboard.
+{% endblock %}
+
+{% block meta_keywords %}
+company dashboard, recruitment dashboard, hiring analytics, job management, candidate tracking, verification status, employer dashboard
+{% endblock %}
+
+{% block content %}
+
+<div class="card border-0 shadow-sm mb-5">
+    <div class="card-header bg-white border-bottom-0 d-flex align-items-center justify-content-between">
+        <h2 class="h5 fw-bold mb-0 text-primary"><i class="bi bi-gear me-2"></i>Company Settings</h2>
+    </div>
+    <div class="card-body py-4">
+        <form method="POST" action="/dashboard/settings/update" class="needs-validation" novalidate>
+
+            <!-- GENERAL SETTINGS -->
+            <section class="mb-5">
+                <h5 class="text-uppercase text-muted fw-semibold small mb-3">General</h5>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Default Job Duration (days)</label>
+                        <input type="number" class="form-control" name="default_job_duration_days" value="{{ settings.default_job_duration_days }}" required>
+                        <div class="form-text">How long a job post stays active before expiring.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Max Open Jobs</label>
+                        <input type="number" class="form-control" name="max_open_jobs" value="{{ settings.max_open_jobs }}" required>
+                        <div class="form-text">Limit of concurrently open job posts.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- APPLICATION PREFERENCES -->
+            <section class="mb-5">
+                <h5 class="text-uppercase text-muted fw-semibold small mb-3">Applications</h5>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="autoResponseSwitch" name="auto_response_enabled" {% if settings.auto_response_enabled %}checked{% endif %}>
+                    <label class="form-check-label fw-medium" for="autoResponseSwitch">Enable Auto Response</label>
+                    <div class="form-text">Automatically send a message to applicants after submission.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Default Response Message</label>
+                    <textarea class="form-control" rows="3" name="default_response_message" placeholder="Thank you for applying!">{{ settings.default_response_message }}</textarea>
+                </div>
+            </section>
+
+            <!-- BRANDING -->
+            <section class="mb-5">
+                <h5 class="text-uppercase text-muted fw-semibold small mb-3">Branding</h5>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Email Sender Name</label>
+                        <input type="text" class="form-control" name="email_sender_name" value="{{ settings.email_sender_name }}" placeholder="Acme Corp Careers">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Email Signature</label>
+                        <input type="text" class="form-control" name="email_signature" value="{{ settings.email_signature }}" placeholder="The Acme Corp Talent Team">
+                    </div>
+                </div>
+            </section>
+
+            <!-- NOTIFICATIONS -->
+            <section class="mb-5">
+                <h5 class="text-uppercase text-muted fw-semibold small mb-3">Notifications</h5>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="notifyNewApp" name="notify_on_new_application" {% if settings.notify_on_new_application %}checked{% endif %}>
+                    <label class="form-check-label fw-medium" for="notifyNewApp">Notify on New Applications</label>
+                    <div class="form-text">Receive email alerts when someone applies to a job.</div>
+                </div>
+            </section>
+
+            <!-- ACTION BUTTON -->
+            <div class="text-end">
+                <button type="submit" class="btn btn-primary px-4 py-2">
+                    <i class="bi bi-save me-1"></i> Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

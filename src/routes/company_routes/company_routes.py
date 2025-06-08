@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 from src.routes import flask_error_handler
 from src.authentication import login_required, employer_login
 from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate, CompanyCIPC, \
-    CompanyVerificationDocument
+    CompanyVerificationDocument, CompanySettings
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
 from src.database.models.resume import JobSeekerCV, SavedCV
@@ -611,11 +611,18 @@ async def verification_status(user: User):
 @flask_error_handler
 @employer_login
 async def billing(user: User):
-    return render_template("company/billing.html")  # Placeholder template
+    return render_template("company/billing/billing.html")  # Placeholder template
 
 @company_bp.route("/settings")
-async def settings():
-    return render_template("company/settings.html")  # Placeholder template
+@flask_error_handler
+@employer_login
+async def settings(user: User):
+    company_controller = get_controller('company')
+    employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
+    company_data = await company_controller.get_company_by_id(company_id=employer_details.company_id)
+    settings = CompanySettings(company_id=company_data.company_id)
+    context = dict(current_user=user, settings=settings)
+    return render_template("company/settings.html", **context)  # Placeholder template
 
 @company_bp.route("/employers")
 @flask_error_handler

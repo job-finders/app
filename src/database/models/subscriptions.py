@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 
 
@@ -59,4 +59,21 @@ class PaymentTransaction(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat(),
         }
+
+
+class CompanySubscription(BaseModel):
+    company_id: str  # FK to company
+    plan_id: Optional[str] = None
+    trial_started_at: Optional[datetime] = None
+    trial_days: int = 14
+    subscribed: bool = False
+    active_until: Optional[datetime] = None
+
+    def is_trial_active(self) -> bool:
+        if not self.trial_started_at:
+            return False
+        return datetime.utcnow() < self.trial_started_at + timedelta(days=self.trial_days)
+
+    def is_trial_expired(self) -> bool:
+        return not self.is_trial_active() and not self.subscribed
 

@@ -2,6 +2,8 @@ import re
 from functools import wraps
 from flask import request, redirect, url_for, flash
 
+from database.models.billing import CompanyBillingProfile
+from database.sql.employer import EmployerORM
 from src.authentication.jwt_helper import decode_jwt
 from src.database.models import Role
 from src.logger import init_logger
@@ -110,4 +112,39 @@ def user_details(route_function):
     async def wrapper(*args, **kwargs):
         user = await resolve_user_from_jwt_cookie()
         return await route_function(user, *args, **kwargs)
+    return wrapper
+
+
+def get_current_company_subscription(uid: str):
+    """Retrieve the current company based on the user's UID."""
+    if not is_valid_uid(uid):
+        auth_logger.warning(f"Invalid UID format: {uid}")
+        return None
+    with Session() as session:
+        employer_orm = session.query(EmployerORM).filter(EmployerORM.user_uid == uid).first()
+        if not employer_orm:
+            auth_logger.info(f"Employer profile not found for : {uid}")
+            return None
+        company_id = employer_orm.company_id
+        subscription_orm = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).first()
+        if not subscription_orm:
+            auth_logger.info(f"company_billing profile not found for : {uid}")
+            return None
+        return CompanyBillingProfile(**subscription_orm.to_dict())
+
+
+def require_billing_role_trial(route_function):
+    """
+        will validate if billing role is trial or above
+    :param route_function:
+    :return:
+    """
+    @wraps(route_function)
+    async def wrapper(*args, **kwargs):
+        user = await resolve_user_from_jwt_cookie()
+        billing_plan = get_current_company_subscription(uid=user.uid if user else None)
+        if billing_plan.is_trial_valid or billing_plan.is_active_subscription_plan:
+            return await route_function(*args, **kwargs)
+        flash(message="You do not have an active subscription plan", category="danger")
+        return redirect(url_for("company.get_dashboard"))
     return wrapper

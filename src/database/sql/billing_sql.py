@@ -1,0 +1,132 @@
+import enum
+from datetime import datetime, timezone
+
+from sqlalchemy import Column, String, Boolean, Integer, Numeric, Text, DateTime, func
+from sqlalchemy import ForeignKey, Date, time
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+
+from src.database.constants import ID_LEN
+
+Base = declarative_base()
+
+
+class BillingPlanORM(Base):
+    __tablename__ = "billing_plan"
+
+    plan_id = Column(String(ID_LEN), primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+
+    price = Column(Numeric(10, 2), nullable=False, default=0.00)  # Price in ZAR
+    currency = Column(String(10), default="ZAR")  # Defaulted for PayFast usage
+
+    is_active = Column(Boolean, default=True)
+    is_featured = Column(Boolean, default=False)
+    is_trial = Column(Boolean, default=False)
+
+    max_open_jobs = Column(Integer, nullable=True)       # None = unlimited
+    max_users = Column(Integer, nullable=True)
+    max_applicants_per_job = Column(Integer, nullable=True)
+
+    allow_priority_support = Column(Boolean, default=False)
+    show_branding = Column(Boolean, default=True)
+
+    sort_order = Column(Integer, default=0)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+    invoices = relationship("InvoiceORM", back_populates="billing_plan")
+
+    def to_dict(self, include_relationships: bool = False) -> dict:
+        return {
+            "plan_id": self.plan_id,
+            "name": self.name,
+            "description": self.description,
+            "price": float(self.price),
+            "currency": self.currency,
+            "is_active": self.is_active,
+            "is_featured": self.is_featured,
+            "is_trial": self.is_trial,
+            "max_open_jobs": self.max_open_jobs,
+            "max_users": self.max_users,
+            "max_applicants_per_job": self.max_applicants_per_job,
+            "allow_priority_support": self.allow_priority_support,
+            "show_branding": self.show_branding,
+            "sort_order": self.sort_order,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "invoices": [invoice.to_dict() for invoice in self.invoices] if include_relationships and self.invoices else None
+        }
+
+
+class CompanyBillingProfileORM(Base):
+    __tablename__ = "company_billing"
+    company_id = Column(String(ID_LEN), ForeignKey('companies.company_id', primary_key=True, index=True))
+    current_plan_id = Column(String(ID_LEN), ForeignKey('billing_plan.plan_id', index=True))
+    subscription_start = Column(Date, nullable=True)
+    subscription_end = Column(Date, nullable=True)
+    trial_active = Column(Boolean, default=True)
+    trial_end_date = Column(Date, nullable=True)
+    is_payment_overdue = Column(Boolean, default=False)
+
+    auto_renew = Column(Boolean, default=True)
+    last_invoice_id = Column(String(ID_LEN), nullable=True)
+    invoices = relationship("InvoiceORM", back_populates="company_billing")
+
+
+    def to_dict(self, include_relationships: bool = False) -> dict:
+        return {
+            "company_id": self.company_id,
+            "current_plan_id": self.current_plan_id,
+            "subscription_start": self.subscription_start.isoformat() if self.subscription_start else None,
+            "subscription_end": self.subscription_end.isoformat() if self.subscription_end else None,
+            "trial_active": self.trial_active,
+            "trial_end_date": self.trial_end_date.isoformat() if self.trial_end_date else None,
+            "is_payment_overdue": self.is_payment_overdue,
+            "auto_renew": self.auto_renew,
+            "last_invoice_id": self.last_invoice_id,
+            "invoices": [invoice.to_dict() for invoice in self.invoices] if include_relationships and self.invoices else None
+        }
+
+# Assuming this enum is already defined elsewhere
+class InvoiceStatusEnum(str, enum.Enum):
+    PENDING = "PENDING"
+    PAID = "PAID"
+    FAILED = "FAILED"
+    OVERDUE = "OVERDUE"
+    CANCELLED = "CANCELLED"
+
+class InvoiceORM(Base):
+    __tablename__ = "invoice"
+
+    invoice_id = Column(String(ID_LEN), primary_key=True, index=True)
+    company_id = Column(String(ID_LEN), ForeignKey("company_billing.company_id"), nullable=False)
+    plan_id = Column(String(ID_LEN), ForeignKey("billing_plan.plan_id"), nullable=True)
+
+    status = Column(String(36), default=InvoiceStatusEnum.PENDING.value, nullable=False)
+    amount = Column(Numeric(10, 2), nullable=False)
+    currency = Column(String(10), default="ZAR", nullable=False)
+
+    due_date = Column(Date, nullable=False)
+    paid_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+
+    # Optional relationships
+    company_billing = relationship("CompanyBillingProfileORM", back_populates="invoices")
+    billing_plan = relationship("BillingPlanORM", back_populates="invoices")
+
+    def to_dict(self, include_relationships: bool = False) -> dict:
+        return {
+            "invoice_id": self.invoice_id,
+            "company_id": self.company_id,
+            "plan_id": self.plan_id,
+            "status": self.status if self.status else None,
+            "amount": float(self.amount),
+            "currency": self.currency,
+            "due_date": self.due_date.isoformat() if self.due_date else None,
+            "paid_at": self.paid_at.isoformat() if self.paid_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "company_billing": self.company_billing.to_dict() if include_relationships and self.company_billing else None,
+            "billing_plan": self.billing_plan.to_dict() if include_relationships and self.billing_plan else None
+        }
