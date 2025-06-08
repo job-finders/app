@@ -3,16 +3,19 @@ import threading
 import time
 from typing import Dict, Any
 
-from src.controllers.analytics import UserEngagementController
-from src.controllers.agents import EmployerAgentsController, EmployeeAgentsController
-from src.controllers.ats import ATSToolController
+
 from src.controllers.company import CompanyController
-from src.controllers.jobs import JobsSearchController, JobsWorkflowController
 from src.controllers.jobseekers import JobSeekerProfilesController
+from src.controllers.jobs import JobsSearchController
+from src.controllers.billing.billing_controller import BillingController
+from src.controllers.jobs import JobsWorkflowController
 from src.controllers.resumes import ResumeController
 from src.controllers.users import UsersController
+from src.controllers.ats import ATSToolController
+from src.controllers.agents import EmployerAgentsController
+from src.controllers.agents import EmployeeAgentsController
 from src.controllers.admin import AdminController
-
+from src.controllers.analytics import UserEngagementController
 
 class ControllerFactory:
     """Factory for creating and managing controller instances with performance optimizations"""
@@ -31,7 +34,7 @@ class ControllerFactory:
     def init_app(self, app):
         """Initialize factory with Flask app"""
         self.app = app
-        app.extensions = getattr(app, 'extensions', {})
+        # app.extensions = getattr(app, 'extensions', {})
         app.extensions['controller_factory'] = self
 
         # Pre-warm critical controllers
@@ -68,23 +71,33 @@ class ControllerFactory:
         """Initialize frequently used controllers during app startup"""
         for name in controller_names:
             getter_name = f'get_{name}_controller'
+            print(f"PRE WARMING : {getter_name}")
             if hasattr(self, getter_name):
                 getattr(self, getter_name)()
+                print(f"PRE WARMED : {getter_name}")
 
     def get_jobs_search_controller(self) -> JobsSearchController:
         """Get JobsSearchController instance with thread safety"""
+
         return self._get_controller('jobs_search', JobsSearchController)
+
+    def get_billing_controller(self) -> BillingController:
+        """Get BillingController instance"""
+        return self._get_controller('billing', BillingController)
 
     def get_jobs_workflow_controller(self) -> JobsWorkflowController:
         """Get JobsWorkflowController instance with thread safety"""
+
         return self._get_controller('jobs_workflow', JobsWorkflowController)
 
     def get_resume_controller(self) -> ResumeController:
         """Get ResumeController instance with thread safety"""
+
         return self._get_controller('resume', ResumeController)
 
     def get_company_controller(self) -> CompanyController:
         """Get CompanyController instance with dependency flexibility"""
+
         with self._lock:
             if 'company' not in self._controllers:
                 # Use factory references instead of concrete instances
@@ -97,10 +110,12 @@ class ControllerFactory:
 
     def get_users_controller(self) -> UsersController:
         """Get UsersController instance with thread safety"""
+
         return self._get_controller('users', UsersController)
 
     def get_ats_controller(self) -> ATSToolController:
         """Get ATSToolController instance with dependency flexibility"""
+
         with self._lock:
             if 'ats' not in self._controllers:
                 controller = ATSToolController(self)
@@ -112,17 +127,21 @@ class ControllerFactory:
 
     def get_job_seeker_profile_controller(self) -> JobSeekerProfilesController:
         """Get JobSeekerProfilesController instance"""
+
         return self._get_controller('job_seeker_profile', JobSeekerProfilesController)
 
     def get_employer_agents_controller(self) -> EmployerAgentsController:
         """Get EmployerAgentsController instance"""
+
         return self._get_controller('employer_agents', EmployerAgentsController)
 
     def get_employee_agents_controller(self) -> EmployeeAgentsController:
         """Get EmployeeAgentsController instance"""
+
         return self._get_controller('employee_agents', EmployeeAgentsController)
-    def get_admin_controller(self) -> AdminController:
+    def get_admin_controller(self) -> 'AdminController':
         """Get AdminController instance"""
+
         return self._get_controller('admin_controller', AdminController)
 
     def get_user_engagement_controller(self) -> UserEngagementController:
@@ -130,11 +149,14 @@ class ControllerFactory:
             USer Engagement Controller
         :return:
         """
+
         return self._get_controller('user_engagement', UserEngagementController)
+
 
     def _get_controller(self, name: str, controller_class):
         """Thread-safe controller getter with double-checked locking"""
         # First check without lock for performance
+        from src.controllers.controller import ControllerInitException
         if controller := self._controllers.get(name):
             self._access_times[name] = time.time()
             return controller
@@ -144,11 +166,13 @@ class ControllerFactory:
             if controller := self._controllers.get(name):
                 self._access_times[name] = time.time()
                 return controller
-
-            # Create new instance
-            controller = controller_class(self)  # Pass factory for dependency access
-            if self.app:
-                controller.init_app(self.app)
+            try:
+                # Create new instance
+                controller = controller_class(self)  # Pass factory for dependency access
+                if self.app:
+                    controller.init_app(self.app)
+            except Exception as e:
+                raise ControllerInitException(name, controller_class, "Error during instantiation", e) from e
 
             self._controllers[name] = controller
             self._access_times[name] = time.time()

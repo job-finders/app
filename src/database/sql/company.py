@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 
 from src.database.constants import ID_LEN, NAME_LEN, utc_time
 from src.database.sql import Base, engine
-
+from src.database.sql.employer import EmployerORM
 
 
 class CompanyORM(Base):
@@ -29,6 +29,10 @@ class CompanyORM(Base):
     contact_email = Column(String(255))
     phone_number = Column(String(20))
 
+    billing_email = Column(String(255), nullable=True)  # Optional billing email for invoices
+    send_invoice_emails = Column(Boolean, default=True)
+    send_trial_reminders = Column(Boolean, default=True)
+
     # Company Details
     employee_count = Column(Integer)
     founded_year = Column(Integer)
@@ -44,7 +48,7 @@ class CompanyORM(Base):
 
     # Relationships
     jobs = relationship("JobsORM", back_populates="company")
-    employers = relationship("EmployerORM")
+    employers = relationship("EmployerORM", back_populates="company")
     saved_candidates = relationship("SavedCandidatesORM", back_populates="company")
     # A list of Company Following ORM
     followers = relationship("CompanyFollowingORM", back_populates="followed_company")

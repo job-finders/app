@@ -9,6 +9,26 @@ from src.logger import init_logger
 
 error_logger = init_logger("error_logger")
 
+class ControllerInitException(Exception):
+    """Exception raised when a controller fails to initialize properly."""
+
+    def __init__(self, controller_name: str, controller_class: type, message: str = "", original_exception: Exception = None):
+        self.controller_name = controller_name
+        self.controller_class = controller_class
+        self.original_exception = original_exception
+
+        class_name = controller_class.__name__ if controller_class else "UnknownClass"
+        full_message = (
+            f"Initialization failed for controller '{controller_name}' "
+            f"(class: {class_name})."
+        )
+        if message:
+            full_message += f" {message}"
+        if original_exception:
+            full_message += f" Original error: {str(original_exception)}"
+
+        super().__init__(full_message)
+
 
 class Controllers:
     """

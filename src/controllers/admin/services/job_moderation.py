@@ -1,12 +1,11 @@
-from datetime import datetime
+from sqlalchemy import or_
 
 from sqlalchemy import or_
 
-from src.database.models.users import User
-from src.database.models.jobs_model import JobApprovalStatusEnum
-from src.database.sql.company import CompanyORM
-from src.database.sql.jobs_sql import JobApprovalRequestORM, JobsORM
 from src.controllers.admin.interfaces import AdminServiceInterface, AdminActionResult
+from src.database.models.users import User
+from src.database.sql.company import CompanyORM
+from src.database.sql.jobs_sql import JobsORM
 from src.utils.route_helpers import get_controller
 
 
@@ -115,7 +114,7 @@ class JobModerationService(AdminServiceInterface):
         actions = {
             'approve': self._approve_jobs,
             'reject': self._reject_jobs,
-            'flag': self._flag_job,
+            'flag': self._flag_jobs,
             'bulk_update': self._bulk_update_status,
             'detect_anomalies': self._detect_anomalous_postings
         }
@@ -175,7 +174,7 @@ class JobModerationService(AdminServiceInterface):
         except Exception as e:
             return AdminActionResult(success=False, message=f"Error approving jobs: {str(e)}")
 
-    def flag_jobs(self) -> AdminActionResult:
+    def _flag_jobs(self, job_id: str, reporter_id: str) -> AdminActionResult:
         """Flag a job for admin review based on multiple heuristics"""
         try:
 
@@ -235,11 +234,11 @@ class JobModerationService(AdminServiceInterface):
                 if suspicious:
                     # Optionally, create a flag record or update job status
                     if hasattr(self.jobs_workflow, "flag_job_listing"):
-                        self.jobs_workflow.flag_job_listing(job_id=job_id, reason="; ".join(reasons), reporter_id=reporter_id)
+                        self.jobs_workflow.flag_job_listing(job_id=job.job_id, reason="; ".join(reasons), reporter_id=reporter_id)
                     return AdminActionResult(
                         success=True,
                         message="Job flagged for review: " + "; ".join(reasons),
-                        data={"job_id": job_id, "reasons": reasons}
+                        data={"job_id": job.job_id, "reasons": reasons}
                     )
                 else:
                     return AdminActionResult(success=False, message="No suspicious patterns detected", data={"job_id": job_id})

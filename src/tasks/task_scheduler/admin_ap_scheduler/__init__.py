@@ -4,11 +4,13 @@ from src.utils.route_helpers import get_controller, get_service
 def schedule_app_tasks(scheduler, app):
     """Schedule all periodic tasks that need Flask context."""
 
+    with app.app_context():
+        admin_controller = get_controller("admin_controller")
+        company_controller = get_controller("company")
+        billing_controller = get_controller("billing")
+
     logger = get_service("logger")()("app_scheduler")
     logger.info("###### Initializing App Scheduler ######")
-
-    admin_controller = get_controller("admin_controller")
-    company_controller = get_controller("company")
 
     def async_job_wrapper(job_name, coro):
         def wrapper():
@@ -83,6 +85,22 @@ def schedule_app_tasks(scheduler, app):
         hour=3,
         minute=0,
         id='detect_anomalous_jobs',
+        replace_existing=True
+    )
+    scheduler.add_job(
+        async_job_wrapper("update_subscriptions", billing_controller.cron_update_subscription_states),
+        trigger='cron',
+        hour=3,
+        minute=0,
+        timezone='UTC',
+        id='update_billing_subscriptions',
+        replace_existing=True
+    )
+    scheduler.add_job(
+        async_job_wrapper("billing_cron_jobs", billing_controller.cron_billing),
+        trigger='interval',
+        minutes=120,
+        id='approve_jobs',
         replace_existing=True
     )
 

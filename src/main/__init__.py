@@ -20,12 +20,13 @@ def _register_blueprints(app):
     from src.routes.cron_routes import cron_route
     from src.routes.ats_routes import ats_tool_route
     from src.routes.company_routes import company_bp, company_search_routes
+    from src.routes.billing_routes import billing_route
 
     blueprints = [
         auth_route, home_route, jobs_workflow_route, jobs_search_route,
         seo_route, blog_route, users_route, jobseeker_route,
         jobseeker_profiles_bp, resume_routes, jobseeker_applications_route,
-        cron_route, ats_tool_route, company_bp, company_search_routes
+        cron_route, ats_tool_route, company_bp, company_search_routes, billing_route
     ]
     for blueprint in blueprints:
         app.register_blueprint(blueprint)
@@ -145,6 +146,7 @@ def create_app(config):
         # Store factories in app for access in routes
         app.service_factory = service_factory
         app.controller_factory = controller_factory
+
         # ========================
         # 5. Boot Sequence
         # ========================

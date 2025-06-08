@@ -2,7 +2,7 @@ from datetime import datetime
 
 from src.controllers.controller import Controllers, error_handler
 from src.logger import init_logger
-from src.database.sql.blog_learning import BlogFeedback, BlogPrompt
+from src.database.sql.blog_learning import BlogFeedbackResulORM, BlogPromptORM
 from src.database.models.feedback_analysis import BlogFeedbackInput, BlogFeedbackOutput
 
 
@@ -45,7 +45,7 @@ class BlogFeedbackController(Controllers):
         """
         Submit or update feedback for a given blog prompt. If feedback exists, it is updated;
         otherwise, a new record is created. The feedback score is recalculated and synced to the
-        related BlogPrompt record.
+        related BlogPromptORM record.
 
         Args:
             feedback_in (BlogFeedbackInput): Feedback data including prompt ID, views, likes, and comments.
@@ -57,12 +57,12 @@ class BlogFeedbackController(Controllers):
             ValueError: If the database operation fails (handled by the @error_handler decorator).
         """
         with self.get_session() as session:
-            feedback = session.query(BlogFeedback).filter(
-                BlogFeedback.prompt_id == feedback_in.prompt_id
+            feedback = session.query(BlogFeedbackResulORM).filter(
+                BlogFeedbackResulORM.prompt_id == feedback_in.prompt_id
             ).first()
 
             if feedback is None:
-                feedback = BlogFeedback(
+                feedback = BlogFeedbackResulORM(
                     prompt_id=feedback_in.prompt_id,
                     views=feedback_in.views,
                     likes=feedback_in.likes,
@@ -80,8 +80,8 @@ class BlogFeedbackController(Controllers):
                 feedback.views, feedback.likes, feedback.comments
             )
 
-            # Update the associated BlogPrompt with the new feedback score
-            prompt = session.query(BlogPrompt).filter(BlogPrompt.id == feedback_in.prompt_id).first()
+            # Update the associated BlogPromptORM with the new feedback score
+            prompt = session.query(BlogPromptORM).filter(BlogPromptORM.id == feedback_in.prompt_id).first()
             if prompt:
                 prompt.feedback_score = feedback.feedback_score
 

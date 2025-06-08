@@ -1,6 +1,8 @@
+import re
+from enum import Enum
 from typing import Literal, Dict
 import uuid
-from datetime import date, timezone
+from datetime import date, timezone, timedelta
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal
@@ -60,6 +62,11 @@ class BillingPlan(BaseModel):
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = None
+    duration_days: int = Field(default=30)
+
+    @property
+    def plan_slug(self) -> str:
+        return re.sub(r'[^a-z0-9]+', '-', self.name.lower()).strip('-')
 
     class Config:
         orm_mode = True
@@ -133,17 +140,51 @@ class CompanyBillingProfile(BaseModel):
 
         return False
 
+    @property
+    def grace_period_ended(self) -> bool:
+        """returns true if the grace period has ended."""
+        return datetime.now(timezone.utc).date() <- self.subscription_end + timedelta(days=7)
 
-class InvoiceStatusEnum(str):
+    @property
+    def is_about_to_expire(self) -> bool:
+        """
+        Returns True if the subscription is within 7 days of expiration,
+        but has not already expired.
+        """
+        if self.subscription_end:
+            days_left = (self.subscription_end - datetime.now(timezone.utc).date()).days
+            return 0 <= days_left <= 7
+        return False
+
+    @property
+    def duration_days(self) -> int:
+        """
+        Returns the number of days in the current subscription period.
+        If no subscription is active, returns 0.
+        """
+        if self.subscription_start and self.subscription_end:
+            return (self.subscription_end - self.subscription_start).days
+        return 0
+
+    @property
+    def days_to_expire(self):
+        """
+        Days until Subscription has expired
+        :return:
+        """
+        return max((self.subscription_end - datetime.now(timezone.utc).date()).days, 0)
+
+class InvoiceStatusEnum(Enum):
     """
     Enumeration of possible invoice statuses.
-    
+
     Defines the various states an invoice can be in during its lifecycle.
     """
-    PENDING = "Pending"   # Invoice created but not yet paid
-    PAID = "Paid"         # Invoice successfully paid
-    FAILED = "Failed"     # Payment attempt failed
-    CANCELED = "Canceled" # Invoice was canceled before payment
+    PENDING = "Pending"  # Invoice created but not yet paid
+    PAID = "Paid"  # Invoice successfully paid
+    FAILED = "Failed"  # Payment attempt failed
+    CANCELED = "Canceled"  # Invoice was canceled before payment
+    CLOSED = "Closed"  # Invoice paid and finalized cannot go to CLOSED if notifications are not uet sent— no further actions allowed
 
 
 class Invoice(BaseModel):
@@ -167,7 +208,7 @@ class Invoice(BaseModel):
     invoice_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     company_id: str
     plan_id: Optional[str]
-    status: InvoiceStatusEnum = InvoiceStatusEnum.PENDING
+    status: str = Field(default=InvoiceStatusEnum.PENDING.value)
     amount: float
     currency: str = "ZAR"
     due_date: date
@@ -235,6 +276,6 @@ class BillingEvent(BaseModel):
         'manual_payment_received'
     ]
 
-    metadata: Dict[str, str] = Field(default_factory=dict)
+    event_metadata: Dict[str, str] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

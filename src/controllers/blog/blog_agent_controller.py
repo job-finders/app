@@ -3,7 +3,7 @@ from typing import List
 
 from src.controllers.controller import Controllers, error_handler
 from src.logger import init_logger
-from src.database.sql.blog_learning import BlogTopic, BlogPrompt, BlogFeedback
+from src.database.sql.blog_learning import BlogTopic, BlogPromptORM, BlogFeedbackResulORM
 from src.database.models.feedback_analysis import BlogFeedbackInput, BlogFeedbackOutput
 
 class BlogAgentController(Controllers):
@@ -47,15 +47,15 @@ class BlogAgentController(Controllers):
             return topic_in
 
     @error_handler
-    async def add_blog_prompt(self, prompt_in: BlogPrompt) -> BlogPrompt:
+    async def add_blog_prompt(self, prompt_in: BlogPromptORM) -> BlogPromptORM:
         """
         Add a new blog prompt under a specific topic.
 
         Args:
-            prompt_in (BlogPrompt): The prompt data including content and topic_id.
+            prompt_in (BlogPromptORM): The prompt data including content and topic_id.
 
         Returns:
-            BlogPrompt: The original input object on success.
+            BlogPromptORM: The original input object on success.
 
         Raises:
             ValueError: If the specified topic does not exist.
@@ -65,7 +65,7 @@ class BlogAgentController(Controllers):
             if not topic:
                 raise ValueError(f"Blog topic id {prompt_in.topic_id} not found")
 
-            prompt = BlogPrompt(
+            prompt = BlogPromptORM(
                 content=prompt_in.content,
                 topic_id=prompt_in.topic_id,
                 created_at=datetime.now(timezone.utc),
@@ -76,7 +76,7 @@ class BlogAgentController(Controllers):
             return prompt_in
 
     @error_handler
-    async def get_prompts_for_topic(self, topic_id: int) -> List[BlogPrompt]:
+    async def get_prompts_for_topic(self, topic_id: int) -> List[BlogPromptORM]:
         """
         Retrieve all prompts associated with a given topic.
 
@@ -84,11 +84,11 @@ class BlogAgentController(Controllers):
             topic_id (int): The ID of the blog topic.
 
         Returns:
-            List[BlogPrompt]: A list of prompts under the specified topic.
+            List[BlogPromptORM]: A list of prompts under the specified topic.
         """
         with self.get_session() as session:
-            prompts = session.query(BlogPrompt).filter(BlogPrompt.topic_id == topic_id).all()
-            return [BlogPrompt(id=p.id, content=p.content, topic_id=p.topic_id) for p in prompts]
+            prompts = session.query(BlogPromptORM).filter(BlogPromptORM.topic_id == topic_id).all()
+            return [BlogPromptORM(id=p.id, content=p.content, topic_id=p.topic_id) for p in prompts]
 
     @error_handler
     async def update_feedback_score(self, feedback_in: BlogFeedbackInput) -> BlogFeedbackOutput:

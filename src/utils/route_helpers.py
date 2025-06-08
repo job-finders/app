@@ -7,7 +7,7 @@ from flask import g, current_app
 
 
 # Cache the controller map since it's static
-@lru_cache(maxsize=1)
+# @lru_cache(maxsize=1)
 def _get_controller_map():
     """Static controller mapping configuration"""
     return {
@@ -22,7 +22,7 @@ def _get_controller_map():
         'employee_agents': 'get_employee_agents_controller',
         'admin_controller': 'get_admin_controller',
         'user_engagement': 'get_user_engagement_controller',
-    }
+        'billing': 'get_billing_controller'}
 
 def get_controller(controller_name: str):
     """
@@ -58,7 +58,10 @@ def get_controller(controller_name: str):
     except AttributeError:
         raise RuntimeError(f"Factory missing method: {getter_name}") from None
     except Exception as e:
-        raise RuntimeError(f"Error getting controller {controller_name}: {str(e)}") from e
+
+        raise RuntimeError(
+            f"Error getting controller '{controller_name}' via '{getter_name}': {type(e).__name__}: {e}"
+        ) from e
 
 # Cache the service map since it's static
 @lru_cache(maxsize=1)

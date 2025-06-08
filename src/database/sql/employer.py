@@ -1,18 +1,11 @@
 import uuid
 
-from sqlalchemy import Column, String, Boolean, DateTime, Enum, CheckConstraint, Index, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-
-from src.database.constants import ID_LEN, NAME_LEN, utc_time
-from src.database.sql import Base  # Assuming your Base declarative is here
-
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, JSON, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from datetime import datetime
-import uuid
+
+from src.database.constants import NAME_LEN
+from src.database.sql import Base  # Assuming your Base declarative is here
 
 
 class EmployerORM(Base):

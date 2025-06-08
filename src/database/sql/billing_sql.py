@@ -1,8 +1,8 @@
-import enum
+import enum, uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, String, Boolean, Integer, Numeric, Text, DateTime, func
-from sqlalchemy import ForeignKey, Date, time
+from sqlalchemy import Column, String, Boolean, Integer, Numeric, Text, DateTime, func, JSON, Date
+from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -20,6 +20,7 @@ class BillingPlanORM(Base):
 
     price = Column(Numeric(10, 2), nullable=False, default=0.00)  # Price in ZAR
     currency = Column(String(10), default="ZAR")  # Defaulted for PayFast usage
+    duration_days = Column(Integer, default=30)  # Default duration for the plan in days
 
     is_active = Column(Boolean, default=True)
     is_featured = Column(Boolean, default=False)
@@ -37,6 +38,7 @@ class BillingPlanORM(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
     invoices = relationship("InvoiceORM", back_populates="billing_plan")
+
 
     def to_dict(self, include_relationships: bool = False) -> dict:
         return {
@@ -62,10 +64,10 @@ class BillingPlanORM(Base):
 
 class CompanyBillingProfileORM(Base):
     __tablename__ = "company_billing"
-    company_id = Column(String(ID_LEN), ForeignKey('companies.company_id', primary_key=True, index=True))
-    current_plan_id = Column(String(ID_LEN), ForeignKey('billing_plan.plan_id', index=True))
-    subscription_start = Column(Date, nullable=True)
-    subscription_end = Column(Date, nullable=True)
+    company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), primary_key=True, index=True)
+    current_plan_id = Column(String(ID_LEN), ForeignKey('billing_plan.plan_id') , index=True)
+    subscription_start = Column(Date, nullable=True, default=None)
+    subscription_end = Column(Date, nullable=True, default=None)
     trial_active = Column(Boolean, default=True)
     trial_end_date = Column(Date, nullable=True)
     is_payment_overdue = Column(Boolean, default=False)
@@ -129,4 +131,53 @@ class InvoiceORM(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "company_billing": self.company_billing.to_dict() if include_relationships and self.company_billing else None,
             "billing_plan": self.billing_plan.to_dict() if include_relationships and self.billing_plan else None
+        }
+
+class PaymentMethodORM(Base):
+    __tablename__ = "payment_methods"
+
+    method_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    company_id = Column(String, ForeignKey("companies.company_id"), nullable=False)
+
+    provider = Column(String(20), default="payfast")  # 'payfast' or 'manual'
+    payfast_token = Column(String, nullable=True)
+    payfast_sub_reference = Column(String, nullable=True)
+
+    is_active = Column(Boolean, default=True)
+    is_default = Column(Boolean, default=True)
+
+    added_on = Column(DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "method_id": self.method_id,
+            "company_id": self.company_id,
+            "provider": self.provider,
+            "payfast_token": self.payfast_token,
+            "payfast_sub_reference": self.payfast_sub_reference,
+            "is_active": self.is_active,
+            "is_default": self.is_default,
+            "added_on": self.added_on.isoformat()
+        }
+
+
+class BillingEventORM(Base):
+    __tablename__ = "billing_events"
+
+    event_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    company_id = Column(String, ForeignKey("companies.company_id"), nullable=False)
+
+    type = Column(String(50), nullable=False)  # Use Enum if you prefer strict validation
+    event_metadata = Column(JSON, default=dict)
+    email_sent = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    def to_dict(self):
+        return {
+            "event_id": self.event_id,
+            "company_id": self.company_id,
+            "email_sent": self.email_sent,
+            "type": self.type,
+            "event_metadata": self.event_metadata,
+            "created_at": self.created_at.isoformat()
         }

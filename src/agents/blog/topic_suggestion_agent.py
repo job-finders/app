@@ -16,3 +16,7 @@ class TopicSuggestionAgent(BaseAgent):
 
     def output_model(self):
         return TopicSuggestions
+
+
+def generate_new_topics():
+    pass

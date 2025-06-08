@@ -2,8 +2,9 @@ import re
 from functools import wraps
 from flask import request, redirect, url_for, flash
 
-from database.models.billing import CompanyBillingProfile
-from database.sql.employer import EmployerORM
+from src.database.sql.billing_sql import CompanyBillingProfileORM
+from src.database.models.billing import CompanyBillingProfile
+from src.database.sql.employer import EmployerORM
 from src.authentication.jwt_helper import decode_jwt
 from src.database.models import Role
 from src.logger import init_logger
@@ -133,7 +134,7 @@ def get_current_company_subscription(uid: str):
         return CompanyBillingProfile(**subscription_orm.to_dict())
 
 
-def require_billing_role_trial(route_function):
+def require_billing_role_from_trial(route_function):
     """
         will validate if billing role is trial or above
     :param route_function:

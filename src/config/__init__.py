@@ -54,6 +54,19 @@ class JwtSecrets(BaseSettings):
     )
 
 
+class PayfastSettings(BaseSettings):
+    MERCHANT_ID: str = Field(..., alias='PAYFAST_MERCHANT_ID')
+    MERCHANT_KEY: str = Field(..., alias='PAYFAST_MERCHANT_KEY')
+    SANDBOX: bool = Field(True, alias='PAYFAST_SANDBOX')
+    PASS_PHRASE: str = Field(..., alias='PAYFAST_PASSPHRASE')
+
+    model_config = SettingsConfigDict(
+        env_file=".env.developer",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+
 class Settings(BaseSettings):
     APP_NAME: str = "Job Finders"
     LOGO_URL: str = "https://rental-manager.site/static/images/custom/logo.png"
@@ -68,6 +81,7 @@ class Settings(BaseSettings):
     ACTIVITY_RETENTION_DAYS: int = 180
     ACTIVITY_CACHE_TTL: int = 3600  # 1 hour
     JWT_SECRETS: JwtSecrets = Field(default_factory=JwtSecrets)
+    PAYFAST_SETTINGS: PayfastSettings = Field(default_factory=PayfastSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env.developer",

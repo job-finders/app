@@ -51,6 +51,10 @@ class Company(BaseModel):
     contact_email: Optional[EmailStr] = Field(default=None)
     phone_number: Optional[str] = Field(default=None, max_length=20)
 
+    billing_email: Optional[str] = Field(default=None, max_length=20)  # Optional billing email for invoices
+    send_invoice_emails: Optional[bool] = Field(default=True)
+    send_trial_reminders: Optional[bool] = Field(default=True)
+
     # Company Details
     employee_count: Optional[int] = Field(default=None, ge=1)
     founded_year: Optional[int] = Field(default=None, ge=1800, le=datetime.now().year)

@@ -1,38 +1,40 @@
-import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, Integer, String, Float, Text, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 
+from src.database.constants import ID_LEN
 from src.database.sql import Base
 
 
-class BlogTopic(Base):
+class BlogTopicORM(Base):
+    """this ORM MOdels are for generating blog topics and prompts for the blog learning module"""
     __tablename__ = "blog_topics"
 
-    id = Column(Integer, primary_key=True)
+    blog_topic_id = Column(String(ID_LEN), primary_key=True)
     title = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    prompts = relationship("BlogPrompt", back_populates="topic")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    prompts = relationship("BlogPromptORM", back_populates="topic")
 
-class BlogPrompt(Base):
+class BlogPromptORM(Base):
     __tablename__ = "blog_prompts"
 
-    id = Column(Integer, primary_key=True)
+    blog_prompt_id = Column(String(ID_LEN), primary_key=True)
     content = Column(Text, nullable=False)
-    topic_id = Column(Integer, ForeignKey("blog_topics.id"))
-    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
+    topic_id = Column(String(ID_LEN), ForeignKey("blog_topics.blog_topic_id"))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     feedback_score = Column(Float, default=0.0)
-    topic = relationship("BlogTopic", back_populates="prompts")
+    topic = relationship("BlogTopicORM", back_populates="prompts")
 
-class BlogFeedback(Base):
-    __tablename__ = "blog_feedback"
+class BlogFeedbackResulORM(Base):
+    __tablename__ = "blog_feedback_results"
 
-    id = Column(Integer, primary_key=True)
-    prompt_id = Column(Integer, ForeignKey("blog_prompts.id"))
+    blog_feedback_id = Column(String(ID_LEN), primary_key=True)
+    prompt_id = Column(String(ID_LEN), ForeignKey("blog_prompts.blog_prompt_id"))
     views = Column(Integer, default=0)
     likes = Column(Integer, default=0)
     comments = Column(Integer, default=0)
     feedback_score = Column(Float)
-    submitted_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
+    submitted_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    prompt = relationship("BlogPrompt")
+    prompt = relationship("BlogPromptORM")
