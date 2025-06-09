@@ -6,23 +6,25 @@ from flask import Flask, render_template, url_for
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
-from src.database.models.company_models import CompanyCIPC, CompanyVerificationDocument
 from src.controllers.controller import Controllers, error_handler
 from src.database.models.company_models import Company, CompanyUpdate, CompanyVerificationStatus
+from src.database.models.company_models import CompanyCIPC, CompanyVerificationDocument
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Job, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
 from src.database.models.resume import JobSeekerCV, SavedCV
 from src.database.models.users import User
 from src.database.sql.company import CompanyORM, CompanyCIPCORM, CompanyVerificationDocumentORM
 from src.database.sql.employer import EmployerORM
-from src.database.sql.jobs_sql import JobsORM
 from src.database.sql.users import UserORM
 from src.emailer import EmailModel
 from src.logger import init_logger
 from src.utils.route_helpers import get_service, get_controller
 
-# importing redis cache
-from src.cache.cache_redis import cached
+# from src.cache.cache_redis import cached
+
+LONG_CACHE = 60  # i HOUR cACHE
+SHORT_CACHE = 15 # 15 MINUTES CACHE
+MEDIUM_CACHE = 30 # 30 MINUTES CACHE
 
 class CompanyController(Controllers):
     __doc__ = """    
@@ -64,10 +66,11 @@ class CompanyController(Controllers):
         self.resume_controller = get_controller('resume')
 
 
+
     def init_app(self, app: Flask):
         super().init_app(app=app)
 
-    @cached
+    @error_handler
     async def get_all_companies(self) -> list[Company]:
         """
         :return:
@@ -97,7 +100,6 @@ class CompanyController(Controllers):
             return company_data
 
     @error_handler
-    @cached
     async def get_employer_created_company(self, uid: str) -> Optional[Company]:
         """
             get the company which the employer just created
@@ -143,7 +145,6 @@ class CompanyController(Controllers):
             return employer_data
 
     @error_handler
-    @cached
     async def get_company_by_id(self, company_id: str) -> Optional[Company]:
         """
         Return a company complete with its job listings and applications
@@ -175,7 +176,6 @@ class CompanyController(Controllers):
             return Company(**company_orm.to_dict(include_relationships=True))
 
     @error_handler
-    @cached
     async def get_employees_by_company_id(self, company_id: str) -> list[Employer]:
         """
 
@@ -187,7 +187,6 @@ class CompanyController(Controllers):
             return [Employer(**employer_orm.to_dict()) for employer_orm in employer_orm_list if employer_orm]
 
     @error_handler
-    @cached
     async def get_company_by_name(self, name: str) -> Company:
         """
         Return a company with the exact name (case-insensitive)
@@ -210,7 +209,6 @@ class CompanyController(Controllers):
             return Company(**company_orm.to_dict(include_relationships=True))
 
     @error_handler
-    @cached
     async def search_companies_by_name(self, name: str) -> list[Company]:
         """
         Search for companies containing the name substring
@@ -239,7 +237,6 @@ class CompanyController(Controllers):
         raise ValueError("Employer does not exist")
 
     @error_handler
-    @cached
     async def get_employer_by_uid(self, user_id: str) -> Employer | None:
         """
         :param user_id:
@@ -258,7 +255,6 @@ class CompanyController(Controllers):
 
 
     @error_handler
-    @cached
     async def get_employer_by_employer_id(self, employer_id: str) -> Employer| None:
         """
         :param employer_id:
@@ -272,7 +268,6 @@ class CompanyController(Controllers):
 
 
     @error_handler
-    @cached
     async def get_company_jobs(self, company_id: str, status: Optional[JobStatusEnum] = None) -> List[Job]:
         """Retrieve company jobs with optional status filtering"""
         with self.get_session() as session:
@@ -293,7 +288,6 @@ class CompanyController(Controllers):
 
 
     @error_handler
-    @cached
     async def get_all_company_employers(self, company_id: str) -> List[Employer]:
         """
         Retrieve all employers associated with a specific company
@@ -321,7 +315,6 @@ class CompanyController(Controllers):
         return await self.jobs_workflow_controller.get_company_analytics_dashboard(company_id=company_id)
 
     @error_handler
-    @cached
     async def generate_talent_pool_report(self, company_id: str) -> TalentPoolReport:
         """
 
@@ -443,7 +436,6 @@ class CompanyController(Controllers):
             return await self.jobs_workflow_controller.add_job_posting_workflow(employer=_employer_profile,  job=job_data)
 
     @error_handler
-    @cached
     async def get_saved_candidates(self, user_uid: str) -> list[JobSeekerCV]:
         """
             using user_uid will retrieve a list of candidates
@@ -639,7 +631,6 @@ class CompanyController(Controllers):
 
 
     @error_handler
-    @cached
     async def _analyze_documents_with_ai(self, company_id: str ) -> dict:
         """
         Analyze documents using AI/ML to determine validity.
@@ -727,7 +718,6 @@ class CompanyController(Controllers):
                 self.logger.info(f"Company {company_id} verification rejected: {reason}")
     
     @error_handler
-    @cached
     async def get_cipc_record_by_company_id(self, company_id: str) -> Optional[CompanyCIPC]:
         """
 

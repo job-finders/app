@@ -3,15 +3,12 @@ from src.routes import flask_error_handler
 from src.database.models.seo import create_tags
 from src.logger import init_logger
 
-from src.cache.cache_redis import cached
-
 blog_route = Blueprint('blog', __name__)
 blog_logger = init_logger()
 
 
 @blog_route.get('/blog')
 @flask_error_handler
-@cached
 async def blog_home():
     search_term, template_path = ("Jobfinders Blog Articles", "blog/blog.html")
     seo = await create_tags(search_term=search_term)
@@ -21,7 +18,6 @@ async def blog_home():
 
 @blog_route.get('/blog/<string:topic>')
 @flask_error_handler
-@cached
 async def get_blog(topic):
     """
     will return blog for the specified topic

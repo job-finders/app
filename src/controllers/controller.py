@@ -45,8 +45,8 @@ class Controllers:
         self.app: Flask | None = None
         self.deepseek_api_key: str | None  = None
         # Initialize sessions if session_maker is provided
-        if session_maker:
-            self._initialize_sessions()
+        # if session_maker:
+        #     self._initialize_sessions()
 
     def _initialize_sessions(self):
         """Initialize session pool"""

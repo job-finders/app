@@ -7,7 +7,7 @@ from src.database.models.billing import CompanyBillingProfile, InvoiceStatusEnum
 from src.database.sql.billing_sql import InvoiceORM, CompanyBillingProfileORM
 
 import inspect
-from typing import get_type_hints, Callable
+from typing import get_type_hints, Callable, List
 
 
 class InvoiceService(BillingServiceInterface):
@@ -27,8 +27,33 @@ class InvoiceService(BillingServiceInterface):
             "mark_invoice_paid": self._mark_invoice_paid,
             "list_company_invoices": self._list_company_invoices,
             "delete_invoice": self._delete_invoice,
-            "update_invoice_status": self._update_invoice_status
+            "update_invoice_status": self._update_invoice_status,
+            "get_paid_invoices": self._get_paid_invoices,  # Added for cron service usage
+            "close_invoice": self._close_invoice,  # Added for cron service usage
         }
+        # Added _get_paid_invoices for cron service
+
+    async def _get_paid_invoices(self, company_id: str) -> List[Invoice]:
+        with self.session_factory() as session:
+            invoices_orm = (
+                session.query(InvoiceORM)
+                .filter_by(company_id=company_id, status=InvoiceStatusEnum.PAID.value)
+                .order_by(InvoiceORM.created_at.desc())
+                .all()
+            )
+            return [Invoice(**inv.to_dict()) for inv in invoices_orm]
+
+        # Added _close_invoice for cron service
+
+    async def _close_invoice(self, invoice_id: str):
+        with self.session_factory() as session:
+            invoice_orm = session.query(InvoiceORM).filter_by(invoice_id=invoice_id).first()
+            if not invoice_orm:
+                raise ValueError("Invoice not found")
+            invoice_orm.status = InvoiceStatusEnum.CLOSED.value  # Assuming CLOSED is a valid status
+            session.commit()
+            session.refresh(invoice_orm)
+            return Invoice(**invoice_orm.to_dict())
 
     async def _create_invoice(self, billing_profile: CompanyBillingProfile, plan: BillingPlan):
         """
@@ -43,7 +68,8 @@ class InvoiceService(BillingServiceInterface):
         """
         with self.session_factory() as session:
             today = datetime.now(timezone.utc)
-            amount = float(plan.price) if not billing_profile.is_trial_valid else 0.0
+            amount = float(
+                plan.price) if not billing_profile.is_trial_valid else 0.0  # Assuming is_trial_valid from profile
             due_date = today + timedelta(days=7)
 
             invoice = Invoice(
@@ -124,9 +150,10 @@ class InvoiceService(BillingServiceInterface):
                 raise ValueError("Invoice not found")
 
             invoice.status = InvoiceStatusEnum.PAID.value
-            invoice.paid_at = datetime.utcnow()
+            invoice.paid_at = datetime.now(timezone.utc)  # Use UTC now
 
             session.commit()
+            session.refresh(invoice)
             return Invoice(**invoice.to_dict())
 
     async def _list_company_invoices(self, company_id: str, limit: int = 10, offset: int = 0):
@@ -192,7 +219,8 @@ class InvoiceService(BillingServiceInterface):
 
             invoice.status = status.value
             if status == InvoiceStatusEnum.PAID:
-                invoice.paid_at = datetime.utcnow()
+                invoice.paid_at = datetime.now(timezone.utc)  # Use UTC now
 
             session.commit()
+            session.refresh(invoice)
             return Invoice(**invoice.to_dict())

@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, send_file
 from pydantic import ValidationError
 
+from src.cache.cache_redis import cached
 from src.firewall.rate_limiting import rate_limit
 from src.authentication import user_details
 from src.database.models.notifications import CreateNotifications
@@ -12,18 +13,15 @@ from src.routes.utils import (fetch_and_cache_logo, create_context, not_found)
 from src.utils import format_title
 from src.utils.route_helpers import get_service
 
-from src.cache.cache_redis import cached
-
 home_route = Blueprint('home', __name__)
 home_logger = init_logger("home_logger")
 
-
+one_hour_cache = 60*60
 # Route definitions
 
 @home_route.get("/media/logos/<job_ref>.png")
-@rate_limit("120 per minute")
 @flask_error_handler
-@cached
+@cached(ttl=one_hour_cache*24)
 async def serve_logo(job_ref: str):
     """Serve a job logo that is cached or fetch it if not present."""
     job = get_service('scraper').jobs.get(job_ref)
@@ -39,10 +37,9 @@ async def serve_logo(job_ref: str):
 
 
 @home_route.get('/')
-@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
-@cached
+@cached(ttl=one_hour_cache)
 async def get_home(user: User):
     """Render home page with a default search term."""
     search_term = "home"
@@ -53,10 +50,9 @@ async def get_home(user: User):
     return response
 
 @home_route.get('/about')
-@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
-@cached
+@cached(ttl=one_hour_cache)
 async def about(user: User):
     """Render the about page.
     Note that Cache Handler Must Be first. then other handlers can follow on like this. 
@@ -64,7 +60,7 @@ async def about(user: User):
 @route.get("/feature")
 @roles_required("admin", "manager")  # Sets g.user
 @require_billing_role_from_trial    # Requires g.user
-@cached                             # Can now use g.user in cache keys
+                             # Can now use g.user in cache keys
 async def premium_feature(user: User):
     # user comes from roles_required decorator
     # g.user is also available
@@ -77,10 +73,9 @@ async def premium_feature(user: User):
 
 
 @home_route.get('/contact')
-@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
-@cached
+@cached(ttl=one_hour_cache*6)
 async def contact(user: User):
     """Render the contact page."""
     seo = await create_tags(search_term="contact")
@@ -89,10 +84,9 @@ async def contact(user: User):
 
 
 @home_route.get('/terms')
-@rate_limit("250 per minute")
 @flask_error_handler
 @user_details
-@cached
+@cached(ttl=one_hour_cache*6)
 async def terms(user: User):
     """Render the terms page."""
     seo = await create_tags(search_term="terms")
@@ -102,7 +96,7 @@ async def terms(user: User):
 @home_route.get('/privacy')
 @flask_error_handler
 @user_details
-@cached
+@cached(ttl=one_hour_cache*6)
 async def privacy(user: User):
     """Render the terms page."""
     seo = await create_tags(search_term="terms")
@@ -114,7 +108,7 @@ async def privacy(user: User):
 @rate_limit("250 per minute")
 @flask_error_handler
 @user_details
-@cached
+@cached(ttl=one_hour_cache*6)
 async def documentation(user: User):
     """Render the terms page."""
     seo = await create_tags(search_term="terms")
@@ -127,7 +121,7 @@ async def documentation(user: User):
 @rate_limit("250 per minute")
 @flask_error_handler
 @user_details
-@cached
+@cached(ttl=one_hour_cache*6)
 async def sister_sites(user: User):
     """Render the sister sites page."""
     seo = await create_tags(search_term="sister-sites")
@@ -139,7 +133,7 @@ async def sister_sites(user: User):
 @rate_limit("250 per minute")
 @flask_error_handler
 @user_details
-@cached
+@cached(ttl=one_hour_cache*6)
 async def faq(user: User):
     """Render the FAQ page."""
     seo = await create_tags(search_term="FAQ")
@@ -151,7 +145,7 @@ async def faq(user: User):
 @rate_limit("250 per minute")
 @flask_error_handler
 @user_details
-@cached
+@cached(ttl=one_hour_cache*6)
 async def linkedin_learning(user: User):
     """Render the LinkedIn Learning page."""
     seo = await create_tags(search_term="LinkedIn Learning")

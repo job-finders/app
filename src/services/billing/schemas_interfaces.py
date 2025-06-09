@@ -1,6 +1,10 @@
 from typing import TypedDict
 import inspect
 from typing import Any, get_type_hints
+from enum import Enum
+
+from src.utils.route_helpers import get_service
+
 
 class ParamSchema(TypedDict):
     name: str
@@ -13,6 +17,27 @@ class MethodSchema(TypedDict):
     arguments: list[ParamSchema]
     returns: str
 
+# --- New Enum for Standardized Billing Event Types ---
+class BillingEventType(str, Enum):
+    """
+    Standardized enumeration of all billing-related event types.
+    This provides a single source of truth for event string identifiers.
+    """
+    PAYMENT_SUCCESS = "payment_success"
+    PAYMENT_FAILED = "payment_failed"
+    INVOICE_CLOSED = "invoice_closed"
+    SUBSCRIPTION_APPLIED = "subscription_applied"
+    SUBSCRIPTION_CREATED = "subscription_created" # Renamed from subscription_applied to be more specific
+    SUBSCRIPTION_EXPIRING_SOON = "subscription_expiring_soon"
+    SUBSCRIPTION_EXPIRED = "subscription_expired"
+    SUBSCRIPTION_CANCELLED = "subscription_cancelled"
+    SUBSCRIPTION_STARTED = "subscription_started" # Added for clarity in real-time events
+    BILLING_PROFILE_MISSING = "billing_profile_missing"
+    BILLING_PROFILE_CREATED = "billing_profile_created"
+    TRIAL_STARTED = "trial_started"
+    TRIAL_ENDED = "trial_ended"
+    TRIAL_PROFILE_CREATED = "trial_profile_created"
+    EMAIL_SEND_FAILED = "email_send_failed"
 
 class BillingServiceRouterException(Exception):
     """ raise this exception for errors with routing"""
@@ -27,6 +52,7 @@ class BillingServiceInterface:
     def __init__(self):
         # Each concrete class must define this: {"action_name": bound_method}
         self.__interface_map: dict[str, Any] = {}
+        self.logger = get_service('logger')()(self.__class__.__name__)
 
     async def execute(self, action: str, *args, **kwargs):
         """

@@ -6,12 +6,14 @@ from datetime import datetime, timezone, timedelta
 from flask import Flask, render_template
 from sqlalchemy import exists
 
+from src.config import config_instance
+from src.database.constants import utc_time
 from src.database.sql.company import CompanyFollowingORM, CompanyORM
 from src.controllers.controller import Controllers, error_handler
 from src.database.models.jobs_model import Job, JobApplication, JobApplicationStatusEnum
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.sql.analytics import (UserSearchActivityORM, JobViewActivityORM, ApplicationStepORM,
-                                        RedisActivityClient, ActivityProcessor)
+                                        RedisActivityClient, ActivityProcessor, ArchivedActivityORM)
 from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.emailer import EmailModel
@@ -516,3 +518,56 @@ class UserEngagementController(Controllers):
 
 
 
+class RetentionManager(Controllers):
+    """run this at start up
+        we need to run the cleanup command at the needed interval in order to cleanup entries
+    """
+    def __init__(self):
+        super().__init__()
+        self.cleanup_days = config_instance().ACTIVITY_RETENTION_DAYS
+
+    def init_app(self, app: Flask):
+        super().init_app(app=app)
+        retention = self
+
+        @app.cli.command('cleanup-activities')
+        def cleanup_command():
+            with app.app_context():
+                asyncio.run(retention.archive_old_activities())
+
+
+    async def archive_old_activities(self):
+        """Archive activities older than retention period"""
+        cutoff = utc_time() - timedelta(days=self.cleanup_days)
+
+        with self.get_session() as session:
+            # Archive searches
+            searches = session.query(UserSearchActivityORM).filter(UserSearchActivityORM.timestamp < cutoff)
+            self._archive_records(searches, 'search', session)
+
+            # Archive views
+            views = session.query(JobViewActivityORM) \
+                .filter(JobViewActivityORM.view_start < cutoff)
+            self._archive_records(views, 'view', session)
+
+            # Archive steps
+            steps = session.query(ApplicationStepORM) \
+                .filter(ApplicationStepORM.timestamp < cutoff)
+            self._archive_records(steps, 'step', session)
+
+    def _archive_records(self, query, activity_type: str, session):
+        """Archive a query result set"""
+        for record in query:
+            archive = ArchivedActivityORM(
+                original_id=record.id,
+                user_id=record.user_id,
+                activity_type=activity_type,
+                data=self._serialize_record(record)
+            )
+            session.add(archive)
+            session.delete(record)
+
+    @staticmethod
+    def _serialize_record(record):
+        """Convert ORM object to JSON-serializable dict"""
+        return {c.name: getattr(record, c.name) for c in record.__table__.columns}

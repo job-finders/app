@@ -22,9 +22,6 @@ from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, 
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.resume import JobSeekerCVORM
 
-# import redis cache
-from src.cache.cache_redis import cached
-
 # noinspection DuplicatedCode
 class JobsSearchController(Controllers):
     """
@@ -44,7 +41,6 @@ class JobsSearchController(Controllers):
 
 
     @error_handler
-    @cached
     async def get_all_jobs(self,
                            page: int = 1,
                            page_size: int = 20) -> dict:
@@ -73,7 +69,6 @@ class JobsSearchController(Controllers):
             }
 
     @error_handler
-    @cached
     async def search_jobs(self,
                           keyword: str = '',
                           page: int = 1,
@@ -111,7 +106,6 @@ class JobsSearchController(Controllers):
                 "jobs": jobs}
 
     @error_handler
-    @cached
     async def list_job_categories(self) -> list[JobCategory]:
         """
             :return:
@@ -121,7 +115,6 @@ class JobsSearchController(Controllers):
             return [JobCategory(**category_orm.to_dict(include_jobs=True)) for category_orm in category_orm_list]
 
     @error_handler
-    @cached
     async def search_jobs_by_category(self, category: str, page: int = 1, page_size: int = 25) -> dict:
         """Search jobs by category with pagination, filtered to active and featured preferred."""
         with self.get_session() as session:
@@ -168,7 +161,6 @@ class JobsSearchController(Controllers):
             }
             
     @error_handler
-    @cached
     async def get_job_by_id(self, job_id: str) -> Job | None:
         """Retrieve a single active job by its ID."""
         with self.get_session() as session:
@@ -179,7 +171,6 @@ class JobsSearchController(Controllers):
             return Job(**job_orm.to_dict()) if job_orm else None
     
     @error_handler
-    @cached
     async def get_job_by_reference(self, reference: str) -> Job | None:
         """
         :param reference:
@@ -207,7 +198,6 @@ class JobsSearchController(Controllers):
             return Job(**job_orm.to_dict())
 
     @error_handler
-    @cached
     async def get_featured_jobs(self, page: int = 1, page_size: int = 25) -> dict:
         """Retrieve paginated featured job listings."""
         with self.get_session() as session:
@@ -231,7 +221,6 @@ class JobsSearchController(Controllers):
             }
 
     @error_handler
-    @cached
     async def get_jobs_by_title(
         self,
         title: str,
@@ -261,7 +250,6 @@ class JobsSearchController(Controllers):
 
 
     @error_handler
-    @cached
     async def get_jobs_by_qualification(self,qualification: str,
         qualification_types: Optional[list[str]] = None,
         page: int = 1,
@@ -302,7 +290,6 @@ class JobsSearchController(Controllers):
             )
 
     @error_handler
-    @cached
     async def get_jobs_by_location(self, location: str, page: int = 1, page_size: int = 25) -> dict:
         """
         Search for jobs by location with featured and recent sorting, plus pagination.
@@ -347,7 +334,6 @@ class JobsSearchController(Controllers):
             }
 
     @error_handler
-    @cached
     async def search_by_type(self, job_type: str, page: int = 1, page_size: int = 25) -> dict:
         """
         Search for jobs filtered by job type (e.g., full-time, part-time).
@@ -381,7 +367,6 @@ class JobsSearchController(Controllers):
 
 
     @error_handler
-    @cached
     async def get_recent_jobs(self, page: int = 1, page_size: int = 25) -> dict:
         """
         Retrieve paginated list of most recently posted active jobs.
@@ -421,7 +406,6 @@ class JobsSearchController(Controllers):
 
 
     @error_handler
-    @cached
     async def search_by_salary_range(self,min_salary: int | None = None,max_salary: int | None = None,page: int = 1,
         page_size: int = 25,
         unit: str = "yearly"
@@ -476,7 +460,6 @@ class JobsSearchController(Controllers):
 
 
     @error_handler
-    @cached
     async def get_active_jobs(self) -> list[Job]:
         """Get currently active jobs that haven't expired and are marked as active"""
         with self.get_session() as session:
@@ -498,7 +481,6 @@ class JobsSearchController(Controllers):
             ]
 
     @error_handler
-    @cached
     async def get_saved_jobs_for_user(self, user_id: str) -> list[Job]:
         """Get jobs saved by a user with saving metadata"""
         with self.get_session() as session:
@@ -518,7 +500,6 @@ class JobsSearchController(Controllers):
             ]
 
     @error_handler
-    @cached
     async def get_applied_jobs_for_user(self, user_id: str) -> list[JobApplication]:
         """Get job applications with full job details for a user"""
         with self.get_session() as session:
@@ -538,7 +519,6 @@ class JobsSearchController(Controllers):
             ]
 
     @error_handler
-    @cached
     async def get_jobs_by_employer(self, employer_id: str, limit: int = 100) -> list[Job]:
         """Get jobs posted by a specific company/employer with validation"""
         with self.get_session() as session:
@@ -664,7 +644,6 @@ class JobsSearchController(Controllers):
     #         return [Job(**job.to_dict()) for job in results]
 
     @error_handler
-    @cached
     async def calculate_job_match_score(self, job_id: str, user_id: str) -> dict:
         """
         Calculate how well a specific job matches a user's profile and CV.
@@ -814,7 +793,6 @@ class JobsSearchController(Controllers):
             return "⚠️ Low Match - Limited alignment with position requirements"
 
     @error_handler
-    @cached
     async def get_similar_jobs(self,
                                job_id: str,
                                limit: int = 12) -> list[Job]:
@@ -882,7 +860,6 @@ class JobsSearchController(Controllers):
             return [Job(**job.to_dict()) for job in similar_jobs]
 
     @error_handler
-    @cached
     async def get_job_by_slug(self, slug: str) -> Optional[Job]:
         """
         Retrieve a job by its slug.
@@ -902,7 +879,6 @@ class JobsSearchController(Controllers):
                 return None
 
     @error_handler
-    @cached
     async def advanced_job_search(self, filters: dict) -> list[Job]:
         """
         Perform an advanced job search using a combination of keyword, location, profile-based defaults, and job-specific filters.
@@ -1015,7 +991,6 @@ class JobsSearchController(Controllers):
                 min_e, max_e = size_map.get(filters['company_size'], (0, 10000))
                 query = query.filter(CompanyORM.employee_count.between(min_e, max_e))
 
-
             # Job Attributes
             if filters.get('industries'):
                 query = query.filter(JobsORM.category.op('&&')(filters['industries']))
@@ -1065,7 +1040,6 @@ class JobsSearchController(Controllers):
             return [Job(**job.to_dict()) for job in query.all()]
 
     @error_handler
-    @cached
     async def search_by_company(self,company_slug: str,page: int = 1,page_size: int = 25) -> dict[str, str | int | list[Job]]:
         """
         Get all active jobs posted by a specific company using slug.

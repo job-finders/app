@@ -624,6 +624,25 @@ async def settings(user: User):
     context = dict(current_user=user, settings=settings)
     return render_template("company/settings.html", **context)  # Placeholder template
 
+@company_bp.route("/settings")
+@flask_error_handler
+@employer_login
+async def save_settings(user: User):
+    """
+
+    :param user:
+    :return:
+    """
+    settings_data = request.form.dict()
+
+    company_controller = get_controller('company')
+    employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
+    company_data = await company_controller.get_company_by_id(company_id=employer_details.company_id)
+    settings = CompanySettings(company_id=company_data.company_id)
+    context = dict(current_user=user, settings=settings)
+    return render_template("company/settings.html", **context)  # Placeholder template
+
+
 @company_bp.route("/employers")
 @flask_error_handler
 @employer_login

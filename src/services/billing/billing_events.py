@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional, List
 
 from src.services.billing.event_realtime_queue import enqueue_realtime_event, redis_client
-from src.services.billing.schemas_interfaces import BillingServiceInterface
+from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType
 from src.database.sql.billing_sql import BillingEventORM
 from src.database.models.billing import BillingEvent
 
@@ -19,22 +19,27 @@ class BillingEventService(BillingServiceInterface):
         self.session_factory = session_factory
         self.logger = logging.getLogger(__name__)
         self._realtime_event_count = 10
+        # Define which event types trigger email notifications (passive/batch)
         self.__notify_email_events = {
-            "payment_success",
-            "subscription_applied",
-            "subscription_expiring_soon",
-            "subscription_expired"
-        }
-        self.__realtime_event_types = {
-            "payment_success",
-            "payment_failed",
-            "subscription_expired",
-            "subscription_started",
-            "trial_started",
-            "billing_profile_created",
-            "subscription_applied"
+            BillingEventType.PAYMENT_SUCCESS,
+            BillingEventType.SUBSCRIPTION_APPLIED,  # Or SUBSCRIPTION_CREATED
+            BillingEventType.SUBSCRIPTION_EXPIRING_SOON,
+            BillingEventType.SUBSCRIPTION_EXPIRED,
+            BillingEventType.BILLING_PROFILE_MISSING,  # Consider if this needs an email or just an internal alert
+            BillingEventType.EMAIL_SEND_FAILED,  # For internal alerts about failed sends
         }
 
+        # Define which event types are pushed to a real-time queue
+        self.__realtime_event_types = {
+            BillingEventType.PAYMENT_SUCCESS,
+            BillingEventType.PAYMENT_FAILED,
+            BillingEventType.SUBSCRIPTION_EXPIRED,
+            BillingEventType.SUBSCRIPTION_STARTED,
+            BillingEventType.SUBSCRIPTION_APPLIED,  # Included for completeness
+            BillingEventType.TRIAL_STARTED,
+            BillingEventType.BILLING_PROFILE_CREATED,
+            BillingEventType.TRIAL_ENDED  # A trial ending might also be real-time for immediate UI update
+        }
         self.__interface_map = {
             "interface_schema": self._interface_schema,
             "describe_actions": self._describe_actions,
@@ -43,10 +48,11 @@ class BillingEventService(BillingServiceInterface):
             "list_realtime_events": self._list_realtime_events,
             "get_event_by_id": self._get_event_by_id,
             "mark_email_sent": self._mark_email_sent,
-            "list_unsent_email_events": self._list_unsent_email_events
+            "list_unsent_email_events": self._list_unsent_email_events,
+            "get_last_event": self._get_last_event,  # Added for CronService usage
         }
 
-    async def _record_event(self, company_id: str, type: str, event_metadata: Optional[dict] = None) -> BillingEvent:
+    async def _record_event(self, company_id: str, type: BillingEventType, event_metadata: Optional[dict] = None) -> BillingEvent:
         """
         Records a new billing event.
 
@@ -64,13 +70,14 @@ class BillingEventService(BillingServiceInterface):
         event_metadata = event_metadata or {}
 
         with self.session_factory() as session:
+            # Store the string value of the Enum
             event_orm = BillingEventORM(
                 company_id=company_id,
-                type=type,
+                type=type.value,  # Store the string value of the Enum
                 event_metadata=event_metadata,
                 created_at=datetime.now(timezone.utc),
             )
-
+            # Check if the event type is considered real-time
             if type in self.__realtime_event_types:
                 # event is realtime store it in the queue
                 enqueue_realtime_event(event_orm.to_dict())
@@ -94,16 +101,25 @@ class BillingEventService(BillingServiceInterface):
         """
         # get the events from redis queue
         entries = redis_client.xread({"billing:realtime_events": "0-0"}, count=10, block=5000)
-        return [json.loads(entry[1][b'data']) for entry in entries[0][1]] if entries else []
+        # The xread mock returns [(stream_name, [(id, {field: value})])]. We need to extract the actual data.
+        if entries and entries[0] and len(entries[0]) > 1 and entries[0][1]:
+            # Each entry in entries[0][1] is (event_id_bytes, {b'data': b'{"key": "value"}'})
+            # We need to extract the 'data' part, decode it, and then parse JSON.
+            parsed_events = []
+            for event_id_bytes, data_dict in entries[0][1]:
+                if b'data' in data_dict:
+                    parsed_events.append(json.loads(data_dict[b'data'].decode('utf-8')))
+            return parsed_events
+        return []
 
     async def _list_events(
-        self,
-        company_id: str,
-        type: Optional[str] = None,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        limit: int = 20,
-        offset: int = 0,
+            self,
+            company_id: str,
+            type: Optional[BillingEventType] = None,  # Expect Enum here
+            start_date: Optional[str] = None,
+            end_date: Optional[str] = None,
+            limit: int = 20,
+            offset: int = 0,
     ) -> List[BillingEvent]:
         """
         Lists billing events for a company with optional filters.
@@ -176,12 +192,34 @@ class BillingEventService(BillingServiceInterface):
             List[BillingEventORM]: List of unsent email events ordered by creation time.
         """
         with self.session_factory() as session:
-            events = (
+            # Filter by the string values of the Enums in __notify_email_events
+            event_type_values = {e.value for e in self.__notify_email_events}
+            events_orm = (
                 session.query(BillingEventORM)
                 .filter(BillingEventORM.email_sent == False,
-                        BillingEventORM.type.in_(self.__notify_email_events))
+                        BillingEventORM.type.in_(event_type_values))
                 .order_by(BillingEventORM.created_at.asc())
                 .limit(limit)
                 .all()
             )
-            return events
+            return [BillingEvent(**e.to_dict()) for e in events_orm]
+
+    async def _get_last_event(self, company_id: str, event_type: str) -> Optional[BillingEvent]:
+        """
+        Retrieves the last recorded event of a specific type for a company.
+
+        Args:
+            company_id (str): The ID of the company.
+            event_type (str): The type of the event (string value, as stored in DB).
+
+        Returns:
+            BillingEvent or None: The last matching event if found.
+        """
+        with self.session_factory() as session:
+            event = (
+                session.query(BillingEventORM)
+                .filter_by(company_id=company_id, type=event_type)
+                .order_by(BillingEventORM.created_at.desc())
+                .first()
+            )
+            return BillingEvent(**event.to_dict()) if event else None

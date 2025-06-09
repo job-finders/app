@@ -18,7 +18,6 @@ class PaymentService(BillingServiceInterface):
             "process_itn": self._process_itn,
             "process_payment": self._process_payment
         }
-
     async def _process_payment(self, invoice_id: str) -> dict:
         """
         Initiates the payment process for a given invoice by generating a PayFast payment URL.
@@ -49,13 +48,14 @@ class PaymentService(BillingServiceInterface):
                 "redirect_url": payment_url
             }
 
-    async def _generate_payfast_form(self, invoice: InvoiceORM, company):
+    async def _generate_payfast_form(self, invoice: InvoiceORM,
+                                     company):  # Removed Company type hint as it's not defined
         """
         Generates the PayFast payment form for the given invoice and company.
 
         Args:
             invoice (InvoiceORM): The invoice to generate the form for.
-            company (Company): The company making the payment.
+            company (Any): The company making the payment.
 
         Returns:
             dict: A dictionary containing the PayFast form data.
@@ -72,4 +72,21 @@ class PaymentService(BillingServiceInterface):
         Returns:
             dict: Result of the ITN processing, including payment status and invoice details.
         """
-        return await self.payfast_client.verify_ipn(data=data)
+        is_verified = await self.payfast_client.verify_ipn(data=data)
+        # There is a Need to verify this step i could be processing this on the route
+        #
+        # if is_verified:
+        #     # Assuming 'custom_str1' from PayFast contains the invoice_id
+        #     invoice_id = data.get('custom_str1')
+        #     if invoice_id:
+        #         # Mark invoice as paid
+        #         invoice_service = InvoiceService(self.session_factory)  # Create an instance
+        #         updated_invoice = await invoice_service.execute("mark_invoice_paid", invoice_id=invoice_id)
+        #         return {"status": "success", "invoice": updated_invoice.to_dict(),
+        #                 "message": "ITN processed and invoice marked paid."}
+        #     else:
+        #         return {"status": "error", "message": "Invoice ID not found in ITN data."}
+        # else:
+        #     return {"status": "error", "message": "ITN verification failed."}
+        #
+        #

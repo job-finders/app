@@ -2,7 +2,7 @@ import os
 import time
 import pickle
 import functools
-from src.utils import generate_cache_key
+
 
 
 class Cache:

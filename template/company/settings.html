@@ -17,7 +17,7 @@ company dashboard, recruitment dashboard, hiring analytics, job management, cand
         <h2 class="h5 fw-bold mb-0 text-primary"><i class="bi bi-gear me-2"></i>Company Settings</h2>
     </div>
     <div class="card-body py-4">
-        <form method="POST" action="/dashboard/settings/update" class="needs-validation" novalidate>
+        <form method="POST" action="{{ url_for('company.save_settings')}}" class="needs-validation" novalidate>
 
             <!-- GENERAL SETTINGS -->
             <section class="mb-5">

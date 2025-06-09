@@ -14,8 +14,6 @@ from src.controllers.controller import Controllers, error_handler
 
 from src.utils.route_helpers import get_service
 
-from src.cache.cache_redis import cached
-
 class ResumeController(Controllers):
     def __init__(self, factory):
         super().__init__(factory)
@@ -73,7 +71,6 @@ class ResumeController(Controllers):
             session.add(CustomSectionORM(cv_id=cv_id, **section.model_dump()))
 
     @error_handler
-    @cached
     async def get_cv_by_id(self, cv_id: str) -> JobSeekerCV | None:
         # Retrieve full CV details including all related data
         with self.get_session() as session:
@@ -128,7 +125,6 @@ class ResumeController(Controllers):
             return result
 
     @error_handler
-    @cached
     async def get_primary_resume(self, user_id: str) -> JobSeekerCV:
         """
         Retrieves the primary resume for a given user using ORM to_dict() methods
@@ -178,7 +174,6 @@ class ResumeController(Controllers):
             return JobSeekerCV(**resume_data)
 
     @error_handler
-    @cached
     async def list_cvs_for_user(self, user_uid: str) -> list[JobSeekerCV]:
         # Get all resumes for a specific job seeker
         with self.get_session() as session:
@@ -224,7 +219,6 @@ class ResumeController(Controllers):
             return True  # Return True to indicate successful deletion
 
     @error_handler
-    @cached
     async def search_cvs(self, query: str, limit: int = 10) -> list[JobSeekerCV]:
         # Search for resumes using professional title or keyword
         with self.get_session() as session:
@@ -355,7 +349,6 @@ class ResumeController(Controllers):
             return True
 
     @error_handler
-    @cached
     async def get_cvs_by_skill(self, skill: str) -> list[JobSeekerCV]:
         """
         Retrieve CVs that mention a specific skill in the 'skills' field.
@@ -374,7 +367,6 @@ class ResumeController(Controllers):
             return [JobSeekerCV.model_validate(cv) for cv in query.all()]
 
     @error_handler
-    @cached
     async def get_cvs_by_location(self, location: str) -> list[JobSeekerCV]:
         """
         Retrieve CVs where the job seeker is located in a specific city or region.
@@ -392,7 +384,6 @@ class ResumeController(Controllers):
             return [JobSeekerCV.model_validate(cv) for cv in query.all()]
 
     @error_handler
-    @cached
     async def get_recent_cvs(self, limit: int = 10) -> list[JobSeekerCV]:
         """
         Fetch the most recently created CVs.
@@ -483,7 +474,6 @@ class ResumeController(Controllers):
             return True
 
     @error_handler
-    @cached
     async def employer_saved_cvs(self, employer_id: str) -> list[JobSeekerCV]:
         """
         Get a list of CVs saved/bookmarked by a specific employer.
@@ -506,7 +496,6 @@ class ResumeController(Controllers):
             return cv_details
 
     @error_handler
-    @cached
     async def get_cv_statistics(self) -> dict:
         """
         Admin stats: Retrieve various statistics about the CVs in the system.
@@ -542,7 +531,6 @@ class ResumeController(Controllers):
             }
 
     @error_handler
-    @cached
     async def get_cvs_by_certification(self, cert_name: str) -> list[JobSeekerCV]:
         """
         Filter CVs by a specific certification name.
@@ -563,7 +551,6 @@ class ResumeController(Controllers):
             return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids]
 
     @error_handler
-    @cached
     async def get_cvs_by_language(self, language: str) -> list[JobSeekerCV]:
         """
         Filter CVs by known languages.
@@ -584,7 +571,6 @@ class ResumeController(Controllers):
             return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids]
 
     @error_handler
-    @cached
     async def get_resume_versions(self, cv_id: int):
         """Return all versions for a given resume ID."""
         pass
@@ -594,7 +580,6 @@ class ResumeController(Controllers):
         pass
 
     @error_handler
-    @cached
     async def download_resume_pdf(self, cv_id: int):
         """Generate and return the PDF download of a resume."""
         pass
