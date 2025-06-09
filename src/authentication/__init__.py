@@ -1,6 +1,9 @@
 import re
+import asyncio
 from functools import wraps, lru_cache
 from flask import request, redirect, url_for, flash, g
+
+
 
 from src.database.sql.billing_sql import CompanyBillingProfileORM
 from src.database.models.billing import CompanyBillingProfile
@@ -125,6 +128,8 @@ def user_details(route_function):
     return wrapper
 
 
+# Company Billings . 
+
 def get_current_company_subscription(uid: str):
     """Retrieve the current company based on the user's UID."""
     if not is_valid_uid(uid):
@@ -133,28 +138,57 @@ def get_current_company_subscription(uid: str):
     with Session() as session:
         employer_orm = session.query(EmployerORM).filter(EmployerORM.user_uid == uid).first()
         if not employer_orm:
-            auth_logger.info(f"Employer profile not found for : {uid}")
+            auth_logger.info(f"Employer profile not found for: {uid}")
             return None
         company_id = employer_orm.company_id
         subscription_orm = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).first()
         if not subscription_orm:
-            auth_logger.info(f"company_billing profile not found for : {uid}")
+            auth_logger.info(f"Company billing profile not found for: {uid}")
             return None
         return CompanyBillingProfile(**subscription_orm.to_dict())
 
-
 def require_billing_role_from_trial(route_function):
-    """
-        will validate if billing role is trial or above
-    :param route_function:
-    :return:
-    """
+    """Validate if billing role is trial or above."""
     @wraps(route_function)
     async def wrapper(*args, **kwargs):
-        user = await resolve_user_from_jwt_cookie()
-        billing_plan = get_current_company_subscription(uid=user.uid if user else None)
+        # Resolve user and store in g object
+        g.user = await resolve_user_from_jwt_cookie()
+        
+        if not g.user:
+            flash("Please log in to access this page", "danger")
+            return redirect(url_for("auth.login"))
+        
+        try:
+            # Run blocking DB call in separate thread
+            billing_plan = await asyncio.to_thread(
+                get_current_company_subscription, 
+                uid=g.user.uid
+            )
+        except Exception as e:
+            auth_logger.error(f"Billing check failed: {str(e)}")
+            flash("Error retrieving subscription information", "danger")
+            return redirect(url_for("company.get_dashboard"))
+
+        if not billing_plan:
+            flash("Company billing profile not found", "danger")
+            return redirect(url_for("company.get_dashboard"))
+
+        # Check subscription status
         if billing_plan.is_trial_valid or billing_plan.is_active_subscription_plan:
             return await route_function(*args, **kwargs)
-        flash(message="You do not have an active subscription plan", category="danger")
+        
+        flash("You do not have an active subscription plan", "danger")
         return redirect(url_for("company.get_dashboard"))
+    
     return wrapper
+
+"""
+@route.get("/feature")
+@roles_required("admin", "manager")  # Sets g.user
+@require_billing_role_from_trial    # Requires g.user
+@cached                             # Can now use g.user in cache keys
+async def premium_feature(user: User):
+    # user comes from roles_required decorator
+    # g.user is also available
+    return render_template(...)
+"""
