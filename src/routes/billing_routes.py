@@ -23,7 +23,7 @@ async def payfast_ipn():
 @billing_route.get("/dashboard")
 @flask_error_handler
 @employer_login
-async def get_billing_plans(user: User):
+async def get_dashboard(user: User):
     """
 
     :param user:
@@ -44,7 +44,7 @@ async def get_billing_plans(user: User):
 
     billing_dashboard = await billing_controller.get_billing_dashboard(company_id=employer_profile.company_id)
 
-    context = dict(user=user, employer_profile=employer_profile,company_profile=company_profile,  billing_dashboard=billing_dashboard)
+    context = dict(user=user, employer_profile=employer_profile,company_profile=company_profile,  **billing_dashboard)
     return render_template('company/billing/billing.html', **context)
 
 

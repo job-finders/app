@@ -607,12 +607,6 @@ async def verification_status(user: User):
 
     return render_template('company/verification_status.html',company=company,status_info=status_info)
 
-@company_bp.route("/billing")
-@flask_error_handler
-@employer_login
-async def billing(user: User):
-    return render_template("company/billing/billing.html")  # Placeholder template
-
 @company_bp.route("/settings")
 @flask_error_handler
 @employer_login

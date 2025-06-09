@@ -75,15 +75,15 @@ class BillingServiceInterface:
         try:
             # 1. Safely retrieve the method from the schema using .get()
             # This prevents a KeyError if 'action' is not found.
-            method_to_execute = self._interface_schema.get(action)
+            method_to_execute = self.__interface_map[action]
 
             # 2. Check if the action was found at all.
             if method_to_execute is None:
                 raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
 
             # 3. Check if the retrieved item is actually callable.
-            if not callable(method_to_execute):
-                raise ValueError(f"Configured action '{action}' is not a callable method.")
+            # if not callable(method_to_execute):
+            #     raise ValueError(f"Configured action '{action}' is not a callable method.")
 
             # 4. Determine if the method is a coroutine function and await it if necessary.
             if inspect.iscoroutinefunction(method_to_execute):
@@ -95,13 +95,13 @@ class BillingServiceInterface:
         except ValueError as e:
             # Re-raise the ValueError if it's one of the ones we explicitly raised.
             raise e
-        except BillingServiceRouterException as e:
-            # Re-raise your custom exception as is.
-            raise e
+        # except BillingServiceRouterException as e:
+        #     # Re-raise your custom exception as is.
+        #     raise e
         except Exception as e:
             # Catch any other unexpected exceptions and wrap them in a RuntimeError.
             # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
-            raise RuntimeError(f"Error executing action '{action}': {e}") from e
+            raise RuntimeError(f"Error executing action '{action}': {str(e)}") from e
 
     def _interface_schema(self):
         """

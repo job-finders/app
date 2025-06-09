@@ -3,12 +3,11 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Column, String, Boolean, Integer, Numeric, Text, DateTime, func, JSON, Date
 from sqlalchemy import ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-
+from src.database.sql import Base
 from src.database.constants import ID_LEN
 
-Base = declarative_base()
+from src.database.sql.company import CompanyORM
 
 
 class BillingPlanORM(Base):
@@ -60,7 +59,6 @@ class BillingPlanORM(Base):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "invoices": [invoice.to_dict() for invoice in self.invoices] if include_relationships and self.invoices else None
         }
-
 
 class CompanyBillingProfileORM(Base):
     __tablename__ = "company_billing"
@@ -136,12 +134,12 @@ class InvoiceORM(Base):
 class PaymentMethodORM(Base):
     __tablename__ = "payment_methods"
 
-    method_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    company_id = Column(String, ForeignKey("companies.company_id"), nullable=False)
+    method_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
+    company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"), nullable=False)
 
     provider = Column(String(20), default="payfast")  # 'payfast' or 'manual'
-    payfast_token = Column(String, nullable=True)
-    payfast_sub_reference = Column(String, nullable=True)
+    payfast_token = Column(String(255), nullable=True)
+    payfast_sub_reference = Column(String(255), nullable=True)
 
     is_active = Column(Boolean, default=True)
     is_default = Column(Boolean, default=True)
@@ -160,12 +158,11 @@ class PaymentMethodORM(Base):
             "added_on": self.added_on.isoformat()
         }
 
-
 class BillingEventORM(Base):
     __tablename__ = "billing_events"
 
-    event_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    company_id = Column(String, ForeignKey("companies.company_id"), nullable=False)
+    event_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
+    company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"), nullable=False)
 
     type = Column(String(50), nullable=False)  # Use Enum if you prefer strict validation
     event_metadata = Column(JSON, default=dict)

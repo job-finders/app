@@ -4,7 +4,7 @@ from .sql.company import (
     SavedCandidatesORM, AIBasedDocumentReviewResultORM
 )
 from .sql.billing_sql import (
-    BillingEventORM, BillingPlanORM, CompanyBillingProfileORM, InvoiceORM
+    BillingEventORM, BillingPlanORM, CompanyBillingProfileORM, InvoiceORM, PaymentMethodORM
 )
 from .sql.jobs_sql import (
     JobsORM, JobApplicationORM, JobCategoryORM, SavedJobORM, ApplicationDashboardORM,

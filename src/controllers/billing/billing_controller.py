@@ -89,11 +89,15 @@ class BillingController(Controllers):
 
     async def get_billing_dashboard(self, company_id: str):
         billing_profile = await self.billing_service.execute("get_billing_profile", company_id)
-        list_invoices = await self.invoice_service.execute("list_invoices", company_id, limit=5)
+        list_invoices = await self.invoice_service.execute("list_company_invoices", company_id, limit=5)
         billing_events = await self.billing_events.execute('list_events', company_id)
+        if not billing_profile:
+            return {}
 
+        billing_plan = await self.billing_service.execute('look_up_plan', plan_id=billing_profile.current_plan_id)
         return {
-            'billing_profile': billing_profile,
+            'billing': billing_profile,
+            'current_plan': billing_plan,
             'list_invoices': list_invoices,
             'recent_events': billing_events}
 
