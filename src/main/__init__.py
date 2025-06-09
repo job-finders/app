@@ -188,6 +188,13 @@ def create_app(config):
         _register_blueprints(app)
         # Register template filters
         _register_template_filters(app)
+
+        # ========================
+        # ADD AND INITIALIZE RATE LIMITER
+        from src.firewall.rate_limiting import limiter, update_cloudflare_ips
+        limiter.init_app(app)
+        update_cloudflare_ips()
+        
         # ========================
         # 9. Secure Teardown
         # ========================

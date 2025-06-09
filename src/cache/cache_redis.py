@@ -32,12 +32,12 @@ def sanitize_cache_key(key: str) -> str:
     """Safe version for cache backends"""
     return re.sub(r'[^\w\-\.]', '_', key)[:250]
 
-    
+
 
 class RedisCache:
     """Redis-based caching implementation with TTL support."""
     
-    def __init__(self, prefix="jobfinders_route_cache:", default_ttl=12 * 60 * 60, **redis_kwargs):
+    def __init__(self, prefix="jobfinders_route_cache:", default_ttl=30 * 60, **redis_kwargs):
         """
         Initialize Redis cache.
         
@@ -64,8 +64,7 @@ class RedisCache:
         self.redis.setex(
             self._prefixed(key),
             ttl,
-            pickle.dumps(value)
-        )
+            pickle.dumps(value))
 
     def __contains__(self, key):
         """Check if key exists in cache (may return True for expired keys)."""
@@ -103,31 +102,48 @@ class RedisCache:
         return f"RedisCache(prefix='{self.prefix}', default_ttl={self.default_ttl})"
 
 
+
+
+# ------------------------------
+# Decorator: Cached
+# ------------------------------
+def cached(ttl: Optional[int] = None):
+    """
+    Usage:
+        @cached()
+        def my_func(...): ...
+
+        @cached(ttl=60)
+        async def my_async_func(...): ...
+    """
+
+    def decoration(f: Callable) -> Callable:
+        """Decorator to cache sync or async function results in Redis."""
+        @functools.wraps(f)
+        def sync_wrapper(*args, **kwargs):
+            # This is uses the new sanitization method - and an improved key creation method
+            # compatible with jobfinders portal
+            cache_key = sanitize_cache_key(generate_cache_key(f, *args, **kwargs))
+            if (cached_result := route_cache.get(cache_key)) is not None:
+                return cached_result
+            
+            result = f(*args, **kwargs)
+            route_cache.set(cache_key, result)
+            return result
+
+        @functools.wraps(f)
+        async def async_wrapper(*args, **kwargs):
+            cache_key = sanitize_cache_key(generate_cache_key(f, *args, **kwargs))
+            if (cached_result := route_cache.get(cache_key)) is not None:
+                return cached_result
+
+            result = await f(*args, **kwargs)
+            route_cache.set(cache_key, result)
+            return result
+
+        return async_wrapper if inspect.iscoroutinefunction(f) else sync_wrapper
+    return decoration
+
+
 # Initialize with default Redis connection (localhost:6379)
 route_cache = RedisCache(prefix="jobfinders_route_cache:")
-
-def cached(f: Callable) -> Callable:
-    """Decorator to cache sync or async function results in Redis."""
-    @functools.wraps(f)
-    def sync_wrapper(*args, **kwargs):
-        # This is uses the new sanitization method - and an improved key creation method
-        # compatible with jobfinders portal
-        cache_key = sanitize_cache_key(generate_cache_key(f, *args, **kwargs))
-        if (cached_result := route_cache.get(cache_key)) is not None:
-            return cached_result
-        
-        result = f(*args, **kwargs)
-        route_cache.set(cache_key, result)
-        return result
-
-    @functools.wraps(f)
-    async def async_wrapper(*args, **kwargs):
-        cache_key = sanitize_cache_key(generate_cache_key(f, *args, **kwargs))
-        if (cached_result := route_cache.get(cache_key)) is not None:
-            return cached_result
-
-        result = await f(*args, **kwargs)
-        route_cache.set(cache_key, result)
-        return result
-
-    return async_wrapper if inspect.iscoroutinefunction(f) else sync_wrapper

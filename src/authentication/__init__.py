@@ -81,9 +81,6 @@ def login_required(route_function):
     return wrapper
 
 
-
-
-
 def roles_required(*allowed_role: str):
     """Ensure the user has one of the allowed roles and store user in g"""
     def decorator(route_function):

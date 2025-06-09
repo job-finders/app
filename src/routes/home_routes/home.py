@@ -41,8 +41,8 @@ async def serve_logo(job_ref: str):
 @home_route.get('/')
 @rate_limit("250 per minute")
 @flask_error_handler
-@cached
 @user_details
+@cached
 async def get_home(user: User):
     """Render home page with a default search term."""
     search_term = "home"
@@ -55,10 +55,22 @@ async def get_home(user: User):
 @home_route.get('/about')
 @rate_limit("250 per minute")
 @flask_error_handler
-@cached
 @user_details
+@cached
 async def about(user: User):
-    """Render the about page."""
+    """Render the about page.
+    Note that Cache Handler Must Be first. then other handlers can follow on like this. 
+
+@route.get("/feature")
+@roles_required("admin", "manager")  # Sets g.user
+@require_billing_role_from_trial    # Requires g.user
+@cached                             # Can now use g.user in cache keys
+async def premium_feature(user: User):
+    # user comes from roles_required decorator
+    # g.user is also available
+    return render_template(...)
+
+    """
     seo = await create_tags(search_term="about")
     context = dict(current_user=user,seo=seo,term='About')
     return render_template('about.html', **context)
@@ -67,8 +79,8 @@ async def about(user: User):
 @home_route.get('/contact')
 @rate_limit("250 per minute")
 @flask_error_handler
-@cached
 @user_details
+@cached
 async def contact(user: User):
     """Render the contact page."""
     seo = await create_tags(search_term="contact")
@@ -79,8 +91,8 @@ async def contact(user: User):
 @home_route.get('/terms')
 @rate_limit("250 per minute")
 @flask_error_handler
-@cached
 @user_details
+@cached
 async def terms(user: User):
     """Render the terms page."""
     seo = await create_tags(search_term="terms")
@@ -89,8 +101,8 @@ async def terms(user: User):
 
 @home_route.get('/privacy')
 @flask_error_handler
-@cached
 @user_details
+@cached
 async def privacy(user: User):
     """Render the terms page."""
     seo = await create_tags(search_term="terms")
@@ -101,8 +113,8 @@ async def privacy(user: User):
 @home_route.get('/documentation')
 @rate_limit("250 per minute")
 @flask_error_handler
-@cached
 @user_details
+@cached
 async def documentation(user: User):
     """Render the terms page."""
     seo = await create_tags(search_term="terms")
@@ -114,8 +126,8 @@ async def documentation(user: User):
 @home_route.get('/sister-sites')
 @rate_limit("250 per minute")
 @flask_error_handler
-@cached
 @user_details
+@cached
 async def sister_sites(user: User):
     """Render the sister sites page."""
     seo = await create_tags(search_term="sister-sites")
@@ -126,8 +138,8 @@ async def sister_sites(user: User):
 @home_route.get('/faq')
 @rate_limit("250 per minute")
 @flask_error_handler
-@cached
 @user_details
+@cached
 async def faq(user: User):
     """Render the FAQ page."""
     seo = await create_tags(search_term="FAQ")
@@ -138,8 +150,8 @@ async def faq(user: User):
 @home_route.get('/linkedin-learning')
 @rate_limit("250 per minute")
 @flask_error_handler
-@cached
 @user_details
+@cached
 async def linkedin_learning(user: User):
     """Render the LinkedIn Learning page."""
     seo = await create_tags(search_term="LinkedIn Learning")
