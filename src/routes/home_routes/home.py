@@ -12,6 +12,8 @@ from src.routes.utils import (fetch_and_cache_logo, create_context, not_found)
 from src.utils import format_title
 from src.utils.route_helpers import get_service
 
+from src.cache.cache_redis import cached
+
 home_route = Blueprint('home', __name__)
 home_logger = init_logger("home_logger")
 
@@ -21,6 +23,7 @@ home_logger = init_logger("home_logger")
 @home_route.get("/media/logos/<job_ref>.png")
 @rate_limit("120 per minute")
 @flask_error_handler
+@cached
 async def serve_logo(job_ref: str):
     """Serve a job logo that is cached or fetch it if not present."""
     job = get_service('scraper').jobs.get(job_ref)
@@ -38,6 +41,7 @@ async def serve_logo(job_ref: str):
 @home_route.get('/')
 @rate_limit("250 per minute")
 @flask_error_handler
+@cached
 @user_details
 async def get_home(user: User):
     """Render home page with a default search term."""
@@ -51,6 +55,7 @@ async def get_home(user: User):
 @home_route.get('/about')
 @rate_limit("250 per minute")
 @flask_error_handler
+@cached
 @user_details
 async def about(user: User):
     """Render the about page."""
@@ -62,6 +67,7 @@ async def about(user: User):
 @home_route.get('/contact')
 @rate_limit("250 per minute")
 @flask_error_handler
+@cached
 @user_details
 async def contact(user: User):
     """Render the contact page."""
@@ -73,6 +79,7 @@ async def contact(user: User):
 @home_route.get('/terms')
 @rate_limit("250 per minute")
 @flask_error_handler
+@cached
 @user_details
 async def terms(user: User):
     """Render the terms page."""
@@ -82,6 +89,7 @@ async def terms(user: User):
 
 @home_route.get('/privacy')
 @flask_error_handler
+@cached
 @user_details
 async def privacy(user: User):
     """Render the terms page."""
@@ -93,6 +101,7 @@ async def privacy(user: User):
 @home_route.get('/documentation')
 @rate_limit("250 per minute")
 @flask_error_handler
+@cached
 @user_details
 async def documentation(user: User):
     """Render the terms page."""
@@ -105,6 +114,7 @@ async def documentation(user: User):
 @home_route.get('/sister-sites')
 @rate_limit("250 per minute")
 @flask_error_handler
+@cached
 @user_details
 async def sister_sites(user: User):
     """Render the sister sites page."""
@@ -116,6 +126,7 @@ async def sister_sites(user: User):
 @home_route.get('/faq')
 @rate_limit("250 per minute")
 @flask_error_handler
+@cached
 @user_details
 async def faq(user: User):
     """Render the FAQ page."""
@@ -127,6 +138,7 @@ async def faq(user: User):
 @home_route.get('/linkedin-learning')
 @rate_limit("250 per minute")
 @flask_error_handler
+@cached
 @user_details
 async def linkedin_learning(user: User):
     """Render the LinkedIn Learning page."""

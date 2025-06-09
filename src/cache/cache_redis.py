@@ -9,7 +9,7 @@ from src.utils import generate_cache_key
 class RedisCache:
     """Redis-based caching implementation with TTL support."""
     
-    def __init__(self, prefix="", default_ttl=12 * 60 * 60, **redis_kwargs):
+    def __init__(self, prefix="jobfinders_route_cache:", default_ttl=12 * 60 * 60, **redis_kwargs):
         """
         Initialize Redis cache.
         
@@ -76,13 +76,13 @@ class RedisCache:
 
 
 # Initialize with default Redis connection (localhost:6379)
-route_cache = RedisCache(prefix="jobfinders:")
+route_cache = RedisCache(prefix="jobfinders_route_cache:")
 
 def cached(f: Callable) -> Callable:
     """Decorator to cache sync or async function results in Redis."""
     @functools.wraps(f)
     def sync_wrapper(*args, **kwargs):
-        cache_key = generate_cache_key(f, *args, **kwargs)
+        cache_key = sanitize_cache_key(generate_cache_key(f, *args, **kwargs))
         if (cached_result := route_cache.get(cache_key)) is not None:
             return cached_result
         
@@ -92,7 +92,7 @@ def cached(f: Callable) -> Callable:
 
     @functools.wraps(f)
     async def async_wrapper(*args, **kwargs):
-        cache_key = generate_cache_key(f, *args, **kwargs)
+        cache_key = sanitize_cache_key(generate_cache_key(f, *args, **kwargs))
         if (cached_result := route_cache.get(cache_key)) is not None:
             return cached_result
 

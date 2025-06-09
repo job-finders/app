@@ -198,11 +198,34 @@ def sanitize_filename(filename):
     return filename.lower().strip()
 
 
-def generate_cache_key(f, *args, **kwargs):
-    # Construct the cache key using function name, args, and kwargs
-    cache_key = f"{f.__name__}{kwargs}"
-    return sanitize_filename(cache_key)
+import hashlib
+import re
+from functools import wraps
 
+def generate_cache_key(f, *args, **kwargs):
+    # Create stable representation of arguments
+    args_repr = ','.join(repr(a) for a in args)
+    kwargs_repr = ','.join(f"{k}={repr(v)}" for k, v in sorted(kwargs.items()))
+    
+    # Include user identity for routes (if available)
+    user_id = ""
+    try:
+        from flask import g
+        user_id = f"|user={g.user.id}" if hasattr(g, 'user') and g.user else "|user=anon"
+    except RuntimeError:  # Outside request context
+        pass
+
+    # Combine components
+    base_key = f"{f.__module__}:{f.__name__}({args_repr}{',' if args and kwargs else ''}{kwargs_repr}){user_id}"
+    
+    # Hash for length safety and consistent encoding
+    return f"{f.__name__}_{hashlib.md5(base_key.encode('utf-8')).hexdigest()}"
+
+def sanitize_cache_key(key: str) -> str:
+    """Safe version for cache backends"""
+    return re.sub(r'[^\w\-\.]', '_', key)[:250]
+
+    
 
 # app/template_filters.py
 def intcomma(value):

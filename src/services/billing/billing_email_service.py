@@ -3,7 +3,7 @@ from flask import render_template
 from src.emailer import EmailModel
 
 from src.utils.route_helpers import get_controller
-from src.tasks.celery.workers.email_queue import enqueue_email
+from src.factories.redis_factory import email_queue
 
 
 class BillingEmailerService:
@@ -35,7 +35,8 @@ class BillingEmailerService:
             subject_=subject,
             html_=html_content,
         )
-        enqueue_email(email)
+        email_queue.send_to_queue(item=email.model_dump())
+        # enqueue_email(email)
 
     def _compose_email(self, event_type: str, company, metadata: dict) -> tuple[str, str]:
         """

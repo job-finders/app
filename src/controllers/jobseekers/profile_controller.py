@@ -59,6 +59,7 @@ class JobSeekerProfilesController(Controllers):
             return JobSeekerProfile.model_validate(profile_orm)
 
     @error_handler
+    @cached
     async def get_profile_by_uid(self, user_uid: str) -> JobSeekerProfile | None:
         """Fetch a profile or return None if missing."""
         with self.get_session() as session:
@@ -120,6 +121,7 @@ class JobSeekerProfilesController(Controllers):
             return {"message": "Profile anonymized and hidden successfully."}
 
     @error_handler
+    @cached
     async def search_profiles(
         self, query: str, role: str = None
     ) -> list[JobSeekerProfile]:
@@ -184,6 +186,7 @@ class JobSeekerProfilesController(Controllers):
         return {"message": "Image uploaded", "url": url}
 
     @error_handler
+    @cached
     async def list_profiles_by_role(
         self, role: str
     ) -> list[JobSeekerProfile]:
@@ -196,6 +199,7 @@ class JobSeekerProfilesController(Controllers):
             return [JobSeekerProfile(**profile_orm.to_dict()) for profile_orm in job_seeker_orm_list if profile_orm.visibility]
 
     @error_handler
+    @cached
     async def get_default_work_locations(self) -> list[Configuration]:
         with self.get_session() as session:
             orm = (
@@ -207,6 +211,7 @@ class JobSeekerProfilesController(Controllers):
             return [Configuration.model_validate(x.to_dict()) for x in orm]
 
     @error_handler
+    @cached
     async def get_industries_of_interest(self) -> list[Configuration]:
         with self.get_session() as session:
             orm = (
@@ -218,6 +223,7 @@ class JobSeekerProfilesController(Controllers):
             return [Configuration.model_validate(x.to_dict()) for x in orm]
 
     @error_handler
+    @cached
     async def get_job_titles_of_interest(self) -> list[Configuration]:
         with self.get_session() as session:
             orm = (

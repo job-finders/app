@@ -5,6 +5,7 @@ import resend
 
 from src.logger import init_logger
 from src.config import config_instance
+
 settings = config_instance().EMAIL_SETTINGS
 
 
@@ -30,13 +31,14 @@ class SendMail:
         pass
 
     async def send_mail_resend(self, email: EmailModel, direct_send: bool = False):
-        from src.tasks.celery.workers.email_queue import enqueue_email
-        if direct_send:
-            params = {'from': self.from_ or email.from_, 'to': email.to_, 'subject': email.subject_, 'html': email.html_}
+        
+        from src.factories.redis_factory import email_queue
+        params = {'from': self.from_ or email.from_, 'to': email.to_, 'subject': email.subject_, 'html': email.html_}
+        if direct_send:            
             self._resend.Emails.send(params=params)
         else:
-            try:
-                enqueue_email(email=email)
+            try:                
+                email_queue.send_to_queue(email=params)
             except Exception as e:
                 # Log warning and fallback
                 self.logger.warning(f"Queue unavailable: {e}, sending directly")
