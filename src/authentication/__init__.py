@@ -1,6 +1,6 @@
 import re
 from functools import wraps, lru_cache
-from flask import request, redirect, url_for, flash
+from flask import request, redirect, url_for, flash, g
 
 from src.database.sql.billing_sql import CompanyBillingProfileORM
 from src.database.models.billing import CompanyBillingProfile
@@ -69,9 +69,9 @@ async def resolve_user_from_cookie() -> User | None:
 def login_required(route_function):
     @wraps(route_function)
     async def wrapper(*args, **kwargs):
-        user = await resolve_user_from_jwt_cookie()
-        if user:
-            return await route_function(user, *args, **kwargs)
+        g.user = await resolve_user_from_jwt_cookie()
+        if g.user :
+            return await route_function(g.user, *args, **kwargs)
 
         flash("Login required", "danger")
         return redirect(url_for("auth.login"))
@@ -79,20 +79,26 @@ def login_required(route_function):
 
 
 
+
+
 def roles_required(*allowed_role: str):
-    """Ensure the user has one of the allowed roles."""
+    """Ensure the user has one of the allowed roles and store user in g"""
     def decorator(route_function):
         @wraps(route_function)
         async def wrapper(*args, **kwargs):
-            user = await resolve_user_from_jwt_cookie()
-            if user and user.role in allowed_role:
-                return await route_function(user, *args, **kwargs)
+            # Resolve user and store in g object
+            g.user = await resolve_user_from_jwt_cookie()
+            
+            if g.user and g.user.role in allowed_role:
+                # Pass g.user instead of local user variable
+                return await route_function(g.user, *args, **kwargs)
 
             flash("Access denied: insufficient privileges.", "danger")
             return redirect(url_for("home.get_home"))
 
         return wrapper
     return decorator
+
 
 def system_admin_login(route_function):
     """Ensure the user is an admin (company context)."""
