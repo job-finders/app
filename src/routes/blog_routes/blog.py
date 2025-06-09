@@ -1,4 +1,8 @@
 from flask import Blueprint, render_template
+
+from src.database.models.users import User
+from src.authentication import user_details
+from src.cache.cache_redis import cached
 from src.routes import flask_error_handler
 from src.database.models.seo import create_tags
 from src.logger import init_logger
@@ -9,18 +13,23 @@ blog_logger = init_logger()
 
 @blog_route.get('/blog')
 @flask_error_handler
-async def blog_home():
+@user_details
+@cached(ttl=60*60*6)
+async def blog_home(user: User):
     search_term, template_path = ("Jobfinders Blog Articles", "blog/blog.html")
     seo = await create_tags(search_term=search_term)
-    context = dict(seo=seo, term=search_term)
+    context = dict(curremt_user=user, seo=seo, term=search_term)
     return render_template(template_path, **context)
 
 
 @blog_route.get('/blog/<string:topic>')
 @flask_error_handler
-async def get_blog(topic):
+@user_details
+@cached(ttl=60*60*6)
+async def get_blog(user: User, topic: str):
     """
     will return blog for the specified topic
+    :param user:
     :param topic: The topic of the blog
     :return: The rendered template for the specified topic
     """
@@ -44,7 +53,7 @@ async def get_blog(topic):
     if topic in topic_mappings:
         search_term, template_path = topic_mappings[topic]
         seo = await create_tags(search_term=search_term)
-        context = dict(seo=seo, term=search_term)
+        context = dict(curremt_user=user,seo=seo, term=search_term)
         return render_template(template_path, **context)
     else:
         # Handle invalid topic here, e.g., return a 404 page

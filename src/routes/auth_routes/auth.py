@@ -26,6 +26,7 @@ async def create_response(redirect_url, message=None, category=None) -> Response
 async def login(user: User):
 
     if user:
+        auth_logger.info("Fetching login page")
         flash("you are already logged in", "success")
         return redirect(url_for("home.get_home"))
 
@@ -33,7 +34,7 @@ async def login(user: User):
         email = request.form.get("email")
         password = request.form.get("password")
         remember_me = request.form.get("remember_me")
-
+        auth_logger.info(f"Submitting Login Page: {email}, {password}")
         sixty_minutes = 60
         thirty_days = 30 * 24 * 60  # 30 days × 24 hours × 60 minutes
 
@@ -41,12 +42,20 @@ async def login(user: User):
         users_controller = get_controller('users')
         user = await users_controller.login_user(email=email, password=password)
         if not user:
+            auth_logger.info("Did not find User")
             flash("Invalid email or password", "danger")
             return redirect(url_for("auth.login"))
-        if user.role == "employer":
+        if user.role == Role.EMPLOYER.value:
+            auth_logger.info(f"Found User Role: {user.role}")
             response = await create_response(url_for('company.get_dashboard'))
-        else:
+        elif user.role == Role.SEEKER.value:
+            auth_logger.info(f"Found User Role : {user.role}")
             response = await create_response(url_for('jobseekers.dashboard'))
+        elif user.role == Role.SYSTEM_ADMIN.value:
+            auth_logger.info(f"System Admin Role or : {user.role}")
+        else:
+            auth_logger.info(f"System Unknown Role or : {user.role}")
+            return redirect("auth.login")
 
         expiration = utc_time() + timedelta(minutes=remember_me_delay)
         jwt_token = create_jwt(user.model_dump(exclude={'password_hash'}))

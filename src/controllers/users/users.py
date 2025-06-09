@@ -82,7 +82,7 @@ class UsersController(Controllers):
             user_orm = UserORM(
                 uid=str(user_data.uid),
                 name=user_data.name,
-                email=str(user_data.email),
+                email=str(str(user_data.email).casefold()),
                 password_hash=user_data.password_hash,
                 role=user_data.role,
                 is_active=user_data.is_active,
@@ -96,9 +96,12 @@ class UsersController(Controllers):
     async def get_user_by_uid(self, uid: str) -> User | None:
         """Fetch user by ID."""
         with self.get_session() as session:
+            self.logger.info(f" async def get_user_by_uid : Finding User by UID : {uid}")
             user_orm = session.query(UserORM).filter_by(uid=uid).first()
             if user_orm is None:
+                self.logger.info("Did not find User ")
                 return None
+            self.logger.info("User Found : ")
             return User(**user_orm.to_dict())
 
     @error_handler
@@ -123,12 +126,17 @@ class UsersController(Controllers):
         :return:
         """
         with self.get_session() as session:
+            self.logger.info(f"Inside Login User : {email} - {password}")
             user_orm = session.query(UserORM).filter_by(email=email.casefold()).first()
             if user_orm is None:
+                self.logger.info("User Not Found : ")
                 return None
+            self.logger.info("Is User Found : ")
             user = User(**user_orm.to_dict())
             if not user.check_password(password=password):
+                self.logger.info("Password Invalid")
                 return None
+
             _last_login = datetime.now(timezone.utc)
             user_orm.last_login = _last_login
             user.last_login = _last_login

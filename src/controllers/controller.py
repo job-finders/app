@@ -35,7 +35,7 @@ class Controllers:
         **Controllers**
             registers controllers
     """
-    session_limit: int = 25
+    session_limit: int = 5
 
     def __init__(self, factory, session_maker=Session):
         self.factory = factory
@@ -45,8 +45,8 @@ class Controllers:
         self.app: Flask | None = None
         self.deepseek_api_key: str | None  = None
         # Initialize sessions if session_maker is provided
-        # if session_maker:
-        #     self._initialize_sessions()
+        if session_maker:
+            self._initialize_sessions()
 
     def _initialize_sessions(self):
         """Initialize session pool"""

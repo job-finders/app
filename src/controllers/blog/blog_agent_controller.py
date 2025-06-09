@@ -102,6 +102,6 @@ class BlogAgentController(Controllers):
         Returns:
             BlogFeedbackOutput: The updated feedback output including calculated score.
         """
-        from src.controllers.blog_feedback_controller import BlogFeedbackController
+        from src.controllers.blog.blog_feedback_controller import BlogFeedbackController
         feedback_controller = BlogFeedbackController()
         return await feedback_controller.submit_feedback(feedback_in)

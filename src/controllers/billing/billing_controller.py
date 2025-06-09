@@ -10,9 +10,8 @@ from src.services.billing.billing_service import BillingService
 from src.services.billing.invoice_service import InvoiceService
 from src.services.billing.payfact_client import PayFastClient
 from src.services.billing.payment_service import PaymentService
-from src.utils.route_helpers import get_controller
-from src.services.billing.event_realtime_queue import enqueue_realtime_event
 from src.tasks.celery.workers.email_queue import enqueue_email
+from src.utils.route_helpers import get_controller
 
 
 class BillingController(Controllers):
