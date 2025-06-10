@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime, timedelta
-
+from datetime import timedelta
 from src.database import JobsORM, JobCategoryORM
 from src.database.models.jobs_model import JobStatusEnum
 
@@ -92,3 +92,96 @@ def create_job(session, category_id=None, company_id=None, **overrides):
     session.add(job)
     session.commit()
     return job
+
+
+def create_job_version_history(session, **overrides):
+    job_version = JobVersionHistoryORM(
+        id=overrides.get("id", str(uuid.uuid4())),
+        job_id=overrides["job_id"],  # required
+        version=overrides.get("version", 1),
+        changes=overrides.get("changes", {"field": "title", "old": "Old Title", "new": "New Title"}),
+        modified_by=overrides["modified_by"],  # required
+        modified_at=overrides.get("modified_at", datetime.utcnow()),
+    )
+    session.add(job_version)
+    session.commit()
+    return job_version
+
+
+def create_saved_job(session, **overrides):
+    saved_job = SavedJobORM(
+        saved_job_id=overrides.get("saved_job_id", str(uuid.uuid4())),
+        user_id=overrides["user_id"],  # required
+        job_id=overrides["job_id"],    # required
+        created_at=overrides.get("created_at", datetime.utcnow()),
+    )
+    session.add(saved_job)
+    session.commit()
+    return saved_job
+
+
+def create_job_application(session, **overrides):
+    application = JobApplicationORM(
+        application_id=overrides.get("application_id", str(uuid.uuid4())),
+        user_id=overrides["user_id"],  # required
+        job_id=overrides["job_id"],    # required
+        ats_report_id=overrides.get("ats_report_id"),
+        cv_id=overrides.get("cv_id", str(uuid.uuid4())),
+        applied_date=overrides.get("applied_date", datetime.utcnow()),
+        updated_at=overrides.get("updated_at", datetime.utcnow()),
+        cover_letter=overrides.get("cover_letter", "I am excited to apply."),
+        method=overrides.get("method", "website"),
+        notes=overrides.get("notes"),
+        expected_salary=overrides.get("expected_salary", 50000),
+        preferred_start_date=overrides.get("preferred_start_date"),
+        preferred_location=overrides.get("preferred_location", "Remote"),
+        required_documents=overrides.get("required_documents", ["CV", "ID Copy"]),
+        questionnaire_answers=overrides.get("questionnaire_answers", ["Because I love this role."]),
+        last_application_stage=overrides.get("last_application_stage", "Applied"),
+        application_stage=overrides.get("application_stage", "Applied"),
+        validation_score=overrides.get("validation_score", 90),
+        missing_requirements=overrides.get("missing_requirements", []),
+        review_summary=overrides.get("review_summary", "Strong candidate."),
+    )
+    session.add(application)
+    session.commit()
+    return application
+
+
+def create_ats_report(session, **overrides):
+    report = ATSReportORM(
+        ats_report_id=overrides.get("ats_report_id", str(uuid.uuid4())),
+        job_id=overrides["job_id"],  # required
+        cv_id=overrides["cv_id"],    # required
+        score=overrides.get("score", 75),
+        matched_keywords=overrides.get("matched_keywords", ["Python", "Django"]),
+        missing_keywords=overrides.get("missing_keywords", ["Flask"]),
+        feedback=overrides.get("feedback", "Good match with some missing tech."),
+        created_at=overrides.get("created_at", datetime.utcnow()),
+    )
+    session.add(report)
+    session.commit()
+    return report
+
+
+
+
+def create_job_approval_request(session, **overrides):
+    request = JobApprovalRequestORM(
+        request_id=overrides.get("request_id", str(uuid.uuid4())),
+        job_id=overrides["job_id"],  # required
+        token=overrides.get("token", str(uuid.uuid4())),
+        token_expires=overrides.get("token_expires", datetime.utcnow() + timedelta(days=2)),
+        requested_at=overrides.get("requested_at", datetime.utcnow()),
+        requested_by=overrides["requested_by"],  # required
+        approvers=overrides.get("approvers", ["user-1", "user-2"]),
+        status=overrides.get("status", "pending"),
+        decision_at=overrides.get("decision_at"),
+        decision_by=overrides.get("decision_by"),
+        feedback=overrides.get("feedback", None),
+    )
+    session.add(request)
+    session.commit()
+    return request
+
+

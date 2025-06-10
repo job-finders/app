@@ -252,7 +252,6 @@ class JobsSearchController(Controllers):
                 page_size=page_size,
                 total_pages=total_pages)
 
-
     @error_handler
     async def get_jobs_by_qualification(self,qualification: str,
         qualification_types: Optional[list[str]] = None,
