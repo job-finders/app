@@ -1,6 +1,8 @@
+from functools import lru_cache
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from functools import lru_cache
+
 
 class MySQLSettings(BaseSettings):
     PRODUCTION_DB: str = Field(..., alias="PRODUCTION_SQL_DB")
@@ -12,6 +14,9 @@ class MySQLSettings(BaseSettings):
         extra="ignore"
     )
 
+
+class MySQLSettingsTest(BaseSettings):
+    PRODUCTION_DB: str = Field(default="sqlite:///:memory:")
 
 class ResendSettings(BaseSettings):
     API_KEY: str = Field(..., alias="RESEND_API_KEY")
@@ -93,3 +98,10 @@ class Settings(BaseSettings):
 @lru_cache()
 def config_instance() -> Settings:
     return Settings()
+
+
+def config_test() -> Settings:
+    test_settings = Settings()
+    test_settings.MYSQL_SETTINGS.DEVELOPMENT_DB = "sqlite:///:memory:"
+    test_settings.MYSQL_SETTINGS.PRODUCTION_DB = "sqlite:///:memory:"
+    return test_settings

@@ -796,6 +796,14 @@ class JobsSearchController(Controllers):
                 'recommended_improvements': self._get_improvement_suggestions(scores)
             }
 
+    def _get_improvement_suggestions(self, scores: dict[str, int]):
+        """
+            create improvement suggestions give scores
+        :param scores:
+        :return:
+        """
+        pass
+
     @staticmethod
     def _get_match_interpretation(score: float) -> str:
         """

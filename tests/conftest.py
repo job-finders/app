@@ -9,17 +9,23 @@ from src.database.sql import Base  # Replace with actual base model
 
 @pytest.fixture(scope="function")
 def session():
-    engine = create_engine("mysql+pymysql://webuser:11111111@localhost:3306/jobfinders")
+    engine = create_engine("sqlite:///:memory:", future=True)
     Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    yield Session()
-    engine.dispose()
+    Session = sessionmaker(autocommit=False,
+                           autoflush=False,
+                           bind=engine,
+                           future=True)
+
+    try:
+        yield Session()
+    finally:
+        engine.dispose()
 
 @pytest.fixture(scope="module")
 def test_app():
-    from src.config import config_instance
+    from src.config import config_test
     from src.main import create_app
-    app = create_app(config_instance())  # or import your actual app instance
+    app = create_app(config_test())  # or import your actual app instance
     # optionally load config, init extensions, etc.
     with app.app_context():
         yield app
@@ -27,7 +33,6 @@ def test_app():
 
 @pytest.fixture(params=["jobs_search"])  # Test with just one first
 def get_controller(test_app, request):
-    from src.utils.route_helpers import get_controller as this_get_controller
     with test_app.app_context():
         # # Debug what's available
         # from flask import current_app
@@ -37,6 +42,7 @@ def get_controller(test_app, request):
         # if factory:
         #     print(f"Factory methods: {dir(factory)}")
 
+        from src.utils.route_helpers import get_controller as this_get_controller
         controller = this_get_controller(request.param)
         print(f"Controller returned: {controller}")
         return controller

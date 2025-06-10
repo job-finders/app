@@ -1273,7 +1273,8 @@ async def test_get_saved_jobs_for_user_large_number_of_saved_jobs(session, get_c
     for i in range(100):
         keys.append(str(uuid.uuid4()))
         job = create_job(session, job_id=keys[i], posted_at=now - timedelta(days=i))
-        create_saved_job(session, user_id=user_id, job=job, created_at=now - timedelta(minutes=i))
+        create_saved_job(session, saved_job_id=str(uuid.uuid4()), user_id=user_id, job=job,
+                         created_at=now - timedelta(minutes=i))
 
     saved_jobs = await get_controller.get_saved_jobs_for_user(user_id)
 
