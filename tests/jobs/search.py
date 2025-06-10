@@ -506,3 +506,38 @@ async def test_get_job_by_id_handles_invalid_uuid_format(get_controller):
     assert result is None
 
 ##################################################################################
+import pytest
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_get_job_by_reference_found(get_controller, session):
+    reference = "REF123ABC"
+    # Insert job with lowercase job_ref to test case insensitivity
+    job = create_job_with_ref(session, job_ref=reference.lower(), title="Test Job")
+
+    controller = get_controller
+    result = await controller.get_job_by_reference(reference)
+
+    assert result is not None
+    assert result.job_ref == reference.lower()
+    assert result.title == "Test Job"
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_get_job_by_reference_not_found_returns_none(get_controller):
+    controller = get_controller
+    result = await controller.get_job_by_reference("NON_EXISTENT_REF")
+    assert result is None
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_get_job_by_reference_is_case_insensitive(get_controller, session):
+    reference = "MixedCaseRef"
+    job = create_job_with_ref(session, job_ref=reference.lower(), title="Case Insensitive Job")
+
+    controller = get_controller
+    # Pass different casing to ensure casefold() usage works
+    result = await controller.get_job_by_reference("MIXEDcaseref")
+
+    assert result is not None
+    assert result.job_ref == reference.lower()

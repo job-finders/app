@@ -185,3 +185,15 @@ def create_job_approval_request(session, **overrides):
     return request
 
 
+def create_job_with_ref(session, job_ref, title="Sample Job", status="active"):
+    from app.db.models import JobsORM
+    job = JobsORM(
+        id=str(uuid.uuid4()),
+        job_ref=job_ref,
+        title=title,
+        description="Test job description",
+        status=status
+    )
+    session.add(job)
+    session.commit()
+    return job
