@@ -1,5 +1,5 @@
 
-
+import uuid
 import pytest
 from src.database import JobsORM, JobCategoryORM
 from src.database.models.jobs_model import JobStatusEnum
@@ -10,11 +10,6 @@ from src.database.models.jobs_model import JobStatusEnum
 import pytest
 from src.database import JobsORM, JobCategoryORM
 from src.database.models.jobs_model import JobStatusEnum
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
-import pytest
-import uuid
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
@@ -348,3 +343,166 @@ async def test_list_job_categories_includes_multiple_categories_and_jobs(get_con
     total_jobs = sum(len(cat.jobs) for cat in result)
     assert total_jobs == 2
 
+
+###############################################################
+############### TEST CASES FOR SEARCH BY CATEGORY
+
+import pytest
+import uuid
+import math
+from datetime import datetime
+from app.models import JobStatusEnum
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_search_jobs_by_category_returns_paginated_jobs(get_controller, session):
+    # --- Setup ---
+    category = create_category(session, name="Engineering")
+
+    # Create 3 jobs in this category
+    for _ in range(3):
+        create_job(
+            session=session,
+            job_id=str(uuid.uuid4()),
+            title="Backend Engineer",
+            category_id=category.category_id,
+            is_featured=True,
+            status=JobStatusEnum.ACTIVE.value,
+            created_at=datetime.utcnow()
+        )
+
+    controller = get_controller
+
+    # --- Act ---
+    result = await controller.search_jobs_by_category("Engineering", page=1, page_size=2)
+
+    # --- Assert ---
+    assert result["page"] == 1
+    assert result["page_size"] == 2
+    assert result["total_jobs"] == 3
+    assert result["total_pages"] == math.ceil(3 / 2)
+    assert len(result["jobs"]) == 2
+    assert all(job.title == "Backend Engineer" for job in result["jobs"])
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_search_jobs_by_category_returns_empty_if_no_matching_category(get_controller, session):
+    controller = get_controller
+
+    result = await controller.search_jobs_by_category("NonExistentCategory")
+
+    assert result["total_jobs"] == 0
+    assert result["total_pages"] == 0
+    assert result["page"] == 1
+    assert result["jobs"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_search_jobs_by_category_ignores_inactive_jobs(get_controller, session):
+    category = create_category(session, name="Design")
+
+    # Add one inactive job
+    create_job(
+        session=session,
+        job_id=str(uuid.uuid4()),
+        title="UI/UX Designer",
+        category_id=category.category_id,
+        status=JobStatusEnum.ARCHIVED.value,
+        created_at=datetime.utcnow()
+    )
+
+    controller = get_controller
+    result = await controller.search_jobs_by_category("Design")
+
+    assert result["total_jobs"] == 0
+    assert result["jobs"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_search_jobs_by_category_case_insensitive_match(get_controller, session):
+    category = create_category(session, name="Sales")
+    create_job(
+        session=session,
+        job_id=str(uuid.uuid4()),
+        title="Account Executive",
+        category_id=category.category_id,
+        status=JobStatusEnum.ACTIVE.value,
+        created_at=datetime.utcnow()
+    )
+
+    controller = get_controller
+    result = await controller.search_jobs_by_category("sales")
+
+    assert result["total_jobs"] == 1
+    assert result["jobs"][0].title == "Account Executive"
+
+
+#######################################################################################
+#####################   TEST CASES FOR GET JOB BY ID
+
+import pytest
+import uuid
+from datetime import datetime
+from app.models import JobStatusEnum
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_get_job_by_id_returns_active_job(get_controller, session):
+    job_id = str(uuid.uuid4())
+    job = create_job(
+        session=session,
+        job_id=job_id,
+        title="Software Engineer",
+        status=JobStatusEnum.ACTIVE.value,
+        created_at=datetime.utcnow()
+    )
+
+    controller = get_controller
+    result = await controller.get_job_by_id(job_id)
+
+    assert result is not None
+    assert result.job_id == job_id
+    assert result.title == "Software Engineer"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_get_job_by_id_returns_none_for_nonexistent_id(get_controller, session):
+    controller = get_controller
+    result = await controller.get_job_by_id(str(uuid.uuid4()))
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_get_job_by_id_ignores_inactive_jobs(get_controller, session):
+    job_id = str(uuid.uuid4())
+    create_job(
+        session=session,
+        job_id=job_id,
+        title="Old Position",
+        status=JobStatusEnum.ARCHIVED.value,
+        created_at=datetime.utcnow()
+    )
+
+    controller = get_controller
+    result = await controller.get_job_by_id(job_id)
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["job_controller"], indirect=True)
+async def test_get_job_by_id_handles_invalid_uuid_format(get_controller):
+    controller = get_controller
+    # Assuming your database layer doesn't raise but just returns None if ID doesn't match format
+    result = await controller.get_job_by_id("not-a-uuid")
+    assert result is None
+
+##################################################################################
