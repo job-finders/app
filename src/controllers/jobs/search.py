@@ -46,7 +46,7 @@ class JobsSearchController(Controllers):
                            page_size: int = 20) -> dict:
         """Paginated list of active jobs, with featured jobs preferred"""
         with self.get_session() as session:
-            query = session.query(JobsORM).filter(JobsORM.status == 'active')
+            query = session.query(JobsORM).filter(JobsORM.status == JobStatusEnum.ACTIVE.value)
 
             total_jobs = query.count()
 
@@ -77,7 +77,7 @@ class JobsSearchController(Controllers):
         """Search jobs by keyword in title or description with pagination."""
         with self.get_session() as session:
             query = session.query(JobsORM).filter(
-                JobsORM.status == 'active',
+                JobsORM.status == JobStatusEnum.ACTIVE.value,
                 or_(
                     JobsORM.title.ilike(f'%{keyword}%'),
                     JobsORM.description.ilike(f'%{keyword}%')
@@ -108,10 +108,14 @@ class JobsSearchController(Controllers):
     @error_handler
     async def list_job_categories(self) -> list[JobCategory]:
         """
-            :return:
+        Returns a list of job categories along with their associated jobs.
         """
         with self.get_session() as session:
-            category_orm_list: list[JobCategoryORM] = session.query(JobCategoryORM).all()
+            category_orm_list: list[JobCategoryORM] = (
+                session.query(JobCategoryORM)
+                .options(joinedload(JobCategoryORM.jobs))
+                .all()
+            )
             return [JobCategory(**category_orm.to_dict(include_jobs=True)) for category_orm in category_orm_list]
 
     @error_handler
@@ -137,7 +141,7 @@ class JobsSearchController(Controllers):
             category_model = JobCategory(**category_orm.to_dict())
 
             base_query = session.query(JobsORM).filter(
-                JobsORM.status == 'active',
+                JobsORM.status == JobStatusEnum.ACTIVE.value,
                 JobsORM.category_id == category_model.category_id
             )
 
@@ -792,72 +796,63 @@ class JobsSearchController(Controllers):
         else:
             return "⚠️ Low Match - Limited alignment with position requirements"
 
-    @error_handler
-    async def get_similar_jobs(self,
-                               job_id: str,
-                               limit: int = 12) -> list[Job]:
-        """
-        Retrieve a list of jobs similar to the given job by analyzing title, category,
-        job description, and required skills. The method uses keyword matching via SQL
-        ILIKE filters and prioritizes jobs in the same category.
+@error_handler
+async def get_similar_jobs(self, job_id: str, limit: int = 12) -> list[Job]:
+    """
+    Retrieve a list of jobs similar to the given job by analyzing title, category,
+    job description, and required skills.
+    """
+    with self.get_session() as session:
+        # Load target job with category relationship
+        target_job = session.query(JobsORM).options(joinedload(JobsORM.category)).get(job_id)
+        if not target_job:
+            return []
 
-        Args:
-            job_id (str): The ID of the job for which similar jobs are being retrieved.
-            limit (int): The maximum number of similar jobs to return.
+        # --- Extract Keywords ---
+        def extract_keywords(text: str) -> list[str]:
+            words = re.findall(r"\b\w+\b", text.lower())
+            return [word for word in words if len(word) > 3][:10]
 
-        Returns:
-            List[Job]: A list of Job objects deemed similar to the target job.
-        """
-        with self.get_session() as session:
-            # Retrieve the target job
-            target_job = session.query(JobsORM).get(job_id)
-            if not target_job:
-                return []
+        title_keywords = extract_keywords(target_job.title)
+        description_keywords = extract_keywords(target_job.description or "")
+        skills_keywords = extract_keywords(" ".join(target_job.skills or []))
 
-            # Extract significant keywords from title, description, and skills
-            def extract_keywords(text: str) -> list[str]:
-                words = re.findall(r"\b\w+\b", text.lower())
-                return [word for word in words if len(word) > 3][:10]  # Limit to top 10 useful words
+        combined_keywords = list(set(title_keywords + description_keywords + skills_keywords))
 
-            title_keywords = extract_keywords(target_job.title)
-            description_keywords = extract_keywords(target_job.description or "")
-            skills_keywords = extract_keywords(" ".join(target_job.skills or []))
-
-            combined_keywords = list(set(title_keywords + description_keywords + skills_keywords))
-
-            # Build ILIKE conditions for keyword matching
-            keyword_conditions = [
-                or_(
-                    JobsORM.title.ilike(f"%{kw}%"),
-                    JobsORM.description.ilike(f"%{kw}%"),
-                    JobsORM.skills.ilike(f"%{kw}%"),
-                )
-                for kw in combined_keywords[:8]  # Limit number of keyword ORs for performance
-            ]
-
-            # Query similar jobs based on category and keyword overlap
-            similar_jobs_query = (
-                session.query(JobsORM)
-                .filter(
-                    JobsORM.job_id != job_id,
-                    JobsORM.status == JobStatusEnum.ACTIVE.value,
-                    or_(
-                        JobsORM.category == target_job.category,
-                        *keyword_conditions
-                    )
-                )
-                .order_by(
-                    case(
-                        (JobsORM.category == target_job.category, 0),
-                        else_=1
-                    ),
-                    func.random()
-                )
-                .limit(limit)
+        # --- Build ILIKE conditions ---
+        keyword_conditions = [
+            or_(
+                JobsORM.title.ilike(f"%{kw}%"),
+                JobsORM.description.ilike(f"%{kw}%"),
+                JobsORM.skills.ilike(f"%{kw}%"),
             )
+            for kw in combined_keywords[:8]  # Cap number of ORs for performance
+        ]
 
-            similar_jobs = similar_jobs_query.all()
-            return [Job(**job.to_dict()) for job in similar_jobs]
+        # --- Main Query ---
+        similar_jobs_query = (
+            session.query(JobsORM)
+            .join(JobsORM.category)
+            .filter(
+                JobsORM.job_id != job_id,
+                JobsORM.status == JobStatusEnum.ACTIVE.value,
+                or_(
+                    JobsORM.category.has(name=target_job.category.name),
+                    *keyword_conditions  # Unpack keyword OR blocks
+                )
+            )
+            .order_by(
+                case(
+                    (JobsORM.category.has(name=target_job.category.name), 0),  # Category match gets higher priority
+                    else_=1
+                ),
+                func.random()
+            )
+            .limit(limit)
+        )
+
+        similar_jobs = similar_jobs_query.all()
+        return [Job(**job.to_dict()) for job in similar_jobs]
 
     @error_handler
     async def get_job_by_slug(self, slug: str) -> Optional[Job]:
@@ -971,8 +966,7 @@ class JobsSearchController(Controllers):
                         JobsORM.geo_location,
                         func.ST_MakePoint(lng, lat),
                         radius_km * 1000  # Convert km to meters
-                    )
-                )
+                    ))
             if filters.get('locations'):
                 location_filters = [
                     JobsORM.city.ilike(f"%{loc}%") |
