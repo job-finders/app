@@ -1,0 +1,22 @@
+{% extends "company/layout/page.html" %}
+
+{% block content %}
+    <div class="container">
+    <h1>Verification Status</h1>
+    {% if company.verification_status == "pending" %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Verification Status</h5>
+                <p class="card-text">{{ company.verification_status }}</p>
+            </div>
+        </div>
+    {% elif company.verification_status == "verified" %}
+        <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Verification Status</h5>
+            <p class="card-text">{{ company.verification_status }}</p>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}  
