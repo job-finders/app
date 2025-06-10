@@ -77,8 +77,7 @@ class JobCategoryORM(Base):
 
         # Conditionally include job details
         if include_jobs:
-            if include_jobs:
-                data['jobs'] = [job_orm.to_dict() for job_orm in self.jobs]
+            data['jobs'] = [job_orm.to_dict() for job_orm in self.jobs]
 
         return data
 
@@ -553,7 +552,7 @@ class JobApprovalRequestORM(Base):
             "decision_at": self.decision_at.isoformat() if self.decision_at else None,
             "decision_by": self.decision_by,
             "feedback": self.feedback,
-            "job": self.job.to_dict() if include_relationship and self.job else {}
+            "job": self.job.to_dict() if include_relationship and self.job else None
         }
 
 
@@ -575,6 +574,7 @@ class ApplicationDashboardORM(Base):
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
             cls.__table__.drop(bind=engine)
 
     def to_dict(self):
@@ -605,6 +605,7 @@ class TalentPoolReportORM(Base):
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
             cls.__table__.drop(bind=engine)
 
     def to_dict(self):
@@ -636,6 +637,7 @@ class ImportJobBatchORM(Base):
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
             cls.__table__.drop(bind=engine)
 
     def to_dict(self):

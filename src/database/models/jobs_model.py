@@ -13,6 +13,8 @@ from src.database.constants import utc_time
 from src.database.models.company_models import Company
 
 
+# NOTE : DO NOT REMOVE EMPLOYER IMPORT
+
 # from textstat import flesch_reading_ease
 
 def format_reference(ref: str) -> str:
@@ -779,7 +781,7 @@ class ApplicationFunnelStats(BaseModel):
 
 
 # Update forward references for Pydantic model
-# Company.model_rebuild()
+Company.model_rebuild()
 
 
 

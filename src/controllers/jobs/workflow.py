@@ -5,7 +5,7 @@ from typing import Optional
 
 import requests
 from Levenshtein import ratio as levenstein_ratio
-from flask import Flask, url_for
+from flask import Flask
 from pydantic import ValidationError
 from requests import RequestException
 from sqlalchemy import select, func, and_, case
@@ -330,8 +330,9 @@ class JobsWorkflowController(Controllers):
                 func.sum(case((JobsORM.application_count > 0, 1), else_=0)).label('jobs_with_applications'),
                 func.sum(
                     case(
-                        (JobsORM.status == JobStatusEnum.ACTIVE.value) & (JobsORM.expires_at > func.now()),  # Changed here
-                        1
+                        (JobsORM.status == JobStatusEnum.ACTIVE.value) & (JobsORM.expires_at > func.now())
+                        # Changed here
+
                     )
                 ).label('current_active_jobs')
             ).one()
@@ -1313,7 +1314,7 @@ class JobsWorkflowController(Controllers):
         return normalized
 
     @staticmethod
-    async def _parse_salary(value: str) -> float:
+    async def _parse_salary(value: str) -> float | None:
         """Convert salary string to numeric value"""
         if not value:
             return None
@@ -1431,6 +1432,6 @@ class JobsWorkflowController(Controllers):
                 .first()
             )
 
-            if application_orm and application_orm.status == "draft":
+            if application_orm and application_orm.application_stage == "draft":
                 for key, value in updated_data.items():
                     setattr(application_orm, key, value)
