@@ -4,12 +4,12 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, EmailStr, field_validator
+from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict
 
 from src.database.constants import utc_time
-
 from src.utils import format_reference  # assuming this is your own utility function
 from src.utils.route_helpers import get_service
+
 
 class RolesEnum(Enum):
     EMPLOYER = "employer"
@@ -23,13 +23,9 @@ class Roles(BaseModel):
     name: str
     description: Optional[str] = None
     permissions: List[str] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
     @field_validator('id')
     def format_id(cls, v):
@@ -105,8 +101,4 @@ class User(BaseModel):
         # noinspection PyTypeChecker
         return cls(name=name, email=email, password_hash=hashed, role=role)
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)

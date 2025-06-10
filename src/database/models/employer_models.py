@@ -1,9 +1,12 @@
 from datetime import datetime
 from typing import Optional, List
 from uuid import uuid4
-from pydantic import BaseModel, Field, EmailStr, HttpUrl
-from src.database.models.company_models import SavedCandidates, Company
+
+from pydantic import BaseModel, Field, EmailStr, HttpUrl, ConfigDict
+
 from src.database.constants import utc_time
+from src.database.models.company_models import SavedCandidates, Company
+from src.services.ip_address_service import get_ip_address
 from src.utils.route_helpers import get_service
 
 
@@ -26,7 +29,7 @@ class Employer(BaseModel):
     updated_at: datetime = Field(default_factory=utc_time)
     # TODO Update ip location everytime employer updates the model.
     ip_address: Optional[str] = Field(default_factory=lambda : get_service("ip_address")())
-
+    model_config = ConfigDict(from_attributes=True)
     # Personal information (all optional)
     full_name: Optional[str] = Field(
         default=None,
@@ -135,9 +138,3 @@ class Employer(BaseModel):
     def update_timestamp(self):
         """Update the 'updated_at' timestamp"""
         self.updated_at = utc_time()
-
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }

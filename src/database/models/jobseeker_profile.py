@@ -1,10 +1,12 @@
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from datetime import datetime, timezone
 from typing import Optional, List
-from datetime import datetime
+
+from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 
 from src.utils.route_helpers import get_controller
 
 
+# noinspection PyUnresolvedReferences
 class JobSeekerProfile(BaseModel):
     user_uid: str  # FK to User.uid
 
@@ -45,14 +47,16 @@ class JobSeekerProfile(BaseModel):
     # Settings
     visibility: bool = Field(default=True, description="Visible to employers and clients")
     profile_completion: Optional[int] = 0
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # List of job applications submitted by the Job Seeker
+    # noinspection PyTypeHints
     applications: Optional[list['JobApplication']] = Field(default_factory=list, description="List of JobApplications for Jobseeker")
     # List of records showing records where companies saved the candidate for further onsideration
     interested_companies: Optional[List['SavedCandidates']] = Field(default_factory=list, description="List of companies the job seeker is interested in")
     # Companies the Job Seeker is following
     following_companies: Optional[List['CompanyFollowing']] = Field(default_factory=list, description="List of records showing companies the job seeker is following")
+    # noinspection PyTypeHints
     resumes_list: Optional[list['JobSeekerCV']] = Field(default_factory=list)
 
     ip_address: Optional[str] = Field(default=None, description="Last known IP address of the job) seeker")
@@ -113,9 +117,4 @@ class JobSeekerProfile(BaseModel):
                 return True
         return False
 
-    model_config = {
-        "json_encoders": {
-            datetime: lambda v: v.isoformat()
-        },
-        "from_attributes": True  # allows ORM models to be parsed directly
-    }
+    model_config = ConfigDict(from_attributes=True)

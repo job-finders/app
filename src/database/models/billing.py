@@ -1,14 +1,14 @@
 import re
-from enum import Enum
-from typing import Literal, Dict
 import uuid
 from datetime import date, timezone, timedelta
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
+from typing import Dict
 from typing import Literal
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class BillingPlan(BaseModel):
@@ -63,13 +63,12 @@ class BillingPlan(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = None
     duration_days: int = Field(default=30)
+    model_config = ConfigDict(from_attributes=True)
 
     @property
     def plan_slug(self) -> str:
         return re.sub(r'[^a-z0-9]+', '-', self.name.lower()).strip('-')
 
-    class Config:
-        orm_mode = True
 
 
 class CompanyBillingProfile(BaseModel):
@@ -100,9 +99,8 @@ class CompanyBillingProfile(BaseModel):
 
     auto_renew: bool = True
     last_invoice_id: Optional[str]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
 
     @property
     def is_trial_valid(self):
@@ -214,6 +212,7 @@ class Invoice(BaseModel):
     due_date: date
     paid_at: Optional[datetime]
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaymentMethod(BaseModel):
@@ -243,6 +242,7 @@ class PaymentMethod(BaseModel):
     is_active: bool = True
     is_default: bool = True
     added_on: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BillingEvent(BaseModel):
@@ -275,6 +275,7 @@ class BillingEvent(BaseModel):
         'invoice_generated',
         'manual_payment_received'
     ]
+    model_config = ConfigDict(from_attributes=True)
 
     event_metadata: Dict[str, str] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

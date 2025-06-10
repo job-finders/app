@@ -1,26 +1,27 @@
 import math
-import re
-from abc import ABC
 from datetime import datetime, timedelta, timezone
-from math import ceil
 from typing import Optional
 
 from flask import Flask
-from sqlalchemy import or_, desc
-from sqlalchemy import select, func, case
+from sqlalchemy import or_, desc, String
+from sqlalchemy import select, func
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.expression import cast
+from sqlalchemy.sql.operators import and_
 
-from src.database.sql import escape_like
-from src.database.sql.company import CompanyORM
 from src.controllers.controller import Controllers
 from src.controllers.controller import error_handler
 from src.database.models.jobs_model import (Job, JobApplication, JobStatusEnum, JobCategory)
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.models.resume import JobSeekerCV
+from src.database.sql import escape_like
+from src.database.sql.company import CompanyORM
+from src.database.sql.employer import EmployerORM
 from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, JobCategoryORM)
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.resume import JobSeekerCVORM
+
 
 # noinspection DuplicatedCode
 class JobsSearchController(Controllers):
@@ -45,6 +46,9 @@ class JobsSearchController(Controllers):
                            page: int = 1,
                            page_size: int = 20) -> dict:
         """Paginated list of active jobs, with featured jobs preferred"""
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
+
         with self.get_session() as session:
             query = session.query(JobsORM).filter(JobsORM.status == JobStatusEnum.ACTIVE.value)
 
@@ -59,12 +63,12 @@ class JobsSearchController(Controllers):
             )
 
             jobs = [Job(**job.to_dict()) for job in jobs_orm_list if job]
-
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
             return {
                 "page": page,
                 "page_size": page_size,
                 "total_jobs": total_jobs,
-                "total_pages": (total_jobs + page_size - 1) // page_size,
+                "total_pages": total_pages,
                 "jobs": jobs,
             }
 
@@ -75,6 +79,8 @@ class JobsSearchController(Controllers):
                           page_size: int = 25) -> dict[str, str | int | list[Job]]:
 
         """Search jobs by keyword in title or description with pagination."""
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
         with self.get_session() as session:
             query = session.query(JobsORM).filter(
                 JobsORM.status == JobStatusEnum.ACTIVE.value,
@@ -96,13 +102,13 @@ class JobsSearchController(Controllers):
             )
 
             jobs: list[Job] =  [Job(**job.to_dict()) for job in jobs_orm_list if job]
-
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
 
             return {
                 "page": page,
                 "page_size": page_size,
                 "total_jobs": total_jobs,
-                "total_pages": (total_jobs + page_size - 1) // page_size,
+                "total_pages": total_pages,
                 "jobs": jobs}
 
     @error_handler
@@ -121,6 +127,8 @@ class JobsSearchController(Controllers):
     @error_handler
     async def search_jobs_by_category(self, category: str, page: int = 1, page_size: int = 25) -> dict:
         """Search jobs by category with pagination, filtered to active and featured preferred."""
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
         with self.get_session() as session:
             # Get category ORM instance (single object)
             category_orm = session.query(JobCategoryORM).filter(
@@ -169,8 +177,8 @@ class JobsSearchController(Controllers):
         """Retrieve a single active job by its ID."""
         with self.get_session() as session:
             job_orm = session.query(JobsORM).filter(
-                JobsORM.id == job_id,
-                JobsORM.status == 'active'
+                JobsORM.job_id == job_id,
+                JobsORM.status == JobStatusEnum.ACTIVE.value
             ).first()
             return Job(**job_orm.to_dict()) if job_orm else None
     
@@ -195,7 +203,7 @@ class JobsSearchController(Controllers):
             if not job_orm:
                 return None
             # Set expiration date to yesterday
-            job_orm.status = JobStatusEnum.ARCHIVE.value
+            job_orm.status = JobStatusEnum.ARCHIVED.value
             job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
             job_orm.updated_at = datetime.now(timezone.utc)
 
@@ -204,6 +212,9 @@ class JobsSearchController(Controllers):
     @error_handler
     async def get_featured_jobs(self, page: int = 1, page_size: int = 25) -> dict:
         """Retrieve paginated featured job listings."""
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
+
         with self.get_session() as session:
             query = session.query(JobsORM).filter(
                 JobsORM.is_featured.is_(True),
@@ -211,7 +222,9 @@ class JobsSearchController(Controllers):
             ).order_by(JobsORM.updated_at.desc())
 
             total_jobs = query.count()
-            total_pages = math.ceil(total_jobs / page_size)
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
+
+
             jobs_orm_list = query.offset((page - 1) * page_size).limit(page_size).all()
 
             jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list]
@@ -226,37 +239,65 @@ class JobsSearchController(Controllers):
 
     @error_handler
     async def get_jobs_by_title(
-        self,
-        title: str,
-        page: int = 1,
-        page_size: int = 25,
+            self,
+            title: str,
+            page: int = 1,
+            page_size: int = 25,
     ) -> dict:
-        escaped_title = escape_like(title)
+        # Input validation
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
 
         with self.get_session() as session:
-            stmt = select(JobsORM).where(
-                JobsORM.title.ilike(f"%{escaped_title}%", escape='\\'),  # Note: escape='\\'
-                JobsORM.status == JobStatusEnum.ACTIVE.value)
+            # Base query
+            query = select(JobsORM).where(
+                JobsORM.status == JobStatusEnum.ACTIVE.value
+            )
 
-            stmt = stmt.order_by(JobsORM.is_featured.desc(), JobsORM.posted_at.desc())
-            total_jobs = session.scalar(select(func.count()).select_from(stmt.subquery()))
+            # Add title filtering only if title is provided
+            if title.strip():
+                escaped_title = escape_like(title)
+                # Use full-text search if available, otherwise suffix-only search
+                query = query.where(
+                    JobsORM.title.ilike(f"{escaped_title}%", escape='\\')  # Trailing wildcard only
+                )
 
-            jobs = session.execute(
-                stmt.offset((page - 1) * page_size).limit(page_size)
-            ).scalars().all()
-            total_pages = math.ceil(total_jobs / page_size)
-            return dict(
-                jobs=[Job(**job.to_dict()) for job in jobs],
-                total_jobs=total_jobs,
-                page=page,
-                page_size=page_size,
-                total_pages=total_pages)
+            # Eager load relationships
+            query = query.options(
+                joinedload(JobsORM.company),
+                joinedload(JobsORM.category)
+            ).order_by(
+                func.similarity(JobsORM.title, title).desc(),
+                JobsORM.is_featured.desc(),
+                JobsORM.posted_at.desc()
+            )
+
+            # Get paginated results
+            total_jobs = session.scalar(select(func.count()).select_from(query.subquery()))
+            jobs = session.scalars(
+                query.offset((page - 1) * page_size)
+                .limit(page_size)
+            ).unique().all()
+
+            # Calculate total pages
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
+
+            return {
+                "jobs": [Job(**job.to_dict()) for job in jobs],
+                "total_jobs": total_jobs,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": total_pages
+            }
 
     @error_handler
     async def get_jobs_by_qualification(self,qualification: str,
         qualification_types: Optional[list[str]] = None,
         page: int = 1,
         page_size: int = 25) -> dict:
+
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
 
         if qualification_types is None:
             qualification_types = [
@@ -282,7 +323,7 @@ class JobsSearchController(Controllers):
                 stmt.offset((page - 1) * page_size).limit(page_size)
             ).scalars().all()
 
-            total_pages = math.ceil(total_jobs / page_size)
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
 
             return dict(
                 jobs=[Job(**job.to_dict()) for job in jobs],
@@ -305,6 +346,9 @@ class JobsSearchController(Controllers):
         Returns:
             dict: Paginated search results including jobs list, total count, and pagination metadata.
         """
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
+
         with self.get_session() as session:
             search_pattern = f"%{location}%"
 
@@ -318,7 +362,7 @@ class JobsSearchController(Controllers):
             )
 
             total_jobs = base_query.count()
-            total_pages = ceil(total_jobs / page_size)
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
 
             jobs_orm_list = (
                 base_query
@@ -349,22 +393,25 @@ class JobsSearchController(Controllers):
         Returns:
             dict: Paginated results with jobs list and metadata.
         """
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
+
         with self.get_session() as session:
             query = session.query(JobsORM).filter(
                 JobsORM.status == 'active',
-                JobsORM.type.ilike(job_type)  # case-insensitive match
+                JobsORM.position_type.ilike(job_type)  # case-insensitive match
             ).order_by(JobsORM.is_featured.desc(), JobsORM.created_at.desc())
 
             total_jobs = query.count()
             jobs_orm_list = query.offset((page - 1) * page_size).limit(page_size).all()
-
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
             jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm]
 
             return {
                 "jobs": jobs,
                 "page": page,
                 "page_size": page_size,
-                "total_pages": (total_jobs + page_size - 1) // page_size,
+                "total_pages": total_pages,
                 "total_jobs": total_jobs,
             }
 
@@ -381,7 +428,8 @@ class JobsSearchController(Controllers):
         Returns:
             dict: Paginated search results containing jobs and metadata.
         """
-        page_size = min(page_size, 100)
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
 
         with self.get_session() as session:
             query = session.query(JobsORM).filter(
@@ -389,7 +437,7 @@ class JobsSearchController(Controllers):
             ).order_by(JobsORM.is_featured.desc(), JobsORM.posted_at.desc())
 
             total_jobs = query.count()
-            total_pages = math.ceil(total_jobs / page_size)
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
 
             jobs_orm_list = query.offset((page - 1) * page_size).limit(page_size).all()
 
@@ -427,6 +475,9 @@ class JobsSearchController(Controllers):
             dict: Paginated job results matching salary filter.
         """
         # Convert monthly input to yearly if needed
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
+
         if unit == "monthly":
             if min_salary is not None:
                 min_salary *= 12
@@ -442,7 +493,7 @@ class JobsSearchController(Controllers):
                 query = query.filter(JobsORM.salary_max <= max_salary)
 
             total_jobs = query.count()
-            total_pages = math.ceil(total_jobs / page_size)
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
 
             jobs_orm_list = query.order_by(JobsORM.is_featured.desc(), JobsORM.posted_at.desc()) \
                                 .offset((page - 1) * page_size) \
@@ -467,38 +518,29 @@ class JobsSearchController(Controllers):
         """Get currently active jobs that haven't expired and are marked as active"""
         with self.get_session() as session:
             current_time = datetime.now(timezone.utc)
-            jobs_orm_list = (
-                session.query(JobsORM)
-                .filter(
-                    JobsORM.is_active,  # Use hybrid property combining status and expiration
-                    JobsORM.expires_at >= current_time
-                )
+            jobs_orm_list = (session.query(JobsORM)
+                             .filter(JobsORM.is_active, JobsORM.expires_at >= current_time)
                 .order_by(JobsORM.posted_at.desc())
-                .all()
-            )
+                             .all())
 
-            return [
-                Job(**job_orm.to_dict())
-                for job_orm in jobs_orm_list
-                if job_orm and job_orm.is_active
-            ]
+            return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list
+                    if job_orm and job_orm.is_active]
 
     @error_handler
     async def get_saved_jobs_for_user(self, user_id: str) -> list[Job]:
         """Get jobs saved by a user with saving metadata"""
         with self.get_session() as session:
-            result = await session.execute(
-                select(SavedJobORM)
-                .options(joinedload(SavedJobORM.job))  # Eager load job relationship
+            # All operations here are synchronous, no 'await'
+            saved_jobs_orm_list = (
+                session.query(SavedJobORM)
                 .filter(SavedJobORM.user_id == user_id)
+                .options(joinedload(SavedJobORM.job))  # Eagerly load the related Job object
                 .order_by(SavedJobORM.created_at.desc())
+                .all()  # This is a blocking call
             )
-
-            saved_jobs = result.scalars().all()
-
             return [
-                Job(**saved_job.job.to_dict())
-                for saved_job in saved_jobs
+                Job(**saved_job.job.to_dict(include_relationships=True))
+                for saved_job in saved_jobs_orm_list
                 if saved_job.job  # Handle potential orphaned entries
             ]
 
@@ -506,46 +548,37 @@ class JobsSearchController(Controllers):
     async def get_applied_jobs_for_user(self, user_id: str) -> list[JobApplication]:
         """Get job applications with full job details for a user"""
         with self.get_session() as session:
-            result = await session.execute(
-                select(JobApplicationORM)
+            job_applications_orm_list = (
+                session.query(JobApplicationORM).filter_by(user_id=user_id)
                 .options(joinedload(JobApplicationORM.job))  # Eager load job details
-                .filter(JobApplicationORM.user_id == user_id)
-                .order_by(JobApplicationORM.applied_date.desc())
-            )
-
-            applications = result.unique().scalars().all()
+                .order_by(JobApplicationORM.applied_date.desc()).all())
 
             return [
-                JobApplication(**app.to_dict())
-                for app in applications
-                if app.job  # Ensure the associated job still exists
-            ]
+                JobApplication(**app.to_dict(include_relationships=True))
+                for app in job_applications_orm_list if app.job]  # Ensure the associated job still exists
 
     @error_handler
     async def get_jobs_by_employer(self, employer_id: str, limit: int = 100) -> list[Job]:
-        """Get jobs posted by a specific company/employer with validation"""
+        """Get jobs posted by a specific employer (company)"""
         with self.get_session() as session:
-            # Validate company exists first
-            company_exists = session.query(
-                session.query(CompanyORM)
-                .filter(CompanyORM.company_id == employer_id)
-                .exists()
-            ).scalar()
+            # Step 1: Get the company ID associated with this employer
+            employer_orm = session.query(EmployerORM).filter(EmployerORM.employer_id == employer_id).first()
 
-            if not company_exists:
+            if not employer_orm:
                 return []
 
-            # Get jobs with company details
-            result = await session.execute(
-                select(JobsORM)
+            company_id = employer_orm.company_id
+
+            # Step 2: Get jobs for this company
+            jobs_query = (
+                session.query(JobsORM)
+                .filter(JobsORM.company_id == company_id)
                 .options(joinedload(JobsORM.company))  # Eager load company data
-                .filter(JobsORM.company_id == employer_id)  # Use proper foreign key
                 .order_by(JobsORM.posted_at.desc())
-                .limit(min(limit, 1000))  # Prevent excessive results
+                .limit(min(limit, 1000))
             )
 
-            jobs = result.unique().scalars().all()
-
+            jobs = jobs_query.all()
             return [Job(**job.to_dict()) for job in jobs]
 
     # @error_handler
@@ -795,63 +828,83 @@ class JobsSearchController(Controllers):
         else:
             return "⚠️ Low Match - Limited alignment with position requirements"
 
-@error_handler
-async def get_similar_jobs(self, job_id: str, limit: int = 12) -> list[Job]:
-    """
-    Retrieve a list of jobs similar to the given job by analyzing title, category,
-    job description, and required skills.
-    """
-    with self.get_session() as session:
-        # Load target job with category relationship
-        target_job = session.query(JobsORM).options(joinedload(JobsORM.category)).get(job_id)
-        if not target_job:
-            return []
+    @error_handler
+    async def get_similar_jobs(self, job_id: str, limit: int = 12) -> list[Job]:
+        with self.get_session() as session:
+            # Eager load category and skills
+            target_job = session.query(JobsORM).options(
+                joinedload(JobsORM.category),
+                joinedload(JobsORM.required_skills),
+                joinedload(JobsORM.preferred_skills)
+            ).get(job_id)
 
-        # --- Extract Keywords ---
-        def extract_keywords(text: str) -> list[str]:
-            words = re.findall(r"\b\w+\b", text.lower())
-            return [word for word in words if len(word) > 3][:10]
+            if not target_job:
+                return []
 
-        title_keywords = extract_keywords(target_job.title)
-        description_keywords = extract_keywords(target_job.description or "")
-        skills_keywords = extract_keywords(" ".join(target_job.skills or []))
+            # --- Extract Keywords (Improved) ---
+            def extract_keywords(text: str) -> list[str]:
+                # Use simple space splitting for skills
+                return [word.strip().lower() for word in text.split()
+                        if len(word.strip()) > 3][:8]
 
-        combined_keywords = list(set(title_keywords + description_keywords + skills_keywords))
+            # Combine all text fields
+            search_text = " ".join([
+                target_job.title,
+                target_job.description or "",
+                " ".join(target_job.required_skills or []),
+                " ".join(target_job.preferred_skills or [])
+            ])
 
-        # --- Build ILIKE conditions ---
-        keyword_conditions = [
-            or_(
-                JobsORM.title.ilike(f"%{kw}%"),
-                JobsORM.description.ilike(f"%{kw}%"),
-                JobsORM.skills.ilike(f"%{kw}%"),
-            )
-            for kw in combined_keywords[:8]  # Cap number of ORs for performance
-        ]
+            keywords = list(set(extract_keywords(search_text)))
 
-        # --- Main Query ---
-        similar_jobs_query = (
-            session.query(JobsORM)
-            .join(JobsORM.category)
-            .filter(
-                JobsORM.job_id != job_id,
-                JobsORM.status == JobStatusEnum.ACTIVE.value,
-                or_(
-                    JobsORM.category.has(name=target_job.category.name),
-                    *keyword_conditions  # Unpack keyword OR blocks
+            if not keywords:
+                return []
+
+            # --- Build Conditions (JSON-safe) ---
+            keyword_conditions = []
+            for kw in keywords:
+                # Use cast for JSON fields
+                kw_cond = or_(
+                    JobsORM.title.ilike(f"%{kw}%"),
+                    JobsORM.description.ilike(f"%{kw}%"),
+                    cast(JobsORM.required_skills, String).ilike(f"%{kw}%"),
+                    cast(JobsORM.preferred_skills, String).ilike(f"%{kw}%"),
                 )
-            )
-            .order_by(
-                case(
-                    (JobsORM.category.has(name=target_job.category.name), 0),  # Category match gets higher priority
-                    else_=1
-                ),
-                func.random()
-            )
-            .limit(limit)
-        )
+                keyword_conditions.append(kw_cond)
 
-        similar_jobs = similar_jobs_query.all()
-        return [Job(**job.to_dict()) for job in similar_jobs]
+            # --- Main Query (Optimized) ---
+            base_query = session.query(JobsORM).filter(
+                JobsORM.job_id != job_id,
+                JobsORM.status == JobStatusEnum.ACTIVE.value
+            )
+
+            # Handle category matching
+            category_match = None
+            if target_job.category:
+                category_match = JobsORM.category_id == target_job.category.category_id
+
+            # Build final query
+            if category_match:
+                base_query = base_query.filter(or_(
+                    category_match,
+                    and_(*keyword_conditions)
+                ))
+            else:
+                base_query = base_query.filter(and_(*keyword_conditions))
+
+            # --- Ordering (Performance-friendly) ---
+            order_criteria = [JobsORM.posted_at.desc()]
+            if category_match:
+                # Boolean sort: category matches first
+                order_criteria.insert(0, category_match.desc())
+
+            similar_jobs = (
+                base_query.order_by(*order_criteria)
+                .limit(limit)
+                .all()
+            )
+
+            return [Job(**job.to_dict()) for job in similar_jobs]
 
     @error_handler
     async def get_job_by_slug(self, slug: str) -> Optional[Job]:
@@ -1050,11 +1103,12 @@ async def get_similar_jobs(self, job_id: str, limit: int = 12) -> list[Job]:
         with self.get_session() as session:
             query = session.query(JobsORM).filter(
                 JobsORM.status == JobStatusEnum.ACTIVE.value,
-                func.lower(JobsORM.company_name).ilike(f"%{company_name}%")
+                func.lower(JobsORM.company.name).ilike(f"%{company_name}%")
             )
 
             total_jobs = query.count()
-            total_pages = math.ceil(total_jobs / page_size)
+            total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
+
 
             jobs_orm_list = query.order_by(JobsORM.posted_at.desc()) \
                                 .offset((page - 1) * page_size) \

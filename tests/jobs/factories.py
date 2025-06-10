@@ -1,9 +1,10 @@
 # tests/factories.py
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from datetime import timedelta
-from src.database import JobsORM, JobCategoryORM
+
+from src.database import *
 from src.database.models.jobs_model import JobStatusEnum
 
 
@@ -18,8 +19,8 @@ def create_category(session, **overrides):
         slug=overrides.get("slug", "engineering"),
         description=overrides.get("description", "Engineering and technical jobs."),
         seo_description=overrides.get("seo_description", "Find engineering jobs in your area."),
-        created_at=overrides.get("created_at", datetime.utcnow()),
-        updated_at=overrides.get("updated_at", datetime.utcnow()),
+        created_at=overrides.get("created_at", datetime.now(timezone.utc)),
+        updated_at=overrides.get("updated_at", datetime.now(timezone.utc)),
     )
 
     session.add(category)
@@ -27,9 +28,7 @@ def create_category(session, **overrides):
     return category
 
 def create_category_with_jobs(session, num_jobs=3, **cat_kwargs):
-    from tests.factories import create_job  # Ensure it's imported
     category = create_category(session, **cat_kwargs)
-    
     for _ in range(num_jobs):
         create_job(session, category_id=category.category_id)
 
@@ -42,7 +41,7 @@ def create_job(session, category_id=None, company_id=None, **overrides):
     job = JobsORM(
         job_id=overrides.get("job_id", str(uuid.uuid4())),
         job_ref=overrides.get("job_ref", f"REF-{uuid.uuid4().hex[:8]}"),
-        slug=overrides.get("slug", "default-slug"),
+        slug=overrides.get("slug", None),
         external_source=overrides.get("external_source", "Internal"),
 
         employer_id=overrides.get("employer_id", None),
@@ -64,9 +63,9 @@ def create_job(session, category_id=None, company_id=None, **overrides):
         country=overrides.get("country", "South Africa"),
         geo_location=overrides.get("geo_location", "-33.9249,18.4241"),
 
-        posted_at=overrides.get("posted_at", datetime.utcnow()),
-        expires_at=overrides.get("expires_at", datetime.utcnow() + timedelta(days=30)),
-        application_deadline=overrides.get("application_deadline", datetime.utcnow() + timedelta(days=15)),
+        posted_at=overrides.get("posted_at", datetime.now(timezone.utc)),
+        expires_at=overrides.get("expires_at", datetime.now(timezone.utc) + timedelta(days=30)),
+        application_deadline=overrides.get("application_deadline", datetime.now(timezone.utc) + timedelta(days=15)),
 
         experience_level=overrides.get("experience_level", "MID"),
         education_requirements=overrides.get("education_requirements", {"degree": "BSc", "field": "CS"}),
@@ -109,11 +108,18 @@ def create_job_version_history(session, **overrides):
 
 
 def create_saved_job(session, **overrides):
+    # Handle job object or job_id
+    if "job" in overrides:
+        job_id = overrides["job"].job_id
+        overrides.pop("job")  # Remove job object from overrides
+    else:
+        job_id = overrides["job_id"]  # Use provided job_id
+    
     saved_job = SavedJobORM(
         saved_job_id=overrides.get("saved_job_id", str(uuid.uuid4())),
         user_id=overrides["user_id"],  # required
-        job_id=overrides["job_id"],    # required
-        created_at=overrides.get("created_at", datetime.utcnow()),
+        job_id=job_id,  # required
+        created_at=overrides.get("created_at", datetime.now(timezone.utc)),
     )
     session.add(saved_job)
     session.commit()
@@ -127,8 +133,8 @@ def create_job_application(session, **overrides):
         job_id=overrides["job_id"],    # required
         ats_report_id=overrides.get("ats_report_id"),
         cv_id=overrides.get("cv_id", str(uuid.uuid4())),
-        applied_date=overrides.get("applied_date", datetime.utcnow()),
-        updated_at=overrides.get("updated_at", datetime.utcnow()),
+        applied_date=overrides.get("applied_date", datetime.now(timezone.utc)),
+        updated_at=overrides.get("updated_at", datetime.now(timezone.utc)),
         cover_letter=overrides.get("cover_letter", "I am excited to apply."),
         method=overrides.get("method", "website"),
         notes=overrides.get("notes"),
@@ -157,7 +163,7 @@ def create_ats_report(session, **overrides):
         matched_keywords=overrides.get("matched_keywords", ["Python", "Django"]),
         missing_keywords=overrides.get("missing_keywords", ["Flask"]),
         feedback=overrides.get("feedback", "Good match with some missing tech."),
-        created_at=overrides.get("created_at", datetime.utcnow()),
+        created_at=overrides.get("created_at", datetime.now(timezone.utc)),
     )
     session.add(report)
     session.commit()
@@ -171,8 +177,8 @@ def create_job_approval_request(session, **overrides):
         request_id=overrides.get("request_id", str(uuid.uuid4())),
         job_id=overrides["job_id"],  # required
         token=overrides.get("token", str(uuid.uuid4())),
-        token_expires=overrides.get("token_expires", datetime.utcnow() + timedelta(days=2)),
-        requested_at=overrides.get("requested_at", datetime.utcnow()),
+        token_expires=overrides.get("token_expires", datetime.now(timezone.utc) + timedelta(days=2)),
+        requested_at=overrides.get("requested_at", datetime.now(timezone.utc)),
         requested_by=overrides["requested_by"],  # required
         approvers=overrides.get("approvers", ["user-1", "user-2"]),
         status=overrides.get("status", "pending"),
@@ -186,9 +192,8 @@ def create_job_approval_request(session, **overrides):
 
 
 def create_job_with_ref(session, job_ref, title="Sample Job", status="active"):
-    from app.db.models import JobsORM
     job = JobsORM(
-        id=str(uuid.uuid4()),
+        job_id=str(uuid.uuid4()),
         job_ref=job_ref,
         title=title,
         description="Test job description",

@@ -4,7 +4,7 @@ from enum import Enum
 from typing import List, Dict
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from src.database.constants import utc_time
 
@@ -24,6 +24,7 @@ class RiskRecommendation(str, Enum):
     SUSPEND = "suspend"
     DELETE = "recommend_delete"
 
+    model_config = ConfigDict(from_attributes=True)
 
 DECAY_HALF_LIFE_DAYS = 30  # Every 30 days, a record's weight is halved
 
@@ -32,6 +33,7 @@ class RiskThreshold(BaseModel):
     min_score: float  # inclusive
     max_score: float  # exclusive
 
+    model_config = ConfigDict(from_attributes=True)
 
 # Configurable risk levels
 RISK_THRESHOLDS: list[RiskThreshold] = [
@@ -50,9 +52,7 @@ class FlaggedUser(BaseModel):
     date_flagged_at: datetime
     status: str = Field(default=UserStatusFlagEnum.FLAGGED.value)
 
-    class Config:
-        orm_mode = True
-
+    model_config = ConfigDict(from_attributes=True)
 
 class AdminModel(BaseModel):
     """
@@ -62,11 +62,10 @@ class AdminModel(BaseModel):
     admin_id: int = Field(default_factory=lambda: uuid4().int)
     admin_users: str
     flagged_records: List[FlaggedUser] = []
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
-
-    def _decayed_weight(self, flagged_date: datetime) -> float:
+    @staticmethod
+    def _decayed_weight(flagged_date: datetime) -> float:
         """
         Compute decayed score for a single flag using exponential decay.
         The older the flag, the less it contributes.
@@ -143,16 +142,3 @@ class AdminModel(BaseModel):
                     break
 
         return recommendations
-
-
-class FlaggedUser(BaseModel):
-    flag_id: int = Field(default_factory=lambda: uuid4().int)
-    reference_id: str
-    reason: str
-    flagged_by: str
-    date_flagged_at: datetime = Field(default_factory=utc_time)
-    status: str = Field(default=UserStatusFlagEnum.FLAGGED.value)  # e.g., "flagged", "resolved"
-
-    class Config:
-        orm_mode = True
-

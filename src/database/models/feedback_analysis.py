@@ -1,11 +1,14 @@
 # /schemas/feedback_analysis.py
-from pydantic import BaseModel
 from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict
+
 
 class ArticleFeedbackEntry(BaseModel):
     article_id: str
     feedback_score: int
     comments: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
 class FeedbackAnalysisSummary(BaseModel):
     high_performing_topics: List[str]
@@ -13,6 +16,7 @@ class FeedbackAnalysisSummary(BaseModel):
     average_score: float
     insights: List[str]
     new_prompt_ideas: List[str]
+    model_config = ConfigDict(from_attributes=True)
 
 
 
@@ -21,6 +25,7 @@ class BlogFeedbackInput(BaseModel):
     views: int = 0
     likes: int = 0
     comments: int = 0
+    model_config = ConfigDict(from_attributes=True)
 
 class BlogFeedbackOutput(BaseModel):
     prompt_id: int
@@ -29,3 +34,4 @@ class BlogFeedbackOutput(BaseModel):
     likes: int
     comments: int
     submitted_at: str
+    model_config = ConfigDict(from_attributes=True)

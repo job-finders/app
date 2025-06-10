@@ -1,19 +1,20 @@
 import asyncio
 import re
+import uuid  # Added for UUID generation
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import urljoin
-import uuid  # Added for UUID generation
 
 from bs4 import BeautifulSoup
 from flask import Flask
-from pydantic import HttpUrl, ValidationError
+from pydantic import HttpUrl
 from requests_cache import CachedSession
 
 # Import your models
 from src.database.models.jobs_model import Company, Job, JobStatusEnum
 from src.logger import init_logger
 from src.utils.route_helpers import get_controller
+
 
 class ScrapedCompanyDTO:
     """
@@ -141,17 +142,17 @@ class Scraper:
         job_search_controller = get_controller('jobs_search')
         search_result: dict = await job_search_controller.get_all_jobs()
         jobs = search_result.get('jobs', []) if search_result else []
+        if jobs:
+            for job in jobs:
+                # Cache jobs by reference ID
+                self.job_cache[job.job_ref] = job
 
-        for job in jobs:
-            # Cache jobs by reference ID
-            self.job_cache[job.job_ref] = job
-        
-        # Load all companies from database
-        company_controller = get_controller('company')
-        companies: list[Company] = await company_controller.get_all_companies()
-        for company in companies:
-            # Cache companies by normalized name
-            self.company_cache[company.name.lower()] = company
+            # Load all companies from database
+            company_controller = get_controller('company')
+            companies: list[Company] = await company_controller.get_all_companies()
+            for company in companies:
+                # Cache companies by normalized name
+                self.company_cache[company.name.lower()] = company
 
     async def fetch_url(self, url: str) -> Optional[bytes]:
         """

@@ -1,12 +1,11 @@
 # agents/employer/job_post_intelligence.py
 import uuid
 from typing import Type, Optional, List, Dict
+
 from pydantic import BaseModel, Field, field_validator
 
-from src.database.models import Job
+# from src.database.models import Job
 from src.agents.base import BaseAgent
-
-
 
 
 class EnhanceJobPostInput(BaseModel):
@@ -196,7 +195,7 @@ class JobPostIntelligenceAgent(BaseAgent):
             "Return structured insights, and suggest improvements where necessary."
         )
 
-    def prompt(self, input_model: Job) -> str:
+    def prompt(self, input_model: 'Job') -> str:
         return (
             f"Analyze the following job post:\n\n"
             f"{input_model.ats_description.strip()}\n\n"

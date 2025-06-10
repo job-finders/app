@@ -1,15 +1,14 @@
-import json
 import re
 import uuid
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from enum import Enum
 from typing import Optional, List, Union
-from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, ConfigDict
-from scipy.fft import ifft2
 
-from src.database.models.jobseeker_profile import JobSeekerProfile
+from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, ConfigDict
+
 from src.database.constants import utc_time
+from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.utils.route_helpers import get_service
 
 
@@ -33,6 +32,8 @@ class CompanyVerificationStatus(Enum):
     CIPC_FAILED = "cipc_failed"
     VERIFIED = "verified"
 
+
+# noinspection PyUnresolvedReferences,PyTypeHints
 class Company(BaseModel):
     """Pydantic model for company data with job statistics"""
     company_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -73,6 +74,7 @@ class Company(BaseModel):
     saved_candidates: Optional[list['SavedCandidates']] = Field(default_factory=list)
     employers: Optional[list['Employer']] = Field(default_factory=list)
     ip_address: Optional[str] = Field(default_factory=lambda : get_service("ip_address")())
+    model_config = ConfigDict(from_attributes=True)
 
 
     @property
@@ -130,7 +132,7 @@ class Company(BaseModel):
         """Active jobs (not expired)"""
         if not self.jobs:
             return 0
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         return sum(1 for job in self.jobs
                    if job.status == 'active' and job.expires_at > now)
 
@@ -164,6 +166,7 @@ class Company(BaseModel):
                                  if app.employer_response is not None)
         return (responded / self.total_applications) * 100
 
+    # noinspection PyTypeHints
     @property
     def recent_applications(self) -> list['JobApplication']:
         if not self.jobs:  # No need to check total_applications separately
@@ -174,7 +177,7 @@ class Company(BaseModel):
             if not job.applications:
                 continue
             for application in job.applications:
-                # Directly compare datetimes instead of relying on is_recent_application
+                # Directly compare datetime instead of relying on is_recent_application
                 if application.is_recent_application:
                     recent_apps.append(application)
 
@@ -285,31 +288,9 @@ class Company(BaseModel):
             raise ValueError("Invalid Twitter handle")
         return v
 
-    @field_validator('tech_stack', mode='before')
-    @classmethod
-    def parse_tech_stack(cls, v):
-        """Handle different formats of tech_stack input"""
-        if v is None:
-            return None
-        if isinstance(v, list):
-            return v
-        if isinstance(v, str):
-            # Try to parse JSON string
-            if v.startswith('[') and v.endswith(']'):
-                try:
-                    return json.loads(v)
-                except json.JSONDecodeError:
-                    pass
-            # Handle comma-separated values
-            return [tech.strip() for tech in v.split(',') if tech.strip()]
-        return v
 
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+
 
 class CompanyUpdate(BaseModel):
     """Model for partial company updates"""
@@ -334,9 +315,7 @@ class CompanyUpdate(BaseModel):
     # # Reuse validators from main Company model
     # _validate_phone = field_validator("phone_number", mode="before")(Company.__fields__["phone_number"].validate)
     # _validate_twitter = field_validator("twitter_handle", mode="before")(Company.__fields__["twitter_handle"].validate)
-
-    class Config:
-        extra = 'ignore'  # Ignore extra fields
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 class AllowableCompanyVerificationDocumentsEnum(Enum):
     """Allowable documents for company verification in South Africa"""
@@ -390,8 +369,7 @@ class AIBasedDocumentReviewResult(BaseModel):
 
     created_at: datetime = Field(..., description="Timestamp when the review was completed")
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CompanyVerificationDocument(BaseModel):
     document_id: str = Field(default_factory=lambda : str(uuid.uuid4()))
@@ -406,12 +384,7 @@ class CompanyVerificationDocument(BaseModel):
     reviewed_at: Optional[str]
     notes: Optional[str]
     ai_review: Optional[list[AIBasedDocumentReviewResult]]
-
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
 class CompanyCIPC(BaseModel):
     company_name: str
@@ -424,12 +397,7 @@ class CompanyCIPC(BaseModel):
     bee_status: Optional[str]
     status: Optional[str] = Field(default="pending")  # pending, verified, failed
     verified_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
 class InterestLevel(str, Enum):
     LOW = "low"
@@ -452,6 +420,7 @@ class CompanyFollowing(BaseModel):
 
    jobseeker_follower: Optional[JobSeekerProfile] = Field(default=None)
    followed_company: Optional[Company] = Field(default=None)
+   model_config = ConfigDict(from_attributes=True)
 
    @property
    def recent_follow(self) -> bool:
@@ -532,12 +501,6 @@ class SavedCandidates(BaseModel):
     saved_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-    @field_validator('tags', mode='before')
-    @classmethod
-    def validate_tags(cls, v):
-        if v is not None and not isinstance(v, list):
-            raise ValueError('Tags must be a list of strings')
-        return v
 
 ########################################################
 ###3 COMPANY SETTINGS
@@ -578,5 +541,4 @@ class CompanySettings(BaseModel):
     slack_webhook_url: Optional[str] = None
     notify_on_new_application: bool = True
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

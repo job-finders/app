@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from src.database.models import Job
 from src.utils import format_title
@@ -13,8 +13,7 @@ class SEO(BaseModel):
     twitter_title: str | None = None
     twitter_description: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 async def create_tags(search_term: str) -> SEO:
     """

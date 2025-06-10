@@ -1,9 +1,8 @@
-from pydantic import BaseModel, EmailStr, Field, HttpUrl, validator
-from typing import List, Optional, Union
-from datetime import date, datetime
 import uuid
+from datetime import date, datetime, timezone
+from typing import List, Optional, Union
 
-from rich.table import Column
+from pydantic import BaseModel, Field, HttpUrl, ConfigDict, field_validator
 
 
 # Experience
@@ -15,13 +14,9 @@ class Experience(BaseModel):
     location: Optional[str] = None
     description: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            date: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
-    @validator('job_title', 'company')
+    @field_validator('job_title', 'company')
     def not_empty(cls, v):
         if not v.strip():
             raise ValueError("Field cannot be empty")
@@ -37,13 +32,9 @@ class Education(BaseModel):
     end_date: Optional[date] = None
     description: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            date: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
-    @validator('institution', 'qualification', 'field_of_study')
+    @field_validator('institution', 'qualification', 'field_of_study')
     def not_empty(cls, v):
         if not v.strip():
             raise ValueError("Field cannot be empty")
@@ -58,20 +49,14 @@ class Certification(BaseModel):
     expiry_date: Optional[date] = None
     credential_url: Optional[HttpUrl] = None
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            date: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
 # Language
 class Language(BaseModel):
     name: str
     proficiency: str  # e.g., Beginner, Intermediate, Fluent, Native
 
-    class Config:
-        from_attributes = True
-
+    model_config = ConfigDict(from_attributes=True)
 
 # Publication (for academics)
 class Publication(BaseModel):
@@ -80,11 +65,7 @@ class Publication(BaseModel):
     date: Optional[date]
     link: Optional[HttpUrl]
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            date: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
 # Project (for technical/creative fields)
 class Project(BaseModel):
@@ -93,8 +74,7 @@ class Project(BaseModel):
     technologies: Optional[List[str]] = []
     link: Optional[HttpUrl] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Award or Honor
 class Award(BaseModel):
@@ -103,36 +83,25 @@ class Award(BaseModel):
     date: Optional[date]
     description: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            date: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
 # Custom Section for extra content
 class CustomSection(BaseModel):
     title: str
     content: Union[str, List[str]]  # Supports plain text or bullet lists
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SavedCV(BaseModel):
     save_id: str = Field(default_factory= lambda : str(uuid.uuid4()))
     employer_id: str
     cv_id: str
-    saved_at: datetime = Field(default_factory=datetime.utcnow)
+    saved_at: datetime = Field(default_factory=datetime.now(timezone.utc))
     notes: Optional[str] = Field(default=None)
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
+
 
 
 class JobSeekerCV(BaseModel):
@@ -161,16 +130,17 @@ class JobSeekerCV(BaseModel):
     resume_file_url: Optional[HttpUrl] = None  # Link to uploaded original resume
     profile_image_url: Optional[HttpUrl] = None
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # noinspection PyTypeHints
     jobseeker_profile: Optional[list['JobSeekerProfile']] = Field(default_factory=list)
 
-    @validator('professional_title')
+    @field_validator('professional_title')
     def title_must_not_be_empty(cls, v):
         if not v.strip():
             raise ValueError("Professional title cannot be empty")
         return v
 
-    @validator('skills')
+    @field_validator('skills')
     def skills_must_have_values(cls, v):
         if not v or not all(s.strip() for s in v):
             raise ValueError("At least one valid skill must be provided")
@@ -294,9 +264,4 @@ class JobSeekerCV(BaseModel):
         match_count = sum(1 for phrase in boilerplate_phrases if phrase in lower)
         return match_count >= 2
 
-    class Config:
-        # Allow the model to use `datetime` fields as ISO format strings when serialized
-        use_enum_values = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat()  # Ensure the datetime fields are serialized in ISO format
-        }
+    model_config = ConfigDict(from_attributes=True)

@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
+from typing import Optional, List
+
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class PlanType(str, Enum):
@@ -9,8 +10,6 @@ class PlanType(str, Enum):
     PREMIUM = "premium"
     EMPLOYER = "employer"
 
-    class Config:
-        from_attributes = True
 
 
 class SubscriptionPlan(BaseModel):
@@ -22,25 +21,22 @@ class SubscriptionPlan(BaseModel):
     annual_price: Optional[float] = None
     features: List[str] = []
     is_active: bool = True
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = ConfigDict(from_attributes=True)
+
 
 
 class UserSubscription(BaseModel):
     id: str
     user_uid: str
     plan_id: str
-    started_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     expires_at: Optional[datetime] = None
     is_active: bool = True
     auto_renew: bool = True
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaymentTransaction(BaseModel):
@@ -52,13 +48,9 @@ class PaymentTransaction(BaseModel):
     status: str  # e.g. success, failed, pending
     provider: str  # e.g. PayFast, Stripe
     reference: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CompanySubscription(BaseModel):
@@ -68,6 +60,7 @@ class CompanySubscription(BaseModel):
     trial_days: int = 14
     subscribed: bool = False
     active_until: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)
 
     def is_trial_active(self) -> bool:
         if not self.trial_started_at:

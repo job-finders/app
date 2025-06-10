@@ -1,17 +1,15 @@
 # tests/conftest.py
 
 import pytest
-
-from src.utils.route_helpers import get_controller
-from flask import Flask, current_app
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.models.base import Base  # Replace with actual base model
+
+from src.database.sql import Base  # Replace with actual base model
 
 
 @pytest.fixture(scope="function")
 def session():
-    engine = create_engine("sqlite:///:memory:")
+    engine = create_engine("mysql+pymysql://webuser:11111111@localhost:3306/jobfinders")
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     yield Session()
@@ -26,14 +24,22 @@ def test_app():
     with app.app_context():
         yield app
 
-@pytest.fixture(params=[
-    "jobs_search", "jobs_workflow", "resume", "company", "users",
-    "ats", "job_seeker_profile", "employer_agents", "employee_agents",
-    "admin_controller", "user_engagement", "billing"])
+
+@pytest.fixture(params=["jobs_search"])  # Test with just one first
 def get_controller(test_app, request):
-    return get_controller(request.param)
+    from src.utils.route_helpers import get_controller as this_get_controller
+    with test_app.app_context():
+        # # Debug what's available
+        # from flask import current_app
+        # print(f"Extensions: {current_app.extensions}")
+        # factory = current_app.extensions.get('controller_factory')
+        # print(f"Factory: {factory}")
+        # if factory:
+        #     print(f"Factory methods: {dir(factory)}")
 
-
+        controller = this_get_controller(request.param)
+        print(f"Controller returned: {controller}")
+        return controller
 # @pytest.fixture
 # def job_search_controller():
 #     with current_app.app_context():

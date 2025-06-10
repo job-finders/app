@@ -1,16 +1,19 @@
+import re
 import uuid
 from collections import Counter
-from datetime import date, timezone, timedelta, datetime
+from datetime import date, timedelta, datetime
 from enum import Enum
 from typing import Optional, Any
 
-from pydantic import BaseModel, Field, field_validator, computed_field, ConfigDict, model_validator
+from pydantic import BaseModel, Field, computed_field, ConfigDict, model_validator
+from textstat.backend.metrics import flesch_reading_ease
 
+from src.agents.employer import EnhanceJobPostOutput
 from src.database.constants import utc_time
 from src.database.models.company_models import Company
-from src.database.models.employer_models import Employer
-import re
-from textstat import flesch_reading_ease
+
+
+# from textstat import flesch_reading_ease
 
 def format_reference(ref: str) -> str:
     """Sample reference formatter - implement your logic"""
@@ -74,11 +77,8 @@ class JobApprovalRequest(BaseModel):
             return "Approval request expired"
         else:
             return "Awaiting approval"
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class JobVersionHistory(BaseModel):
@@ -89,11 +89,7 @@ class JobVersionHistory(BaseModel):
     modified_by: str
     modified_at: datetime
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
+    model_config = ConfigDict(from_attributes=True)
 
 class JobStatusEnum(str, Enum):
     DRAFT = "draft"
@@ -165,10 +161,7 @@ class JobCategory(BaseModel):
             self.slug = self.name.lower().replace(" ", "-")
         return self
 
-    model_config = ConfigDict(
-        str_strip_whitespace=True,
-        json_encoders={datetime: lambda v: v.isoformat()}
-    )
+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
 
 class Job(BaseModel):
@@ -366,6 +359,7 @@ class Job(BaseModel):
             score = flesch_reading_ease(self.ats_description)
             return score >= 60  # 60+ is considered standard readability
         except Exception as e:
+            print(str(e))
             return False
 
     @computed_field(return_type=int)
@@ -406,6 +400,7 @@ class Job(BaseModel):
         hrefs = re.findall(r'<a\s+(?:[^>]*?\s+)?href=["\'](.*?)["\']', self.description, flags=re.IGNORECASE)
 
         # Filter for external links (http/https and not internal/mailto)
+        # noinspection HttpUrlsUsage
         external_links = [
             url for url in hrefs
             if url.startswith("http://") or url.startswith("https://")
@@ -641,25 +636,7 @@ class Job(BaseModel):
 
         return cls(**job_data)
 
-    # Validators
-    @field_validator("job_ref")
-    @classmethod
-    def format_job_ref(cls, value: str) -> str:
-        return value.replace(" ", "").upper()
-
-    @field_validator("salary_max")
-    @classmethod
-    def validate_salary_range(cls, v: Optional[float], info) -> Optional[float]:
-        min_salary = info.data.get("salary_min")
-        if v is not None and min_salary is not None and v < min_salary:
-            raise ValueError("salary_max must be greater than salary_min")
-        return v
-
-    model_config = ConfigDict(
-        populate_by_name=True,
-        str_strip_whitespace=True,
-        json_encoders={datetime: lambda v: v.isoformat()}
-    )
+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
 
 class SavedJob(BaseModel):
@@ -671,12 +648,7 @@ class SavedJob(BaseModel):
     job_id: str
     created_at: datetime = Field(default_factory=lambda: utc_time())
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
-
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ATSReport(BaseModel):
@@ -691,12 +663,7 @@ class ATSReport(BaseModel):
     job_application: Optional['JobApplication'] = Field(default=None, description="Job Applications related to this ATS Report if Any")
     job: Optional[Job] = Field(default=None, description="Job related to this ATS Report if Any")
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
-
+    model_config = ConfigDict(from_attributes=True)
 
 
 class JobApplicationStatusEnum(Enum):
@@ -744,13 +711,7 @@ class JobApplication(BaseModel):
         recent_cut_off_date = utc_time() - timedelta(days=7)
         return self.applied_date > recent_cut_off_date
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            date: lambda v: v.isoformat()
-        }
-
+    model_config = ConfigDict(from_attributes=True)
 
         
 
@@ -773,32 +734,7 @@ class JobStatistics(BaseModel):
     recent_jobs_30d: int = Field(..., description="Jobs posted in last 30 days")
     calculated_at: datetime = Field(default_factory=lambda: utc_time())
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
-        schema_extra = {
-            "example": {
-                "total_jobs": 2541,
-                "status_counts": {
-                    "active": 1200,
-                    "closed": 1000,
-                    "archived": 341,
-                    "current_active": 800
-                },
-                "application_metrics": {
-                    "total_applications": 15423,
-                    "jobs_with_applications": 845
-                },
-                "categories": {
-                    "IT & Tech": 650,
-                    "Finance": 320,
-                    "Healthcare": 280
-                },
-                "recent_jobs_30d": 342,
-                "calculated_at": "2023-07-20T14:30:45+02:00"
-            }
-        }
+    model_config = ConfigDict(from_attributes=True)
 
 class ApplicationFunnelStats(BaseModel):
     """
@@ -843,7 +779,7 @@ class ApplicationFunnelStats(BaseModel):
 
 
 # Update forward references for Pydantic model
-Company.model_rebuild()
+# Company.model_rebuild()
 
 
 

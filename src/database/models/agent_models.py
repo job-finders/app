@@ -1,14 +1,15 @@
 # agents/schemas.py
-from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
+
+from pydantic import BaseModel, ConfigDict
+
 
 class CVOptimizationSuggestion(BaseModel):
     summary: str
     suggested_changes: List[str]
     ats_keywords: List[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CoverLetterOutput(BaseModel):
@@ -16,17 +17,14 @@ class CoverLetterOutput(BaseModel):
     body: str
     closing: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class JobMatchInsights(BaseModel):
     match_score: float
     reasons: List[str]
     suggested_improvements: List[str]
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class JobPostInsights(BaseModel):
@@ -35,8 +33,7 @@ class JobPostInsights(BaseModel):
     missing_information: List[str]
     suggestions: List[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CandidateBenchmarkReport(BaseModel):
@@ -44,5 +41,4 @@ class CandidateBenchmarkReport(BaseModel):
     improvement_areas: List[str]
     percentile_rank: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
 from typing import Union, List, Optional
+
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class Configuration(BaseModel):
@@ -8,6 +9,7 @@ class Configuration(BaseModel):
     value: Union[str, int, bool, List[str]]
     data_type: str = Field(..., pattern="^(string|int|bool|list)$")
     description: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
     @field_validator("value", mode="before")
     def cast_value(cls, v, info):

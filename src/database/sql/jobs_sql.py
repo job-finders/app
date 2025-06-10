@@ -1,17 +1,15 @@
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Optional
-
-from sqlalchemy import Column, String, Text, Date, Float, Integer, Boolean, ForeignKey, JSON, Index, DateTime, inspect, \
-    ARRAY, UUID, event, UniqueConstraint
-from sqlalchemy.orm import relationship, deferred
-from sqlalchemy.ext.hybrid import hybrid_property
+from typing import Optional
 
 # install pip install python-slugify
 from slugify import slugify
+from sqlalchemy import Column, String, Text, Date, Float, Integer, Boolean, ForeignKey, JSON, Index, DateTime, inspect, \
+    event, UniqueConstraint
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship, deferred
 
-from src.database.models.jobs_model import JobApprovalStatusEnum
 from src.database.constants import ID_LEN, NAME_LEN, utc_time
+from src.database.models.jobs_model import JobApprovalStatusEnum
 from src.database.sql import Base, engine
 
 
@@ -232,6 +230,7 @@ class JobsORM(Base):
     category = relationship("JobCategoryORM", back_populates="jobs")
     ats_reports = relationship("ATSReportORM", back_populates="job")
 
+
     # Indexes
     __table_args__ = (
         Index('ix_job_search', 'title', 'city', 'position_type', 'experience_level'),
@@ -308,31 +307,17 @@ class JobsORM(Base):
             "saved_jobs": [_job.to_dict for _job in self.saved_jobs] if include_relationship else []
         }
 
-def generate_slug(job):
-    """
-    Generates a slug based on the job title and job_ref.
-    """
-    if job.title and job.job_ref:
-        base_slug = slugify(job.title)
-        return f"{base_slug}-{job.job_ref.lower()}"
-    return None
+    def generate_and_set_slug(self):
+        """Generate and set the slug based on title and job_ref if not already set."""
+        if not self.slug and self.title and self.job_ref:
+            base_slug = slugify(self.title)
+            self.slug = f"{base_slug}-{self.job_ref.lower()}"
+
 
 @event.listens_for(JobsORM, 'before_insert')
-def before_insert_generate_slug(mapper, connection, target):
-    """
-    Automatically generate slug before a job is inserted.
-    """
-    if not target.slug:
-        target.slug = generate_slug(target)
-
-
 @event.listens_for(JobsORM, 'before_update')
-def before_update_generate_slug(mapper, connection, target):
-    """
-    Automatically update slug if title or job_ref changes.
-    """
-    if not target.slug or not target.slug.endswith(target.job_ref.lower()):
-        target.slug = generate_slug(target)
+def before_save_generate_slug(mapper, connection, target):
+    target.generate_and_set_slug()
 
 
 class JobVersionHistoryORM(Base):
@@ -410,8 +395,7 @@ class JobApplicationORM(Base):
     # Relationship to Job
     job = relationship("JobsORM", back_populates="applications")  # New relationship
 
-
-    def to_dict(self, include_relationship=False) -> dict:
+    def to_dict(self, include_relationships=False) -> dict:
         return {
             "application_id": self.application_id,
             "user_id": self.user_id,
@@ -434,8 +418,8 @@ class JobApplicationORM(Base):
             "validation_score": self.validation_score,
             "missing_requirements": self.missing_requirements,
             "review_summary": self.review_summary,
-            "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationship else None,
-            "ats_report": self.ats_report.to_dict() if self.ats_report and include_relationship else None,
+            "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationships else None,
+            "ats_report": self.ats_report.to_dict() if self.ats_report and include_relationships else None,
         }
 
     # Rest of the existing methods...
