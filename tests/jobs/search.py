@@ -1166,3 +1166,178 @@ async def test_search_by_salary_range_pagination(session, get_controller):
     assert len(result['jobs']) <= 10
 
 
+##############################################################################################
+######3                     TEST CASES FOR GET ACTIVE JOBS
+
+
+import pytest
+from datetime import datetime, timedelta, timezone
+
+@pytest.mark.asyncio
+async def test_get_active_jobs_returns_only_active_not_expired_jobs(session, get_controller):
+    # Active and not expired job
+    active_job = create_job(
+        session,
+        status="active",
+        expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+        posted_at=datetime.now(timezone.utc) - timedelta(days=1)
+    )
+
+    # Inactive job
+    inactive_job = create_job(
+        session,
+        status="archived",
+        expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+        posted_at=datetime.now(timezone.utc) - timedelta(days=2)
+    )
+
+    # Expired job
+    expired_job = create_job(
+        session,
+        status="active",
+        expires_at=datetime.now(timezone.utc) - timedelta(days=1),
+        posted_at=datetime.now(timezone.utc) - timedelta(days=3)
+    )
+
+    jobs = await get_controller.get_active_jobs()
+
+    assert any(job.id == active_job.id for job in jobs)
+    assert all(job.id != inactive_job.id for job in jobs)
+    assert all(job.id != expired_job.id for job in jobs)
+
+
+@pytest.mark.asyncio
+async def test_get_active_jobs_with_job_expiring_now_included(session, get_controller):
+    # Job expires exactly now (should be included since expires_at >= current_time)
+    job_expiring_now = create_job(
+        session,
+        status="active",
+        expires_at=datetime.now(timezone.utc),
+        posted_at=datetime.now(timezone.utc) - timedelta(hours=1)
+    )
+
+    jobs = await get_controller.get_active_jobs()
+
+    assert any(job.id == job_expiring_now.id for job in jobs)
+
+
+@pytest.mark.asyncio
+async def test_get_active_jobs_returns_empty_list_if_no_jobs(session, get_controller):
+    # Ensure no jobs exist
+    session.query(JobsORM).delete()
+    session.commit()
+
+    jobs = await get_controller.get_active_jobs()
+
+    assert jobs == []
+
+
+@pytest.mark.asyncio
+async def test_get_active_jobs_ordered_by_posted_at_desc(session, get_controller):
+    job_old = create_job(
+        session,
+        status="active",
+        expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+        posted_at=datetime.now(timezone.utc) - timedelta(days=3)
+    )
+    job_new = create_job(
+        session,
+        status="active",
+        expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+        posted_at=datetime.now(timezone.utc) - timedelta(days=1)
+    )
+
+    jobs = await get_controller.get_active_jobs()
+
+    # Assert jobs are ordered by posted_at descending (newest first)
+    posted_dates = [job.posted_at for job in jobs]
+    assert posted_dates == sorted(posted_dates, reverse=True)
+
+
+@pytest.mark.asyncio
+async def test_get_active_jobs_excludes_jobs_with_null_expires_at(session, get_controller):
+    # Job with expires_at = None (should be excluded)
+    job_no_expiry = create_job(
+        session,
+        status="active",
+        expires_at=None,
+        posted_at=datetime.now(timezone.utc) - timedelta(days=1)
+    )
+
+    jobs = await get_controller.get_active_jobs()
+
+    assert all(job.id != job_no_expiry.id for job in jobs)
+
+
+##################################################################################
+#################       CREATE SAVED JOBS TEST CASES
+
+
+import pytest
+from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock
+
+@pytest.mark.asyncio
+async def test_get_saved_jobs_for_user_returns_jobs_in_order(session, get_controller):
+    user_id = "user123"
+    now = datetime.now(timezone.utc)
+
+    # Create jobs
+    job1 = create_job(session, id="job1", posted_at=now - timedelta(days=3))
+    job2 = create_job(session, id="job2", posted_at=now - timedelta(days=2))
+    job3 = create_job(session, id="job3", posted_at=now - timedelta(days=1))
+
+    # Saved jobs by user, with different created_at timestamps (saved times)
+    saved1 = create_saved_job(session, user_id=user_id, job=job1, created_at=now - timedelta(hours=3))
+    saved2 = create_saved_job(session, user_id=user_id, job=job2, created_at=now - timedelta(hours=2))
+    saved3 = create_saved_job(session, user_id=user_id, job=job3, created_at=now - timedelta(hours=1))
+
+    result = await get_controller.get_saved_jobs_for_user(user_id)
+
+    # Should be ordered by saved (created_at) desc, so saved3, saved2, saved1
+    assert [job.id for job in result] == ["job3", "job2", "job1"]
+
+@pytest.mark.asyncio
+async def test_get_saved_jobs_for_user_returns_empty_when_none(session, get_controller):
+    user_id = "nonexistent_user"
+    # Ensure no saved jobs exist for user
+    saved_jobs = await get_controller.get_saved_jobs_for_user(user_id)
+    assert saved_jobs == []
+
+@pytest.mark.asyncio
+async def test_get_saved_jobs_for_user_excludes_orphaned_entries(session, get_controller):
+    user_id = "user123"
+    now = datetime.now(timezone.utc)
+
+    # Create a job and a saved job referencing it
+    job1 = create_job(session, id="job1", posted_at=now)
+    saved1 = create_saved_job(session, user_id=user_id, job=job1, created_at=now)
+
+    # Create an orphaned saved job (job relationship is None)
+    saved_orphan = SavedJobORM(user_id=user_id, job=None, created_at=now)
+    session.add(saved_orphan)
+    session.commit()
+
+    result = await get_controller.get_saved_jobs_for_user(user_id)
+
+    # Only job1 should be returned, orphan excluded
+    assert len(result) == 1
+    assert result[0].id == "job1"
+
+@pytest.mark.asyncio
+async def test_get_saved_jobs_for_user_large_number_of_saved_jobs(session, get_controller):
+    user_id = "user123"
+    now = datetime.now(timezone.utc)
+
+    # Create many saved jobs
+    for i in range(100):
+        job = create_job(session, id=f"job{i}", posted_at=now - timedelta(days=i))
+        create_saved_job(session, user_id=user_id, job=job, created_at=now - timedelta(minutes=i))
+
+    saved_jobs = await get_controller.get_saved_jobs_for_user(user_id)
+
+    # Ensure 100 jobs returned, ordered by created_at desc
+    assert len(saved_jobs) == 100
+    assert saved_jobs[0].id == "job0"  # Most recent saved job
+    assert saved_jobs[-1].id == "job99"  # Oldest saved job
+
