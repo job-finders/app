@@ -287,3 +287,64 @@ async def test_search_jobs_sorts_by_featured_and_date(get_controller, session):
     assert result["jobs"][1].job_id == non_featured.job_id
 
 
+####################################################################
+###############     TEST CASES FOR list_categories 
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["category_controller"], indirect=True)
+async def test_list_job_categories_returns_categories_with_jobs(get_controller, session):
+    # --- Setup ---
+    category = create_category(session, name="Engineering")
+    job = create_job(
+        session,
+        job_id=str(uuid.uuid4()),
+        title="Software Engineer",
+        category_id=category.category_id,
+        status=JobStatusEnum.ACTIVE.value,
+        created_at=datetime.utcnow()
+    )
+
+    controller = get_controller
+
+    # --- Act ---
+    result = await controller.list_job_categories()
+
+    # --- Assert ---
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert result[0].name == "Engineering"
+    assert len(result[0].jobs) == 1
+    assert result[0].jobs[0].title == "Software Engineer"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["category_controller"], indirect=True)
+async def test_list_job_categories_returns_empty_list_when_no_categories(get_controller, session):
+    controller = get_controller
+
+    result = await controller.list_job_categories()
+
+    assert isinstance(result, list)
+    assert len(result) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["category_controller"], indirect=True)
+async def test_list_job_categories_includes_multiple_categories_and_jobs(get_controller, session):
+    # Create multiple categories and jobs
+    cat1 = create_category(session, name="Marketing")
+    cat2 = create_category(session, name="Finance")
+
+    create_job(session, job_id=str(uuid.uuid4()), title="SEO Specialist", category_id=cat1.category_id)
+    create_job(session, job_id=str(uuid.uuid4()), title="Financial Analyst", category_id=cat2.category_id)
+
+    controller = get_controller
+    result = await controller.list_job_categories()
+
+    assert len(result) == 2
+    category_names = {c.name for c in result}
+    assert "Marketing" in category_names
+    assert "Finance" in category_names
+    total_jobs = sum(len(cat.jobs) for cat in result)
+    assert total_jobs == 2
+
