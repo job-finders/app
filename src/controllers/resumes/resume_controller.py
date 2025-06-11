@@ -404,13 +404,17 @@ class ResumeController(Controllers):
         :param limit: Maximum number of recent CVs to return. Default is 10.
         :return: A list of the most recent JobSeekerCV Pydantic models.
         """
+        if not isinstance(limit, int):
+            return []
+
         with self.get_session() as session:
             query = (
                 session.query(JobSeekerCVORM)
                 .order_by(JobSeekerCVORM.created_at.desc())
-                .limit(limit)
-            )
-            return [JobSeekerCV.model_validate(cv) for cv in query.all()]
+                .limit(limit))
+
+            resume_orm_list = query.all()
+            return [JobSeekerCV(**resume_orm.to_dict()) for resume_orm in resume_orm_list] if resume_orm_list else []
 
     @error_handler
     async def flag_cv_for_review(self, cv_id: str, reason: str) -> bool:
@@ -424,10 +428,17 @@ class ResumeController(Controllers):
         :param reason: A short description or reason for flagging the CV.
         :return: True if the CV was flagged successfully, False otherwise.
         """
+
+        if not(isinstance(cv_id, str) and cv_id.strip()):
+            return False
+        if not (isinstance(reason, str) and reason.strip()):
+            return False
+
         with self.get_session() as session:
             cv = session.query(JobSeekerCVORM).filter_by(id=cv_id).first()
             if not cv:
                 return False
+            # We need to create a solid detection algorithm for resumes which should be flagged
             cv.is_flagged = True
             cv.flag_reason = reason
             return True
@@ -443,11 +454,14 @@ class ResumeController(Controllers):
         :param cv_id: The unique identifier of the CV to verify.
         :return: True if the CV was successfully marked as verified, False if not found.
         """
+        if not(isinstance(cv_id, str) and cv_id.strip()):
+            return False
+
         with self.get_session() as session:
-            cv = session.query(JobSeekerCVORM).filter_by(id=cv_id).first()
-            if not cv:
+            cv_orm = session.query(JobSeekerCVORM).filter_by(id=cv_id).first()
+            if not cv_orm:
                 return False
-            cv.is_verified = True
+            cv_orm.is_verified = True
             return True
 
     @error_handler
@@ -462,6 +476,12 @@ class ResumeController(Controllers):
         :param employer_id: The unique identifier of the employer.
         :return: True if saved successfully or already exists, False if CV does not exist.
         """
+        if not(isinstance(employer_id, str) and employer_id.strip()):
+            return False
+        
+        if not isinstance(save_cv_model, SavedCV):
+            return False
+
         with self.get_session() as session:
             # Ensure the CV exists
 
@@ -477,7 +497,7 @@ class ResumeController(Controllers):
             if exists:
                 return True
 
-            # Create new save record
+            # Create new save record 
             saved_cv_orm = SavedCVORM(**save_cv_model.model_dump())
             session.add(saved_cv_orm)
             return True
@@ -492,6 +512,9 @@ class ResumeController(Controllers):
         :param employer_id: The unique identifier of the employer.
         :return: A list of JobSeekerCV Pydantic models representing the saved CVs.
         """
+        if not(isinstance(employer_id, str) and employer_id.strip()):
+            return False
+
         with self.get_session() as session:
             # Get the saved CV records for the employer
             saved_cvs = session.query(SavedCVORM).filter_by(employer_uid=employer_id).all()
@@ -549,6 +572,9 @@ class ResumeController(Controllers):
         :param cert_name: The name of the certification to filter by.
         :return: A list of JobSeekerCV Pydantic models representing the CVs with the given certification.
         """
+        if not(isinstance(cert_name, str) and cert_name.strip()):
+            return False
+
         with self.get_session() as session:
             # Find the certifications matching the provided cert_name
             certifications = session.query(CertificationORM).filter(CertificationORM.name == cert_name).all()
@@ -557,6 +583,7 @@ class ResumeController(Controllers):
             cv_ids = [certification.cv_id for certification in certifications]
 
             # Return the full CV details for each CV ID
+
             return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids]
 
     @error_handler
@@ -569,12 +596,16 @@ class ResumeController(Controllers):
         :param language: The name of the language to filter by.
         :return: A list of JobSeekerCV Pydantic models representing the CVs that include the given language.
         """
+        if not(isinstance(language, str) and language.strip()):
+            return False
+
         with self.get_session() as session:
             # Find the languages matching the provided language
-            languages = session.query(LanguageORM).filter(LanguageORM.name == language).all()
+            language = language.strip()
+            languages_orm = session.query(LanguageORM).filter(LanguageORM.name.casefold() == language.casefold()).all()
 
             # Get the unique CV IDs associated with the matching languages
-            cv_ids = [lang.cv_id for lang in languages]
+            cv_ids = [lang.cv_id for lang in languages_orm if lang] if languages_orm else []
 
             # Return the full CV details for each CV ID
             return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids]
