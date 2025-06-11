@@ -1,10 +1,9 @@
 import re
 import uuid
-from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict
+from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict, AwareDatetime
 
 from src.database.constants import utc_time
 from src.utils import format_reference  # assuming this is your own utility function
@@ -23,14 +22,16 @@ class Roles(BaseModel):
     name: str
     description: Optional[str] = None
     permissions: List[str] = []
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: AwareDatetime = Field(default_factory=utc_time)
 
     model_config = ConfigDict(from_attributes=True)
 
+    # noinspection PyMethodParameters
     @field_validator('id')
     def format_id(cls, v):
         return format_reference("role") if v is None else v
 
+    # noinspection PyMethodParameters
     @field_validator('name')
     def name_must_be_alphanumeric(cls, v):
         if not re.match(r"^[a-zA-Z0-9_\- ]+$", v):
@@ -60,8 +61,8 @@ class User(BaseModel):
     password_hash: str
     role: str
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=lambda: utc_time())
-    last_login: Optional[datetime]  = Field(default_factory=lambda: utc_time())
+    created_at: AwareDatetime = Field(default_factory=utc_time)
+    last_login: Optional[AwareDatetime] = Field(default_factory=utc_time)
 
     def __bool__(self):
         return bool(self.password_hash)
@@ -77,6 +78,7 @@ class User(BaseModel):
             raise ValueError("Name cannot be empty")
         return v
 
+    # noinspection PyMethodParameters
     @field_validator('role')
     def role_must_be_valid(cls, v):
         allowed_roles = {'admin', 'employer', 'seeker'}

@@ -3,20 +3,20 @@ import threading
 import time
 from typing import Dict, Any
 
-
-from src.controllers.company import CompanyController
-from src.controllers.jobseekers import JobSeekerProfilesController
-from src.controllers.jobs import JobsSearchController
+from src.controllers.admin import AdminController
+from src.controllers.agents import EmployeeAgentsController
+from src.controllers.agents import EmployerAgentsController
+from src.controllers.analytics import UserEngagementController
+from src.controllers.ats import ATSToolController
 from src.controllers.billing.billing_controller import BillingController
+from src.controllers.company import CompanyController
+from src.controllers.jobs import JobsSearchController
 from src.controllers.jobs import JobsWorkflowController
+from src.controllers.jobseekers import JobSeekerProfilesController
 from src.controllers.resumes import ResumeController
 from src.controllers.users import UsersController
-from src.controllers.ats import ATSToolController
-from src.controllers.agents import EmployerAgentsController
-from src.controllers.agents import EmployeeAgentsController
-from src.controllers.admin import AdminController
-from src.controllers.analytics import UserEngagementController
 from src.logger import init_logger
+
 
 class ControllerFactory:
     """Factory for creating and managing controller instances with performance optimizations"""
@@ -71,7 +71,7 @@ class ControllerFactory:
 
     def prewarm_controllers(self, controller_names):
         """Initialize frequently used controllers during app startup"""
-        self.logger.info(f"PRE WARMED : {getter_name}")
+        self.logger.info(f"PRE Warming Started")
         for name in controller_names:
             getter_name = f'get_{name}_controller'
             self.logger.info(f"Getter Name : {getter_name}")
@@ -162,7 +162,7 @@ class ControllerFactory:
                 # Create new instance
                 controller = controller_class(self)  # Pass factory for dependency access
                 if self.app:
-                    self.logger.info(f"Initializing Controller : {controller.__name__}")
+                    self.logger.info(f"Initializing Controller : {name}")
                     controller.init_app(self.app)
 
             except Exception as e:

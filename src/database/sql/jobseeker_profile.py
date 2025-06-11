@@ -1,8 +1,6 @@
-
-from datetime import datetime
+from datetime import timezone
 
 from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect, Integer, JSON
-from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 
 from src.database.constants import ID_LEN, NAME_LEN, utc_time
@@ -19,7 +17,7 @@ class JobSeekerProfileORM(Base):
 
     receive_deadline_reminders = Column(Boolean, default=True)
     reminder_days_before = Column(Integer, default=3)  # Days before deadline to remind
-    last_reminded_at = Column(DateTime)  # Track last reminder time
+    last_reminded_at = Column(DateTime(timezone=True))  # Track last reminder time
     receive_company_updates = Column(Boolean, default=True)
 
     first_name = Column(String(NAME_LEN))
@@ -85,7 +83,7 @@ class JobSeekerProfileORM(Base):
             "email": self.email,
             "receive_deadline_reminders": self.receive_deadline_reminders,
             "reminder_days_before": self.reminder_days_before,
-            "last_reminded_at": self.last_reminded_at,
+            "last_reminded_at": self.last_reminded_at.replace(tzinfo=timezone.utc),
             "alerts_enabled": self.alerts_enabled,
             "receive_company_updates" : self.receive_company_updates,
 
@@ -103,7 +101,7 @@ class JobSeekerProfileORM(Base):
             "availability": self.availability,
             "visibility": self.visibility,
             "profile_completion": int(self.profile_completion),
-            "last_updated": self.last_updated,
+            "last_updated": self.last_updated.replace(tzinfo=timezone.utc),
             "applications": [application.to_dict() for application in self.applications] if include_relationship else [],
             "interested_companies": [company.to_dict() for company in self.interested_companies] if include_relationship and self.interested_companies else [],
             "following_companies": [company_follow.to_dict() for company_follow in self.following_companies] if include_relationship and self.self.following_companies else []

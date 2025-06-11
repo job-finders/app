@@ -1,10 +1,9 @@
 from collections import defaultdict
-from datetime import datetime
 from enum import Enum
 from typing import List, Dict
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, AwareDatetime
 
 from src.database.constants import utc_time
 
@@ -49,7 +48,7 @@ class FlaggedUser(BaseModel):
     reference_id: str
     reason: str
     flagged_by: str
-    date_flagged_at: datetime
+    date_flagged_at: AwareDatetime
     status: str = Field(default=UserStatusFlagEnum.FLAGGED.value)
 
     model_config = ConfigDict(from_attributes=True)
@@ -65,7 +64,7 @@ class AdminModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     @staticmethod
-    def _decayed_weight(flagged_date: datetime) -> float:
+    def _decayed_weight(flagged_date: AwareDatetime) -> float:
         """
         Compute decayed score for a single flag using exponential decay.
         The older the flag, the less it contributes.

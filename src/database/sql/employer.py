@@ -1,10 +1,11 @@
 import uuid
+from datetime import timezone
 
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, JSON, Text
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 
 from src.database.constants import NAME_LEN
+from src.database.constants import utc_time
 from src.database.sql import Base  # Assuming your Base declarative is here
 
 
@@ -21,8 +22,8 @@ class EmployerORM(Base):
     is_admin = Column(Boolean, default=False)
     verification_token = Column(String(255), nullable=True)
     verification_token_expires_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), default=utc_time)
+    updated_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
 
     # Personal information
     full_name = Column(String(100), nullable=True)
@@ -66,8 +67,8 @@ class EmployerORM(Base):
             "is_verified": self.is_verified,
             "verification_token": self.verification_token,
             "verification_token_expires_at": self.verification_token_expires_at,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc),
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc),
 
             # Personal information
             "full_name": self.full_name,
@@ -87,13 +88,13 @@ class EmployerORM(Base):
 
             # Professional details
             "department": self.department,
-            "hire_date": self.hire_date,
+            "hire_date": self.hire_date.replace(tzinfo=timezone.utc),
             "responsibilities": self.responsibilities,
             "hiring_authority": self.hiring_authority,
             "signature": self.signature,
             "ip_address": self.ip_address,
 
-            # Include nested company data & saved_canndidates if loaded
+            # Include nested company data & saved_candidates if loaded
             "company": self.company.to_dict(include_relationships=False) if self.company and include_relationships else None,
             "saved_candidates": [candidate.to_dict(include_relationships=False) for candidate in self.saved_candidates] if include_relationships else []
         }

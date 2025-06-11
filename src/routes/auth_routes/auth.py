@@ -1,13 +1,14 @@
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
+
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Response, make_response
 
-from src.authentication.jwt_helper import create_jwt
-from src.routes import flask_error_handler
-from src.database.constants import utc_time
-from src.logger import init_logger
 from src.authentication import login_required, user_details
-from src.database.models.users import User
+from src.authentication.jwt_helper import create_jwt
+from src.database.constants import utc_time
 from src.database.models import Role
+from src.database.models.users import User
+from src.logger import init_logger
+from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
 
 auth_route = Blueprint("auth", __name__, template_folder="templates", url_prefix="/auth")
@@ -123,7 +124,7 @@ async def subscribe(user: User):
     auth_logger.info(f"User: {user}")
     # Automatically log the user in
     response = make_response(redirect(url_for("home.get_home")))
-    expiration = datetime.now(timezone.utc) + timedelta(minutes=30)
+    expiration = utc_time() + timedelta(minutes=30)
     jwt_token = create_jwt(user.model_dump(exclude={'password_hash'}))
 
     response.set_cookie("access_token", value=jwt_token, expires=expiration, httponly=True, secure=True, samesite="Lax")

@@ -1,4 +1,5 @@
 import uuid
+from datetime import timezone
 from typing import Optional
 
 # install pip install python-slugify
@@ -9,7 +10,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, deferred
 
 from src.database.constants import ID_LEN, NAME_LEN, utc_time
-from src.database.models.jobs_model import JobApprovalStatusEnum
+from src.database.models.jobs_model import JobApprovalStatusEnum, JobStatusEnum
 from src.database.sql import Base, engine
 
 
@@ -65,8 +66,8 @@ class JobCategoryORM(Base):
             "slug": self.slug,
             "description": self.description,
             "seo_description": self.seo_description,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
             # Include computed statistics
             "total_jobs": self.total_jobs,
             "active_jobs": self.active_jobs,
@@ -249,7 +250,7 @@ class JobsORM(Base):
 
     @hybrid_property
     def is_active(self):
-        return self.status == 'active' and self.expires_at > utc_time()
+        return self.status == JobStatusEnum.ACTIVE.value and self.expires_at > utc_time()
 
     @hybrid_property
     def location(self):
@@ -280,9 +281,10 @@ class JobsORM(Base):
             "province": self.province,
             "country": self.country,
             "geo_location": self.geo_location,
-            "posted_at": self.posted_at.isoformat() if self.posted_at else None,
-            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "application_deadline": self.application_deadline.isoformat() if self.application_deadline else None,
+            "posted_at": self.posted_at.replace(tzinfo=timezone.utc) if self.posted_at else None,
+            "expires_at": self.expires_at.replace(tzinfo=timezone.utc) if self.expires_at else None,
+            "application_deadline": self.application_deadline.replace(
+                tzinfo=timezone.utc) if self.application_deadline else None,
             "experience_level": self.experience_level,
             "education_requirements": self.education_requirements,
             "required_skills": self.required_skills,
@@ -295,8 +297,8 @@ class JobsORM(Base):
             "application_count": self.application_count,
             "status": self.status,
             "is_featured": self.is_featured,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
             "location": self.location,
             "is_active": self.is_active,
 
@@ -355,7 +357,7 @@ class SavedJobORM(Base):
             "user_id": self.user_id,
             "job_id": self.job_id,
             "job": self.job.to_dict() if self.job and include_relationship else None,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None
         }
 
 class JobApplicationORM(Base):
@@ -402,15 +404,15 @@ class JobApplicationORM(Base):
             "job": self.job.to_dict() if self.job else None,  # Include job details
             "ats_report_id": self.ats_report_id,
             "cv_id": self.cv_id,
-            "applied_date": self.applied_date.isoformat() if self.applied_date else None,
+            "applied_date": self.applied_date.replace(tzinfo=timezone.utc) if self.applied_date else None,
             "cover_letter": self.cover_letter,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
             "method": self.method,
             "notes": self.notes,
             "required_documents": self.required_documents,
             "questionnaire_answers": self.questionnaire_answers,
             "expected_salary": self.expected_salary,
-            "preferred_start_date": self.preferred_start_date.isoformat() if self.preferred_start_date else None,
+            "preferred_start_date": self.preferred_start_date if self.preferred_start_date else None,
             "preferred_location": self.preferred_location,
             "last_application_stage": self.last_application_stage,
             "application_stage": self.application_stage,
@@ -472,7 +474,7 @@ class ATSReportORM(Base):
             "matched_keywords": self.matched_keywords,
             "missing_keywords": self.missing_keywords,
             "feedback": self.feedback,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
             "job_application": self.job_application if include_relationships and self.job_application else None
         }
 
@@ -544,12 +546,12 @@ class JobApprovalRequestORM(Base):
             "request_id": self.request_id,
             "job_id": self.job_id,
             "token": self.token,
-            "token_expires": self.token_expires.isoformat() if self.token_expires else None,
-            "requested_at": self.requested_at.isoformat() if self.requested_at else None,
+            "token_expires": self.token_expires.replace(tzinfo=timezone.utc) if self.token_expires else None,
+            "requested_at": self.requested_at.replace(tzinfo=timezone.utc) if self.requested_at else None,
             "requested_by": self.requested_by,
             "approvers": self.approvers,
             "status": self.status,
-            "decision_at": self.decision_at.isoformat() if self.decision_at else None,
+            "decision_at": self.decision_at.replace(tzinfo=timezone.utc) if self.decision_at else None,
             "decision_by": self.decision_by,
             "feedback": self.feedback,
             "job": self.job.to_dict() if include_relationship and self.job else None
@@ -562,7 +564,7 @@ class ApplicationDashboardORM(Base):
 
     dashboard_id = Column(String(ID_LEN), primary_key=True)
     company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"))
-    snapshot_date = Column(DateTime(timezone=True))
+    snapshot_date = Column(DateTime(timezone=True), default=utc_time)
     data = Column(JSON)
     metrics = Column(JSON)
 
@@ -581,7 +583,7 @@ class ApplicationDashboardORM(Base):
         return {
             "dashboard_id": self.dashboard_id,
             "company_id": self.company_id,
-            "snapshot_date": self.snapshot_date.isoformat() if self.snapshot_date else None,
+            "snapshot_date": self.snapshot_date.replace(tzinfo=timezone.info) if self.snapshot_date else None,
             "data": self.data,
             "metrics": self.metrics
         }
@@ -593,7 +595,7 @@ class TalentPoolReportORM(Base):
 
     report_id = Column(String(ID_LEN), primary_key=True)
     company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"))
-    generated_at = Column(DateTime(timezone=True))
+    generated_at = Column(DateTime(timezone=True), default=utc_time)
     report_data = Column(JSON)
     insights = Column(JSON)
 
@@ -612,7 +614,7 @@ class TalentPoolReportORM(Base):
         return {
             "report_id": self.report_id,
             "company_id": self.company_id,
-            "generated_at": self.generated_at.isoformat() if self.generated_at else None,
+            "generated_at": self.generated_at.replace(tzinfo=timezone.utc) if self.generated_at else None,
             "report_data": self.report_data,
             "insights": self.insights
         }
@@ -624,8 +626,8 @@ class ImportJobBatchORM(Base):
 
     batch_id = Column(String(ID_LEN), primary_key=True)
     company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"))
-    started_at = Column(DateTime(timezone=True))
-    completed_at = Column(DateTime(timezone=True))
+    started_at = Column(DateTime(timezone=True), default=utc_time)
+    completed_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
     status = Column(String(20))
     summary = Column(JSON)
 
@@ -644,8 +646,8 @@ class ImportJobBatchORM(Base):
         return {
             "batch_id": self.batch_id,
             "company_id": self.company_id,
-            "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "started_at": self.started_at.replace(tzinfo=timezone.utc) if self.started_at else None,
+            "completed_at": self.completed_at.replace(tzinfo=timezone.utc) if self.completed_at else None,
             "status": self.status,
             "summary": self.summary
         }

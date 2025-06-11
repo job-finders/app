@@ -1,23 +1,15 @@
 import asyncio
 from datetime import date, datetime
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from pydantic import ValidationError
 
-from src.authentication import login_required, jobseeker_login
+from src.authentication import jobseeker_login
+from src.database.constants import utc_time
+from src.database.models.resume import (JobSeekerCV, Experience, Education, Certification,
+                                        Language, Project, Publication, Award, CustomSection)
 from src.database.models.users import User
-
 from src.routes import flask_error_handler
-from src.database.models.resume import (
-    JobSeekerCV,
-    Experience,
-    Education,
-    Certification,
-    Language,
-    Project,
-    Publication,
-    Award,
-    CustomSection
-)
 from src.utils.route_helpers import get_controller
 
 resume_routes = Blueprint(
@@ -43,8 +35,7 @@ def _parse_cv_form_data(form_data, files):
         'website': form_data.get('website'),
         'linkedin': form_data.get('linkedin'),
         'github': form_data.get('github'),
-        'skills': [s.strip() for s in form_data.get('skills', '').split(',') if s.strip()],
-    }
+        'skills': [s.strip() for s in form_data.get('skills', '').split(',') if s.strip()], }
 
     # Process all sections dynamically using Pydantic v2 syntax
     sections = {
@@ -79,11 +70,9 @@ def _parse_cv_form_data(form_data, files):
                     field_data[field_name] = [t.strip() for t in value.split(',')]
                 else:
                     field_data[field_name] = value
-
             # Check if we have at least one field with data
             if not any(field_data.values()):
                 break
-
             # Handle file uploads for certifications
             if section == 'certifications':
                 file = files.get(f"{prefix}[file]")
@@ -125,15 +114,11 @@ def _parse_ats_form_data(form_data, files) -> dict:
 
 def lenient_cv_parse(data: dict) -> JobSeekerCV:
     """Lenient CV parsing with fallback values"""
-    return JobSeekerCV(
-        professional_title=data.get('professional_title', 'Draft CV'),
-        summary=data.get('summary', ''),
-        skills=data.get('skills', []),
-        experience=[Experience(**e) for e in data.get('experience', [])],
-        education=[Education(**e) for e in data.get('education', [])],
-        certifications=[Certification(**c) for c in data.get('certifications', [])],
-        # Add other sections with empty defaults
-    )
+    return JobSeekerCV(professional_title=data.get('professional_title', 'Draft CV'),
+                       summary=data.get('summary', ''), skills=data.get('skills', []),
+                       experience=[Experience(**e) for e in data.get('experience', [])],
+                       education=[Education(**e) for e in data.get('education', [])],
+                       certifications=[Certification(**c) for c in data.get('certifications', [])], )
 
 # Add to your routes
 @resume_routes.route("/api/ats-check", methods=["POST"])
@@ -177,7 +162,7 @@ async def edit_cv(user: User, cv_id: str):
     resume_controller = get_controller('resume')
     if request.method == "POST":
         try:
-            start_time = datetime.now()
+            start_time = utc_time()
             raw_data = _parse_cv_form_data(request.form, request.files)
             updated_data = JobSeekerCV(**raw_data)
             resume_controller = get_controller('resume')
@@ -242,6 +227,7 @@ async def _get_ats_report(cv: JobSeekerCV) -> dict:
         return {"feedback": f"ATS analysis failed: {str(e)}"}
 
 
+# noinspection PyBroadException
 async def _handle_validation_error(e: ValidationError, cv: JobSeekerCV) -> dict:
     """Handle validation errors with partial ATS analysis"""
     flash(f"Validation error: {_format_pydantic_error(e)}", "danger")
@@ -283,10 +269,9 @@ async def upload_cv(user: User):
 
             # Call controller
             resumes_controller = get_controller("resume")
-            result = await resume_controller.create_cv(
+            result = await resumes_controller.create_cv(
                 user_uid=user.uid,
-                data=cv_data
-            )
+                data=cv_data)
 
             flash("CV created successfully!", "success")
             return redirect(url_for("jobseeker_cv.view_cv", cv_id=result['cv_id']))

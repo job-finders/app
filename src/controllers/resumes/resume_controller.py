@@ -1,10 +1,11 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 from flask import url_for
 from sqlalchemy.orm import joinedload
 
 from src.controllers.controller import Controllers, error_handler
+from src.database.constants import utc_time
 from src.database.models.resume import (JobSeekerCV, SavedCV)
 from src.database.sql.resume import (JobSeekerCVORM, ExperienceORM, EducationORM, CertificationORM, LanguageORM,
                                      ProjectORM, PublicationORM, AwardORM, CustomSectionORM, SavedCVORM)
@@ -315,7 +316,7 @@ class ResumeController(Controllers):
             existing_cv.website = data.website
             existing_cv.github = data.github
             existing_cv.linkedin = data.linkedin
-            existing_cv.updated_at = datetime.utcnow()
+            existing_cv.updated_at = utc_time()
 
             # Delete old related entries
             for orm_class in [
@@ -540,7 +541,8 @@ class ResumeController(Controllers):
             verified_cvs = session.query(JobSeekerCVORM).filter_by(is_verified=True).count()
 
             # Number of recent CVs (e.g., CVs created in the last 30 days)
-            recent_cvs = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.created_at > datetime.now(timezone.utc) - timedelta(days=30)).count()
+            recent_cvs = session.query(JobSeekerCVORM).filter(
+                JobSeekerCVORM.created_at > utc_time() - timedelta(days=30)).count()
 
             # You can also add other stats like the number of CVs in each category or skill, etc.
 

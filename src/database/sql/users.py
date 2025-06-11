@@ -1,11 +1,11 @@
-from sqlalchemy import Column, String, inspect, Boolean, DateTime, Index
+from datetime import timezone
+
+from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy import inspect, Index
 
 from src.database.constants import NAME_LEN, ID_LEN, utc_time
 from src.database.sql import Base, engine
 
-
-from sqlalchemy import Column, String, Boolean, DateTime, func
-from sqlalchemy.sql import expression
 
 class UserORM(Base):
     __tablename__ = 'users'
@@ -28,6 +28,7 @@ class UserORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             cls.__table__.create(bind=engine)
 
+    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
@@ -44,6 +45,6 @@ class UserORM(Base):
             "password_hash": self.password_hash,
             "role": self.role,
             "is_active": self.is_active,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "last_login": self.last_login.isoformat() if self.last_login else None
+            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
+            "last_login": self.last_login.replace(tzinfo=timezone.utc) if self.last_login else None
         }

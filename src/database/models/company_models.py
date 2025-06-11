@@ -1,11 +1,11 @@
 import re
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from difflib import SequenceMatcher
 from enum import Enum
 from typing import Optional, List, Union
 
-from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, ConfigDict
+from pydantic import BaseModel, Field, field_validator, HttpUrl, EmailStr, ConfigDict, AwareDatetime
 
 from src.database.constants import utc_time
 from src.database.models.jobseeker_profile import JobSeekerProfile
@@ -58,7 +58,7 @@ class Company(BaseModel):
 
     # Company Details
     employee_count: Optional[int] = Field(default=None, ge=1)
-    founded_year: Optional[int] = Field(default=None, ge=1800, le=datetime.now().year)
+    founded_year: Optional[int] = Field(default=None, ge=1800, le=utc_time().year)
     tech_stack: Optional[list[str]] = Field(default=None)
 
     # Social Media
@@ -66,7 +66,7 @@ class Company(BaseModel):
     twitter_handle: Optional[str] = Field(default=None, max_length=15)
 
     is_verified: Optional[bool] = Field(default=False)
-    time_verification_process_started: Optional[datetime] = Field(default=None)
+    time_verification_process_started: Optional[AwareDatetime] = Field(default=None)
     verification_status: str = Field(default=CompanyVerificationStatus.PENDING.value)
 
     # Relationships
@@ -132,7 +132,7 @@ class Company(BaseModel):
         """Active jobs (not expired)"""
         if not self.jobs:
             return 0
-        now = datetime.now(timezone.utc)
+        now = utc_time()
         return sum(1 for job in self.jobs
                    if job.status == 'active' and job.expires_at > now)
 
@@ -367,7 +367,7 @@ class AIBasedDocumentReviewResult(BaseModel):
     score: Optional[float] = Field(None, description="AI confidence score or overall score of review")
     reviewer_notes: Optional[str] = Field(None, description="Notes or comments from the AI reviewer")
 
-    created_at: datetime = Field(..., description="Timestamp when the review was completed")
+    created_at: AwareDatetime = Field(..., description="Timestamp when the review was completed")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -377,7 +377,7 @@ class CompanyVerificationDocument(BaseModel):
     ai_review_id: Optional[str]
     document_type: str  # You can use Enum here for safety
     file_url: HttpUrl
-    updated_at: datetime = Field(default_factory=utc_time)
+    updated_at: AwareDatetime = Field(default_factory=utc_time)
 
     status: Optional[str] = "pending"
     reviewed_by: Optional[str]
@@ -389,14 +389,14 @@ class CompanyVerificationDocument(BaseModel):
 class CompanyCIPC(BaseModel):
     company_name: str
     registration_number: str
-    registration_date: Optional[datetime]
+    registration_date: Optional[AwareDatetime]
     registered_address: Optional[str]
     company_type: Optional[str]  # e.g., "Private Company", "Non-Profit"
     director_name: Optional[list[str]] = []
     tax_pin: Optional[str]
     bee_status: Optional[str]
     status: Optional[str] = Field(default="pending")  # pending, verified, failed
-    verified_at: Optional[datetime] = None
+    verified_at: Optional[AwareDatetime] = None
     model_config = ConfigDict(from_attributes=True)
 
 class InterestLevel(str, Enum):
@@ -411,10 +411,10 @@ class CompanyFollowing(BaseModel):
    by the Jobseeker to a company
    """
    follow_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-   followed_at: datetime = Field(default_factory=utc_time)
+   followed_at: AwareDatetime = Field(default_factory=utc_time)
    user_id: str
    company_id: str
-   last_notified_at: Optional[datetime] = Field(default=None)
+   last_notified_at: Optional[AwareDatetime] = Field(default=None)
 
    interest_level: str = Field(default=InterestLevel.INTERESTED.value)
 
@@ -487,19 +487,19 @@ class SavedCandidates(BaseModel):
     """Pydantic model for SavedCandidates"""
     model_config = ConfigDict(from_attributes=True)
 
-    saved_id: Optional[str] = None
+    saved_id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
     candidate_uid: str
     company_id: str
     saved_by: str
     interest_level: InterestLevel = InterestLevel.INTERESTED
     status: CandidateStatus = CandidateStatus.SAVED
-    notes: Optional[str] = None
-    internal_notes: Optional[str] = None
-    tags: Optional[List[str]] = None
-    last_contacted_at: Optional[datetime] = None
-    contact_count: int = 0
-    saved_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    notes: Optional[str] = Field(default=None)
+    internal_notes: Optional[str] = Field(default=None)
+    tags: Optional[List[str]] = Field(default=None)
+    last_contacted_at: Optional[AwareDatetime] = Field(default=None)
+    contact_count: int = Field(default=0)
+    saved_at: Optional[AwareDatetime] = Field(default=None)
+    updated_at: Optional[AwareDatetime] = Field(default=None)
 
 
 ########################################################
@@ -510,35 +510,35 @@ class CompanySettings(BaseModel):
     company_id: str  # FK or UUID
 
     # General
-    default_job_duration_days: int = 30
-    auto_publish_jobs: bool = False
+    default_job_duration_days: int = Field(default=30)
+    auto_publish_jobs: bool = Field(default=False)
     job_visibility: str = "public"  # Enum in production
-    allow_featured_jobs: bool = True
-    max_open_jobs: int = 10
+    allow_featured_jobs: bool = Field(default=True)
+    max_open_jobs: int = Field(default=10)
 
     # Application
-    auto_response_enabled: bool = False
+    auto_response_enabled: bool = Field(default=False)
     default_response_message: Optional[str] = "Thank you for your application."
-    require_cover_letter: bool = False
+    require_cover_letter: bool = Field(default=False)
     required_documents: list[str] = Field(default_factory=lambda: ["resume"])
-    questionnaire_enabled: bool = False
-    allow_withdrawals: bool = True
+    questionnaire_enabled: bool = Field(default=False)
+    allow_withdrawals: bool = Field(default=True)
 
     # Branding
-    email_sender_name: Optional[str] = None
-    email_signature: Optional[str] = None
-    custom_email_template_enabled: bool = False
-    custom_application_success_page_url: Optional[str] = None
+    email_sender_name: Optional[str] = Field(default=None)
+    email_signature: Optional[str] = Field(default=None)
+    custom_email_template_enabled: bool = Field(default=False)
+    custom_application_success_page_url: Optional[str] = Field(default=None)
 
     # Team Access
-    team_invites_enabled: bool = True
-    max_recruiters: int = 5
+    team_invites_enabled: bool = Field(default=True)
+    max_recruiters: int = Field(default=5)
     recruiter_roles: Optional[dict] = Field(default_factory=dict)
 
     # Notifications
-    weekly_digest_enabled: bool = True
-    slack_notifications_enabled: bool = False
-    slack_webhook_url: Optional[str] = None
-    notify_on_new_application: bool = True
+    weekly_digest_enabled: bool = Field(default=True)
+    slack_notifications_enabled: bool = Field(default=False)
+    slack_webhook_url: Optional[str] = Field(default=None)
+    notify_on_new_application: bool = Field(default=True)
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,11 +1,11 @@
 from sqlalchemy import Column, Integer, String, inspect, ForeignKey, DateTime, Text
+
 from src.database.constants import ID_LEN, utc_time
 from src.database.sql import Base, engine
 
 
 class AdminORM(Base):
     __tablename__ = 'admin'
-
     admin_id = Column(Integer, primary_key=True, autoincrement=True)
     admin_users = Column(String(ID_LEN),ForeignKey('users.uid'))
     flagged_users = Column(String(ID_LEN), ForeignKey('flagged_users.flag_id'))

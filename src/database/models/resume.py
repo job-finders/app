@@ -1,8 +1,10 @@
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date
 from typing import List, Optional, Union
 
-from pydantic import BaseModel, Field, HttpUrl, ConfigDict, field_validator
+from pydantic import BaseModel, Field, HttpUrl, ConfigDict, field_validator, AwareDatetime
+
+from src.database.constants import utc_time
 
 
 # Experience
@@ -97,7 +99,7 @@ class SavedCV(BaseModel):
     save_id: str = Field(default_factory= lambda : str(uuid.uuid4()))
     employer_id: str
     cv_id: str
-    saved_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    saved_at: AwareDatetime = Field(default_factory=utc_time())
     notes: Optional[str] = Field(default=None)
 
     model_config = ConfigDict(from_attributes=True)
@@ -130,16 +132,18 @@ class JobSeekerCV(BaseModel):
     resume_file_url: Optional[HttpUrl] = None  # Link to uploaded original resume
     profile_image_url: Optional[HttpUrl] = None
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    # noinspection PyTypeHints
+    created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
+    # noinspection PyTypeHints,PyUnresolvedReferences
     jobseeker_profile: Optional[list['JobSeekerProfile']] = Field(default_factory=list)
 
+    # noinspection PyMethodParameters
     @field_validator('professional_title')
     def title_must_not_be_empty(cls, v):
         if not v.strip():
             raise ValueError("Professional title cannot be empty")
         return v
 
+    # noinspection PyMethodParameters
     @field_validator('skills')
     def skills_must_have_values(cls, v):
         if not v or not all(s.strip() for s in v):

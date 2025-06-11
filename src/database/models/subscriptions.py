@@ -1,8 +1,10 @@
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from enum import Enum
 from typing import Optional, List
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, AwareDatetime
+
+from database.constants import utc_time
 
 
 class PlanType(str, Enum):
@@ -21,7 +23,7 @@ class SubscriptionPlan(BaseModel):
     annual_price: Optional[float] = None
     features: List[str] = []
     is_active: bool = True
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: AwareDatetime = Field(default_factory=utc_time)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -31,10 +33,10 @@ class UserSubscription(BaseModel):
     id: str
     user_uid: str
     plan_id: str
-    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    expires_at: Optional[datetime] = None
-    is_active: bool = True
-    auto_renew: bool = True
+    started_at: AwareDatetime = Field(default_factory=utc_time)
+    expires_at: Optional[AwareDatetime] = Field(default=None)
+    is_active: bool = Field(default=True)
+    auto_renew: bool = Field(default=True)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -48,24 +50,24 @@ class PaymentTransaction(BaseModel):
     status: str  # e.g. success, failed, pending
     provider: str  # e.g. PayFast, Stripe
     reference: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: AwareDatetime = Field(default_factory=utc_time)
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class CompanySubscription(BaseModel):
     company_id: str  # FK to company
-    plan_id: Optional[str] = None
-    trial_started_at: Optional[datetime] = None
-    trial_days: int = 14
-    subscribed: bool = False
-    active_until: Optional[datetime] = None
+    plan_id: Optional[str] = Field(default=None)
+    trial_started_at: Optional[AwareDatetime] = Field(default=None)
+    trial_days: int = Field(default=14)
+    subscribed: bool = Field(default=False)
+    active_until: Optional[AwareDatetime] = Field(default=None)
     model_config = ConfigDict(from_attributes=True)
 
     def is_trial_active(self) -> bool:
         if not self.trial_started_at:
             return False
-        return datetime.utcnow() < self.trial_started_at + timedelta(days=self.trial_days)
+        return utc_time() < self.trial_started_at + timedelta(days=self.trial_days)
 
     def is_trial_expired(self) -> bool:
         return not self.is_trial_active() and not self.subscribed

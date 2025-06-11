@@ -1,4 +1,5 @@
 import uuid
+from datetime import timezone
 
 from sqlalchemy import Column, String, Date, DateTime, Boolean, ForeignKey, Text, UniqueConstraint, JSON
 from sqlalchemy import inspect
@@ -26,7 +27,7 @@ class JobSeekerCVORM(Base):
     website = Column(String(255), nullable=True)  # Added website
     linkedin = Column(String(255), nullable=True)  # Added linkedin
     github = Column(String(255), nullable=True)  # Added github
-    created_at = Column(DateTime, default=utc_time)
+    created_at = Column(DateTime(timezone=True), default=utc_time)
 
     # Relationships (if needed)
     experience = relationship("ExperienceORM", back_populates="cv", cascade="all, delete-orphan")
@@ -65,7 +66,7 @@ class JobSeekerCVORM(Base):
             "website": self.website,
             "linkedin": self.linkedin,
             "github": self.github,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
             "experience": [exp.to_dict() for exp in self.experience] if include_relationship and self.experience else [],
             "education": [edu.to_dict() for edu in self.education] if include_relationship and self.education else [],
             "certifications": [cert.to_dict() for cert in self.certifications] if include_relationship and self.certifications else [],
@@ -74,7 +75,8 @@ class JobSeekerCVORM(Base):
             "publications": [pub.to_dict() for pub in self.publications] if include_relationship and self.publications else [],
             "awards": [award.to_dict() for award in self.awards] if include_relationship and self.awards else [],
             "custom_sections": [cust.to_dict() for cust in self.custom_sections] if include_relationship and self.custom_sections else [],
-            "jobseeker_profile": [prof_to_dict() for prof in self.jobseeker_profile] if include_relationship and self.jobseeker_profile else []
+            "jobseeker_profile": [prof.to_dict() for prof in
+                                  self.jobseeker_profile] if include_relationship and self.jobseeker_profile else []
         }
 
 class ExperienceORM(Base):

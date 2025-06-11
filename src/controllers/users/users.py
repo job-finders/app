@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
+
 
 from flask import Flask
 
 from src.controllers.controller import Controllers
 from src.controllers.controller import error_handler
+from src.database.constants import utc_time
 from src.database.models.users import User
 from src.database.sql.users import UserORM
 from src.emailer import EmailModel
@@ -136,7 +137,7 @@ class UsersController(Controllers):
                 self.logger.info("Password Invalid")
                 return None
 
-            _last_login = datetime.now(timezone.utc)
+            _last_login = utc_time()
             user_orm.last_login = _last_login
             user.last_login = _last_login
             return user

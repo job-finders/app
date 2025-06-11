@@ -1,9 +1,11 @@
 import functools
-from sqlalchemy.exc import SQLAlchemyError
-from flask import redirect, url_for, flash, Flask, render_template
+from contextlib import contextmanager
+
+from flask import redirect, url_for, Flask
 from pydantic import ValidationError
 from sqlalchemy.exc import OperationalError, ProgrammingError, IntegrityError
-from contextlib import contextmanager
+from sqlalchemy.exc import SQLAlchemyError
+
 from src.database.sql import Session
 from src.logger import init_logger
 
@@ -63,12 +65,6 @@ class Controllers:
         session_maker = self.app.config.get('session_maker')
         session_limit = self.app.config.get('session_limit', self.session_limit)
         self.deepseek_api_key = self.app.config.get('DEEPSEEK_API_KEY')
-
-        # # Reinitialize sessions if configuration changed
-        # if session_maker and session_limit != self.session_limit:
-        #     self.session_limit = session_limit
-        #     self._initialize_sessions()
-
 
     def close(self):
         """Release all resources including database sessions"""

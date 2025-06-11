@@ -1,4 +1,5 @@
 import uuid
+from datetime import timezone
 from enum import Enum
 
 from sqlalchemy import Column, String, Text, Integer, Boolean, ForeignKey, JSON, DateTime, inspect, Index, Float
@@ -6,7 +7,6 @@ from sqlalchemy.orm import relationship
 
 from src.database.constants import ID_LEN, NAME_LEN, utc_time
 from src.database.sql import Base, engine
-from src.database.sql.employer import EmployerORM
 
 
 class CompanyORM(Base):
@@ -95,10 +95,11 @@ class CompanyORM(Base):
             "tech_stack": self.tech_stack,
             "linkedin_url": self.linkedin_url,
             "twitter_handle": self.twitter_handle,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
+            "created_at": self.created_at.replace(tzinfo=timezone.utc),
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc),
             "is_verified": self.is_verified,
-            "time_verification_process_started": self.time_verification_process_started.isoformat() if self.time_verification_process_started else None,
+            "time_verification_process_started": self.time_verification_process_started.replace(
+                tzinfo=timezone.utc) if self.time_verification_process_started else None,
             "verification_status": self.verification_status,
             "ip_address": self.ip_address,
 

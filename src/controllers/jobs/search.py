@@ -53,16 +53,14 @@ class JobsSearchController(Controllers):
 
         with self.get_session() as session:
             query = session.query(JobsORM).filter(JobsORM.status == JobStatusEnum.ACTIVE.value)
-
             total_jobs = query.count()
-
             offset = (page - 1) * page_size
             jobs_orm_list = (
                 query.order_by(JobsORM.is_featured.desc(), JobsORM.created_at.desc())
                     .offset(offset)
                     .limit(page_size)
                     .all())
-
+            # get_all_jobs : Unexpected error: can't compare offset-naive and offset-aware datetimes
             jobs = [Job(**job.to_dict()) for job in jobs_orm_list if job] if jobs_orm_list else []
             total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
             return {"page": page, "page_size": page_size, "total_jobs": total_jobs,

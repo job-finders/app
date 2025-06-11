@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, inspect
+
 from src.database.sql import Base, engine
 
 
@@ -38,6 +39,7 @@ class ConfigurationORM(Base):
             "description": self.description,
         }
 
+    # noinspection PyBroadException
     @staticmethod
     def _cast_value(value: str, data_type: str):
         try:

@@ -1,13 +1,14 @@
-import enum, uuid
+import enum
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, String, Boolean, Integer, Numeric, Text, DateTime, func, JSON, Date
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
-from src.database.sql import Base
-from src.database.constants import ID_LEN
 
-from src.database.sql.company import CompanyORM
+from src.database.constants import ID_LEN
+from src.database.constants import utc_time
+from src.database.sql import Base
 
 
 class BillingPlanORM(Base):
@@ -55,8 +56,8 @@ class BillingPlanORM(Base):
             "allow_priority_support": self.allow_priority_support,
             "show_branding": self.show_branding,
             "sort_order": self.sort_order,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
             "invoices": [invoice.to_dict() for invoice in self.invoices] if include_relationships and self.invoices else None
         }
 
@@ -79,10 +80,10 @@ class CompanyBillingProfileORM(Base):
         return {
             "company_id": self.company_id,
             "current_plan_id": self.current_plan_id,
-            "subscription_start": self.subscription_start.isoformat() if self.subscription_start else None,
-            "subscription_end": self.subscription_end.isoformat() if self.subscription_end else None,
+            "subscription_start": self.subscription_start if self.subscription_start else None,
+            "subscription_end": self.subscription_end if self.subscription_end else None,
             "trial_active": self.trial_active,
-            "trial_end_date": self.trial_end_date.isoformat() if self.trial_end_date else None,
+            "trial_end_date": self.trial_end_date if self.trial_end_date else None,
             "is_payment_overdue": self.is_payment_overdue,
             "auto_renew": self.auto_renew,
             "last_invoice_id": self.last_invoice_id,
@@ -109,8 +110,8 @@ class InvoiceORM(Base):
     currency = Column(String(10), default="ZAR", nullable=False)
 
     due_date = Column(Date, nullable=False)
-    paid_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    paid_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_time())
 
     # Optional relationships
     company_billing = relationship("CompanyBillingProfileORM", back_populates="invoices")
@@ -124,9 +125,9 @@ class InvoiceORM(Base):
             "status": self.status if self.status else None,
             "amount": float(self.amount),
             "currency": self.currency,
-            "due_date": self.due_date.isoformat() if self.due_date else None,
-            "paid_at": self.paid_at.isoformat() if self.paid_at else None,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "due_date": self.due_date if self.due_date else None,
+            "paid_at": self.paid_at.replace(tzinfo=timezone.utc) if self.paid_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
             "company_billing": self.company_billing.to_dict() if include_relationships and self.company_billing else None,
             "billing_plan": self.billing_plan.to_dict() if include_relationships and self.billing_plan else None
         }
@@ -144,7 +145,7 @@ class PaymentMethodORM(Base):
     is_active = Column(Boolean, default=True)
     is_default = Column(Boolean, default=True)
 
-    added_on = Column(DateTime, default=datetime.utcnow)
+    added_on = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     def to_dict(self):
         return {
@@ -155,7 +156,7 @@ class PaymentMethodORM(Base):
             "payfast_sub_reference": self.payfast_sub_reference,
             "is_active": self.is_active,
             "is_default": self.is_default,
-            "added_on": self.added_on.isoformat()
+            "added_on": self.added_on.replace(tzinfo=timezone.utc)
         }
 
 class BillingEventORM(Base):
@@ -167,7 +168,7 @@ class BillingEventORM(Base):
     type = Column(String(50), nullable=False)  # Use Enum if you prefer strict validation
     event_metadata = Column(JSON, default=dict)
     email_sent = Column(Boolean, default=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_time(), index=True)
 
     def to_dict(self):
         return {
@@ -176,5 +177,5 @@ class BillingEventORM(Base):
             "email_sent": self.email_sent,
             "type": self.type,
             "event_metadata": self.event_metadata,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.replace(tzinfo=timezone.utc)
         }

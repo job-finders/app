@@ -1,8 +1,7 @@
-from datetime import datetime
 from typing import Optional, List
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, EmailStr, HttpUrl, ConfigDict
+from pydantic import BaseModel, Field, EmailStr, HttpUrl, ConfigDict, AwareDatetime
 
 from src.database.constants import utc_time
 from src.database.models.company_models import SavedCandidates, Company
@@ -24,9 +23,9 @@ class Employer(BaseModel):
     is_verified: bool = Field(default=False, description="Admin-approved status")
     is_admin: bool = Field(default=False, description="Admin-approved status")
     verification_token: Optional[str] = Field(default=None, max_length=255)
-    verification_token_expires_at: Optional[datetime] = Field(default=None)
-    created_at: datetime = Field(default_factory=utc_time)
-    updated_at: datetime = Field(default_factory=utc_time)
+    verification_token_expires_at: Optional[AwareDatetime] = Field(default=None)
+    created_at: AwareDatetime = Field(default_factory=utc_time)
+    updated_at: AwareDatetime = Field(default_factory=utc_time)
     # TODO Update ip location everytime employer updates the model.
     ip_address: Optional[str] = Field(default_factory=lambda : get_service("ip_address")())
     model_config = ConfigDict(from_attributes=True)
@@ -86,7 +85,7 @@ class Employer(BaseModel):
         max_length=100,
         description="Department within the company"
     )
-    hire_date: Optional[datetime] = Field(
+    hire_date: Optional[AwareDatetime] = Field(
         default=None,
         description="Date joined the company"
     )

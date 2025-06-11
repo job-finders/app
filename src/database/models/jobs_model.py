@@ -1,11 +1,11 @@
 import re
 import uuid
 from collections import Counter
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from enum import Enum
 from typing import Optional, Any
 
-from pydantic import BaseModel, Field, computed_field, ConfigDict, model_validator
+from pydantic import BaseModel, Field, computed_field, ConfigDict, model_validator, AwareDatetime
 from textstat.backend.metrics import flesch_reading_ease
 
 from src.agents.employer import EnhanceJobPostOutput
@@ -14,7 +14,6 @@ from src.database.models.company_models import Company
 
 
 # NOTE : DO NOT REMOVE EMPLOYER IMPORT
-
 # from textstat import flesch_reading_ease
 
 def format_reference(ref: str) -> str:
@@ -38,12 +37,12 @@ class JobApprovalRequest(BaseModel):
     request_id: str
     job_id: str
     token: str
-    token_expires: Optional[datetime]
-    requested_at: Optional[datetime]
+    token_expires: Optional[AwareDatetime]
+    requested_at: Optional[AwareDatetime]
     requested_by: str
     approvers: list[str]
     status: str = Field(default=JobApprovalStatusEnum.PENDING.value)  # Values: pending, approved, rejected, expired
-    decision_at: Optional[datetime] = None
+    decision_at: Optional[AwareDatetime] = None
     decision_by: Optional[str] = None
     feedback: Optional[str] = None
 
@@ -89,7 +88,7 @@ class JobVersionHistory(BaseModel):
     version: int
     changes: dict[str,Any]  # JSON diff between versions
     modified_by: str
-    modified_at: datetime
+    modified_at: AwareDatetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -113,8 +112,8 @@ class JobCategory(BaseModel):
     slug: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
     seo_description: Optional[str] = Field(max_length=250, default=None)
-    created_at: datetime = Field(default_factory=lambda: utc_time())
-    updated_at: Optional[datetime] = Field(default=None)
+    created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
+    updated_at: Optional[AwareDatetime] = Field(default=None)
 
     # Relationship
     jobs: list['Job'] = Field(default_factory=list)
@@ -203,9 +202,9 @@ class Job(BaseModel):
     geo_location: Optional[str] = None
 
     # Timeline
-    posted_at: datetime = Field(default_factory=lambda: utc_time())
-    expires_at: datetime
-    application_deadline: Optional[datetime] = Field(default=None)
+    posted_at: AwareDatetime = Field(default_factory=lambda: utc_time())
+    expires_at: Optional[AwareDatetime] = Field(default=None)
+    application_deadline: Optional[AwareDatetime] = Field(default=None)
 
     # Requirements
     experience_level: str = Field(pattern="ENTRY|MID|SENIOR")
@@ -228,8 +227,8 @@ class Job(BaseModel):
     is_featured: Optional[bool] = False
 
     # Audit
-    created_at: Optional[datetime] = Field(default=None)
-    updated_at: Optional[datetime] = Field(default=None)
+    created_at: Optional[AwareDatetime] = Field(default=None)
+    updated_at: Optional[AwareDatetime] = Field(default=None)
 
     summary: Optional[str] = Field(default=None, description="Short summary for job listing")
     seo_description: Optional[str] = Field(default=None, description="SEO description for job post")
@@ -521,7 +520,7 @@ class Job(BaseModel):
     @computed_field(return_type=bool)
     @property
     def is_active(self) -> bool:
-        return self.status == "active" and self.expires_at > utc_time()
+        return self.status == JobStatusEnum.ACTIVE.value and self.expires_at > utc_time()
 
     @computed_field(return_type=str)
     @property
@@ -585,9 +584,9 @@ class Job(BaseModel):
         Returns:
             Job instance ready for database insertion
         """
-        # Convert ISO strings to datetime objects
+        # Convert ISO strings to AwareDatetime objects
         expires_at = datetime.fromisoformat(agent_output.expires_at) if agent_output.expires_at else None
-        application_deadline = datetime.fromisoformat(
+        application_deadline = AwareDatetime.fromisoformat(
             agent_output.application_deadline) if agent_output.application_deadline else None
 
         # Set default expiration if not provided
@@ -648,7 +647,7 @@ class SavedJob(BaseModel):
     saved_job_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     job_id: str
-    created_at: datetime = Field(default_factory=lambda: utc_time())
+    created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -661,7 +660,8 @@ class ATSReport(BaseModel):
     matched_keywords: list[str] = Field(default_factory=list, description="list of matched keywords found in CV")
     missing_keywords: list[str] = Field(default_factory=list, description="list of important keywords not found in CV")
     feedback: str = Field(..., description="Feedback based on the ATS evaluation")
-    created_at: datetime = Field(default_factory=lambda: utc_time(), description="Timestamp when the report was generated")
+    created_at: AwareDatetime = Field(default_factory=lambda: utc_time(),
+                                      description="Timestamp when the report was generated")
     job_application: Optional['JobApplication'] = Field(default=None, description="Job Applications related to this ATS Report if Any")
     job: Optional[Job] = Field(default=None, description="Job related to this ATS Report if Any")
 
@@ -689,8 +689,8 @@ class JobApplication(BaseModel):
     job: Optional[Job] = Field(None)  # Relationship to JobModel
     cv_id: Optional[str] = None
 
-    applied_date: datetime = Field(default_factory=utc_time)
-    updated_at: Optional[datetime] = Field(default=None)  # Changed from date to datetime
+    applied_date: AwareDatetime = Field(default_factory=utc_time)
+    updated_at: Optional[AwareDatetime] = Field(default=None)  # Changed from date to AwareDatetime
 
     cover_letter: Optional[str] = None
     method: Optional[str] = Field(default='website')
@@ -734,7 +734,7 @@ class JobStatistics(BaseModel):
     application_metrics: ApplicationMetrics
     categories: dict[str, int] = Field(..., description="Job count per category")
     recent_jobs_30d: int = Field(..., description="Jobs posted in last 30 days")
-    calculated_at: datetime = Field(default_factory=lambda: utc_time())
+    calculated_at: AwareDatetime = Field(default_factory=lambda: utc_time())
 
     model_config = ConfigDict(from_attributes=True)
 

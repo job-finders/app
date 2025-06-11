@@ -1,14 +1,15 @@
 import re
 import uuid
-from datetime import date, timezone, timedelta
-from datetime import datetime
+from datetime import date, timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import Dict
 from typing import Literal
 from typing import Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, AwareDatetime
+
+from src.database.constants import utc_time
 
 
 class BillingPlan(BaseModel):
@@ -60,8 +61,8 @@ class BillingPlan(BaseModel):
 
     sort_order: int = 0
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: Optional[datetime] = None
+    created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
+    updated_at: Optional[AwareDatetime] = None
     duration_days: int = Field(default=30)
     model_config = ConfigDict(from_attributes=True)
 
@@ -104,7 +105,7 @@ class CompanyBillingProfile(BaseModel):
 
     @property
     def is_trial_valid(self):
-        today = datetime.now(timezone.utc).date()
+        today = utc_time()
         return self.trial_active and today <= self.trial_end_date
 
 
@@ -113,7 +114,7 @@ class CompanyBillingProfile(BaseModel):
         """
         Returns the plan ID if the subscription is active, else None.
         """
-        today = datetime.now(timezone.utc).date()
+        today = utc_time()
 
         if self.current_plan_id and self.subscription_start and self.subscription_end:
             if self.subscription_start <= today <= self.subscription_end:
@@ -127,21 +128,17 @@ class CompanyBillingProfile(BaseModel):
         Returns True if the company has an active paid subscription,
         not expired, and not in a trial.
         """
-        today = datetime.now(timezone.utc).date()
-
         # Must have a plan and valid subscription period
         if not self.current_plan_id:
             return False
-
         if self.subscription_start and self.subscription_end:
-            return self.subscription_start <= today <= self.subscription_end
-
+            return self.subscription_start <= utc_time() <= self.subscription_end
         return False
 
     @property
     def grace_period_ended(self) -> bool:
         """returns true if the grace period has ended."""
-        return datetime.now(timezone.utc).date() <- self.subscription_end + timedelta(days=7)
+        return utc_time().date() <= self.subscription_end + timedelta(days=7)
 
     @property
     def is_about_to_expire(self) -> bool:
@@ -150,7 +147,7 @@ class CompanyBillingProfile(BaseModel):
         but has not already expired.
         """
         if self.subscription_end:
-            days_left = (self.subscription_end - datetime.now(timezone.utc).date()).days
+            days_left = (self.subscription_end - utc_time().date()).days
             return 0 <= days_left <= 7
         return False
 
@@ -170,7 +167,7 @@ class CompanyBillingProfile(BaseModel):
         Days until Subscription has expired
         :return:
         """
-        return max((self.subscription_end - datetime.now(timezone.utc).date()).days, 0)
+        return max((self.subscription_end - utc_time().date()).days, 0)
 
 class InvoiceStatusEnum(Enum):
     """
@@ -210,8 +207,8 @@ class Invoice(BaseModel):
     amount: float
     currency: str = "ZAR"
     due_date: date
-    paid_at: Optional[datetime]
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    paid_at: Optional[AwareDatetime]
+    created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -241,7 +238,7 @@ class PaymentMethod(BaseModel):
 
     is_active: bool = True
     is_default: bool = True
-    added_on: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    added_on: AwareDatetime = Field(default_factory=lambda: utc_time())
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -278,5 +275,4 @@ class BillingEvent(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     event_metadata: Dict[str, str] = Field(default_factory=dict)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
+    created_at: AwareDatetime = Field(default_factory=lambda: utc_time())

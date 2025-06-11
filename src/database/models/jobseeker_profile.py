@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
 from typing import Optional, List
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
+from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict, AwareDatetime
 
+from src.database.constants import utc_time
 from src.utils.route_helpers import get_controller
 
 
@@ -19,7 +19,7 @@ class JobSeekerProfile(BaseModel):
     alerts_enabled: bool = Field(default=True)
     receive_deadline_reminders: bool = Field(default=True)
     reminder_days_before: int = Field(default=7)
-    last_reminded_at: datetime| None = Field(default=None)
+    last_reminded_at: AwareDatetime | None = Field(default=None)
     receive_company_updates: bool = Field(default=True)
 
     profile_image_url: Optional[HttpUrl] = None
@@ -47,12 +47,12 @@ class JobSeekerProfile(BaseModel):
     # Settings
     visibility: bool = Field(default=True, description="Visible to employers and clients")
     profile_completion: Optional[int] = 0
-    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_updated: AwareDatetime = Field(default_factory=lambda: utc_time())
 
     # List of job applications submitted by the Job Seeker
     # noinspection PyTypeHints
     applications: Optional[list['JobApplication']] = Field(default_factory=list, description="List of JobApplications for Jobseeker")
-    # List of records showing records where companies saved the candidate for further onsideration
+    # List of records showing records where companies saved the candidate for further consideration
     interested_companies: Optional[List['SavedCandidates']] = Field(default_factory=list, description="List of companies the job seeker is interested in")
     # Companies the Job Seeker is following
     following_companies: Optional[List['CompanyFollowing']] = Field(default_factory=list, description="List of records showing companies the job seeker is following")
