@@ -77,7 +77,7 @@ class CompanyController(Controllers):
         """
         with self.get_session() as session:
             company_orm_list = session.query(CompanyORM).all()
-            return [Company(**company_orm.to_dict()) for company_orm in company_orm_list if company_orm]
+            return [Company(**company_orm.to_dict()) for company_orm in company_orm_list if company_orm] if company_orm_list else []
 
 
     @error_handler
@@ -106,6 +106,9 @@ class CompanyController(Controllers):
         :param uid:
         :return:
         """
+        if not(isinstance(uid, str) and uid.strip()):
+            return None
+
         with self.get_session() as session:
             employer_orm = session.query(EmployerORM).filter_by(user_uid=uid).first()
             if not employer_orm:
@@ -125,6 +128,9 @@ class CompanyController(Controllers):
         """Create new employer profile with company association
         Links employer to Auth0/Firebase UID and initial company metadata
         """
+        if not isinstance(employer_data, Employer):
+            return None
+
         with self.get_session() as session:
             if session.query(EmployerORM).filter_by(user_uid=employer_data.user_uid).first():
                 raise ValueError("Employer profile exists for this user")
@@ -165,6 +171,9 @@ class CompanyController(Controllers):
             #     .filter(CompanyORM.company_id == company_id)  # Fixed filter condition
             #     .first()
             # )
+            if not (isinstance(company_id, str) and company_id.strip()):
+                return None
+
             company_orm = session.query(CompanyORM).get(company_id)
             if not company_orm:
                 self.logger.info(f"Unable to obtain company data with ID: {company_id}")
@@ -182,6 +191,9 @@ class CompanyController(Controllers):
         :param company_id:
         :return:
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return None
+
         with self.get_session() as session:
             employer_orm_list = session.query(EmployerORM).filter_by(company_id==company_id).all()
             return [Employer(**employer_orm.to_dict()) for employer_orm in employer_orm_list if employer_orm]
@@ -194,8 +206,11 @@ class CompanyController(Controllers):
         :return: Company object with nested jobs
         :raises ValueError: If no company matches the exact name
         """
+        if not (isinstance(name, str) and name.strip()):
+            return None
+        #TODO- Ensure Company is returning all the needed data
         with self.get_session() as session:
-            # Case-insensitive exact match
+            # Case-insensitive exact match 
             company_orm: CompanyORM = (
                 session.query(CompanyORM)
                 .options(joinedload(CompanyORM.jobs))
@@ -215,6 +230,9 @@ class CompanyController(Controllers):
         :param name: Substring to search in company names
         :return: List of matching Company objects
         """
+        if not (isinstance(name, str) and name.strip()):
+            return None
+
         with self.get_session() as session:
             companies_orm: list[CompanyORM] = (
                 session.query(CompanyORM)
@@ -231,6 +249,9 @@ class CompanyController(Controllers):
     @error_handler
     async def _get_employer(self, employer_id: str, session) -> EmployerORM| None:
 
+        if not (isinstance(employer_id, str) and employer_id.strip()):
+            return None
+
         employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
         if isinstance(employer_orm, EmployerORM):
             return employer_orm
@@ -242,6 +263,9 @@ class CompanyController(Controllers):
         :param user_id:
         :return:
         """
+        if not (isinstance(user_id, str) and user_id.strip()):
+            return None
+
         with self.get_session() as session:
             self.logger.info(f"Inside get_employer by uid : {user_id}")
             employer_orm = session.query(EmployerORM).filter_by(user_uid=user_id).first()
@@ -260,6 +284,9 @@ class CompanyController(Controllers):
         :param employer_id:
         :return:
         """
+        if not (isinstance(employer_id, str) and employer_id.strip()):
+            return None
+        
         with self.get_session() as session:
             employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
             if not employer_orm:
@@ -270,6 +297,11 @@ class CompanyController(Controllers):
     @error_handler
     async def get_company_jobs(self, company_id: str, status: Optional[JobStatusEnum] = None) -> List[Job]:
         """Retrieve company jobs with optional status filtering"""
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return None
+        if not (isinstance(status, str) and status.strip()):
+            return None
+
         with self.get_session() as session:
             # Get company with jobs relationship
             company = (
@@ -283,8 +315,8 @@ class CompanyController(Controllers):
             # Apply status filter if provided
             jobs = company.jobs
             if status:
-                jobs = [job for job in jobs if job.status == status.value]
-            return [Job(**job.to_dict()) for job in jobs]
+                jobs = [job for job in jobs if job.status.casefold() == status.value.casefold()] 
+            return [Job(**job.to_dict()) for job in jobs] if jobs else []
 
 
     @error_handler
@@ -294,6 +326,9 @@ class CompanyController(Controllers):
         :param company_id: UUID of the company
         :return: List of Employer objects
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return []
+
         with self.get_session() as session:
             employers_orm = (
                 session.query(EmployerORM)
@@ -304,7 +339,7 @@ class CompanyController(Controllers):
             if not employers_orm:
                 return []
 
-            return [Employer(**employer.to_dict()) for employer in employers_orm]
+            return [Employer(**employer.to_dict()) for employer in employers_orm] if employers_orm else []
 
 
     @error_handler
@@ -312,6 +347,9 @@ class CompanyController(Controllers):
         """Get hiring metrics using JobsController's analytics engine
         Combines company-specific filtering with core analytics logic
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return None
+
         return await self.jobs_workflow_controller.get_company_analytics_dashboard(company_id=company_id)
 
     @error_handler
@@ -321,6 +359,9 @@ class CompanyController(Controllers):
         :param company_id:
         :return:
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return None
+
         return await self.jobs_workflow_controller.generate_talent_pool_report(company_id=company_id)
 
     @error_handler
@@ -370,7 +411,14 @@ class CompanyController(Controllers):
             return Employer.model_validate(employer_orm)
 
     @error_handler
-    async def update_company(self, company_id: str, update_data: CompanyUpdate) -> Company:
+    async def update_company(self, company_id: str, update_data: CompanyUpdate) -> Optional[Company]:
+
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return None
+
+        if not isinstance(update_data, CompanyUpdate):
+            return None
+
         with self.get_session() as session:
             # Get existing company
             company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
@@ -393,16 +441,15 @@ class CompanyController(Controllers):
                     if value:
                         setattr(company_orm, key, value)
 
-
             # Update timestamp
-            company_orm.updated_at = func.now()
+            company_orm.updated_at = datetime.now(timezone.utc)
 
             session.commit()
             session.refresh(company_orm)
-            return Company.model_validate(company_orm)
+            return Company(**company_orm.to_dict())
 
     @error_handler
-    async def post_job(self, user_uid: str, job_data: Job) -> Job:
+    async def post_job(self, user_uid: str, job_data: Job) -> Optional[Job]:
         """
             ensure jobs could be posted under this company -
             check verification status of employer profile
@@ -411,25 +458,31 @@ class CompanyController(Controllers):
         :param job_data:
         :return:
         """
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            return None
+        if not isinstance(job_data, Job):
+            return None
+
         with self.get_session() as session:
 
             employer_orm = session.query(EmployerORM).filter_by(user_uid=user_uid).first()
             if not employer_orm:
-                raise ValueError("No Valid Employer with this User ID")
+                return None
 
             _employer_profile = Employer(**employer_orm.to_dict())
             company_orm = session.query(CompanyORM).filter_by(company_id=_employer_profile.company_id).first()
 
             if not company_orm:
-                raise ValueError("Unable to load your company details")
+                return None
 
             company_profile = Company(**company_orm.to_dict())
 
             if not (_employer_profile.is_valid and _employer_profile.is_verified):
-                raise ValueError('Your Employer Profile is not yet verified (or its incomplete)')
+                return None
 
             if not (company_profile.is_valid and company_profile.is_verified):
-                raise ValueError('Your Company Profile is not yet verified (or its incomplete)')
+                return None
+
             # TODO - once subscriptions are added please check the status of the subscription here
             # creating job with jobs controller then return the results
             # async def post_job_employer(self, employer: Employer, job_data: Job) -> Job:
@@ -442,6 +495,9 @@ class CompanyController(Controllers):
         :param user_uid:
         :return:
         """
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            return None
+
         with self.get_session() as session:
             employer_profile_orm = session.query(EmployerORM).filter_by(user_uid=user_uid).first()
 
@@ -462,6 +518,11 @@ class CompanyController(Controllers):
         :param user_uid:
         :return:
         """
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            return None
+        if not isinstance(save_cv_model, SavedCV):
+            return None
+
         with self.get_session() as session:
             employer_orm = session.query(EmployerORM).filter_by(user_uid=user_uid).first()
             if not employer_orm:
@@ -475,13 +536,16 @@ class CompanyController(Controllers):
             return save_cv_model if is_saved else None
 
     @staticmethod
-    async def _get_user_by_uid(session, uid: str) -> User:
+    async def _get_user_by_uid(session, uid: str) -> User | None:
         """
             :param uid:
             :return:
         """
+        if not (isinstance(uid, str) and uid.strip()):
+            return None        
+
         user_orm = session.query(UserORM).filter_by(uid=uid).first()
-        return User(**user_orm.to_dict())
+        return User(**user_orm.to_dict()) if user_orm else None
 
     @error_handler
     async def initiate_employer_profile_verification(self, employer_id: str ) -> None:
@@ -499,6 +563,7 @@ class CompanyController(Controllers):
 
             if not employer.contact_email:
                 raise ValueError("Employer does not have a contact email")
+
             token = secrets.token_urlsafe(32)
             employer_orm.verification_token = token
             employer_orm.verification_token_expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
@@ -518,7 +583,7 @@ class CompanyController(Controllers):
             email = EmailModel(to_=str(employer.contact_email), subject_=_subject, html_=email_body)
             # Sending Email then obtaining a response
 
-            response = await get_service('send_mail').send_mail_resend(email=email)
+            response = await get_service('send_mail')().send_mail_resend(email=email)
 
     @error_handler
     async def mark_employer_as_verified(self, employer_id: str) -> bool:
@@ -553,8 +618,9 @@ class CompanyController(Controllers):
             await self._notify_admins(company_id, verification_id)
             return {'status': 'pending_review', 'verification_id': verification_id}
 
-        await self._reject_verification(company_id, ai_result['reason'])
-        return {'status': 'rejected', 'reason': ai_result['reason']}
+        if await self._reject_verification(company_id, ai_result['reason']):
+            return {'status': 'rejected', 'reason': ai_result['reason']}
+        return {'status': 'not-rejected', 'reason': ai_result['reason']}
     
     
     @error_handler
@@ -563,12 +629,8 @@ class CompanyController(Controllers):
         with self.get_session() as session:
             company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
             if not company_orm:
-                return {
-                    'company_id': company_id,
-                    'verification_status': 'not_found',
-                    'is_verified': False,
-                    'time_verification_process_started': None
-                }
+                return {'company_id': company_id,'verification_status': 'not_found',
+                    'is_verified': False,'time_verification_process_started': None}
             
             return {
                 'company_id': company_orm.company_id,
@@ -660,6 +722,9 @@ class CompanyController(Controllers):
         """
         Mark the company as verified in the database.
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return None
+
         with self.get_session() as session:
             company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
             if company_orm:
@@ -673,6 +738,13 @@ class CompanyController(Controllers):
         """
         Flag the verification for human review in the database.
         """
+
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return None
+
+        if not (isinstance(verification_id, str) and verification_id.strip()):
+            return None
+
         self.logger.info(f"Flagging company {company_id} verification {verification_id} for human review.")
         # Placeholder: Implement actual DB flag logic
         with self.get_session() as session:
@@ -689,6 +761,12 @@ class CompanyController(Controllers):
         """
         Notify admins that a verification needs human review.
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return None
+
+        if not (isinstance(verification_id, str) and verification_id.strip()):
+            return None
+
         self.logger.info(f"Notifying admins for company {company_id} verification {verification_id}.")
         # Placeholder: Implement actual notification logic
         with self.get_session() as session:
@@ -701,14 +779,20 @@ class CompanyController(Controllers):
                     subject = f"Company {company_profile.name.title()} verification needs human review"
                     message = f"Company {company_profile.name.title()} verification needs human review. You will be notified once the verification is complete. You can also check the verification status on the platform.   "
                     email = EmailModel(to_=str(email), subject_=subject, html_=message)
-                    await get_service('send_mail').send_mail_resend(email=email)
+                    await get_service('send_mail')().send_mail_resend(email=email)
     
     @error_handler
-    async def _reject_verification(self, company_id: str, reason: str) -> None:
+    async def _reject_verification(self, company_id: str, reason: str) -> bool:
         """
             Mark the verification as rejected in the database and log the reason.
             Reasons for Rejections will be logged into the Documents Models.
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return False
+
+        if not (isinstance(reason, str) and reason.strip()):
+            return False
+
         with self.get_session() as session:
             company_orm: CompanyORM = session.query(CompanyORM).filter_by(company_id=company_id).first()
             if company_orm:
@@ -716,26 +800,36 @@ class CompanyController(Controllers):
                 company_orm.verification_status = CompanyVerificationStatus.NOT_VERIFIED.value
                 session.commit()
                 self.logger.info(f"Company {company_id} verification rejected: {reason}")
-    
+                return True
+            return False
+
     @error_handler
-    async def get_cipc_record_by_company_id(self, company_id: str) -> Optional[CompanyCIPC]:
+    async def get_cipc_record_by_company_id(self, company_id: str) -> CompanyCIPC| None:
         """
 
         :param company_id:
         :return:
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return None
+
         with self.get_session() as session:
             cipc_orm = session.query(CompanyCIPCORM).filter_byget(company_id=company_id).first()
             return CompanyCIPC(**cipc_orm.to_dict()) if isinstance(cipc_orm, CompanyCIPCORM) else None
 
     @error_handler
-    async def update_cipc_record(self, company_id: str, cipc_recourd: CompanyCIPC):
+    async def update_cipc_record(self, company_id: str, cipc_record: CompanyCIPC) -> CompanyCIPC| None:
         """
         Update the CIPC record for a given company.
 
         For each set field in cipc_recourd, update the corresponding ORM field.
         Commit the session and return a refreshed copy of the updated record.
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return None
+        if not isinstance(cipc_record, CompanyCIPC):
+            return None
+
         with self.get_session() as session:
             cipc_orm = session.query(CompanyCIPCORM).filter_by(company_id=company_id).first()
             if not cipc_orm:
