@@ -176,9 +176,7 @@ async def search_jobs(user: User):
         'total_jobs': total_jobs,
         'filters': {
             'search_keyword': keyword
-        }
-
-    }
+        }}
 
     return render_template('jobs/search.html', **context)
 
