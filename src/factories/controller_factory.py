@@ -16,6 +16,7 @@ from src.controllers.agents import EmployerAgentsController
 from src.controllers.agents import EmployeeAgentsController
 from src.controllers.admin import AdminController
 from src.controllers.analytics import UserEngagementController
+from src.logger import init_logger
 
 class ControllerFactory:
     """Factory for creating and managing controller instances with performance optimizations"""
@@ -27,6 +28,7 @@ class ControllerFactory:
         self._lock = threading.RLock()  # Reentrant lock for thread safety
         self._access_times: Dict[str, float] = {}
         self._cache_expiry = 3600  # 1 hour in seconds
+        self.logger = init_logger(self.__class__.__name__)
 
         if app:
             self.init_app(app)
@@ -69,79 +71,69 @@ class ControllerFactory:
 
     def prewarm_controllers(self, controller_names):
         """Initialize frequently used controllers during app startup"""
+        self.logger.info(f"PRE WARMED : {getter_name}")
         for name in controller_names:
             getter_name = f'get_{name}_controller'
-            print(f"PRE WARMING : {getter_name}")
+            self.logger.info(f"Getter Name : {getter_name}")
+            
             if hasattr(self, getter_name):
                 getattr(self, getter_name)()
-                print(f"PRE WARMED : {getter_name}")
+                self.logger.info(f"PRE WARMED : {getter_name}")
+
 
     def get_jobs_search_controller(self) -> JobsSearchController:
         """Get JobsSearchController instance with thread safety"""
-
+        self.logger.info(f"Getting JobSearchController")
         return self._get_controller('jobs_search', JobsSearchController)
 
     def get_billing_controller(self) -> BillingController:
         """Get BillingController instance"""
+        self.logger.info(f"Getting BillingController")
         return self._get_controller('billing', BillingController)
 
     def get_jobs_workflow_controller(self) -> JobsWorkflowController:
         """Get JobsWorkflowController instance with thread safety"""
-
+        self.logger.info(f"Getting JobsWorkflowController")
         return self._get_controller('jobs_workflow', JobsWorkflowController)
 
     def get_resume_controller(self) -> ResumeController:
         """Get ResumeController instance with thread safety"""
-
+        self.logger.info(f"Getting ResumeController")
         return self._get_controller('resume', ResumeController)
 
     def get_company_controller(self) -> CompanyController:
         """Get CompanyController instance with dependency flexibility"""
-
-        with self._lock:
-            if 'company' not in self._controllers:
-                # Use factory references instead of concrete instances
-                controller = CompanyController(self)
-                if self.app:
-                    controller.init_app(self.app)
-                self._controllers['company'] = controller
-                self._access_times['company'] = time.time()
-            return self._controllers['company']
+        self.logger.info(f"Getting CompanyController")
+        return self._get_controller("company", CompanyController)
 
     def get_users_controller(self) -> UsersController:
         """Get UsersController instance with thread safety"""
-
+        self.logger.info(f"Getting UsersController")
         return self._get_controller('users', UsersController)
 
     def get_ats_controller(self) -> ATSToolController:
         """Get ATSToolController instance with dependency flexibility"""
-
-        with self._lock:
-            if 'ats' not in self._controllers:
-                controller = ATSToolController(self)
-                if self.app:
-                    controller.init_app(self.app)
-                self._controllers['ats'] = controller
-                self._access_times['ats'] = time.time()
-            return self._controllers['ats']
+        self.logger.info(f"Getting ATSToolController")
+        return self._get_controller('ats', ATSToolController)
 
     def get_job_seeker_profile_controller(self) -> JobSeekerProfilesController:
         """Get JobSeekerProfilesController instance"""
-
+        self.logger.info(f"Getting JobSeekerProfilesController")
         return self._get_controller('job_seeker_profile', JobSeekerProfilesController)
 
     def get_employer_agents_controller(self) -> EmployerAgentsController:
         """Get EmployerAgentsController instance"""
-
+        self.logger.info(f"Getting EmployerAgentsController")
         return self._get_controller('employer_agents', EmployerAgentsController)
 
     def get_employee_agents_controller(self) -> EmployeeAgentsController:
         """Get EmployeeAgentsController instance"""
-
+        self.logger.info(f"Getting EmployeeAgentsController")
         return self._get_controller('employee_agents', EmployeeAgentsController)
-    def get_admin_controller(self) -> 'AdminController':
-        """Get AdminController instance"""
 
+    def get_admin_controller(self) -> AdminController:
+        """Get AdminController instance"""
+        self.logger.info(f"Getting AdminController")
         return self._get_controller('admin_controller', AdminController)
 
     def get_user_engagement_controller(self) -> UserEngagementController:
@@ -149,7 +141,7 @@ class ControllerFactory:
             USer Engagement Controller
         :return:
         """
-
+        self.logger.info(f"Getting UserEngagementController")
         return self._get_controller('user_engagement', UserEngagementController)
 
 
@@ -170,7 +162,9 @@ class ControllerFactory:
                 # Create new instance
                 controller = controller_class(self)  # Pass factory for dependency access
                 if self.app:
+                    self.logger.info(f"Initializing Controller : {controller.__name__}")
                     controller.init_app(self.app)
+
             except Exception as e:
                 raise ControllerInitException(name, controller_class, "Error during instantiation", e) from e
 
@@ -191,6 +185,7 @@ class ControllerFactory:
             for name in to_delete:
                 if controller := self._controllers.pop(name, None):
                     # Clean up resources if controller supports it
+                    self.logger.info(f"Cleaning Up Resource for Controller : {name}")
                     if hasattr(controller, 'close'):
                         controller.close()
                 self._access_times.pop(name, None)
