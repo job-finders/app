@@ -42,10 +42,12 @@ class JobsSearchController(Controllers):
 
 
     @error_handler
-    async def get_all_jobs(self,
-                           page: int = 1,
-                           page_size: int = 20) -> dict:
+    async def get_all_jobs(self, page: int = 1, page_size: int = 20) -> dict:
         """Paginated list of active jobs, with featured jobs preferred"""
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and Page Size can only be integers")
+            return {}
+                    
         page = max(1, page)
         page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
 
@@ -59,28 +61,32 @@ class JobsSearchController(Controllers):
                 query.order_by(JobsORM.is_featured.desc(), JobsORM.created_at.desc())
                     .offset(offset)
                     .limit(page_size)
-                    .all()
-            )
+                    .all())
 
-            jobs = [Job(**job.to_dict()) for job in jobs_orm_list if job]
+            jobs = [Job(**job.to_dict()) for job in jobs_orm_list if job] if jobs_orm_list else []
             total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
-            return {
-                "page": page,
-                "page_size": page_size,
-                "total_jobs": total_jobs,
-                "total_pages": total_pages,
-                "jobs": jobs,
-            }
+            return 
+            {"page": page,"page_size": page_size,"total_jobs": total_jobs, "total_pages": total_pages,"jobs": jobs}
 
     @error_handler
-    async def search_jobs(self,
-                          keyword: str = '',
-                          page: int = 1,
-                          page_size: int = 25) -> dict[str, str | int | list[Job]]:
+    async def search_jobs(self,keyword: str = '', page: int = 1, page_size: int = 25) -> dict[str, str | int | list[Job]]:
+        """sumary_line
+            Search jobs by keyword in title or description with pagination.
+        Keyword arguments:
+        argument -- description
+        Return: return_description
+        """
+        if not (isinstance(keyword, str) and keyword.strip()):        
+            self.logger.error("Keyword can only be a string")
+            return {}
 
-        """Search jobs by keyword in title or description with pagination."""
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and Page Size can only be integers")
+            return {}
+
         page = max(1, page)
         page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
+
         with self.get_session() as session:
             query = session.query(JobsORM).filter(
                 JobsORM.status == JobStatusEnum.ACTIVE.value,
@@ -91,7 +97,6 @@ class JobsSearchController(Controllers):
             )
             
             total_jobs = query.count()
-
             offset = (page - 1) * page_size
 
             jobs_orm_list = (
@@ -101,34 +106,55 @@ class JobsSearchController(Controllers):
                     .all()
             )
 
-            jobs: list[Job] =  [Job(**job.to_dict()) for job in jobs_orm_list if job]
+            jobs: list[Job] =  [Job(**job.to_dict()) for job in jobs_orm_list if job] if jobs_orm_list else []
             total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
 
-            return {
-                "page": page,
-                "page_size": page_size,
-                "total_jobs": total_jobs,
-                "total_pages": total_pages,
-                "jobs": jobs}
+            return {"page": page,"page_size": page_size,"total_jobs": total_jobs,"total_pages": total_pages,"jobs": jobs}
+
 
     @error_handler
-    async def list_job_categories(self) -> list[JobCategory]:
+    async def list_job_categories(self, job_limit_per_category: int = 15) -> list[JobCategory]:
         """
-        Returns a list of job categories along with their associated jobs.
+        Returns a list of job categories along with a limited number of associated jobs per category.
         """
+        if not isinstance(job_limit_per_category, int):
+            self.logger.error("job_limit_per_category can only be a string")
+            return []
+
+        upper_limit = min(20, job_limit_per_category)
         with self.get_session() as session:
-            category_orm_list: list[JobCategoryORM] = (
-                session.query(JobCategoryORM)
-                .options(joinedload(JobCategoryORM.jobs))
-                .all()
-            )
-            return [JobCategory(**category_orm.to_dict(include_jobs=True)) for category_orm in category_orm_list]
+            category_orm_list: list[JobCategoryORM] = session.query(JobCategoryORM).all()
+
+            result = []
+            for category_orm in category_orm_list:
+                jobs = (
+                    session.query(JobORM)
+                    .filter(JobORM.category_id == category_orm.category_id)
+                    .order_by(JobORM.created_at.desc())  # assuming you want the latest jobs
+                    .limit(upper_limit)
+                    .all()
+                )
+                category_dict = category_orm.to_dict(include_jobs=False)
+                category_dict["jobs"] = [job.to_dict() for job in jobs] if jobs else []
+                result.append(JobCategory(**category_dict))
+
+            return result
 
     @error_handler
     async def search_jobs_by_category(self, category: str, page: int = 1, page_size: int = 25) -> dict:
         """Search jobs by category with pagination, filtered to active and featured preferred."""
+        
+        if not (isinstance(category, str) and category.strip()):
+            self.logger.error("This is a category name where the search is to be conducted")
+            return {}
+        
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and Page Size can only be integers")
+            return {}
+
         page = max(1, page)
         page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
+
         with self.get_session() as session:
             # Get category ORM instance (single object)
             category_orm = session.query(JobCategoryORM).filter(
@@ -165,16 +191,19 @@ class JobsSearchController(Controllers):
             )
 
             return {
-                "jobs": [Job(**job.to_dict()) for job in jobs_orm_list],
+                "jobs": [Job(**job.to_dict()) for job in jobs_orm_list] if jobs_orm_list else [],
                 "total_jobs": total_jobs,
                 "total_pages": total_pages,
                 "page": page,
-                "page_size": page_size
-            }
+                "page_size": page_size}
             
     @error_handler
     async def get_job_by_id(self, job_id: str) -> Job | None:
         """Retrieve a single active job by its ID."""
+        if not (isinstance(job_id, str) and job_id.strip()):
+            self.logger.error("Job ID can only be a string")
+            return None
+
         with self.get_session() as session:
             job_orm = session.query(JobsORM).filter(
                 JobsORM.job_id == job_id,
@@ -188,6 +217,10 @@ class JobsSearchController(Controllers):
         :param reference:
         :return:
         """
+        if not (isinstance(reference, str) and reference.strip()):
+            self.logger.error("Job Reference can only be a string")
+            return None
+
         with self.get_session() as session:
             _reference = reference.casefold()
             job_orm = session.query(JobsORM).filter_by(job_ref=_reference).first()
@@ -198,10 +231,15 @@ class JobsSearchController(Controllers):
     @error_handler    
     async def archive_job_listing(self, job_id: str) -> Job | None:
         """Archive job listing """
+        if not (isinstance(job_id, str) and job_id.strip()):
+            return None
+
         with self.get_session() as session:
             job_orm = session.get(JobsORM, job_id)
+
             if not job_orm:
                 return None
+
             # Set expiration date to yesterday
             job_orm.status = JobStatusEnum.ARCHIVED.value
             job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
@@ -212,6 +250,11 @@ class JobsSearchController(Controllers):
     @error_handler
     async def get_featured_jobs(self, page: int = 1, page_size: int = 25) -> dict:
         """Retrieve paginated featured job listings."""
+        
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and Page Size can only be Integers")
+            return {}
+
         page = max(1, page)
         page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
 
@@ -227,23 +270,26 @@ class JobsSearchController(Controllers):
 
             jobs_orm_list = query.offset((page - 1) * page_size).limit(page_size).all()
 
-            jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list]
+            jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list] if jobs_orm_list else []
 
-            return {
-                'jobs': jobs,
-                'page': page,
-                'page_size': page_size,
-                'total_pages': total_pages,
-                'total_jobs': total_jobs
-            }
+            return {'jobs': jobs,'page': page,'page_size': page_size,'total_pages': total_pages,'total_jobs': total_jobs}
 
     @error_handler
-    async def get_jobs_by_title(
-            self,
-            title: str,
-            page: int = 1,
-            page_size: int = 25,
-    ) -> dict:
+    async def get_jobs_by_title(self,title: str,page: int = 1,page_size: int = 25) -> dict:
+        """sumary_line
+        
+        Keyword arguments:
+        argument -- description
+        Return: return_description
+        """
+        if not (isinstance(title, str) and title.strip()):
+            self.logger.error("Only Job Titles are accepted")
+            return {}
+
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and Page Size can only be Integers")
+            return {}
+
         # Input validation
         page = max(1, page)
         page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
@@ -283,27 +329,35 @@ class JobsSearchController(Controllers):
             total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
 
             return {
-                "jobs": [Job(**job.to_dict()) for job in jobs],
+                "jobs": [Job(**job.to_dict()) for job in jobs] if jobs else [],
                 "total_jobs": total_jobs,
                 "page": page,
                 "page_size": page_size,
-                "total_pages": total_pages
-            }
+                "total_pages": total_pages}
 
     @error_handler
-    async def get_jobs_by_qualification(self,qualification: str,
-        qualification_types: Optional[list[str]] = None,
-        page: int = 1,
-        page_size: int = 25) -> dict:
-
-        page = max(1, page)
-        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
-
+    async def get_jobs_by_qualification(self,qualification: str, qualification_types: Optional[list[str]] = None,
+        page: int = 1, page_size: int = 25) -> dict:
+        """
+        
+        """
         if qualification_types is None:
             qualification_types = [
                 "matric", "diploma", "bachelor", "honours", "masters", "phd",
                 "certificate", "trade_certificate"
             ]
+
+        if not (isinstance(qualification, str) and qualification.strip()):
+            self.logger.error(f"Qualification can only be string and a name of any of this qualifications str(qualification_types)")
+            return {}
+
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and Page Size can only be Integers")
+            return {}
+
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
+
 
         search_pattern = f"%{qualification}%"
         with self.get_session() as session:
@@ -326,12 +380,11 @@ class JobsSearchController(Controllers):
             total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
 
             return dict(
-                jobs=[Job(**job.to_dict()) for job in jobs],
+                jobs=[Job(**job.to_dict()) for job in jobs] if jobs else [],
                 total_jobs=total_jobs,
                 page=page,
                 page_size=page_size,
-                total_pages=total_pages
-            )
+                total_pages=total_pages)
 
     @error_handler
     async def get_jobs_by_location(self, location: str, page: int = 1, page_size: int = 25) -> dict:
@@ -346,6 +399,13 @@ class JobsSearchController(Controllers):
         Returns:
             dict: Paginated search results including jobs list, total count, and pagination metadata.
         """
+        if not (isinstance(location, str) and location.strip()):
+            self.logger.error("Location can only a string a name of Town, City, or Province")
+            return {}
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and page size can only be integers")
+            return {}
+
         page = max(1, page)
         page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
 
@@ -373,12 +433,11 @@ class JobsSearchController(Controllers):
             )
 
             return {
-                'jobs': [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list],
+                'jobs': [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm] if jobs_orm_list else [],
                 'page': page,
                 'page_size': page_size,
                 'total_jobs': total_jobs,
-                'total_pages': total_pages
-            }
+                'total_pages': total_pages}
 
     @error_handler
     async def search_by_type(self, job_type: str, page: int = 1, page_size: int = 25) -> dict:
@@ -393,6 +452,14 @@ class JobsSearchController(Controllers):
         Returns:
             dict: Paginated results with jobs list and metadata.
         """
+        if not (isinstance(job_type, str) and job_type.strip()):
+            self.logger.error("job_type needs to be a string")
+            return {}
+
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and Page Size can only be Integers")
+            return {}
+            
         page = max(1, page)
         page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
 
@@ -405,7 +472,7 @@ class JobsSearchController(Controllers):
             total_jobs = query.count()
             jobs_orm_list = query.offset((page - 1) * page_size).limit(page_size).all()
             total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
-            jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm]
+            jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm] if jobs_orm_list else []
 
             return {
                 "jobs": jobs,
@@ -428,6 +495,10 @@ class JobsSearchController(Controllers):
         Returns:
             dict: Paginated search results containing jobs and metadata.
         """
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and Page Size can only be Integers")
+            return {}
+
         page = max(1, page)
         page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
 
@@ -441,19 +512,14 @@ class JobsSearchController(Controllers):
 
             jobs_orm_list = query.offset((page - 1) * page_size).limit(page_size).all()
 
-            jobs = [
-                Job(**job_orm.to_dict())
-                for job_orm in jobs_orm_list
-                if job_orm and job_orm.is_active
-            ]
+            jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm and job_orm.is_active] if jobs_orm_list else []
 
             return {
                 'jobs': jobs,
                 'page': page,
                 'page_size': page_size,
                 'total_pages': total_pages,
-                'total_jobs': total_jobs
-            }
+                'total_jobs': total_jobs}
 
 
     @error_handler
@@ -475,6 +541,18 @@ class JobsSearchController(Controllers):
             dict: Paginated job results matching salary filter.
         """
         # Convert monthly input to yearly if needed
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and Page Size can only be Integers")
+            return {}
+        if not (isinstance(unit, str) and unit.strip()):
+            self.logger.error("Unit can only be one of two strings : (yearly, monthly)")
+            return {}
+        if unit.casefold() not in ['yearly', 'monthly']:
+            self.logger.error("Unit needs to be either (yearly, monthly)")
+            return {}
+        
+        # There is still a possibility that min_salary or max_salary is not int or even None. but something else.
+
         page = max(1, page)
         page_size = max(1, min(page_size, 100))  # Enforce reasonable limits
 
@@ -499,7 +577,7 @@ class JobsSearchController(Controllers):
                                 .offset((page - 1) * page_size) \
                                 .limit(page_size).all()
 
-            jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm and job_orm.is_active]
+            jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm and job_orm.is_active] if jobs_orm_list else []
 
             return {
                 'jobs': jobs,
@@ -514,21 +592,29 @@ class JobsSearchController(Controllers):
 
 
     @error_handler
-    async def get_active_jobs(self) -> list[Job]:
+    async def get_active_jobs(self, limit: int = 100) -> list[Job]:
         """Get currently active jobs that haven't expired and are marked as active"""
+        
+        if not isinstance(limit, int):
+            self.logger.error("Limit needs to be an integer")
+            return []
+
+        upper_limit = min(limit, 1000)  # Enforce reasonable limits        
         with self.get_session() as session:
             current_time = datetime.now(timezone.utc)
-            jobs_orm_list = (session.query(JobsORM)
-                             .filter(JobsORM.is_active, JobsORM.expires_at >= current_time)
-                .order_by(JobsORM.posted_at.desc())
-                             .all())
+            jobs_orm_list = (session.query(JobsORM).filter(JobsORM.is_active, JobsORM.expires_at >= current_time)
+                .order_by(JobsORM.posted_at.desc()).limit(upper_limit).all())
 
             return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list
-                    if job_orm and job_orm.is_active]
+                    if job_orm and job_orm.is_active] if jobs_orm_list else []
 
     @error_handler
     async def get_saved_jobs_for_user(self, user_id: str) -> list[Job]:
         """Get jobs saved by a user with saving metadata"""
+        if not (isinstance(user_id, str) and user_id.strip()):
+            self.logger.error("Invalid User ID")
+            return []
+
         with self.get_session() as session:
             # All operations here are synchronous, no 'await'
             saved_jobs_orm_list = (
@@ -541,25 +627,38 @@ class JobsSearchController(Controllers):
             return [
                 Job(**saved_job.job.to_dict(include_relationships=True))
                 for saved_job in saved_jobs_orm_list
-                if saved_job.job  # Handle potential orphaned entries
-            ]
+                if saved_job.job ] if saved_jobs_orm_list else []
 
     @error_handler
     async def get_applied_jobs_for_user(self, user_id: str) -> list[JobApplication]:
         """Get job applications with full job details for a user"""
+
+        if not (isinstance(user_id, str) and user_id.strip()):
+            self.logger.error("Invalid User ID")
+            return {}
+
         with self.get_session() as session:
             job_applications_orm_list = (
                 session.query(JobApplicationORM).filter_by(user_id=user_id)
                 .options(joinedload(JobApplicationORM.job))  # Eager load job details
                 .order_by(JobApplicationORM.applied_date.desc()).all())
-
+            
+            # Ensure the associated job still exists
             return [
                 JobApplication(**app.to_dict(include_relationships=True))
-                for app in job_applications_orm_list if app.job]  # Ensure the associated job still exists
+                for app in job_applications_orm_list if app.job] if job_applications_orm_list else []  
 
     @error_handler
     async def get_jobs_by_employer(self, employer_id: str, limit: int = 100) -> list[Job]:
         """Get jobs posted by a specific employer (company)"""
+        if not (isinstance(employer_id, str) and employer_id.strip()):
+            self.logger.error("Invalid Employer ID")
+            return []
+        if not isinstance(limit, int):
+            self.logger.error("Invalid Limit")
+            return []
+
+        upper_limit = min(limit, 1000)  # Enforce reasonable limits        
         with self.get_session() as session:
             # Step 1: Get the company ID associated with this employer
             employer_orm = session.query(EmployerORM).filter(EmployerORM.employer_id == employer_id).first()
@@ -570,114 +669,15 @@ class JobsSearchController(Controllers):
             company_id = employer_orm.company_id
 
             # Step 2: Get jobs for this company
-            jobs_query = (
+            jobs_orm_list = (
                 session.query(JobsORM)
                 .filter(JobsORM.company_id == company_id)
                 .options(joinedload(JobsORM.company))  # Eager load company data
                 .order_by(JobsORM.posted_at.desc())
-                .limit(min(limit, 1000))
-            )
+                .limit(upper_limit).all())
 
-            jobs = jobs_query.all()
-            return [Job(**job.to_dict()) for job in jobs]
-
-    # @error_handler
-    # async def get_personalized_job_recommendations(self, user_id: str) -> list[Job]:
-    #     """
-    #     Generate personalized job recommendations for a jobseeker.
-    #
-    #     The recommendation engine considers various aspects of the user's profile,
-    #     including job title preferences, industries of interest, location preferences,
-    #     remote work preferences, relevant skills from their primary CV, and salary expectations.
-    #     It excludes jobs the user has already applied for and prioritizes active, non-expired jobs.
-    #
-    #     Args:
-    #         user_id (str): Unique identifier of the jobseeker.
-    #
-    #     Returns:
-    #         list[Job]: A list of recommended job postings, ordered by relevance.
-    #     """
-    #
-    #     with self.get_session() as session:
-    #         # Get user profile and CV data
-    #         profile_orm: JobSeekerProfileORM = session.query(JobSeekerProfileORM).get(user_id)
-    #         cv_orm: JobSeekerCVORM = session.query(JobSeekerCVORM).filter_by(user_uid=user_id, is_primary=True).first()
-    #
-    #         profile = JobSeekerProfile(**profile_orm.to_dict())
-    #         cv = JobSeekerCV(**cv_orm.to_dict())
-    #
-    #         if not profile or not cv:
-    #             return []
-    #
-    #         # Base query with common filters
-    #         query = session.query(JobsORM).filter(
-    #             JobsORM.status == JobStatusEnum.ACTIVE.value,
-    #             JobsORM.expires_at > datetime.now(timezone.utc)
-    #         )
-    #         applied_jobs_orm_list = session.query(JobApplicationORM).filter_by(user_id=user_id).all()
-    #         applied_jobs_list = [JobApplication(**applied_job_orm.to_dict()) for applied_job_orm in  applied_jobs_orm_list if applied_job_orm]
-    #         # Exclude already applied jobs
-    #         applied_job_ids = [applied_job.job_id for applied_job in applied_jobs_list]
-    #         if applied_job_ids:
-    #             query = query.filter(JobsORM.job_id.notin_(applied_job_ids))
-    #
-    #         # Job Title Preferences
-    #         if profile.job_titles_of_interest:
-    #             title_conds = [JobsORM.title.ilike(f"%{title}%") for title in profile.job_titles_of_interest]
-    #             query = query.filter(or_(*title_conds))
-    #
-    #         # Industry Preferences
-    #         if profile.industries_of_interest:
-    #             query = query.filter(JobsORM.category.op('&&')(profile.industries_of_interest))
-    #
-    #         # Location Preferences
-    #         location_conds = []
-    #         if profile.location:
-    #             location_conds.extend([
-    #                 JobsORM.city.ilike(f"%{profile.location}%"),
-    #                 JobsORM.province.ilike(f"%{profile.location}%")
-    #             ])
-    #         if profile.locations_of_interest:
-    #             for loc in profile.locations_of_interest:
-    #                 location_conds.extend([
-    #                     JobsORM.city.ilike(f"%{loc}%"),
-    #                     JobsORM.province.ilike(f"%{loc}%")
-    #                 ])
-    #         if location_conds:
-    #             query = query.filter(or_(*location_conds))
-    #
-    #         # Remote Preference
-    #         if profile.remote_preference:
-    #             query = query.filter(JobsORM.remote_policy.in_(["REMOTE", "HYBRID"]))
-    #
-    #         # Skills Matching (from CV)
-    #         if cv.skills:
-    #             skill_conds = [
-    #                 cond
-    #                 for skill in cv.skills
-    #                 for cond in [
-    #                     JobsORM.required_skills.contains([skill]),
-    #                     JobsORM.preferred_skills.contains([skill])
-    #                 ]
-    #             ]
-    #
-    #             query = query.filter(or_(*skill_conds))
-    #
-    #         # Salary Expectations (from CV if available)
-    #         if profile.expected_salary:
-    #             query = query.filter(
-    #                 JobsORM.salary_min >= profile.expected_salary * 0.7,
-    #                 JobsORM.salary_max <= profile.expected_salary * 1.3
-    #             )
-    #
-    #         # Order by relevance factors
-    #         results = query.order_by(
-    #             JobsORM.posted_at.desc(),
-    #             JobsORM.is_featured.desc(),
-    #             JobsORM.application_count.desc()
-    #         ).limit(100).all()
-    #
-    #         return [Job(**job.to_dict()) for job in results]
+            
+            return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm] if jobs_orm_list else [] 
 
     @error_handler
     async def calculate_job_match_score(self, job_id: str, user_id: str) -> dict:
@@ -699,6 +699,14 @@ class JobsSearchController(Controllers):
                 - 'interpretation': Human-readable feedback based on the total score.
                 - 'recommended_improvements': Suggestions to increase future match scores.
         """
+
+        if not(isinstance(job_id, str) and job_id.strip()):
+            self.logger.error("Invalid Job ID")
+            return {}
+
+        if not (isinstance(user_id, str) and user_id.strip()):
+            self.logger.error("Invalid Job ID")
+            return {}
 
         with self.get_session() as session:
 
@@ -737,7 +745,15 @@ class JobsSearchController(Controllers):
             user_exp = cv.experience[-1].level if cv.experience else 'entry'
             user_exp_idx = exp_levels.index(user_exp.lower())
             job_exp_idx = exp_levels.index(job.experience_level.lower())
-            scores['experience'] = 100 if user_exp_idx >= job_exp_idx else round((user_exp_idx / job_exp_idx) * 100)
+            # scores['experience'] = 100 if user_exp_idx >= job_exp_idx else round((user_exp_idx / job_exp_idx) * 100)
+            # Helps prevent divide by zero errors
+            def experience_score(user_exp, job_exp):
+                if job_exp == 0:
+                    return 100 if user_exp > 0 else 0
+                return 100 if user_exp >= job_exp else round((user_exp / job_exp) * 100)
+
+            scores['experience'] = experience_score(user_exp_idx, job_exp_idx)
+
 
             # Education Match (15% weight)
             if cv.education and job.education_requirements:
@@ -838,6 +854,17 @@ class JobsSearchController(Controllers):
 
     @error_handler
     async def get_similar_jobs(self, job_id: str, limit: int = 12) -> list[Job]:
+        
+        # reasonable not to expect more than 100 similar jobs
+        if not (isinstance(job_id, str) and job_id.strip()):
+            self.logger.error("Invalid User ID")
+            return []
+        if not isinstance(limit, int):
+            self.logger.error("Limit needs to be an Integer")
+            return []
+        
+        upper_limit = min(limit, 100)
+
         with self.get_session() as session:
             # Eager load category and skills
             target_job = session.query(JobsORM).options(
@@ -908,11 +935,10 @@ class JobsSearchController(Controllers):
 
             similar_jobs = (
                 base_query.order_by(*order_criteria)
-                .limit(limit)
-                .all()
-            )
+                .limit(upper_limit)
+                .all())
 
-            return [Job(**job.to_dict()) for job in similar_jobs]
+            return [Job(**job_orm.to_dict()) for job_orm in similar_jobs if job_orm] if similar_jobs else []
 
     @error_handler
     async def get_job_by_slug(self, slug: str) -> Optional[Job]:
@@ -925,6 +951,10 @@ class JobsSearchController(Controllers):
         Returns:
             A Job Pydantic model instance or None if not found.
         """
+        if not (isinstance(slug, str) and slug.strip()):
+            self.logger.error("Invalid slug")
+            return None
+
         with self.get_session() as session:
             try:
                 stmt = select(JobsORM).where(JobsORM.slug == slug)
@@ -990,6 +1020,9 @@ class JobsSearchController(Controllers):
         - The method applies defensive defaults for missing or incomplete filters.
         - Job results are ordered by featured status, date posted, and application volume.
         """
+        if not filters:
+            self.logger.error("Filters not supplied")
+            return None
 
         with self.get_session() as session:
             profile = session.query(JobSeekerProfileORM).get(filters.get('user_id'))
@@ -1089,8 +1122,10 @@ class JobsSearchController(Controllers):
                 JobsORM.posted_at.desc(),
                 JobsORM.application_count.desc()
             )
+            
+            # This will return at most 100 jobs 
             if filters.get('limit'):
-                query = query.limit(min(filters['limit'], 1000))
+                query = query.limit(min(filters['limit'], 100))
             return [Job(**job.to_dict()) for job in query.all()]
 
     @error_handler
@@ -1106,8 +1141,19 @@ class JobsSearchController(Controllers):
         Returns:
             dict: Paginated job results.
         """
-        company_name = company_slug.replace('-', ' ').strip().lower()
+        if not (isinstance(company_slug, str) and company_slug.strip()):
+            self.logger.error("Invalid Company Slug")
+            return {}
+        if not (isinstance(page, int) and isinstance(page_size, int)):
+            self.logger.error("Page Number and Page_size needs be intergers")
+            return {}
 
+        # Enforce reasonable limits
+        page = max(1, page)
+        page_size = max(1, min(page_size, 100))  
+
+        company_name = company_slug.replace('-', ' ').strip().lower()
+        
         with self.get_session() as session:
             query = session.query(JobsORM).filter(
                 JobsORM.status == JobStatusEnum.ACTIVE.value,
@@ -1115,6 +1161,7 @@ class JobsSearchController(Controllers):
             )
 
             total_jobs = query.count()
+            # preventing divide by zero.
             total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
 
 

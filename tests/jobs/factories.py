@@ -202,3 +202,53 @@ def create_job_with_ref(session, job_ref, title="Sample Job", status="active"):
     session.add(job)
     session.commit()
     return job
+
+
+
+
+import uuid
+from datetime import datetime, timezone
+from app.models import CompanyORM  # Update import path as needed
+
+
+def create_company(session, **overrides) -> CompanyORM:
+    """Factory to create and persist a test CompanyORM with optional field overrides."""
+
+    defaults = {
+        "company_id": str(uuid.uuid4()),
+        "name": f"TestCorp-{uuid.uuid4().hex[:6]}",
+        "description": "A leading company in tech.",
+        "industry": "Technology",
+        "website": "https://example.com",
+        "logo_url": "https://example.com/logo.png",
+        "city": "San Francisco",
+        "province": "California",
+        "country": "USA",
+        "contact_email": "contact@example.com",
+        "phone_number": "+1-555-123-4567",
+        "billing_email": None,
+        "send_invoice_emails": True,
+        "send_trial_reminders": True,
+        "employee_count": 150,
+        "founded_year": 2010,
+        "tech_stack": ["Python", "React", "AWS"],
+        "linkedin_url": "https://linkedin.com/company/example",
+        "twitter_handle": "@example",
+        "is_verified": True,
+        "time_verification_process_started": datetime.now(timezone.utc),
+        "verification_status": "approved",
+        "ip_address": "127.0.0.1",
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+    }
+
+    data = {**defaults, **overrides}
+
+    company = CompanyORM(**data)
+
+    session.add(company)
+    session.commit()
+    session.refresh(company)
+
+    return company
+

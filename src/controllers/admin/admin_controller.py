@@ -725,8 +725,7 @@ class AdminController(Controllers):
             with self.get_session() as session:
                 cutoff = datetime.now(timezone.utc) - timedelta(days=30)
                 deleted = session.query(JobApprovalRequestORM).filter(
-                    JobApprovalRequestORM.requested_at < cutoff
-                ).delete()
+                    JobApprovalRequestORM.requested_at < cutoff).delete()
                 session.commit()
                 return AdminActionResult(success=True, message=f"Cleaned up {deleted} old approvals", data={"deleted_count": deleted})
         except Exception as e:
