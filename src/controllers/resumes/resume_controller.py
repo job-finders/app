@@ -1,18 +1,17 @@
 import uuid
 from datetime import datetime, timedelta, timezone
-from flask import Flask, url_for
+
+from flask import url_for
 from sqlalchemy.orm import joinedload
 
-from src.database.sql.users import UserORM
-
-from src.emailer import EmailModel, settings
+from src.controllers.controller import Controllers, error_handler
+from src.database.models.resume import (JobSeekerCV, SavedCV)
 from src.database.sql.resume import (JobSeekerCVORM, ExperienceORM, EducationORM, CertificationORM, LanguageORM,
                                      ProjectORM, PublicationORM, AwardORM, CustomSectionORM, SavedCVORM)
-from src.database.models.resume import (Experience, Education, Certification, Language, Publication, Project,
-                                        Award, CustomSection, JobSeekerCV, SavedCV)
-from src.controllers.controller import Controllers, error_handler
-
+from src.database.sql.users import UserORM
+from src.emailer import EmailModel, settings
 from src.utils.route_helpers import get_service
+
 
 class ResumeController(Controllers):
     def __init__(self, factory):
@@ -23,17 +22,15 @@ class ResumeController(Controllers):
 
     @error_handler
     async def create_cv(self, user_uid: str, data: JobSeekerCV) -> dict:
-        # Create a new resume with related entries (experience, education, etc.)
+        # Create a new Resume with related entries (experience, education, etc.)
         if not(isinstance(user_uid, str) and user_uid.strip()):
             return {}
-
         if not isinstance(data, JobSeekerCV):
             return {}
             
         with self.get_session() as session:
             cv_id = str(uuid.uuid4())
-
-            # Excluding - all items whcih will be saved later through save related items.            
+            # Excluding - all items which will be saved later through save related items.
             _excluded_items = {'experience', 'education', 'certifications',
             'languages', 'projects', 'publications', 'awards', 'custom_sections'}
             cv = JobSeekerCVORM(**data.model_dump(exclude=_excluded_items))
@@ -74,7 +71,6 @@ class ResumeController(Controllers):
     @error_handler
     async def get_cv_by_id(self, cv_id: str) -> JobSeekerCV | None:
         """return cv / resume with all its related fields"""
-        
         if not(isinstance(cv_id, str) and cv_id.strip()):
             return None
 
@@ -153,7 +149,7 @@ class ResumeController(Controllers):
     @error_handler
     async def list_cvs_for_user(self, user_uid: str) -> list[JobSeekerCV]:
         # Get all resumes for a specific job seeker
-        if not(isinstance(user_id, str) and user_id.strip()):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
             return []
 
         with self.get_session() as session:
@@ -172,6 +168,7 @@ class ResumeController(Controllers):
 
             return result
 
+    # noinspection DuplicatedCode
     @error_handler
     async def delete_cv(self, cv_id: str) -> bool:
         # Delete a specific CV and its related entries
@@ -232,13 +229,12 @@ class ResumeController(Controllers):
             return result
 
     @error_handler
-    async def notify_admin_of_new_cv(self, user_email: str, cv_id: str):
+    async def notify_admin_of_new_cv(self, user_email: str, cv_id: str) -> bool:
         # Notify admin via email when a new resume is submitted
         if not(isinstance(user_email, str) and user_email.strip()):
-            return None
-
+            return False
         if not(isinstance(cv_id, str) and cv_id.strip()):
-            return None
+            return False
 
         with self.get_session() as session:
             # Fetch the CV and user details
@@ -304,9 +300,7 @@ class ResumeController(Controllers):
         if not isinstance(data, JobSeekerCV):
             return False
 
-
         with self.get_session() as session:
-            
             existing_cv = session.query(JobSeekerCVORM).filter_by(cv_id=cv_id).first()
             if not existing_cv:
                 return False
@@ -331,6 +325,7 @@ class ResumeController(Controllers):
                 session.query(orm_class).filter_by(cv_id=cv_id).delete()
 
             # Add updated related entries
+            # noinspection DuplicatedCode
             for exp in data.experience:
                 session.add(ExperienceORM(cv_id=cv_id, **exp.model_dump()))
             for edu in data.education:
@@ -366,18 +361,16 @@ class ResumeController(Controllers):
             return []
 
         with self.get_session() as session:
-            query = session.query(JobSeekerCVORM).filter(
-                JobSeekerCVORM.skills.ilike(f"%{skill}%")
-            )
+            query = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.skills.ilike(f"%{skill}%").limit(100).all())
             return [JobSeekerCV(**cv.to_dict()) for cv in query.all()]
 
     @error_handler
     async def get_cvs_by_location(self, location: str) -> list[JobSeekerCV]:
         """
-        Retrieve CVs where the job seeker is located in a specific city or region.
+            Retrieve CVs where the job seeker is located in a specific city or region.
 
-        This method filters JobSeekerCV records using a case-insensitive partial match
-        on the `location` field. Useful for employers or admins looking for local candidates.
+            This method filters JobSeekerCV records using a case-insensitive partial match
+            on the `location` field. Useful for employers or admins looking for local candidates.
 
         :param location: The city, province, or region to filter CVs by.
         :return: A list of JobSeekerCV Pydantic models whose location matches the input.
@@ -388,8 +381,7 @@ class ResumeController(Controllers):
         with self.get_session() as session:
             query = session.query(JobSeekerCVORM).filter(
                 JobSeekerCVORM.location.ilike(f"%{location}%")
-            ).limit(1000).all()
-
+            ).limit(100).all()
             return [JobSeekerCV(**cv.to_dict()) for cv in query.all()]
 
     @error_handler
@@ -406,13 +398,10 @@ class ResumeController(Controllers):
         """
         if not isinstance(limit, int):
             return []
+        upper_limit = min(100, max(1, limit))
 
         with self.get_session() as session:
-            query = (
-                session.query(JobSeekerCVORM)
-                .order_by(JobSeekerCVORM.created_at.desc())
-                .limit(limit))
-
+            query = (session.query(JobSeekerCVORM).order_by(JobSeekerCVORM.created_at.desc()).limit(upper_limit).all())
             resume_orm_list = query.all()
             return [JobSeekerCV(**resume_orm.to_dict()) for resume_orm in resume_orm_list] if resume_orm_list else []
 
@@ -513,7 +502,7 @@ class ResumeController(Controllers):
         :return: A list of JobSeekerCV Pydantic models representing the saved CVs.
         """
         if not(isinstance(employer_id, str) and employer_id.strip()):
-            return False
+            return []
 
         with self.get_session() as session:
             # Get the saved CV records for the employer
@@ -555,12 +544,8 @@ class ResumeController(Controllers):
 
             # You can also add other stats like the number of CVs in each category or skill, etc.
 
-            return {
-                "total_cvs": total_cvs,
-                "flagged_cvs": flagged_cvs,
-                "verified_cvs": verified_cvs,
-                "recent_cvs": recent_cvs
-            }
+            return {"total_cvs": total_cvs, "flagged_cvs": flagged_cvs,
+                    "verified_cvs": verified_cvs, "recent_cvs": recent_cvs}
 
     @error_handler
     async def get_cvs_by_certification(self, cert_name: str) -> list[JobSeekerCV]:
@@ -573,18 +558,16 @@ class ResumeController(Controllers):
         :return: A list of JobSeekerCV Pydantic models representing the CVs with the given certification.
         """
         if not(isinstance(cert_name, str) and cert_name.strip()):
-            return False
+            return []
 
         with self.get_session() as session:
             # Find the certifications matching the provided cert_name
-            certifications = session.query(CertificationORM).filter(CertificationORM.name == cert_name).all()
-
+            cert_list = session.query(CertificationORM).filter(CertificationORM.name == cert_name).limit(100).all()
             # Get the unique CV IDs associated with the matching certifications
-            cv_ids = [certification.cv_id for certification in certifications]
-
+            cv_ids = [cert.cv_id for cert in cert_list] if cert_list else []
             # Return the full CV details for each CV ID
+            return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids] if cv_ids else []
 
-            return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids]
 
     @error_handler
     async def get_cvs_by_language(self, language: str) -> list[JobSeekerCV]:
@@ -597,18 +580,16 @@ class ResumeController(Controllers):
         :return: A list of JobSeekerCV Pydantic models representing the CVs that include the given language.
         """
         if not(isinstance(language, str) and language.strip()):
-            return False
+            return []
 
         with self.get_session() as session:
             # Find the languages matching the provided language
             language = language.strip()
             languages_orm = session.query(LanguageORM).filter(LanguageORM.name.casefold() == language.casefold()).all()
-
             # Get the unique CV IDs associated with the matching languages
             cv_ids = [lang.cv_id for lang in languages_orm if lang] if languages_orm else []
-
             # Return the full CV details for each CV ID
-            return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids]
+            return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids] if cv_ids else []
 
     @error_handler
     async def get_resume_versions(self, cv_id: int):

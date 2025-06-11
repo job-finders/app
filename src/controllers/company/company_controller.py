@@ -113,14 +113,12 @@ class CompanyController(Controllers):
             employer_orm = session.query(EmployerORM).filter_by(user_uid=uid).first()
             if not employer_orm:
                 self.logger.info(f"Unable to locate Employer ORM Model for UID : {uid}")
-
                 return None
 
             company_id = employer_orm.company_id
             company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
-            if not company_orm:
-                return None
-            return Company(**company_orm.to_dict())
+
+            return Company(**company_orm.to_dict()) if company_orm else None
 
 
     @error_handler
@@ -192,14 +190,15 @@ class CompanyController(Controllers):
         :return:
         """
         if not (isinstance(company_id, str) and company_id.strip()):
-            return None
+            return []
 
         with self.get_session() as session:
             employer_orm_list = session.query(EmployerORM).filter_by(company_id==company_id).all()
-            return [Employer(**employer_orm.to_dict()) for employer_orm in employer_orm_list if employer_orm]
+            return [Employer(**employer_orm.to_dict()) for employer_orm in employer_orm_list
+                    if employer_orm] if employer_orm_list else []
 
     @error_handler
-    async def get_company_by_name(self, name: str) -> Company:
+    async def get_company_by_name(self, name: str) -> Company | None:
         """
         Return a company with the exact name (case-insensitive)
         :param name: Exact name of the company to retrieve
@@ -217,11 +216,7 @@ class CompanyController(Controllers):
                 .filter(func.lower(CompanyORM.name) == func.lower(name))
                 .first()
             )
-
-            if not company_orm:
-                raise ValueError(f"No company found with name '{name}'")
-
-            return Company(**company_orm.to_dict(include_relationships=True))
+            return Company(**company_orm.to_dict(include_relationships=True)) if company_orm else None
 
     @error_handler
     async def search_companies_by_name(self, name: str) -> list[Company]:
@@ -231,7 +226,7 @@ class CompanyController(Controllers):
         :return: List of matching Company objects
         """
         if not (isinstance(name, str) and name.strip()):
-            return None
+            return []
 
         with self.get_session() as session:
             companies_orm: list[CompanyORM] = (
@@ -240,22 +235,16 @@ class CompanyController(Controllers):
                 .filter(func.lower(CompanyORM.name).contains(func.lower(name)))
                 .all()
             )
-
-            if not companies_orm:
-                raise ValueError(f"No companies found matching '{name}'")
-
-            return [Company(**c.to_dict()) for c in companies_orm]
+            return [Company(**company_orm.to_dict()) for company_orm in companies_orm
+                    if company_orm] if companies_orm else []
 
     @error_handler
     async def _get_employer(self, employer_id: str, session) -> EmployerORM| None:
-
+        """will return the EmployerORM Model"""
         if not (isinstance(employer_id, str) and employer_id.strip()):
             return None
-
         employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
-        if isinstance(employer_orm, EmployerORM):
-            return employer_orm
-        raise ValueError("Employer does not exist")
+        return employer_orm if isinstance(employer_orm, EmployerORM) else None
 
     @error_handler
     async def get_employer_by_uid(self, user_id: str) -> Employer | None:
@@ -265,16 +254,13 @@ class CompanyController(Controllers):
         """
         if not (isinstance(user_id, str) and user_id.strip()):
             return None
-
         with self.get_session() as session:
             self.logger.info(f"Inside get_employer by uid : {user_id}")
             employer_orm = session.query(EmployerORM).filter_by(user_uid=user_id).first()
             if not employer_orm:
                 self.logger.info(f"Employer Record Not found : ")
                 return None
-
             self.logger.info(f"Found Employer Record : {employer_orm.to_dict(include_relationships=True)}")
-
             return Employer(**employer_orm.to_dict(include_relationships=True))
 
 
@@ -286,21 +272,18 @@ class CompanyController(Controllers):
         """
         if not (isinstance(employer_id, str) and employer_id.strip()):
             return None
-        
         with self.get_session() as session:
             employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_id).first()
-            if not employer_orm:
-                return None
-            return Employer(**employer_orm.to_dict())
+            return Employer(**employer_orm.to_dict()) if employer_orm else None
 
 
     @error_handler
     async def get_company_jobs(self, company_id: str, status: Optional[JobStatusEnum] = None) -> List[Job]:
         """Retrieve company jobs with optional status filtering"""
         if not (isinstance(company_id, str) and company_id.strip()):
-            return None
+            return []
         if not (isinstance(status, str) and status.strip()):
-            return None
+            return []
 
         with self.get_session() as session:
             # Get company with jobs relationship
@@ -315,7 +298,7 @@ class CompanyController(Controllers):
             # Apply status filter if provided
             jobs = company.jobs
             if status:
-                jobs = [job for job in jobs if job.status.casefold() == status.value.casefold()] 
+                jobs = [job for job in jobs if job.status.casefold() == status.value.casefold()]
             return [Job(**job.to_dict()) for job in jobs] if jobs else []
 
 
@@ -328,52 +311,40 @@ class CompanyController(Controllers):
         """
         if not (isinstance(company_id, str) and company_id.strip()):
             return []
-
         with self.get_session() as session:
             employers_orm = (
                 session.query(EmployerORM)
                 .filter_by(company_id=company_id)
                 .all()
             )
-
-            if not employers_orm:
-                return []
-
             return [Employer(**employer.to_dict()) for employer in employers_orm] if employers_orm else []
 
 
     @error_handler
-    async def get_application_analytics(self, company_id: str) -> JobApplicationDashboard:
+    async def get_application_analytics(self, company_id: str) -> JobApplicationDashboard | None:
         """Get hiring metrics using JobsController's analytics engine
         Combines company-specific filtering with core analytics logic
         """
         if not (isinstance(company_id, str) and company_id.strip()):
             return None
-
         return await self.jobs_workflow_controller.get_company_analytics_dashboard(company_id=company_id)
 
     @error_handler
-    async def generate_talent_pool_report(self, company_id: str) -> TalentPoolReport:
+    async def generate_talent_pool_report(self, company_id: str) -> TalentPoolReport | None:
         """
-
         :param company_id:
         :return:
         """
         if not (isinstance(company_id, str) and company_id.strip()):
             return None
-
         return await self.jobs_workflow_controller.generate_talent_pool_report(company_id=company_id)
 
     @error_handler
-    async def update_employer_profile(self, employer_profile: Employer) -> Employer:
+    async def update_employer_profile(self, employer_profile: Employer) -> Employer | None:
         with self.get_session() as session:
             self.logger.info("Inside Update Employer Profile")
-
             # Get existing employer ORM
-            employer_orm = session.query(EmployerORM).filter_by(
-                employer_id=employer_profile.employer_id
-            ).first()
-
+            employer_orm = session.query(EmployerORM).filter_by(employer_id=employer_profile.employer_id).first()
             if not employer_orm:
                 return None
 
@@ -397,34 +368,27 @@ class CompanyController(Controllers):
             # Handle company relationship separately if needed
             if employer_profile.company_id and employer_profile.company_id != employer_orm.company_id:
                 # Verify new company exists
-                new_company = session.query(CompanyORM).filter_by(
-                    company_id=employer_profile.company_id
-                ).first()
-
+                new_company = session.query(CompanyORM).filter_by(company_id=employer_profile.company_id).first()
                 if new_company:
                     employer_orm.company = new_company
 
             session.commit()
             session.refresh(employer_orm)
-
             # Return updated employer with relationships
-            return Employer.model_validate(employer_orm)
+            return Employer(**employer_orm.to_dict())
 
     @error_handler
-    async def update_company(self, company_id: str, update_data: CompanyUpdate) -> Optional[Company]:
-
+    async def update_company(self, company_id: str, update_data: CompanyUpdate) -> Company | None:
+        """Update Company"""
         if not (isinstance(company_id, str) and company_id.strip()):
             return None
-
         if not isinstance(update_data, CompanyUpdate):
             return None
-
         with self.get_session() as session:
             # Get existing company
             company_orm = session.query(CompanyORM).filter_by(company_id=company_id).first()
             if not company_orm:
-                raise ValueError("Company not found")
-
+                return None
 
             if not update_data.ip_address:
                 # Updating IP Address
@@ -464,7 +428,6 @@ class CompanyController(Controllers):
             return None
 
         with self.get_session() as session:
-
             employer_orm = session.query(EmployerORM).filter_by(user_uid=user_uid).first()
             if not employer_orm:
                 return None
@@ -476,7 +439,6 @@ class CompanyController(Controllers):
                 return None
 
             company_profile = Company(**company_orm.to_dict())
-
             if not (_employer_profile.is_valid and _employer_profile.is_verified):
                 return None
 
@@ -496,18 +458,16 @@ class CompanyController(Controllers):
         :return:
         """
         if not (isinstance(user_uid, str) and user_uid.strip()):
-            return None
+            return []
 
         with self.get_session() as session:
             employer_profile_orm = session.query(EmployerORM).filter_by(user_uid=user_uid).first()
-
             if not employer_profile_orm:
                 return []
 
             employer_details: Employer = Employer(**employer_profile_orm.to_dict())
             if not (employer_details.is_valid and employer_details.is_verified):
                 return []
-
             return await self.resume_controller.employer_saved_cvs(employer_id=employer_details.employer_id)
 
     @error_handler
@@ -607,7 +567,7 @@ class CompanyController(Controllers):
         )
 
         # Run initial AI screening
-        ai_result = await self._analyze_documents_with_ai(document_paths)
+        ai_result = await self._analyze_documents_with_ai(company_id=company_id)
 
         if ai_result['is_valid']:
             await self._mark_company_verified(company_id)
@@ -735,16 +695,16 @@ class CompanyController(Controllers):
             return None
     
     @error_handler
-    async def _flag_for_human_review(self, company_id: str, verification_id: str) -> None:
+    async def _flag_for_human_review(self, company_id: str, verification_id: str) -> bool:
         """
         Flag the verification for human review in the database.
         """
 
         if not (isinstance(company_id, str) and company_id.strip()):
-            return None
+            return False
 
         if not (isinstance(verification_id, str) and verification_id.strip()):
-            return None
+            return False
 
         self.logger.info(f"Flagging company {company_id} verification {verification_id} for human review.")
         # Placeholder: Implement actual DB flag logic
@@ -756,17 +716,19 @@ class CompanyController(Controllers):
                 company_orm.verification_status = CompanyVerificationStatus.HUMAN_REVIEW.value
                 session.commit()
                 self.logger.info(f"Company {company_id} flagged for human review.")
+                return True
+            return False
 
     @error_handler
-    async def _notify_admins(self, company_id: str, verification_id: str) -> None:
+    async def _notify_admins(self, company_id: str, verification_id: str) -> bool:
         """
         Notify admins that a verification needs human review.
         """
         if not (isinstance(company_id, str) and company_id.strip()):
-            return None
+            return False
 
         if not (isinstance(verification_id, str) and verification_id.strip()):
-            return None
+            return False
 
         self.logger.info(f"Notifying admins for company {company_id} verification {verification_id}.")
         # Placeholder: Implement actual notification logic
@@ -781,7 +743,9 @@ class CompanyController(Controllers):
                     message = f"Company {company_profile.name.title()} verification needs human review. You will be notified once the verification is complete. You can also check the verification status on the platform.   "
                     email = EmailModel(to_=str(email), subject_=subject, html_=message)
                     await get_service('send_mail')().send_mail_resend(email=email)
-    
+                    return True
+            return False
+
     @error_handler
     async def _reject_verification(self, company_id: str, reason: str) -> bool:
         """
@@ -836,7 +800,7 @@ class CompanyController(Controllers):
             if not cipc_orm:
                 raise ValueError(f"No CIPC record found for company_id: {company_id}")
 
-            update_data = cipc_recourd.dict(exclude_unset=True)
+            update_data = cipc_record.model_dump(exclude_unset=True)
 
             for field, value in update_data.items():
                 if hasattr(cipc_orm, field):
@@ -845,10 +809,12 @@ class CompanyController(Controllers):
             session.commit()
             session.refresh(cipc_orm)
 
-            return cipc_orm
+            return CompanyCIPC(**cipc_orm.to_dict())
 
     @error_handler
-    async def create_cipc_record(self, cipc_data: CompanyCIPC) -> CompanyCIPC:
+    async def create_cipc_record(self, cipc_data: CompanyCIPC) -> CompanyCIPC | None:
+        if not isinstance(cipc_data, CompanyCIPC):
+            return None
         with self.get_session() as session:
             session.add(CompanyORM(**cipc_data.model_dump()))
             return cipc_data
@@ -856,7 +822,6 @@ class CompanyController(Controllers):
     @error_handler
     async def create_verification_document(self, ver_document: CompanyVerificationDocument) -> CompanyVerificationDocument:
         """
-
         :param ver_document:
         :return:
         """

@@ -65,8 +65,8 @@ class JobsSearchController(Controllers):
 
             jobs = [Job(**job.to_dict()) for job in jobs_orm_list if job] if jobs_orm_list else []
             total_pages = math.ceil(total_jobs / page_size) if page_size > 0 else 0
-            return 
-            {"page": page,"page_size": page_size,"total_jobs": total_jobs, "total_pages": total_pages,"jobs": jobs}
+            return {"page": page, "page_size": page_size, "total_jobs": total_jobs,
+                    "total_pages": total_pages, "jobs": jobs}
 
     @error_handler
     async def search_jobs(self,keyword: str = '', page: int = 1, page_size: int = 25) -> dict[str, str | int | list[Job]]:
@@ -128,9 +128,9 @@ class JobsSearchController(Controllers):
             result = []
             for category_orm in category_orm_list:
                 jobs = (
-                    session.query(JobORM)
-                    .filter(JobORM.category_id == category_orm.category_id)
-                    .order_by(JobORM.created_at.desc())  # assuming you want the latest jobs
+                    session.query(JobsORM)
+                    .filter(JobsORM.category_id == category_orm.category_id)
+                    .order_by(JobsORM.created_at.desc())  # assuming you want the latest jobs
                     .limit(upper_limit)
                     .all()
                 )
@@ -635,7 +635,7 @@ class JobsSearchController(Controllers):
 
         if not (isinstance(user_id, str) and user_id.strip()):
             self.logger.error("Invalid User ID")
-            return {}
+            return []
 
         with self.get_session() as session:
             job_applications_orm_list = (
@@ -747,10 +747,10 @@ class JobsSearchController(Controllers):
             job_exp_idx = exp_levels.index(job.experience_level.lower())
             # scores['experience'] = 100 if user_exp_idx >= job_exp_idx else round((user_exp_idx / job_exp_idx) * 100)
             # Helps prevent divide by zero errors
-            def experience_score(user_exp, job_exp):
-                if job_exp == 0:
-                    return 100 if user_exp > 0 else 0
-                return 100 if user_exp >= job_exp else round((user_exp / job_exp) * 100)
+            def experience_score(_user_exp, _job_exp):
+                if _job_exp == 0:
+                    return 100 if _user_exp > 0 else 0
+                return 100 if _user_exp >= _job_exp else round((_user_exp / _job_exp) * 100)
 
             scores['experience'] = experience_score(user_exp_idx, job_exp_idx)
 
@@ -1022,7 +1022,7 @@ class JobsSearchController(Controllers):
         """
         if not filters:
             self.logger.error("Filters not supplied")
-            return None
+            return []
 
         with self.get_session() as session:
             profile = session.query(JobSeekerProfileORM).get(filters.get('user_id'))
@@ -1126,7 +1126,8 @@ class JobsSearchController(Controllers):
             # This will return at most 100 jobs 
             if filters.get('limit'):
                 query = query.limit(min(filters['limit'], 100))
-            return [Job(**job.to_dict()) for job in query.all()]
+            job_orm_list = query.all()
+            return [Job(**job_orm.to_dict()) for job_orm in job_orm_list if job_orm] if job_orm_list else []
 
     @error_handler
     async def search_by_company(self,company_slug: str,page: int = 1,page_size: int = 25) -> dict[str, str | int | list[Job]]:
@@ -1169,11 +1170,8 @@ class JobsSearchController(Controllers):
                                 .offset((page - 1) * page_size) \
                                 .limit(page_size).all()
 
-            jobs = [
-                Job(**job_orm.to_dict())
-                for job_orm in jobs_orm_list
-                if job_orm and job_orm.is_active
-            ]
+            jobs = [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list
+                    if job_orm and job_orm.is_active] if jobs_orm_list else []
 
             return {
                 'jobs': jobs,

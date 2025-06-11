@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
 
-from flask import Flask, flash
+from flask import Flask
 
-from src.emailer import EmailModel
+from src.controllers.controller import Controllers
 from src.controllers.controller import error_handler
 from src.database.models.users import User
 from src.database.sql.users import UserORM
-from src.controllers.controller import Controllers
+from src.emailer import EmailModel
 
 
 class UsersController(Controllers):
@@ -64,7 +64,6 @@ class UsersController(Controllers):
         with self.get_session() as session:
             # Fetch all users from the database
             users_orm_list: list[UserORM] = session.query(UserORM).all()
-
             # Convert ORM users to Pydantic User models
             self.users = [User(**user.to_dict()) for user in users_orm_list]
 

@@ -157,12 +157,12 @@ class ComplianceService(AdminServiceInterface):
                 report_data = {
                     'gender_distribution': gender_dist,
                     'disability_stats': disability_count,
-                    'generated_at': datetime.utcnow().isoformat()
+                    'generated_at': datetime.now(timezone.utc).isoformat()
                 }
 
-                return AdminActionResult(True, "Employment equity report generated", report_data)
+                return AdminActionResult(success=True, message="Employment equity report generated", data=report_data)
         except Exception as e:
-            return AdminActionResult(False, f"Error generating EE report: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error generating EE report: data={str(e)}")
 
     def _generate_pay_equity_report(self, company_id: str) -> AdminActionResult:
         """Analyze salary distributions for pay equity"""
@@ -170,14 +170,12 @@ class ComplianceService(AdminServiceInterface):
             with self.session_factory() as session:
                 salary_data = session.query(
                     JobSeekerProfileORM.gender,
-                    JobSeekerProfileORM.experience_level,
                     func.avg(JobsORM.salary_min),
                     func.avg(JobsORM.salary_max)
                 ).join(JobApplicationORM).join(JobsORM).filter(
                     JobsORM.company_id == company_id
                 ).group_by(
                     JobSeekerProfileORM.gender,
-                    JobSeekerProfileORM.experience_level
                 ).all()
 
                 report_data = {
@@ -213,9 +211,9 @@ class ComplianceService(AdminServiceInterface):
                     } for d in demographics]
                 }
 
-                return AdminActionResult(True, "Bias analysis completed", bias_data)
+                return AdminActionResult(success=True, message="Bias analysis completed", data=bias_data)
         except Exception as e:
-            return AdminActionResult(False, f"Error analyzing biases: {str(e)}")
+            return AdminActionResult(success=False, message=f"Error analyzing biases: {str(e)}")
 
 
 class AnalyticsService(AdminServiceInterface):
@@ -305,6 +303,14 @@ class AnalyticsService(AdminServiceInterface):
 
         # noinspection PyArgumentList
         return metrics[metric_type](**kwargs)
+
+    def _company_statistics(self, company_id: str) -> AdminActionResult:
+        """
+
+        :return:
+        """
+        pass
+
 
     def _generate_system_health_report(self) -> AdminActionResult:
         """Monitor platform health metrics"""
@@ -475,10 +481,6 @@ class SecurityService(AdminServiceInterface):
 
 
 
-
-
-
-
     async def _apply_user_risk_recommendations(self, admin_uid: str) -> AdminActionResult:
         """
         Applies risk recommendations for all flagged users by storing them as recommended actions.
@@ -532,13 +534,8 @@ class SecurityService(AdminServiceInterface):
 
         return AdminActionResult(success=True,message="succcessfully flagged users", list_data=flagged_users)
 
-
-    def should_flag_user(
-            session,
-            reference_id: str,
-            reason: str,
-            cooldown_days: int = 7
-    ) -> bool:
+    @staticmethod
+    def should_flag_user(session, reference_id: str, reason: str, cooldown_days: int = 7) -> bool:
         """
         Checks whether a flag for the given user and reason has been raised
         within the cooldown period. Returns True if it's safe to flag again.
@@ -891,7 +888,8 @@ class AdminController(Controllers):
         flagged_users_models = []
         if action_result.success:
             for reference_id, message in action_result.list_data:
-                flagged_users_models.append(FlaggedUserORM(**FlaggedUser(reference_id=reference_id, reason=message,flagged_by=admin_uid).model_dump()))
+                flagged_users_models.append(FlaggedUserORM(**FlaggedUser(reference_id=reference_id, reason=message,
+                                                                         flagged_by=admin_uid).model_dump()))
 
         with self.get_session() as session:
             session.add_all(flagged_users_models)
@@ -905,11 +903,7 @@ class AdminController(Controllers):
         """
         try:
             recommendations = await self.security_service.execute('apply_user_risk_recommendations', admin_uid=admin_uid)
-
-            return AdminActionResult(
-                success=True,
-                message="Risk recommendations generated.",
-                list_data=recommendations)
+            return recommendations
 
         except Exception as e:
             return AdminActionResult(

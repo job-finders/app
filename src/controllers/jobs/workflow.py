@@ -57,8 +57,7 @@ class JobsWorkflowController(Controllers):
             # Use UTC-aware datetime with proper timezone
             job_orm.updated_time = datetime.now(timezone.utc)
 
-
-            return Job(**job_orm.to_dict())
+            return Job(**job_orm.to_dict()) if job_orm else None
 
     @error_handler
     async def de_activate_job_listing(self, job_id: str, reviewer_id: str) -> Job | None:
@@ -98,7 +97,7 @@ class JobsWorkflowController(Controllers):
 
     # In JobsController
     @error_handler
-    async def post_job_employer(self, employer: Employer, job_data: Job) -> Job:
+    async def post_job_employer(self, employer: Employer, job_data: Job) -> Job | None:
         """sumary_line
             Perform Extra Employer Based Checks 
         Keyword arguments:
@@ -242,10 +241,6 @@ class JobsWorkflowController(Controllers):
 
             session.commit()
             return job
-
-
-
-
 
     @error_handler
     async def save_job_for_user(self, user_id: str, job_id: str) -> None|SavedJob :
