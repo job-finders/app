@@ -24,20 +24,20 @@ class ResumeController(Controllers):
     @error_handler
     async def create_cv(self, user_uid: str, data: JobSeekerCV) -> dict:
         # Create a new resume with related entries (experience, education, etc.)
+        if not(isinstance(user_uid, str) and user_uid.strip()):
+            return {}
+
+        if not isinstance(data, JobSeekerCV):
+            return {}
+            
         with self.get_session() as session:
             cv_id = str(uuid.uuid4())
-            cv = JobSeekerCVORM(
-                cv_id=cv_id,
-                user_uid=user_uid,
-                professional_title=data.professional_title,
-                summary=data.summary,
-                location=data.location,
-                phone=data.phone,
-                website=data.website,
-                linkedin=data.linkedin,
-                github=data.github,
-                created_at=datetime.now(UTC),
-            )
+
+            # Excluding - all items whcih will be saved later through save related items.            
+            _excluded_items = {'experience', 'education', 'certifications',
+            'languages', 'projects', 'publications', 'awards', 'custom_sections'}
+            cv = JobSeekerCVORM(**data.model_dump(exclude=_excluded_items))
+
             session.add(cv)
             await self._save_related_entries(session=session, cv_id=cv_id, data=data)
             return {"cv_id": cv_id, "status": "created"}
@@ -70,62 +70,36 @@ class ResumeController(Controllers):
         for section in data.custom_sections:
             session.add(CustomSectionORM(cv_id=cv_id, **section.model_dump()))
 
+
     @error_handler
     async def get_cv_by_id(self, cv_id: str) -> JobSeekerCV | None:
-        # Retrieve full CV details including all related data
+        """return cv / resume with all its related fields"""
+        
+        if not(isinstance(cv_id, str) and cv_id.strip()):
+            return None
+
         with self.get_session() as session:
-            # Query for the main CV data
-            cv = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.cv_id == cv_id).first()
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .options(
+                    joinedload(JobSeekerCVORM.experience),
+                    joinedload(JobSeekerCVORM.education),
+                    joinedload(JobSeekerCVORM.certifications),
+                    joinedload(JobSeekerCVORM.languages),
+                    joinedload(JobSeekerCVORM.projects),
+                    joinedload(JobSeekerCVORM.publications),
+                    joinedload(JobSeekerCVORM.awards),
+                    joinedload(JobSeekerCVORM.custom_sections),
+                ).filter(JobSeekerCVORM.cv_id == cv_id).first())
 
-            if not cv:
-                return None  # If CV not found, return None
+            if not cv_orm:
+                return None
 
-            # Retrieve all related data using CV ID
-            experience_orm_list = session.query(ExperienceORM).filter(ExperienceORM.cv_id == cv_id).all()
-            education_orm_list = session.query(EducationORM).filter(EducationORM.cv_id == cv_id).all()
-            certifications_orm_list = session.query(CertificationORM).filter(CertificationORM.cv_id == cv_id).all()
-            languages_orm_list = session.query(LanguageORM).filter(LanguageORM.cv_id == cv_id).all()
-            projects_orm_list = session.query(ProjectORM).filter(ProjectORM.cv_id == cv_id).all()
-            publications_orm_list = session.query(PublicationORM).filter(PublicationORM.cv_id == cv_id).all()
-            awards_orm_list = session.query(AwardORM).filter(AwardORM.cv_id == cv_id).all()
-            custom_sections_orm_list = session.query(CustomSectionORM).filter(CustomSectionORM.cv_id == cv_id).all()
+            return JobSeekerCV(**cv_orm.to_dict(include_relationships=True))
 
-            # Convert all related entries to Pydantic models
-            experience_pydantic = [Experience(**exp.to_dict()) for exp in experience_orm_list]
-            education_pydantic = [Education(**edu.to_dict()) for edu in education_orm_list]
-            certifications_pydantic = [Certification(**cert.to_dict()) for cert in certifications_orm_list]
-            languages_pydantic = [Language(**lang.to_dict()) for lang in languages_orm_list]
-            projects_pydantic = [Project(**proj.to_dict()) for proj in projects_orm_list]
-            publications_pydantic = [Publication(**pub.to_dict()) for pub in publications_orm_list]
-            awards_pydantic = [Award(**award.to_dict()) for award in awards_orm_list]
-            custom_sections_pydantic = [CustomSection(**section.to_dict()) for section in custom_sections_orm_list]
-
-            # Prepare the result as a Pydantic model for JobSeekerCV
-            result = JobSeekerCV(
-                cv_id=cv.cv_id,
-                user_uid=cv.user_uid,
-                professional_title=cv.professional_title,
-                summary=cv.summary,
-                location=cv.location,
-                phone=cv.phone,
-                website=cv.website,
-                linkedin=cv.linkedin,
-                github=cv.github,
-                created_at=cv.created_at,
-                experience=experience_pydantic,
-                education=education_pydantic,
-                certifications=certifications_pydantic,
-                languages=languages_pydantic,
-                projects=projects_pydantic,
-                publications=publications_pydantic,
-                awards=awards_pydantic,
-                custom_sections=custom_sections_pydantic
-            )
-
-            return result
 
     @error_handler
-    async def get_primary_resume(self, user_id: str) -> JobSeekerCV:
+    async def get_primary_resume(self, user_id: str) -> JobSeekerCV| None:
         """
         Retrieves the primary resume for a given user using ORM to_dict() methods
 
@@ -138,6 +112,9 @@ class ResumeController(Controllers):
         Raises:
             ValueError: If no primary resume is found for the user
         """
+        if not(isinstance(user_id, str) and user_id.strip()):
+            return None
+
         with self.get_session() as session:
             # Query for the primary resume with eager loading
             resume_orm = session.query(JobSeekerCVORM).filter(
@@ -158,17 +135,17 @@ class ResumeController(Controllers):
                 raise ValueError(f"No primary resume found for user {user_id}")
 
             # Convert main resume using its to_dict method
-            resume_data = resume_orm.to_dict()
+            resume_data = resume_orm.to_dict(include_relationships=True)
 
             # Convert relationships using their to_dict methods
-            resume_data["experience"] = [exp.to_dict() for exp in resume_orm.experience]
-            resume_data["education"] = [edu.to_dict() for edu in resume_orm.education]
-            resume_data["certifications"] = [cert.to_dict() for cert in resume_orm.certifications]
-            resume_data["languages"] = [lang.to_dict() for lang in resume_orm.languages]
-            resume_data["projects"] = [proj.to_dict() for proj in resume_orm.projects]
-            resume_data["publications"] = [pub.to_dict() for pub in resume_orm.publications]
-            resume_data["awards"] = [award.to_dict() for award in resume_orm.awards]
-            resume_data["custom_sections"] = [cs.to_dict() for cs in resume_orm.custom_sections]
+            # resume_data["experience"] = [exp.to_dict() for exp in resume_orm.experience]
+            # resume_data["education"] = [edu.to_dict() for edu in resume_orm.education]
+            # resume_data["certifications"] = [cert.to_dict() for cert in resume_orm.certifications]
+            # resume_data["languages"] = [lang.to_dict() for lang in resume_orm.languages]
+            # resume_data["projects"] = [proj.to_dict() for proj in resume_orm.projects]
+            # resume_data["publications"] = [pub.to_dict() for pub in resume_orm.publications]
+            # resume_data["awards"] = [award.to_dict() for award in resume_orm.awards]
+            # resume_data["custom_sections"] = [cs.to_dict() for cs in resume_orm.custom_sections]
 
             # Create the Pydantic model from the combined dictionary
             return JobSeekerCV(**resume_data)
@@ -176,6 +153,9 @@ class ResumeController(Controllers):
     @error_handler
     async def list_cvs_for_user(self, user_uid: str) -> list[JobSeekerCV]:
         # Get all resumes for a specific job seeker
+        if not(isinstance(user_id, str) and user_id.strip()):
+            return []
+
         with self.get_session() as session:
             # Query for all CVs for the given user
             cvs = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.user_uid == user_uid).all()
@@ -195,6 +175,9 @@ class ResumeController(Controllers):
     @error_handler
     async def delete_cv(self, cv_id: str) -> bool:
         # Delete a specific CV and its related entries
+        if not(isinstance(cv_id, str) and cv_id.strip()):
+            return False
+
         with self.get_session() as session:
             # Query the main CV entry
             cv = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.cv_id == cv_id).first()
@@ -221,12 +204,20 @@ class ResumeController(Controllers):
     @error_handler
     async def search_cvs(self, query: str, limit: int = 10) -> list[JobSeekerCV]:
         # Search for resumes using professional title or keyword
+        if not(isinstance(query, str) and query.strip()):
+            return []
+
+        if not isinstance(limit, int):
+            return []
+        
+        upper_limit = min(1 , max(limit, 100))
+        
         with self.get_session() as session:
             # Query for CVs where the professional title or summary contains the search query (case-insensitive)
             cvs = session.query(JobSeekerCVORM).filter(
                 (JobSeekerCVORM.professional_title.ilike(f"%{query}%")) |
                 (JobSeekerCVORM.summary.ilike(f"%{query}%"))
-            ).limit(limit).all()
+            ).limit(upper_limit).all()
 
             # If no CVs found, return an empty list
             if not cvs:
@@ -243,6 +234,12 @@ class ResumeController(Controllers):
     @error_handler
     async def notify_admin_of_new_cv(self, user_email: str, cv_id: str):
         # Notify admin via email when a new resume is submitted
+        if not(isinstance(user_email, str) and user_email.strip()):
+            return None
+
+        if not(isinstance(cv_id, str) and cv_id.strip()):
+            return None
+
         with self.get_session() as session:
             # Fetch the CV and user details
             cv = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.cv_id == cv_id).first()
@@ -275,7 +272,7 @@ class ResumeController(Controllers):
                 html_=html_content
             )
 
-            await get_service('send_mail').send_mail_resend(email=email)
+            await get_service('send_mail')().send_mail_resend(email=email)
             return True  # Return True to indicate email was sent successfully
 
     @error_handler
@@ -288,7 +285,7 @@ class ResumeController(Controllers):
             2. If the CV is not found, returns `False`.
             3. Updates the core CV fields (title, summary, contact info, etc.).
             4. Deletes all previously associated entries (experience, education, certifications, etc.)
-               to ensure outdated data is removed.
+            to ensure outdated data is removed.
             5. Inserts the new associated data from the provided `JobSeekerCV` model.
             6. Returns `True` to indicate the update process was successfully initiated.
 
@@ -302,9 +299,14 @@ class ResumeController(Controllers):
             :return: Boolean indicating success or failure of the update.
         """
         # Update an existing CV and its related entries
+        if not(isinstance(cv_id, str) and cv_id.strip()):
+            return False
+        if not isinstance(data, JobSeekerCV):
+            return False
 
 
         with self.get_session() as session:
+            
             existing_cv = session.query(JobSeekerCVORM).filter_by(cv_id=cv_id).first()
             if not existing_cv:
                 return False
@@ -360,11 +362,14 @@ class ResumeController(Controllers):
         :param skill: A keyword to search within the skills field.
         :return: A list of JobSeekerCV Pydantic models matching the skill.
         """
+        if not(isinstance(skill, str) and skill.strip()):
+            return []
+
         with self.get_session() as session:
             query = session.query(JobSeekerCVORM).filter(
                 JobSeekerCVORM.skills.ilike(f"%{skill}%")
             )
-            return [JobSeekerCV.model_validate(cv) for cv in query.all()]
+            return [JobSeekerCV(**cv.to_dict()) for cv in query.all()]
 
     @error_handler
     async def get_cvs_by_location(self, location: str) -> list[JobSeekerCV]:
@@ -377,11 +382,15 @@ class ResumeController(Controllers):
         :param location: The city, province, or region to filter CVs by.
         :return: A list of JobSeekerCV Pydantic models whose location matches the input.
         """
+        if not(isinstance(location, str) and location.strip()):
+            return []
+
         with self.get_session() as session:
             query = session.query(JobSeekerCVORM).filter(
                 JobSeekerCVORM.location.ilike(f"%{location}%")
-            )
-            return [JobSeekerCV.model_validate(cv) for cv in query.all()]
+            ).limit(1000).all()
+
+            return [JobSeekerCV(**cv.to_dict()) for cv in query.all()]
 
     @error_handler
     async def get_recent_cvs(self, limit: int = 10) -> list[JobSeekerCV]:

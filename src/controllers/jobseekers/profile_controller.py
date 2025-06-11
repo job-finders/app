@@ -37,6 +37,9 @@ class JobSeekerProfilesController(Controllers):
     @error_handler
     async def create_profile(self, profile_data: JobSeekerProfile) -> JobSeekerProfile:
         """Create a new JobSeekerProfile."""
+        if not isinstance(profile_data,JobSeekerProfile):
+            return None
+
         with self.get_session() as session:
             existing = (
                 session
@@ -57,25 +60,35 @@ class JobSeekerProfilesController(Controllers):
             session.add(profile_orm)
 
             # on commit, session context manager will flush & commit
-            return JobSeekerProfile.model_validate(profile_orm)
+            return JobSeekerProfile(**profile_orm.to_dict())
 
     @error_handler
     async def get_profile_by_uid(self, user_uid: str) -> JobSeekerProfile | None:
         """Fetch a profile or return None if missing."""
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            return None
+
         with self.get_session() as session:
-            orm = (
+            seeker_orm = (
                 session
                 .query(JobSeekerProfileORM)
                 .filter_by(user_uid=user_uid)
                 .first()
             )
-            return JobSeekerProfile.model_validate(orm) if orm else None
+            return JobSeekerProfile(**seeker_orm.to_dict()) if orm else None
 
     @error_handler
     async def update_profile(
         self, user_uid: str, update_data: dict
     ) -> JobSeekerProfile | None:
         """Partially update profile fields and return the updated model."""
+
+        if not(isinstance(user_uid, str) and user_uid.strip()):
+            return None
+
+        if not update_data:
+            return None
+
         with self.get_session() as session:
             orm = (
                 session
@@ -100,6 +113,9 @@ class JobSeekerProfilesController(Controllers):
     @error_handler
     async def delete_profile(self, user_uid: str) -> dict | None:
         """Soft-delete and anonymize personal fields for GDPR compliance."""
+        if not(isinstance(user_uid, str) and user_uid.strip()):
+            return None
+
         with self.get_session() as session:
             orm = (
                 session
@@ -128,6 +144,13 @@ class JobSeekerProfilesController(Controllers):
         Search across name, bio, location, and list-fields.
         Filters by role if provided.
         """
+        if not(isinstance(query, str) and query.strip()):
+            return []
+        # I do not really need role here -         
+        # if not(isinstance(role, str) and role.strip()):
+        #     return []
+
+
         with self.get_session() as session:
             term = f"%{query.lower()}%"
 
@@ -145,14 +168,18 @@ class JobSeekerProfilesController(Controllers):
             if role:
                 q = q.filter(JobSeekerProfileORM.role == role)
 
-            results = q.all()
-            return [JobSeekerProfile.model_validate(r) for r in results]
+            seeker_orm_list = q.all()
+            return [JobSeekerProfile(**orm.to_dict()) for orm in seeker_orm_list if orm] if seeker_orm_list else []
 
     @error_handler
     async def upload_profile_picture(
         self, user_uid: str, file_storage, subfolder: str = "profile_pics"
     ) -> dict | None:
         """Validate, save, and attach a profile image."""
+
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            return None
+
         if 'file' not in file_storage:
             return {"error": "No file part"}
 
@@ -189,12 +216,16 @@ class JobSeekerProfilesController(Controllers):
         self, role: str
     ) -> list[JobSeekerProfile]:
         """Fetch all profiles matching a given role."""
+        if not (isinstance(role, str) and role.strip()):
+            return []
+
         with self.get_session() as session:
-            job_seeker_orm_list: list[JobSeekerProfileORM] = session.query(JobSeekerProfileORM).filter_by(role=role).all()
+            job_seeker_orm_list: list[JobSeekerProfileORM] = session.query(JobSeekerProfileORM).filter_by(role=role).limit(100).all()
 
             # Do Not Include Relationships in Lists only on Specific User Profile request -
             # Will only list profiles that are marked Visible.
-            return [JobSeekerProfile(**profile_orm.to_dict()) for profile_orm in job_seeker_orm_list if profile_orm.visibility]
+            return [JobSeekerProfile(**profile_orm.to_dict()) for profile_orm in job_seeker_orm_list 
+            if profile_orm.visibility] if job_seeker_orm_list else []
 
     @error_handler
     async def get_default_work_locations(self) -> list[Configuration]:
