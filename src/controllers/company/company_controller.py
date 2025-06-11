@@ -646,7 +646,7 @@ class CompanyController(Controllers):
         :param company_id:
         :return:
         """
-        return await self._get_company_verification_status_from_db(company_id)
+        return await self._get_company_verification_status_from_db(company_id=company_id)
 
 
     @staticmethod
@@ -689,7 +689,7 @@ class CompanyController(Controllers):
         # Placeholder: Implement actual DB storage logic
         self.logger.info(f"Storing verification documents for company {company_id}: {document_paths}")
         # Return a mock verification ID
-        return f"verif-{company_id}-{datetime.now().timestamp()}"
+        return f"Verifying documents for -{company_id}-{datetime.now().timestamp()}"
 
 
     @error_handler
@@ -732,6 +732,7 @@ class CompanyController(Controllers):
                 company_orm.verification_status = CompanyVerificationStatus.VERIFIED.value
                 session.commit()
                 self.logger.info(f"Company {company_id} marked as verified.")
+            return None
     
     @error_handler
     async def _flag_for_human_review(self, company_id: str, verification_id: str) -> None:
@@ -814,7 +815,7 @@ class CompanyController(Controllers):
             return None
 
         with self.get_session() as session:
-            cipc_orm = session.query(CompanyCIPCORM).filter_byget(company_id=company_id).first()
+            cipc_orm = session.query(CompanyCIPCORM).filter_by(company_id=company_id).first()
             return CompanyCIPC(**cipc_orm.to_dict()) if isinstance(cipc_orm, CompanyCIPCORM) else None
 
     @error_handler
