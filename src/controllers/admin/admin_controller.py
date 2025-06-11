@@ -6,10 +6,10 @@ from typing import List
 from flask import Flask, render_template
 from sqlalchemy import func, case, or_, text
 
-from src.controllers.admin.services.job_moderation import JobModerationService
-from src.controllers.admin.services.job_recommendations import JobRecommendationService
 from src.controllers.admin.interfaces import AdminServiceInterface, AdminActionResult, JobRecommenderResult
 from src.controllers.admin.security_rules import JobSeekerRuleEngine, EmployerRuleEngine
+from src.controllers.admin.services.job_moderation import JobModerationService
+from src.controllers.admin.services.job_recommendations import JobRecommendationService
 from src.controllers.controller import error_handler, Controllers
 from src.database.constants import utc_time
 from src.database.models.admin_models import FlaggedUser, AdminModel
@@ -379,6 +379,7 @@ class AnalyticsService(AdminServiceInterface):
             retention_data = session.query(
                 func.count().label('signups'),
                 func.sum(
+                    # what happens when func.now() does not return time in the required timezone ?
                     case(
                         (UserORM.last_login >= func.now() - text("INTERVAL '7 DAYS'"), 1),
                         else_=0
