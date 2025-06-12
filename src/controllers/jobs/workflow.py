@@ -1442,7 +1442,7 @@ class JobsWorkflowController(Controllers):
     def get_pending_approvals(self) -> list[Job]:
         """Get jobs needing admin approval - fetch featured jobs first"""
         self.logger.info("Started Running: get_pending_approvals")
-        
+
         with self.get_session() as session:
             # Query for pending approval jobs with featured priority
             jobs = (
@@ -1460,6 +1460,7 @@ class JobsWorkflowController(Controllers):
     @staticmethod
     def format_validation_feedback(validation_result: dict) -> str:
         """Convert validation results into human-readable feedback string."""
+        self.logger.info("Started Running : format_validation_feedback")
         lines = []
 
         if not validation_result:
@@ -1501,6 +1502,15 @@ class JobsWorkflowController(Controllers):
             }
         }
         """
+        self.logger.info("Started Running : update_approval_status")
+        if not(isinstance(job_id, str) and job_id.strip()):
+            return None
+
+        if not (isinstance(decision, str) and decision.strip()):
+            return None
+        if not (isinstance(reviewer_id, str) and reviewer_id.strip()):
+            return None
+
         with self.get_session() as session:
             job = session.query(JobsORM).get(job_id)
             request = session.query(JobApprovalRequestORM).filter_by(job_id=job_id).first()
