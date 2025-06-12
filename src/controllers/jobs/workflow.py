@@ -1516,21 +1516,22 @@ class JobsWorkflowController(Controllers):
             request = session.query(JobApprovalRequestORM).filter_by(job_id=job_id).first()
 
             if validation_result:
+                # Taking validation results so we format it in a way that can be added to feedback
                 request.feedback = self.format_validation_feedback(validation_result)
 
-            if decision.lower() == JobApprovalStatusEnum.APPROVED.value:
+            if decision.casefold() == JobApprovalStatusEnum.APPROVED.value:
                 job.status = JobStatusEnum.ACTIVE.value
                 request.status = JobApprovalStatusEnum.APPROVED.value
 
 
-            elif decision.lower() == JobApprovalStatusEnum.REJECTED.value:
+            elif decision.casefold() == JobApprovalStatusEnum.REJECTED.value:
                 job.status = JobStatusEnum.ARCHIVED.value
                 request.status = JobApprovalStatusEnum.REJECTED.value
 
-            elif decision.lower() == JobApprovalStatusEnum.PENDING.value:
+            elif decision.casefold() == JobApprovalStatusEnum.PENDING.value:
                 request.status = JobApprovalStatusEnum.PENDING.value
                 job.status = JobStatusEnum.PENDING_APPROVAL.value
-            elif decision.lower() == JobApprovalStatusEnum.FLAGGED.value:
+            elif decision.casefold() == JobApprovalStatusEnum.FLAGGED.value:
 
                 request.status = JobApprovalStatusEnum.FLAGGED.value
                 job.status = JobStatusEnum.NEEDS_ATTENTION.value
@@ -1550,16 +1551,16 @@ class JobsWorkflowController(Controllers):
             return None
 
         with self.get_session() as session:
-            duplicates = session.query(JobsORM).filter(
+            duplicates_orm_list = session.query(JobsORM).filter(
                 and_(
                     func.similarity(JobsORM.title, job.title) > 0.7,
+                    func.similarity(JobsORM.description, job.description) > 0.7,
                     JobsORM.company_id == job.company_id,
                     JobsORM.location == job.location,
-                    func.abs(JobsORM.salary_min - job.salary_min) < 5000
-                )
-            ).order_by(JobsORM.posted_at.desc()).limit(10).all()
+                    func.abs(JobsORM.salary_min - job.salary_min) < 2000)
+                    ).order_by(JobsORM.posted_at.desc()).limit(10).all()
 
-            return [Job(**j.to_dict()) for j in duplicates]
+            return [Job(**job.to_dict()) for job in duplicates_orm_list if job] if duplicates_orm_list else []
 
     @error_handler
     async def update_draft_application(self, application_id: str, updated_data: dict) -> None:
@@ -1579,5 +1580,9 @@ class JobsWorkflowController(Controllers):
             if application_orm and application_orm.application_stage == "draft":
                 for key, value in updated_data.items():
                     setattr(application_orm, key, value)
+            session.commit()
+            self.logger.info("Updated draft application")
+            return None
+    
 
 
