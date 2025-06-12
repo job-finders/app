@@ -67,7 +67,6 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def de_activate_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
         """Mark job as inactive by setting expiration date to past"""
-<<<<<<< HEAD
         if not (isinstance(job_id, str) and job_id.strip()):
             return None
         if not (isinstance(reviewer_id, str) and reviewer_id.strip()):
@@ -75,20 +74,17 @@ class JobsWorkflowController(Controllers):
         self.logger.info(f"Updating Job_ID: {job_id} Job Approval Status to {JobApprovalStatusEnum.CLOSED.value}")
         self.logger.info(f"The Reviewer : {reviewer_id} Arrived at this Review : {validation_result}")
         return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.CLOSED.value, reviewer_id=reviewer_id)
-=======
         self.logger.info("Called Activate job listing")
         if not(isinstance(job_id, str) and job_id.strip()):
             return None
         if not(isinstance(reviewer_id, str) and reviewer_id.strip()):
             return None
->>>>>>> baaacfb8fd9ee8acf251d2f770c47bc079b5696b
 
         return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.CLOSED.value,reviewer_id=reviewer_id)
 
     @error_handler
     async def activate_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
         """Activate job listing by resetting expiration date"""
-<<<<<<< HEAD
         if not (isinstance(job_id, str) and job_id.strip()):
             return None
         if not (isinstance(reviewer_id, str) and reviewer_id.strip()):
@@ -97,12 +93,10 @@ class JobsWorkflowController(Controllers):
         self.logger.info(f"The Reviewer : {reviewer_id} Arrived at this Review : {validation_result}")
         return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.ACTIVE.value,
         reviewer_id=reviewer_id,validation_result=validation_result)
-=======
         return await self.update_approval_status(job_id=job_id,
                                                  decision=JobStatusEnum.ACTIVE.value,
                                                  reviewer_id=reviewer_id,
                                                  validation_result=validation_result)
->>>>>>> baaacfb8fd9ee8acf251d2f770c47bc079b5696b
 
     @error_handler
     async def reject_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
@@ -143,7 +137,7 @@ class JobsWorkflowController(Controllers):
         argument -- description
         Return: return_description
         """
-        if not (isinstance(job_data, Job) and isinstance(employer, Employer):
+        if not (isinstance(job_data, Job) and isinstance(employer, Employer)):
             return None
         
         self.logger.info(f"Employee : {employer.employer_id} Started creating the Job Titled : {job_data.title}")
@@ -1121,7 +1115,14 @@ class JobsWorkflowController(Controllers):
 
     @error_handler
     async def get_company_analytics_dashboard(self, company_id: str) -> JobApplicationDashboard:
-        """Employer dashboard with advanced hiring analytics"""
+        """Employer dashboard with advanced hiring analytics
+        This dashboard can be shown to the Employer.
+        """
+        self.logger.info("Started running : get_company_analytics_dashboard")
+        if not (isinstance(company_id, str) and company_id.strip()):
+            self.logger.error(f"Error Invalid Company ID")
+            return None
+
         with self.get_session() as session:
             # Get all jobs for this employer
             jobs = session.execute(
@@ -1179,6 +1180,7 @@ class JobsWorkflowController(Controllers):
             )
 
     async def _calculate_average_score(self, job_ids: list[str]) -> float:
+        """calculate average ATS Score for ATS Reports for a Specific Job"""
         with self.get_session() as session:
             result = session.execute(
                 select(func.avg(ATSReportORM.score))
@@ -1187,6 +1189,7 @@ class JobsWorkflowController(Controllers):
             return result.scalar() or 0.0
 
     async def _calculate_pipeline_metrics(self, job_ids: list[str]) -> dict[str, float]:
+        """Calculate Job Applications Pipeline Metrics"""
         with self.get_session() as session:
             result = session.execute(
                 select(
@@ -1208,8 +1211,14 @@ class JobsWorkflowController(Controllers):
             }
 
     @error_handler
-    async def generate_talent_pool_report(self, employer_id: str) -> TalentPoolReport:
+    async def generate_talent_pool_report(self, employer_id: str) -> TalentPoolReport | None:
         """Generate comprehensive talent pool analysis"""
+        self.logger.info("Started Running : generate_talent_pool_report")
+        if not (isinstance(employer_id, str) and employer_id.strip()):
+            self.logger.error("Invalid Employer ID")
+            return None
+
+
         with self.get_session() as session:
             # Skills gap analysis
             skills_gap = session.execute(
@@ -1256,6 +1265,11 @@ class JobsWorkflowController(Controllers):
 
     async def _get_average_time_to_hire(self, employer_id: str) -> float:
         """Calculate average time from application to hire in days"""
+        self.logger.info("Started Running : _get_average_time_to_hire")
+        if not (isinstance(employer_id, str) and employer_id.strip()):
+            self.logger.error("Invalid Employer ID")
+            return None
+
         with self.get_session() as session:
             result = session.execute(
                 select(
@@ -1276,6 +1290,11 @@ class JobsWorkflowController(Controllers):
 
     async def _generate_candidate_comparison(self, employer_id: str) -> list[dict]:
         """Generate candidate comparison data for employer"""
+        self.logger.info("Started Running : _generate_candidate_comparison")
+        if not (isinstance(employer_id, str) and employer_id.strip()):
+            self.logger.error("Invalid Employer ID")
+            return None
+
         with self.get_session() as session:
             # Get applications with ATS reports and candidate info
             job_applications: list[JobApplicationORM] = session.execute(
@@ -1342,6 +1361,7 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def bulk_import_jobs(self, company_id: str, jobs_data: list[dict]) -> BulkImportResult | None:
         """Process bulk job imports with validation and error handling"""
+
         batch_id = str(uuid.uuid4())
         results = {
             "total_processed": 0,
@@ -1421,6 +1441,8 @@ class JobsWorkflowController(Controllers):
     @error_handler
     def get_pending_approvals(self) -> list[Job]:
         """Get jobs needing admin approval - fetch featured jobs first"""
+        self.logger.info("Started Running: get_pending_approvals")
+        
         with self.get_session() as session:
             # Query for pending approval jobs with featured priority
             jobs = (
@@ -1513,6 +1535,10 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def find_potential_duplicates(self, job: Job) -> list[Job]:
         """Advanced duplicate detection using multiple criteria"""
+        self.logger.info("Started Find potential Job Duplicates detection")
+        if not isinstance(job, Job):
+            return None
+
         with self.get_session() as session:
             duplicates = session.query(JobsORM).filter(
                 and_(
@@ -1527,6 +1553,12 @@ class JobsWorkflowController(Controllers):
 
     @error_handler
     async def update_draft_application(self, application_id: str, updated_data: dict) -> None:
+        """will take a draft job application and update it."""
+        self.logger.info("Started update of draft application")
+        if not (isinstance(application_id, str) and application_id.strip()):
+            self.logger.error("Application_id contains invalid data")
+            return None
+
         with self.get_session() as session:
             application_orm: JobApplicationORM = (
                 session.query(JobApplicationORM)
@@ -1537,3 +1569,5 @@ class JobsWorkflowController(Controllers):
             if application_orm and application_orm.application_stage == "draft":
                 for key, value in updated_data.items():
                     setattr(application_orm, key, value)
+
+
