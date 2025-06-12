@@ -157,7 +157,7 @@ class EmployeeAgentsController(Controllers):
 
     async def optimize_primary_cv(self, primary_resume: JobSeekerCV):
         """
-            with the resume please run an Agent which will optimize the CV in order to rank higher
+            with the resume please run an Agent which will optimize the CV in order to rank higher - based on ATS Ranking
         :param user_uid:
         :return:
         """

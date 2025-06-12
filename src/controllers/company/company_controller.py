@@ -64,6 +64,7 @@ class CompanyController(Controllers):
         self.logger = init_logger("CompanyController")
         self.jobs_workflow_controller = get_controller('jobs_workflow')
         self.resume_controller = get_controller('resume')
+        self.employer_ai_agents = get_controller('employer_agents')
 
 
 
@@ -662,7 +663,10 @@ class CompanyController(Controllers):
         # Compatible with the Controller Method
         # self.logger.info(f"Analyzing documents with AI: {document_paths}")
         # Placeholder: Always return needs_human_review for now
+        
+
         return {"is_valid": False, "needs_human_review": True, "reason": "AI review required"}
+
 
     @error_handler
     async def auto_verify_company_documents(self):
@@ -673,9 +677,13 @@ class CompanyController(Controllers):
             send the documents to a company agent document verifier.
         :return:
         """
+        # This calls an AI Agent that will read all company documents of companies that have not been verified yet
+        # if a company documents meet requirements and are not suspicious they will automatically be verified if otherwise
+        # they will be marked for review.
         self.logger.info("Executing auto verify company docs from ap scheduler")
-        pass
+        await self.employer_ai_agents.analyze_company_documents_for_authenticity()
 
+        
 
     @error_handler
     async def _mark_company_verified(self, company_id: str) -> None:

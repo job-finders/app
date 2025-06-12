@@ -1,5 +1,7 @@
 import asyncio
+from psutil import cpu_percent
 from src.utils.route_helpers import get_controller, get_service
+
 
 def schedule_app_tasks(scheduler, app):
     """Schedule all periodic tasks that need Flask context."""
@@ -9,11 +11,26 @@ def schedule_app_tasks(scheduler, app):
         company_controller = get_controller("company")
         billing_controller = get_controller("billing")
 
+        # Configure job defaults to prevent overlapping runs
+        scheduler.add_jobstore('sqlalchemy', url=app.config['SQLALCHEMY_DATABASE_URI'])
+        scheduler.add_executor('threadpool', max_workers=5)  # Limit concurrent jobs
+        
+        job_defaults = {
+            'coalesce': True,  # Combine multiple pending runs
+            'max_instances': 1,  # Only 1 instance per job
+            'misfire_grace_time': 3600  # 1 hour grace period
+        }
+        scheduler.configure(job_defaults=job_defaults)
+
         logger = get_service("logger")()("app_scheduler")
         logger.info("###### Initializing App Scheduler ######")
 
         def async_job_wrapper(job_name, func):
             def wrapper():
+                if cpu_percent() > 80:
+                    logger.warning("Delaying job due to high CPU")
+                    time.sleep(300)
+
                 with app.app_context():
                     try:
                         logger.info(f"Running scheduled job: {job_name}")
@@ -27,11 +44,15 @@ def schedule_app_tasks(scheduler, app):
             return wrapper
 
         # === Company Jobs ===
+        # Verifies Company Documents based on AI Agents.
         scheduler.add_job(
             async_job_wrapper("document_verification", company_controller.auto_verify_company_documents),
-            trigger='interval',
-            minutes=30,
+            trigger='cron',
+            hour=5,
+            minute=30,
             id='document_verification',
+            jitter=300,
+            priority=1,
             replace_existing=True
         )
 
@@ -43,6 +64,8 @@ def schedule_app_tasks(scheduler, app):
             hour=1,
             minute=0,
             id='clean_up_old_job_approvals',
+            jitter=300,
+            priority=5,
             replace_existing=True
         )
 
@@ -51,6 +74,8 @@ def schedule_app_tasks(scheduler, app):
             trigger='interval',
             minutes=30,
             id='approve_jobs',
+            jitter=300,
+            priority=2,
             replace_existing=True
         )
 
@@ -60,6 +85,8 @@ def schedule_app_tasks(scheduler, app):
             minute=0,
             hour=7,
             id='send_job_alerts',
+            jitter=300,
+            priority=3,
             replace_existing=True
         )
 
@@ -70,6 +97,8 @@ def schedule_app_tasks(scheduler, app):
             hour=2,
             minute=0,
             id='flag_unusual_user_activity',
+            jitter=300,
+            priority=4,
             replace_existing=True
         )
 
@@ -80,6 +109,8 @@ def schedule_app_tasks(scheduler, app):
             hour=2,
             minute=30,
             id='evaluate_user_risks',
+            jitter=300,
+            priority=4,
             replace_existing=True
         )
 
@@ -89,22 +120,28 @@ def schedule_app_tasks(scheduler, app):
             hour=3,
             minute=0,
             id='detect_anomalous_jobs',
+            jitter=300,
+            priority=4,
             replace_existing=True
         )
         scheduler.add_job(
             async_job_wrapper("update_subscriptions", billing_controller.cron_update_subscription_states),
             trigger='cron',
-            hour=3,
+            hour=4,
             minute=0,
             timezone='UTC',
             id='update_billing_subscriptions',
+            jitter=300,
+            priority=2,
             replace_existing=True
         )
         scheduler.add_job(
             async_job_wrapper("billing_cron_jobs", billing_controller.cron_billing),
             trigger='interval',
             minutes=120,
-            id='billing_cronjob',
+            id='billing_cron_jobs',
+            jitter=300,
+            priority=1,
             replace_existing=True
         )
 

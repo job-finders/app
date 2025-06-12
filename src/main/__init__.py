@@ -117,6 +117,7 @@ def create_app(config):
     # Configure upload settings
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
+    app.config['SQLALCHEMY_DATABASE_URI'] = config.MYSQL_SETTINGS.DEVELOPMENT_DB
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     # Safe file upload validation
