@@ -671,6 +671,7 @@ class CompanyController(Controllers):
     @error_handler
     async def auto_verify_company_documents(self):
         """
+            THIS IS A CRON ENTRY POINT FOR VERIFYING COMPANY DOCUMENTS
         This task may run in celery or task scheduler.
             fetch documents that have not been reviewed or without recommendations -
             check if company profiles have been properlu completed and verified.
@@ -681,8 +682,9 @@ class CompanyController(Controllers):
         # if a company documents meet requirements and are not suspicious they will automatically be verified if otherwise
         # they will be marked for review.
         self.logger.info("Executing auto verify company docs from ap scheduler")
-        await self.employer_ai_agents.analyze_company_documents_for_authenticity()
-
+        _ = await self.employer_ai_agents.analyze_company_documents_for_authenticity()
+        self.logger.info(f"Finished Company Documents Verification")
+        # TODO - need to complete the process of uploading company documents for verifications.
         
 
     @error_handler
