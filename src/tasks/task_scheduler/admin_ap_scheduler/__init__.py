@@ -1,7 +1,8 @@
 import asyncio
 from psutil import cpu_percent
 from src.utils.route_helpers import get_controller, get_service
-
+from redis import Redis
+from redis_lock import Lock
 
 def schedule_app_tasks(scheduler, app):
     """Schedule all periodic tasks that need Flask context."""
@@ -27,20 +28,28 @@ def schedule_app_tasks(scheduler, app):
 
         def async_job_wrapper(job_name, func):
             def wrapper():
-                if cpu_percent() > 80:
-                    logger.warning("Delaying job due to high CPU")
-                    time.sleep(300)
-
-                with app.app_context():
-                    try:
-                        logger.info(f"Running scheduled job: {job_name}")
-                        # Check if function is async
-                        if asyncio.iscoroutinefunction(func):
-                            asyncio.run(func())
-                        else:
-                            func()  # Run synchronous functions directly
-                    except Exception as e:
-                        logger.error(f"Job '{job_name}' failed: {e}", exc_info=True)
+                # Redis Lock helps lockout same jobs from executing at once
+                with Lock(Redis(), "job_lock:" + job_name):
+                    
+                    if cpu_percent() > 80:
+                        logger.warning("Delaying job due to high CPU")
+                        time.sleep(300)
+                    
+                    with app.app_context():
+                        try:
+                            logger.info(f"Running scheduled job: {job_name}")
+                            # Check if function is async
+                            if asyncio.iscoroutinefunction(func):
+                                start = time.monotonic()
+                                asyncio.run(func())
+                            else:
+                                start = time.monotonic()
+                                func()  # Run synchronous functions directly
+                        except Exception as e:
+                            logger.error(f"Job '{job_name}' failed: {e}", exc_info=True)
+                        finally:
+                            duration = time.monotonic() - start
+                            log_job_run(job_name, duration, success=(e is None))
             return wrapper
 
         # === Company Jobs ===
