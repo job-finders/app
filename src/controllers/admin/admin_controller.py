@@ -222,7 +222,8 @@ class AdminController(Controllers):
                 'salary': await self._format_salary(job),
                 'description': job.description[:200] + '...' if job.description else "",
                 'url': job.application_url,
-                'deadline': job.application_deadline.strftime('%Y-%m-%d') if job.application_deadline else "ASAP"
+                'deadline': job.application_deadline.replace(
+                    tzinfo=timezone.utc) if job.application_deadline else "ASAP"
             } for job in recommended_jobs if job.is_active]
             context = dict(first_name=profile.first_name, jobs=job_data, count=len(job_data))
             return render_template('jobseekers/email/job_alert.html', **context)
@@ -238,29 +239,32 @@ class AdminController(Controllers):
 
     # Job Moderation Methods
     @error_handler
-    def approve_jobs(self) -> AdminActionResult:
+    async def approve_jobs(self) -> AdminActionResult:
 
         """
         scheduled using task scheduler cron jobs
         Every 30 Minutes the system will run and try to approve jobs that, have been posted by companies
         """
         self.logger.info("Scheduler - Running Approve Jobs - Cron Job")
-        return self.job_moderation_service.execute('approve')
+        results = await self.job_moderation_service.execute('approve')
+        return results
+
 
     @error_handler
-    def reject_job(self, job_id: str, reviewer_id: str, reason: str) -> AdminActionResult:
+    async def reject_job(self, job_id: str, reviewer_id: str, reason: str) -> AdminActionResult:
         """Reject a job posting with reason"""
-        return self.job_moderation_service.execute('reject', job_id=job_id, reviewer_id=reviewer_id, reason=reason)
+        return await self.job_moderation_service.execute('reject', job_id=job_id, reviewer_id=reviewer_id,
+                                                         reason=reason)
 
     @error_handler
-    def flag_job(self, job_id: str, reason: str, reporter_id: str) -> AdminActionResult:
+    async def flag_job(self, job_id: str, reason: str, reporter_id: str) -> AdminActionResult:
         """Flag a job for admin review"""
-        return self.job_moderation_service.execute('flag', job_id=job_id, reason=reason, reporter_id=reporter_id)
+        return await self.job_moderation_service.execute('flag', job_id=job_id, reason=reason, reporter_id=reporter_id)
 
     @error_handler
-    def bulk_update_job_status(self, job_ids: List[str], new_status: str) -> AdminActionResult:
+    async def bulk_update_job_status(self, job_ids: List[str], new_status: str) -> AdminActionResult:
         """Admin bulk status update with validation"""
-        return self.job_moderation_service.execute('bulk_update', job_ids=job_ids, new_status=new_status)
+        return await self.job_moderation_service.execute('bulk_update', job_ids=job_ids, new_status=new_status)
 
     @error_handler
     async def detect_anomalous_job_postings(self) -> AdminActionResult:
@@ -269,59 +273,39 @@ class AdminController(Controllers):
         de-activate it.
         """
         self.logger.info("Scheduler Started Service : detect_anomalous_job_postings")
-        return self.job_moderation_service.execute('detect_anomalies')
-
-    @error_handler
-    def get_pending_approvals(self) -> AdminActionResult:
-        """List all jobs needing moderation"""
-        try:
-            with self.get_session() as session:
-                pending_jobs = session.query(JobsORM).join(JobApprovalRequestORM).filter(
-                    JobApprovalRequestORM.status == JobApprovalStatusEnum.PENDING
-                ).all()
-
-                pending_data = [{
-                    "job_id": job.job_id,
-                    "title": job.title,
-                    "company_id": job.company_id,
-                    "requested_at": job.approval_request.requested_at.isoformat() if job.approval_request.requested_at else None
-                } for job in pending_jobs]
-
-                return AdminActionResult(success=True, message=f"Found {len(pending_jobs)} pending approvals", data={"pending_jobs": pending_data})
-        except Exception as e:
-            return AdminActionResult(success=False, message=f"Error retrieving pending approvals: {str(e)}")
+        return await self.job_moderation_service.execute('detect_anomalies')
 
     # Compliance Methods
     @error_handler
-    def check_bee_compliance(self, job_id: str) -> AdminActionResult:
+    async def check_bee_compliance(self, job_id: str) -> AdminActionResult:
         """Check B-BBEE compliance for South African jobs"""
-        return self.compliance_service.execute('bee_compliance', job_id=job_id)
+        return await self.compliance_service.execute('bee_compliance', job_id=job_id)
 
     @error_handler
-    def generate_employment_equity_report(self) -> AdminActionResult:
+    async def generate_employment_equity_report(self) -> AdminActionResult:
         """Generate EE report for regulatory compliance"""
-        return self.compliance_service.execute('employment_equity')
+        return await self.compliance_service.execute('employment_equity')
 
     @error_handler
-    def generate_pay_equity_report(self, company_id: str) -> AdminActionResult:
+    async def generate_pay_equity_report(self, company_id: str) -> AdminActionResult:
         """Analyze salary distributions"""
-        return self.compliance_service.execute('pay_equity', company_id=company_id)
+        return await self.compliance_service.execute('pay_equity', company_id=company_id)
 
     @error_handler
-    def analyze_application_biases(self, job_id: str) -> AdminActionResult:
+    async def analyze_application_biases(self, job_id: str) -> AdminActionResult:
         """Detect potential discrimination patterns in hiring process"""
-        return self.compliance_service.execute('bias_analysis', job_id=job_id)
+        return await self.compliance_service.execute('bias_analysis', job_id=job_id)
 
     # Analytics Methods
     @error_handler
-    def generate_system_health_report(self) -> AdminActionResult:
+    async def generate_system_health_report(self) -> AdminActionResult:
         """Monitor platform health metrics"""
-        return self.analytics_service.execute('system_health')
+        return await self.analytics_service.execute('system_health')
 
     @error_handler
-    def analyze_platform_engagement(self) -> AdminActionResult:
+    async def analyze_platform_engagement(self) -> AdminActionResult:
         """Track key engagement metrics"""
-        return self.analytics_service.execute('engagement')
+        return await self.analytics_service.execute('engagement')
     @error_handler
     def get_system_admin(self) -> AdminActionResult:
         """
@@ -365,9 +349,9 @@ class AdminController(Controllers):
                 message=f"Failed to generate risk recommendations: {str(e)}")
 
     @error_handler
-    def get_job_audit_log(self, job_id: str) -> AdminActionResult:
+    async def get_job_audit_log(self, job_id: str) -> AdminActionResult:
         """Get complete modification history for a job"""
-        return self.analytics_service.execute('audit_log', job_id=job_id)
+        return await self.analytics_service.execute('audit_log', job_id=job_id)
 
     # Legacy compatibility methods (simplified)
     @error_handler
@@ -401,10 +385,10 @@ class AdminController(Controllers):
             "exported_at": utc_time()
         }
 
-        return AdminActionResult(True, "Company data exported successfully", export_data)
+        return AdminActionResult(success=True, message="Company data exported successfully", data=export_data)
 
     @error_handler
-    def review_company_verifications(self) -> AdminActionResult:
+    async def review_company_verifications(self) -> AdminActionResult:
         """Identify companies needing verification checks"""
         # noinspection PyBroadException
         try:
@@ -444,18 +428,18 @@ class AdminController(Controllers):
         """
         try:
             # User stats
-            user_stats_result = self.analytics_service.execute('system_health')
+            user_stats_result = await self.analytics_service.execute('system_health')
             user_stats = user_stats_result.data.get("user_stats", {}) if user_stats_result.success else {}
 
             # Resume stats
-            ee_report_result = self.compliance_service.execute('employment_equity')
+            ee_report_result = await self.compliance_service.execute('employment_equity')
             resume_stats = {
                 "total": ee_report_result.data.get("gender_distribution", {}).get("total", None),
                 "completed": None  # Add more detailed resume stats if available from another service
             } if ee_report_result.success else {}
 
             # Job stats
-            job_stats_result = self.analytics_service.execute('system_health')
+            job_stats_result = await self.analytics_service.execute('system_health')
             job_stats = job_stats_result.data.get("job_stats", {}) if job_stats_result.success else {}
 
             # Company stats
@@ -463,6 +447,7 @@ class AdminController(Controllers):
                 "total": None,
                 "verified": None
             }
+            # noinspection PyBroadException
             try:
                 with self.get_session() as session:
                     company_stats["total"] = session.query(func.count(CompanyORM.company_id)).scalar()
@@ -474,6 +459,7 @@ class AdminController(Controllers):
             application_stats = {
                 "total": None
             }
+            # noinspection PyBroadException
             try:
                 with self.get_session() as session:
                     application_stats["total"] = session.query(func.count(JobApplicationORM.application_id)).scalar()
@@ -484,7 +470,7 @@ class AdminController(Controllers):
             system_health = user_stats_result.data if user_stats_result.success else {}
 
             # Engagement
-            engagement_result = self.analytics_service.execute('engagement')
+            engagement_result = await self.analytics_service.execute('engagement')
             engagement = engagement_result.data if engagement_result.success else {}
 
             dashboard_data = {

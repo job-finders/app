@@ -1,43 +1,17 @@
-from datetime import datetime, timezone
 import asyncio
-
-from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
+import inspect
+from datetime import datetime, timezone
 
 from sqlalchemy import or_
 
+from src.controllers.admin.interfaces import AdminServiceInterface, AdminActionResult, JobRecommenderResult
+from src.controllers.controller import error_handler
+from src.database.models.jobs_model import Job, JobStatusEnum
+from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.models.resume import JobSeekerCV
 from src.database.models.users import RolesEnum
 from src.database.sql.jobs_sql import JobsORM, ATSReportORM, JobApplicationORM, JobCategoryORM
-from src.controllers.controller import error_handler
-from src.controllers.admin.interfaces import AdminServiceInterface
-from src.database.models.jobseeker_profile import JobSeekerProfile
-from src.database.models.jobs_model import Job, JobStatusEnum
 from src.utils.route_helpers import get_controller, get_service
-
-
-class JobRecommenderResult(BaseModel):
-    profile : JobSeekerProfile
-    recommended_jobs: List[Job]
-class AdminActionResult(BaseModel):
-    __doc__ = """
-    Standardized structure for returning results from admin service actions.
-
-    This object is returned by all admin services and encapsulates the outcome of
-    an operation, including whether it succeeded, a user-readable message, and
-    optionally any resulting data or error details.
-
-    Attributes:
-        success (bool): Indicates whether the operation was successful.
-        message (str): A human-readable message describing the result.
-        data (Optional[Dict]): Additional payload data from the action (e.g., a report or entity info).
-        errors (Optional[List[str]]): A list of errors encountered during the operation, if any.
-    """
-    success: bool
-    message: str
-    data: Optional[Dict] = None
-    list_data: Optional[list[JobRecommenderResult]] = Field(default_factory=list)
-    errors: Optional[List[str]] = None
 
 
 class JobRecommendationService(AdminServiceInterface):
@@ -51,19 +25,47 @@ class JobRecommendationService(AdminServiceInterface):
         self.resume_controller = get_controller('resume')
         self._limit_recommended_per_jobseeker: int = 15
         self.logger = get_service('logger')()(self.__class__.__name__)
-
-
-    def execute(self, action: str, **kwargs) -> AdminActionResult:
-        """Execute job moderation action"""
-        actions = {
+        self.__interface_map = {
             'recommend_jobs': self.all_jobseekers_recommendations_executor,
         }
 
-        if action not in actions:
-            return AdminActionResult(success=False, message=f"Unknown action: {action}")
+    async def execute(self, action: str, *args, **kwargs):
+        """
+        Dynamically executes a method based on the provided action name.
 
-        # noinspection PyTypeChecker
-        return actions[action](**kwargs)
+        Args:
+            action (str): The name of the method to execute (must be present in `_interface_schema`).
+            *args: Positional arguments for the method.
+            **kwargs: Keyword arguments for the method.
+
+        Returns:
+            Any: The result of the invoked method.
+
+        Raises:
+            ValueError: If the action does not exist in this service's schema
+                        or if the found entry is not a callable method.
+            RuntimeError: If an unexpected error occurs during the execution
+                          of the target method.
+        """
+        try:
+            method_to_execute = self.__interface_map[action]
+
+            if method_to_execute is None:
+                raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
+
+            if inspect.iscoroutinefunction(method_to_execute):
+                return await method_to_execute(*args, **kwargs)
+            else:
+                return method_to_execute(*args, **kwargs)
+
+        # Catch specific exceptions that might be raised by the lookup or the method itself.
+        except ValueError as e:
+            # Re-raise the ValueError if it's one of the ones we explicitly raised.
+            raise e
+        except Exception as e:
+            # Catch any other unexpected exceptions and wrap them in a RuntimeError.
+            # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
+            raise RuntimeError(f"Error executing action '{action}': {str(e)}") from e
 
     @error_handler
     async def all_jobseekers_recommendations_executor(self) -> AdminActionResult:
@@ -71,13 +73,11 @@ class JobRecommendationService(AdminServiceInterface):
             this returns a list of profiles that can be sent job recommendations
         :return:
         """
-        job_seeker_profiles: list[JobSeekerProfile] = self.job_seekers_profile_controller.list_profiles_by_role(role=RolesEnum.JOBSEEKER.value)
-
+        job_seeker_profiles: list[JobSeekerProfile] = await self.job_seekers_profile_controller.list_profiles_by_role(
+            role=RolesEnum.JOBSEEKER.value)
         profiles_we_can_send_recommendations = [prof for prof in job_seeker_profiles if prof.can_send_job_recommendations]
-
         errors = []
         success : list[JobRecommenderResult] = []
-
         for i in range(0, len(profiles_we_can_send_recommendations), 50):
             batch = profiles_we_can_send_recommendations[i:i + 50]
             tasks = [self.get_personalized_job_recommendations(profile=profile) for profile in batch]

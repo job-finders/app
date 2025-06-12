@@ -40,7 +40,7 @@ def get_proxied_remote_address():
     Get the real client IP address, trusting the CF-Connecting-IP header
     only if the request comes directly from a known Cloudflare IP.
     """
-    remote_ip_str = request.remote_addr
+    remote_ip_str = get_remote_address()
     if not remote_ip_str:
         return "127.0.0.1" # Fallback if remote_addr is not available
 
@@ -78,6 +78,10 @@ def get_user_aware_key():
 limiter = Limiter(
     key_func=get_user_aware_key,
     default_limits=["100 per minute"],
+    storage_uri="redis://localhost:6379",
+    storage_options={"socket_connect_timeout": 30},
+    strategy="fixed-window",  # or "moving-window" or "sliding-window-counter"
+
     # You must provide your app's storage_uri, e.g., "redis://localhost:6379"
     # storage_uri="memory://" # Example: for development only
 )

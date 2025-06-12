@@ -50,6 +50,7 @@ def schedule_app_tasks(scheduler, app):
                         time.sleep(300)
                     with app.app_context():
                         try:
+                            success = True
                             logger.info(f"Running scheduled job: {job_name}")
                             # Check if function is async
                             if asyncio.iscoroutinefunction(func):
@@ -59,10 +60,11 @@ def schedule_app_tasks(scheduler, app):
                                 start = time.monotonic()
                                 func()  # Run synchronous functions directly
                         except Exception as e:
-                            logger.error(f"Job '{job_name}' failed: {e}", exc_info=True)
+                            success = False
+                            logger.error(f"Job '{job_name}' failed: {str(e)}", exc_info=True)
                         finally:
                             duration = time.monotonic() - start
-                            log_job_run(job_name, duration, success=(e is None))
+                            log_job_run(job_name, duration, success=success)
             return wrapper
 
         # === Company Jobs ===
@@ -86,11 +88,11 @@ def schedule_app_tasks(scheduler, app):
             id='clean_up_old_job_approvals',
             jitter=300,
             replace_existing=True)
-
+        # Approve Job Schedule must run every 30 minutes
         scheduler.add_job(
-            async_job_wrapper("approve_jobs", admin_controller.approve_jobs),
+            async_job_wrapper("approve_jobs", admin_controller.send_job_alerts_to_users),
             trigger='interval',
-            minutes=30,
+            minutes=2,
             id='approve_jobs',
             jitter=300,
             replace_existing=True)

@@ -1,3 +1,4 @@
+import inspect
 from datetime import datetime, timezone
 from typing import Any
 
@@ -21,6 +22,45 @@ class BillingEmailerService(BillingServiceInterface):
             "send": self.send
         }
 
+    async def execute(self, action: str, *args, **kwargs):
+        """
+        Dynamically executes a method based on the provided action name.
+
+        Args:
+            action (str): The name of the method to execute (must be present in `_interface_schema`).
+            *args: Positional arguments for the method.
+            **kwargs: Keyword arguments for the method.
+
+        Returns:
+            Any: The result of the invoked method.
+
+        Raises:
+            ValueError: If the action does not exist in this service's schema
+                        or if the found entry is not a callable method.
+            RuntimeError: If an unexpected error occurs during the execution
+                          of the target method.
+        """
+        try:
+            method_to_execute = self.__interface_map[action]
+
+            if method_to_execute is None:
+                raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
+
+            if inspect.iscoroutinefunction(method_to_execute):
+                return await method_to_execute(*args, **kwargs)
+            else:
+                return method_to_execute(*args, **kwargs)
+
+        # Catch specific exceptions that might be raised by the lookup or the method itself.
+        except ValueError as e:
+            # Re-raise the ValueError if it's one of the ones we explicitly raised.
+            raise e
+
+        except Exception as e:
+            # Catch any other unexpected exceptions and wrap them in a RuntimeError.
+            # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
+            raise RuntimeError(f"Error executing action '{action}': {str(e)}") from e
+
     async def send(self, event_type: BillingEventType, company_id: str, metadata: dict) -> bool:
         """
         Entry point to send a billing-related email.
@@ -39,13 +79,13 @@ class BillingEmailerService(BillingServiceInterface):
             self.logger.info(f"BillingEmailerService: Company not found for {company_id}. Cannot send email.")
             return False  # Indicate failure
 
-        recipient_email = company.billing_email or company.admin_email
+        recipient_email = company.billing_email or company.contact_email
         if not recipient_email:
             self.logger.info(f"BillingEmailerService: No recipient email found for company {company_id}.")
             return False  # Indicate failure
 
         try:
-            subject, html_content = self._compose_email(event_type, company, metadata)
+            subject, html_content = await self._compose_email(event_type, company, metadata)
         except ValueError as e:
             self.logger.info(f"BillingEmailerService: Failed to compose email for event {event_type.value}: {e}")
             return False  # Indicate failure
@@ -59,23 +99,24 @@ class BillingEmailerService(BillingServiceInterface):
         self.logger.info(f"BillingEmailerService: Email for {event_type.value} sent to queue for {company_id}.")
         return True  # Indicate success
 
-    def _compose_email(self, event_type: BillingEventType, company: Any, metadata: dict) -> tuple[str, str]:
+    @staticmethod
+    async def _compose_email(event_type: BillingEventType, company: Any, metadata: dict) -> tuple[str, str]:
         """
-        Composes the email subject and HTML content based on the event type.
+            Composes the email subject and HTML content based on the event type.
 
-        Args:
-            event_type (BillingEventType): The type of billing event.
-            company (Any): The company object with relevant details.
-            metadata (dict): Additional event-specific metadata.
+            Args:
+                event_type (BillingEventType): The type of billing event.
+                company (Any): The company object with relevant details.
+                metadata (dict): Additional event-specific metadata.
 
-        Returns:
-            tuple[str, str]: A tuple containing the email subject and HTML content.
+            Returns:
+                tuple[str, str]: A tuple containing the email subject and HTML content.
 
-        Raises:
-            ValueError: If an unsupported email event type is provided.
+            Raises:
+                ValueError: If an unsupported email event type is provided.
         """
-        # Use event_type.value to match against the string values defined in the Enum
         match event_type:
+            # Use event_type.value to match against the string values defined in the Enum
             case BillingEventType.PAYMENT_SUCCESS:
                 subject = f"Payment Received for Invoice #{metadata.get('invoice_id')}"
                 html = render_template("email/payment_success.html", **{

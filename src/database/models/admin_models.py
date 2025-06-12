@@ -48,7 +48,7 @@ class FlaggedUser(BaseModel):
     reference_id: str
     reason: str
     flagged_by: str
-    date_flagged_at: AwareDatetime
+    date_flagged_at: AwareDatetime = Field(default_factory=utc_time)
     status: str = Field(default=UserStatusFlagEnum.FLAGGED.value)
 
     model_config = ConfigDict(from_attributes=True)

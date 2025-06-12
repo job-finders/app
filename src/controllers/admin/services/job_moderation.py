@@ -1,11 +1,33 @@
+import inspect
+from typing import Dict, Any
+
+from pydantic import BaseModel
 from sqlalchemy import or_
 
-from src.controllers.admin.interfaces import AdminServiceInterface, AdminActionResult
+from src.controllers.admin.interfaces import AdminServiceInterface
 from src.database.models.users import User
 from src.database.sql.company import CompanyORM
 from src.database.sql.jobs_sql import JobsORM
 from src.utils.route_helpers import get_controller, get_service
 
+
+class AdminActionResult(BaseModel):
+    __doc__ = """
+    Standardized structure for returning results from admin service actions.
+
+    This object is returned by all admin services and encapsulates the outcome of
+    an operation, including whether it succeeded, a user-readable message, and
+    optionally any resulting data or error details.
+
+    Attributes:
+        success (bool): Indicates whether the operation was successful.
+        message (str): A human-readable message describing the result.
+        data (Optional[Dict]): Additional payload data from the action (e.g., a report or entity info).
+        errors (Optional[List[str]]): A list of errors encountered during the operation, if any.
+    """
+    success: bool
+    message: str
+    data: dict[str, Any] | None = None
 
 class JobModerationService(AdminServiceInterface):
     __doc__ = """
@@ -107,10 +129,7 @@ class JobModerationService(AdminServiceInterface):
         self.jobs_workflow = get_controller('jobs_workflow')
         self.system_admin: User = system_admin
         self.logger = get_service("logger")()(self.__class__.__qualname__)
-
-    def execute(self, action: str, **kwargs) -> AdminActionResult:
-        """Execute job moderation action"""
-        actions = {
+        self.__interface_map = {
             'approve': self._approve_jobs,
             'reject': self._reject_jobs,
             'flag': self._flag_jobs,
@@ -118,10 +137,43 @@ class JobModerationService(AdminServiceInterface):
             'detect_anomalies': self._detect_anomalous_postings
         }
 
-        if action not in actions:
-            return AdminActionResult(success=False, message=f"Unknown action: {action}")
+    async def execute(self, action: str, *args, **kwargs):
+        """
+        Dynamically executes a method based on the provided action name.
 
-        return actions[action](**kwargs)
+        Args:
+            action (str): The name of the method to execute (must be present in `_interface_schema`).
+            *args: Positional arguments for the method.
+            **kwargs: Keyword arguments for the method.
+
+        Returns:
+            Any: The result of the invoked method.
+
+        Raises:
+            ValueError: If the action does not exist in this service's schema
+                        or if the found entry is not a callable method.
+            RuntimeError: If an unexpected error occurs during the execution
+                          of the target method.
+        """
+        try:
+            method_to_execute = self.__interface_map[action]
+
+            if method_to_execute is None:
+                raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
+
+            if inspect.iscoroutinefunction(method_to_execute):
+                return await method_to_execute(*args, **kwargs)
+            else:
+                return method_to_execute(*args, **kwargs)
+
+        # Catch specific exceptions that might be raised by the lookup or the method itself.
+        except ValueError as e:
+            # Re-raise the ValueError if it's one of the ones we explicitly raised.
+            raise e
+        except Exception as e:
+            # Catch any other unexpected exceptions and wrap them in a RuntimeError.
+            # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
+            raise RuntimeError(f"Error executing action '{action}': {str(e)}") from e
 
     async def _reject_jobs(self):
         """

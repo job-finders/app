@@ -1,3 +1,4 @@
+import inspect
 from datetime import datetime, timezone, timedelta
 
 from sqlalchemy import func, case, text
@@ -79,22 +80,49 @@ class AnalyticsService(AdminServiceInterface):
 
     def __init__(self, session_factory):
         self.session_factory = session_factory
-
-    def execute(self, metric_type: str, **kwargs) -> AdminActionResult:
-        """Execute analytics operations"""
-        metrics = {
+        self.__interface_map = {
             'system_health': self._generate_system_health_report,
             'engagement': self._analyze_platform_engagement,
             'audit_log': self._get_job_audit_log,
             'company_stats': self._company_statistics,
-
         }
 
-        if metric_type not in metrics:
-            return AdminActionResult(success=False, message=f"Unknown metric type: {metric_type}")
+    async def execute(self, action: str, *args, **kwargs):
+        """
+        Dynamically executes a method based on the provided action name.
 
-        # noinspection PyArgumentList
-        return metrics[metric_type](**kwargs)
+        Args:
+            action (str): The name of the method to execute (must be present in `_interface_schema`).
+            *args: Positional arguments for the method.
+            **kwargs: Keyword arguments for the method.
+
+        Returns:
+            Any: The result of the invoked method.
+
+        Raises:
+            ValueError: If the action does not exist in this service's schema
+                        or if the found entry is not a callable method.
+            RuntimeError: If an unexpected error occurs during the execution
+                          of the target method.
+        """
+        try:
+            method_to_execute = self.__interface_map[action]
+            if method_to_execute is None:
+                raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
+            if inspect.iscoroutinefunction(method_to_execute):
+                # noinspection PyArgumentList
+                return await method_to_execute(*args, **kwargs)
+            else:
+                # noinspection PyArgumentList
+                return method_to_execute(*args, **kwargs)
+        # Catch specific exceptions that might be raised by the lookup or the method itself.
+        except ValueError as e:
+            # Re-raise the ValueError if it's one of the ones we explicitly raised.
+            raise e
+        except Exception as e:
+            # Catch any other unexpected exceptions and wrap them in a RuntimeError.
+            # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
+            raise RuntimeError(f"Error executing action '{action}': {str(e)}") from e
 
     def _company_statistics(self, company_id: str) -> AdminActionResult:
         """

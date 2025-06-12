@@ -1,10 +1,12 @@
 from abc import abstractmethod, ABC
 from enum import Enum
+from typing import List, Dict, Optional
 
 from pydantic import BaseModel, Field
-from src.database.models.jobseeker_profile import JobSeekerProfile
+
 from src.database.models.jobs_model import Job
-from typing import List, Dict, Optional
+from src.database.models.jobseeker_profile import JobSeekerProfile
+
 
 class JobRecommenderResult(BaseModel):
     profile : JobSeekerProfile

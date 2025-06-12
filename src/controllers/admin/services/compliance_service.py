@@ -1,3 +1,4 @@
+import inspect
 from datetime import datetime, timezone
 
 from sqlalchemy import func, case
@@ -85,20 +86,49 @@ class ComplianceService(AdminServiceInterface):
 
     def __init__(self, session_factory):
         self.session_factory = session_factory
-
-    def execute(self, report_type: str, **kwargs) -> AdminActionResult:
-        """Execute compliance report generation"""
-        reports = {
+        self.__interface_map = {
             'bee_compliance': self._check_bee_compliance,
             'employment_equity': self._generate_employment_equity_report,
             'pay_equity': self._generate_pay_equity_report,
             'bias_analysis': self._analyze_application_biases
         }
 
-        if report_type not in reports:
-            return AdminActionResult(success=False, message=f"Unknown report type: {report_type}")
+    async def execute(self, action: str, *args, **kwargs):
+        """
+        Dynamically executes a method based on the provided action name.
 
-        return reports[report_type](**kwargs)
+        Args:
+            action (str): The name of the method to execute (must be present in `_interface_schema`).
+            *args: Positional arguments for the method.
+            **kwargs: Keyword arguments for the method.
+
+        Returns:
+            Any: The result of the invoked method.
+
+        Raises:
+            ValueError: If the action does not exist in this service's schema
+                        or if the found entry is not a callable method.
+            RuntimeError: If an unexpected error occurs during the execution
+                          of the target method.
+        """
+        try:
+            method_to_execute = self.__interface_map[action]
+
+            if method_to_execute is None:
+                raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
+            if inspect.iscoroutinefunction(method_to_execute):
+                return await method_to_execute(*args, **kwargs)
+            else:
+                # noinspection PyArgumentList
+                return method_to_execute(*args, **kwargs)
+        # Catch specific exceptions that might be raised by the lookup or the method itself.
+        except ValueError as e:
+            # Re-raise the ValueError if it's one of the ones we explicitly raised.
+            raise e
+        except Exception as e:
+            # Catch any other unexpected exceptions and wrap them in a RuntimeError.
+            # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
+            raise RuntimeError(f"Error executing action '{action}': {str(e)}") from e
 
     def _check_bee_compliance(self, job_id: str) -> AdminActionResult:
         """Check B-BBEE compliance for South African jobs"""

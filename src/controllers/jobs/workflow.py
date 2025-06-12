@@ -9,6 +9,7 @@ from flask import Flask
 from pydantic import ValidationError
 from requests import RequestException
 from sqlalchemy import select, func, and_, case
+from sqlalchemy.orm import joinedload
 
 from src.controllers.controller import Controllers
 from src.controllers.controller import error_handler
@@ -151,8 +152,8 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def validate_job_post(self, job: Job) -> dict:
         """Validate job post completeness and employer credibility"""
-        if not isinstance(job, Job):            
-            return None
+        if not isinstance(job, Job):
+            return {}
 
         self.logger.info(f"Started Job validation Heuristics on the following Job : {job.title} Job ID : {job.job_id}")
         validation_result = {
@@ -337,9 +338,9 @@ class JobsWorkflowController(Controllers):
     async def remove_saved_job(self, user_id: str, job_id: str) -> bool:
         """Remove a saved job from the user's list"""
         if not(isinstance(user_id, str) and user_id.strip()):
-            return None
+            return False
         if not (isinstance(job_id, str) and job_id.strip()):
-            return None
+            return False
 
         with self.get_session() as session:
             # Find the saved job entry in the saved_jobs table
@@ -356,7 +357,7 @@ class JobsWorkflowController(Controllers):
     async def delete_job(self, job_id: str) -> bool:
         """Permanently delete a job listing and its dependencies"""
         if not (isinstance(job_id, str) and job_id.strip()):
-            return None
+            return False
         
         with self.get_session() as session:
             # Lock the job row for update
@@ -686,7 +687,7 @@ class JobsWorkflowController(Controllers):
             })
 
     @error_handler
-    async def generate_application_review_summary(self, application_id: str) -> str:
+    async def generate_application_review_summary(self, application_id: str) -> str | None:
         """
         Generate an AI-powered review summary of a job application using the DeepSeek API.
 
@@ -773,7 +774,7 @@ class JobsWorkflowController(Controllers):
         """Identify similar existing jobs"""
 
         if not isinstance(job, Job):
-            return None
+            return []
 
         with self.get_session() as session:
             duplicates = session.query(JobsORM).filter(
@@ -793,7 +794,7 @@ class JobsWorkflowController(Controllers):
 
     # Helper methods
     @staticmethod
-    def _calculate_title_similarity(title1: str, title2: str) -> float:
+    def _calculate_title_similarity(title1: str, title2: str) -> float | None:
         """Calculate title similarity using Levenshtein distance"""
         
         if not (isinstance(title1, str) and isinstance(title2, str)):
@@ -803,7 +804,7 @@ class JobsWorkflowController(Controllers):
 
         return levenstein_ratio(title1.lower(), title2.lower())
 
-    async def _auto_categorize_job(self, title: str, description: str) -> str:
+    async def _auto_categorize_job(self, title: str, description: str) -> str | None:
         """Heuristically categorize a job based on title and description."""
         if not (isinstance(title, str) and title.strip()):
             return None
@@ -811,7 +812,7 @@ class JobsWorkflowController(Controllers):
         if not (isinstance(description, str) and description.strip()):
             return None
         description = description.strip()
-        
+
         async def create_ai_prompt(title: str, description: str) -> str:
             return f"""
             You are a smart job categorization assistant.
@@ -1263,7 +1264,7 @@ class JobsWorkflowController(Controllers):
                 candidate_comparison= await self._generate_candidate_comparison(employer_id)
             )
 
-    async def _get_average_time_to_hire(self, employer_id: str) -> float:
+    async def _get_average_time_to_hire(self, employer_id: str) -> float | None:
         """Calculate average time from application to hire in days"""
         self.logger.info("Started Running : _get_average_time_to_hire")
         if not (isinstance(employer_id, str) and employer_id.strip()):
@@ -1293,7 +1294,7 @@ class JobsWorkflowController(Controllers):
         self.logger.info("Started Running : _generate_candidate_comparison")
         if not (isinstance(employer_id, str) and employer_id.strip()):
             self.logger.error("Invalid Employer ID")
-            return None
+            return []
 
         with self.get_session() as session:
             # Get applications with ATS reports and candidate info
@@ -1439,7 +1440,7 @@ class JobsWorkflowController(Controllers):
 
         # Add to JobsController
     @error_handler
-    def get_pending_approvals(self) -> list[Job]:
+    async def get_pending_approvals(self) -> list[Job]:
         """Get jobs needing admin approval - fetch featured jobs first"""
         self.logger.info("Started Running: get_pending_approvals")
 
@@ -1457,8 +1458,7 @@ class JobsWorkflowController(Controllers):
             #TODO- Consider including approval requssts with the job in this response
             return [Job(**job.to_dict()) for job in jobs if job] if jobs else []
 
-    @staticmethod
-    def format_validation_feedback(validation_result: dict) -> str:
+    def format_validation_feedback(self, validation_result: dict) -> str:
         """Convert validation results into human-readable feedback string."""
         self.logger.info("Started Running : format_validation_feedback")
         lines = []
@@ -1487,7 +1487,8 @@ class JobsWorkflowController(Controllers):
         return "\n".join(lines).strip()
 
     @error_handler
-    async def update_approval_status(self,  job_id: str, decision: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job:
+    async def update_approval_status(self, job_id: str, decision: str, reviewer_id: str,
+                                     validation_result: Optional[dict] = None) -> Job | None:
         """Update job approval status (Admin only)
 
         validation_result = {

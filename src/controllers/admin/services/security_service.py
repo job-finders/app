@@ -1,3 +1,4 @@
+import inspect
 from datetime import datetime
 from functools import partial
 
@@ -74,20 +75,48 @@ class SecurityService(AdminServiceInterface):
         self.users_controller = get_controller('users')
         self.jobseekers_controller = get_controller('job_seeker_profile')
         self.logger = get_service("logger")()(self.__class__.__name__)
-
-    async def execute(self, security_event: str, **kwargs) -> AdminActionResult:
-        """Execute analytics operations"""
-        security_events = {
+        self.__interface_map = {
             'flag_unusual_user_activity' : self._flag_unusual_user_activity,
             'apply_user_risk_recommendations': self._apply_user_risk_recommendations,
         }
 
-        if security_event not in security_events:
-            return AdminActionResult(success=False, message=f"Unknown security event type: {security_event}")
-        # noinspection PyTypeChecker
-        return await security_events[security_event](**kwargs)
+    async def execute(self, action: str, *args, **kwargs):
+        """
+        Dynamically executes a method based on the provided action name.
 
+        Args:
+            action (str): The name of the method to execute (must be present in `_interface_schema`).
+            *args: Positional arguments for the method.
+            **kwargs: Keyword arguments for the method.
 
+        Returns:
+            Any: The result of the invoked method.
+
+        Raises:
+            ValueError: If the action does not exist in this service's schema
+                        or if the found entry is not a callable method.
+            RuntimeError: If an unexpected error occurs during the execution
+                          of the target method.
+        """
+        try:
+            method_to_execute = self.__interface_map[action]
+
+            if method_to_execute is None:
+                raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
+
+            if inspect.iscoroutinefunction(method_to_execute):
+                return await method_to_execute(*args, **kwargs)
+            else:
+                return method_to_execute(*args, **kwargs)
+
+        # Catch specific exceptions that might be raised by the lookup or the method itself.
+        except ValueError as e:
+            # Re-raise the ValueError if it's one of the ones we explicitly raised.
+            raise e
+        except Exception as e:
+            # Catch any other unexpected exceptions and wrap them in a RuntimeError.
+            # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
+            raise RuntimeError(f"Error executing action '{action}': {str(e)}") from e
 
     async def _apply_user_risk_recommendations(self, admin_uid: str) -> AdminActionResult:
         """
