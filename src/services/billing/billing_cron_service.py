@@ -1,5 +1,4 @@
 import inspect
-
 from src.database.models.billing import InvoiceStatusEnum
 from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType
 

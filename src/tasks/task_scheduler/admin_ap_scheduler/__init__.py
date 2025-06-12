@@ -122,7 +122,7 @@ def schedule_app_tasks(scheduler, app):
             priority=4,
             replace_existing=True
         )
-
+        # This will detect anomalous job postings
         scheduler.add_job(
             async_job_wrapper("detect_anomalous_jobs", admin_controller.detect_anomalous_job_postings),
             trigger='cron',
