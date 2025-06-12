@@ -1,0 +1,11 @@
+{% extends "email/layout/base.html" %}
+{% set title = "Subscription Expired" %}
+{% set header = "Your Subscription Has Expired" %}
+
+{% block content %}
+<p>Hi,</p>
+
+<p>We're notifying you that your subscription has expired due to the following reason: <span class="highlight">{{ reason | capitalize }}</span>.</p>
+
+<p>Please update your plan or payment method to restore service access.</p>
+{% endblock %}
