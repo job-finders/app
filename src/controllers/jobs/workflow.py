@@ -44,10 +44,15 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def update_job(self, job_id: str, updated_job: Job) -> Job| None:
         """Updates the job matching the job_id"""
+        if not (isinstance(job_id, str) and job_id.strip()):
+            return None
+        if not isinstance(updated_job, Job):
+            return None
+
         with self.get_session() as session:
             job_orm = session.get(JobsORM, job_id)
             if not job_orm:
-               return None
+                return None
 
             # Update all fields except job_id
             for key, value in updated_job.model_dump(exclude_unset=True).items():
@@ -60,34 +65,66 @@ class JobsWorkflowController(Controllers):
             return Job(**job_orm.to_dict()) if job_orm else None
 
     @error_handler
-    async def de_activate_job_listing(self, job_id: str, reviewer_id: str) -> Job | None:
+    async def de_activate_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
         """Mark job as inactive by setting expiration date to past"""
+<<<<<<< HEAD
+        if not (isinstance(job_id, str) and job_id.strip()):
+            return None
+        if not (isinstance(reviewer_id, str) and reviewer_id.strip()):
+            return None
+        self.logger.info(f"Updating Job_ID: {job_id} Job Approval Status to {JobApprovalStatusEnum.CLOSED.value}")
+        self.logger.info(f"The Reviewer : {reviewer_id} Arrived at this Review : {validation_result}")
+        return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.CLOSED.value, reviewer_id=reviewer_id)
+=======
         self.logger.info("Called Activate job listing")
         if not(isinstance(job_id, str) and job_id.strip()):
             return None
         if not(isinstance(reviewer_id, str) and reviewer_id.strip()):
             return None
+>>>>>>> baaacfb8fd9ee8acf251d2f770c47bc079b5696b
 
         return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.CLOSED.value,reviewer_id=reviewer_id)
 
     @error_handler
     async def activate_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
         """Activate job listing by resetting expiration date"""
+<<<<<<< HEAD
+        if not (isinstance(job_id, str) and job_id.strip()):
+            return None
+        if not (isinstance(reviewer_id, str) and reviewer_id.strip()):
+            return None
+        self.logger.info(f"Updating Job_ID: {job_id} Job Approval Status to {JobApprovalStatusEnum.ACTIVE.value}")
+        self.logger.info(f"The Reviewer : {reviewer_id} Arrived at this Review : {validation_result}")
+        return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.ACTIVE.value,
+        reviewer_id=reviewer_id,validation_result=validation_result)
+=======
         return await self.update_approval_status(job_id=job_id,
                                                  decision=JobStatusEnum.ACTIVE.value,
                                                  reviewer_id=reviewer_id,
                                                  validation_result=validation_result)
+>>>>>>> baaacfb8fd9ee8acf251d2f770c47bc079b5696b
 
     @error_handler
     async def reject_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
-        return await self.update_approval_status(job_id=job_id,
-                                                 decision=JobApprovalStatusEnum.REJECTED.value,
-                                                 reviewer_id=reviewer_id,
-                                                 validation_result=validation_result)
+        """This will mark the job in question as rejected"""
+        if not (isinstance(job_id, str) and job_id.strip()):
+            return None
+        if not (isinstance(reviewer_id, str) and reviewer_id.strip()):
+            return None
+        self.logger.info(f"Updating Job_ID: {job_id} Job Approval Status to {JobApprovalStatusEnum.REJECTED.value}")
+        self.logger.info(f"The Reviewer : {reviewer_id} Arrived at this Review : {validation_result}")
+        return await self.update_approval_status(job_id=job_id,decision=JobApprovalStatusEnum.REJECTED.value,
+        reviewer_id=reviewer_id,validation_result=validation_result)
+
 
     @error_handler
     async def _create_job(self, job: Job) -> Job | None:
         """Create new job listing"""
+        if not isinstance(job, Job):            
+            self.logger.info(F"Malformed Job Variabled when creating a job")
+            return None
+
+        self.logger.info(f"Will now create the following job : {job.title}")
         with self.get_session() as session:
             # Convert Pydantic model to ORM-compatible dict
             job_existing = session.query(JobsORM).filter_by(job_id=job.job_id).first()
@@ -106,8 +143,13 @@ class JobsWorkflowController(Controllers):
         argument -- description
         Return: return_description
         """
+        if not (isinstance(job_data, Job) and isinstance(employer, Employer):
+            return None
         
+        self.logger.info(f"Employee : {employer.employer_id} Started creating the Job Titled : {job_data.title}")
+
         if not employer.is_verified:
+            self.logger.info(f"Employer : {employer.employer_id} is not verified")
             return None
 
         return await self._create_job(job_data | {"employer_id": employer.employer_id})
@@ -115,6 +157,10 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def validate_job_post(self, job: Job) -> dict:
         """Validate job post completeness and employer credibility"""
+        if not isinstance(job, Job):            
+            return None
+
+        self.logger.info(f"Started Job validation Heuristics on the following Job : {job.title} Job ID : {job.job_id}")
         validation_result = {
             'valid': True,
             'errors': [],
@@ -180,6 +226,10 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def add_job_posting_workflow(self, job: Job) -> Job:
         """Complete job submission workflow"""
+        if not isinstance(job, Job):            
+            self.logger.info(f"Malformed Job Instance when adding job - to job post workflow")
+            return None
+
         with self.get_session() as session:
             # Step 1: Save as draft
             job.status = JobStatusEnum.DRAFT.value
@@ -210,6 +260,7 @@ class JobsWorkflowController(Controllers):
             session.commit()
 
         if validation['requires_approval']:
+            # IF we are here then the job requires admin approval
             job = await self.update_approval_status(job_id=draft_orm.job_id, status=JobApprovalStatusEnum.PENDING.value)
         else:
             job = await self.update_approval_status(job_id=draft_orm.job_id, status=JobApprovalStatusEnum.APPROVED.value)
@@ -225,6 +276,14 @@ class JobsWorkflowController(Controllers):
         :param reporter_id:
         :return:
         """
+        if not (isinstance(job_id, str) and job_id.strip()):
+            self.logger.error("Invalid or None Existent Job ID - When running flag_job_post")
+            return None
+
+        if not (isinstance(reporter_id, str) and reporter_id.strip()):
+            self.logger.error("Invalid or None Existent Reporter ID- When running flag_job_post")
+            return None
+        
         with self.get_session() as session:
             job = session.query(JobsORM).get(job_id)
             if not job:
@@ -247,15 +306,18 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def save_job_for_user(self, user_id: str, job_id: str) -> None|SavedJob :
         """Save a job to a user's saved list with validation"""
+        if not(isinstance(user_id, str) and user_id.strip()):
+            self.logger.error("Malformed User ID when saving job for user")
+            return None
+
+        if not(isinstance(job_id, str) and job_id.strip()):
+            self.logger.error("Malformed Job ID when saving job for user")
+            return None
+
         with self.get_session() as session:
             # Validate both user and job exist
-            user_exists = session.query(
-                session.query(UserORM).filter_by(user_id=user_id).exists()
-            ).scalar()
-
-            job_exists = session.query(
-                session.query(JobsORM).filter_by(job_id=job_id).exists()
-            ).scalar()
+            user_exists = session.query(session.query(UserORM).filter_by(user_id=user_id).exists()).scalar()
+            job_exists = session.query(session.query(JobsORM).filter_by(job_id=job_id).exists()).scalar()
 
             if not user_exists:
                 return None
@@ -271,15 +333,20 @@ class JobsWorkflowController(Controllers):
 
             if already_saved:
                 return None
+
             saved_job = SavedJob(user_id=user_id,job_id=job_id)
             # Create and add the saved job to session
             session.add(SavedJobORM(**saved_job.model_dump()))
-
             return saved_job
 
     @error_handler
     async def remove_saved_job(self, user_id: str, job_id: str) -> bool:
         """Remove a saved job from the user's list"""
+        if not(isinstance(user_id, str) and user_id.strip()):
+            return None
+        if not (isinstance(job_id, str) and job_id.strip()):
+            return None
+
         with self.get_session() as session:
             # Find the saved job entry in the saved_jobs table
             saved_job_orm = session.query(SavedJobORM).filter_by(user_id=user_id, job_id=job_id).first()
@@ -294,6 +361,9 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def delete_job(self, job_id: str) -> bool:
         """Permanently delete a job listing and its dependencies"""
+        if not (isinstance(job_id, str) and job_id.strip()):
+            return None
+        
         with self.get_session() as session:
             # Lock the job row for update
             job_orm = session.query(JobsORM).filter_by(job_id=job_id).with_for_update().first()
@@ -335,9 +405,7 @@ class JobsWorkflowController(Controllers):
             ).one()
             # Additional queries
             category_counts = dict(session.query(JobsORM.category,func.count(JobsORM.job_id)).group_by(JobsORM.category).all())
-
-            recent_jobs = (session.query(func.count(JobsORM.job_id))
-                           .filter(JobsORM.posted_at >= datetime.now(timezone.utc) - timedelta(days=30)).scalar() or 0)
+            recent_jobs = (session.query(func.count(JobsORM.job_id)).filter(JobsORM.posted_at >= datetime.now(timezone.utc) - timedelta(days=30)).scalar() or 0)
 
             return JobStatistics(
                 total_jobs=stats.total_jobs,
@@ -416,6 +484,9 @@ class JobsWorkflowController(Controllers):
     @error_handler
     def _generate_summary_background(self, application_id: str):
             """Background task for AI summary generation"""
+            if not(isinstance(application_id, str) and application_id.strip()):
+                return None
+
             with self.app.app_context():
                 summary = self.generate_application_review_summary(application_id)
                 with self.get_session() as session:
@@ -432,6 +503,9 @@ class JobsWorkflowController(Controllers):
         Returns:
             bool: True if withdrawal was successful, False otherwise
         """
+        if not(isinstance(application_id, str) and application_id.strip()):
+            return None
+
         with self.get_session() as session:
             # Get the application with lock to prevent race conditions
             job_application = session.query(JobApplicationORM).filter_by(
@@ -580,6 +654,9 @@ class JobsWorkflowController(Controllers):
         - If no applications are submitted, the conversion rate defaults to `0.0`.
         """
 
+        if not(isinstance(job_id, str) and job_id.strip()):
+            return None
+
         with self.get_session() as session:
             # Get counts for each application stage
             stats = session.query(
@@ -642,6 +719,9 @@ class JobsWorkflowController(Controllers):
         - If the DeepSeek API is unreachable or returns an error, a fallback message is returned.
         - The method logs all API-related errors for monitoring purposes.
         """
+        if not(isinstance(application_id, str) and application_id.strip()):
+            return None
+        
         with self.get_session() as session:
             application = session.query(JobApplicationORM).get(application_id)
             cv = session.query(JobSeekerCVORM).filter_by(cv_id=application.cv_id).first()
@@ -697,6 +777,10 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def detect_duplicate_jobs(self, job: Job) -> list[Job]:
         """Identify similar existing jobs"""
+
+        if not isinstance(job, Job):
+            return None
+
         with self.get_session() as session:
             duplicates = session.query(JobsORM).filter(
                 JobsORM.company_id == job.company_id,
@@ -717,10 +801,23 @@ class JobsWorkflowController(Controllers):
     @staticmethod
     def _calculate_title_similarity(title1: str, title2: str) -> float:
         """Calculate title similarity using Levenshtein distance"""
+        
+        if not (isinstance(title1, str) and isinstance(title2, str)):
+            return None
+        title1 = title1.strip()
+        title2 = title2.strip()
+
         return levenstein_ratio(title1.lower(), title2.lower())
 
     async def _auto_categorize_job(self, title: str, description: str) -> str:
         """Heuristically categorize a job based on title and description."""
+        if not (isinstance(title, str) and title.strip()):
+            return None
+        title = title.strip()
+        if not (isinstance(description, str) and description.strip()):
+            return None
+        description = description.strip()
+        
         async def create_ai_prompt(title: str, description: str) -> str:
             return f"""
             You are a smart job categorization assistant.
