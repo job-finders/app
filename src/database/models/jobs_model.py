@@ -12,7 +12,7 @@ from src.agents.employer import EnhanceJobPostOutput
 from src.database.constants import utc_time
 from src.database.models.company_models import Company
 
-
+from src.database.models.employer_models import Employer
 # NOTE : DO NOT REMOVE EMPLOYER IMPORT
 # from textstat import flesch_reading_ease
 

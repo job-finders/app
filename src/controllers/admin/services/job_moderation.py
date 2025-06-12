@@ -1,12 +1,10 @@
 from sqlalchemy import or_
 
-from sqlalchemy import or_
-
 from src.controllers.admin.interfaces import AdminServiceInterface, AdminActionResult
 from src.database.models.users import User
 from src.database.sql.company import CompanyORM
 from src.database.sql.jobs_sql import JobsORM
-from src.utils.route_helpers import get_controller
+from src.utils.route_helpers import get_controller, get_service
 
 
 class JobModerationService(AdminServiceInterface):

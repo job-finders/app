@@ -1,8 +1,11 @@
 import asyncio
+import time
 from psutil import cpu_percent
+from redis.lock import Lock
+
 from src.utils.route_helpers import get_controller, get_service
 from redis import Redis
-from redis_lock import Lock
+
 
 def schedule_app_tasks(scheduler, app):
     """Schedule all periodic tasks that need Flask context."""
@@ -26,15 +29,25 @@ def schedule_app_tasks(scheduler, app):
         logger = get_service("logger")()("app_scheduler")
         logger.info("###### Initializing App Scheduler ######")
 
+        def log_job_run(job_name: str, duration: float, success: bool):
+            """
+            Logs the result of a scheduled job run.
+
+            :param job_name: Name of the job
+            :param duration: Duration in seconds
+            :param success: Whether the job succeeded
+            :return:
+            """
+            status = "SUCCESS" if success else "FAILURE"
+            logger.info(f"Job '{job_name}' finished with status: {status} in {duration:.2f} seconds")
+
         def async_job_wrapper(job_name, func):
             def wrapper():
                 # Redis Lock helps lockout same jobs from executing at once
                 with Lock(Redis(), "job_lock:" + job_name):
-                    
                     if cpu_percent() > 80:
                         logger.warning("Delaying job due to high CPU")
                         time.sleep(300)
-                    
                     with app.app_context():
                         try:
                             logger.info(f"Running scheduled job: {job_name}")
@@ -61,9 +74,7 @@ def schedule_app_tasks(scheduler, app):
             minute=30,
             id='document_verification',
             jitter=300,
-            priority=1,
-            replace_existing=True
-        )
+            replace_existing=True)
 
         # === Former Celery Beat Jobs ===
         scheduler.add_job(
@@ -74,9 +85,7 @@ def schedule_app_tasks(scheduler, app):
             minute=0,
             id='clean_up_old_job_approvals',
             jitter=300,
-            priority=5,
-            replace_existing=True
-        )
+            replace_existing=True)
 
         scheduler.add_job(
             async_job_wrapper("approve_jobs", admin_controller.approve_jobs),
@@ -84,9 +93,7 @@ def schedule_app_tasks(scheduler, app):
             minutes=30,
             id='approve_jobs',
             jitter=300,
-            priority=2,
-            replace_existing=True
-        )
+            replace_existing=True)
 
         scheduler.add_job(
             async_job_wrapper("send_job_alerts", admin_controller.send_job_alerts_to_users),
@@ -95,9 +102,7 @@ def schedule_app_tasks(scheduler, app):
             hour=7,
             id='send_job_alerts',
             jitter=300,
-            priority=3,
-            replace_existing=True
-        )
+            replace_existing=True)
 
         # Flagging suspicious activity
         scheduler.add_job(
@@ -107,9 +112,7 @@ def schedule_app_tasks(scheduler, app):
             minute=0,
             id='flag_unusual_user_activity',
             jitter=300,
-            priority=4,
-            replace_existing=True
-        )
+            replace_existing=True)
 
         # Evaluate risks based on that flag
         scheduler.add_job(
@@ -119,9 +122,7 @@ def schedule_app_tasks(scheduler, app):
             minute=30,
             id='evaluate_user_risks',
             jitter=300,
-            priority=4,
-            replace_existing=True
-        )
+            replace_existing=True)
         # This will detect anomalous job postings
         scheduler.add_job(
             async_job_wrapper("detect_anomalous_jobs", admin_controller.detect_anomalous_job_postings),
@@ -130,9 +131,7 @@ def schedule_app_tasks(scheduler, app):
             minute=0,
             id='detect_anomalous_jobs',
             jitter=300,
-            priority=4,
-            replace_existing=True
-        )
+            replace_existing=True)
         scheduler.add_job(
             async_job_wrapper("update_subscriptions", billing_controller.cron_update_subscription_states),
             trigger='cron',
@@ -141,17 +140,13 @@ def schedule_app_tasks(scheduler, app):
             timezone='UTC',
             id='update_billing_subscriptions',
             jitter=300,
-            priority=2,
-            replace_existing=True
-        )
+            replace_existing=True)
         scheduler.add_job(
             async_job_wrapper("billing_cron_jobs", billing_controller.cron_billing),
             trigger='interval',
             minutes=120,
             id='billing_cron_jobs',
             jitter=300,
-            priority=1,
-            replace_existing=True
-        )
+            replace_existing=True)
 
         logger.info("Scheduled: All tasks initialized in app scheduler.")

@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from difflib import SequenceMatcher
-from typing import Callable, Any, List, Tuple
+from typing import Callable, List, Tuple
 
 from src.database.models.jobseeker_profile import JobSeekerProfile
 

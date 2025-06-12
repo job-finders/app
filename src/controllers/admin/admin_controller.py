@@ -1,35 +1,30 @@
 import asyncio
 from datetime import datetime, timezone, timedelta
-from functools import partial
 from typing import List
 
 from flask import Flask, render_template
-from sqlalchemy import func, case, or_, text
+from sqlalchemy import func, or_
 
-from src.controllers.admin.interfaces import AdminServiceInterface, AdminActionResult, JobRecommenderResult
-from src.controllers.admin.security_rules import JobSeekerRuleEngine, EmployerRuleEngine
+from src.controllers.admin.interfaces import AdminActionResult, JobRecommenderResult
+from src.controllers.admin.services.analytics_service import AnalyticsService
+from src.controllers.admin.services.compliance_service import ComplianceService
 from src.controllers.admin.services.job_moderation import JobModerationService
 from src.controllers.admin.services.job_recommendations import JobRecommendationService
+from src.controllers.admin.services.security_service import SecurityService
 from src.controllers.controller import error_handler, Controllers
 from src.database.constants import utc_time
-from src.database.models.admin_models import FlaggedUser, AdminModel
-from src.database.models.employer_models import Employer
-from src.database.models.jobs_model import Job, Company, JobApprovalStatusEnum
+from src.database.models.admin_models import FlaggedUser
+from src.database.models.jobs_model import Job, JobApprovalStatusEnum
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.models.users import RolesEnum, User
-from src.database.sql.admin_sql import FlaggedUserORM, AdminRecommendationORM, AdminORM
+from src.database.sql.admin_sql import FlaggedUserORM
 from src.database.sql.analytics import UserSearchActivityORM
 from src.database.sql.company import CompanyORM
-from src.database.sql.jobs_sql import JobsORM, JobApprovalRequestORM, JobVersionHistoryORM, JobApplicationORM
+from src.database.sql.jobs_sql import JobsORM, JobApprovalRequestORM, JobApplicationORM
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.users import UserORM
 from src.emailer import EmailModel
-from src.utils.route_helpers import get_controller, get_service
-from src.controllers.admin.services.analytics_service import AnalyticsService
-from src.controllers.admin.services.compliance_service import ComplianceService
-from src.controllers.adnin.services.security_service import SecurityService
-
-
+from src.utils.route_helpers import get_service
 
 
 class AdminController(Controllers):
