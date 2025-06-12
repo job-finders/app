@@ -240,9 +240,7 @@ async def category_jobs(user: User, category: str):
         'per_page': search_result.get('page_size', 25),
         'total_pages': search_result.get('total_pages', 0),
         'total_jobs': search_result.get('total_jobs', 0),
-        'filters': {
-            'category': category.replace('-', ' ').title()
-        }
+        'filters': {'category': category.replace('-', ' ').title()}
     }
 
     return render_template('jobs/category.html', **context)
@@ -362,10 +360,8 @@ async def jobs_by_type(user: User, job_type: str):
         'per_page': search_result.get('page_size', 25),
         'total_pages': search_result.get('total_pages', 0),
         'total_jobs': search_result.get('total_jobs', 0),
-        'filters': {
-            'job_type': job_type.replace('-', ' ').title(),
+        'filters': {'job_type': job_type.replace('-', ' ').title(),}
         }
-    }
 
     return render_template('jobs/type.html', **context)
 
@@ -528,6 +524,7 @@ async def jobs_by_title(user: User):
     title = request.args.get('q', '')
     job_search_controller = get_controller('jobs_search')
     result = await job_search_controller.get_jobs_by_title(title=title,page=page)
+
     context: JobSearchContext = {
         'current_user': user,
         'jobs': result.get('jobs',[]),
@@ -561,8 +558,8 @@ async def jobs_by_qualification(user: User):
     types = request.args.getlist('type') or None
     job_search_controller = get_controller('jobs_search')
     result = await job_search_controller.get_jobs_by_qualification(qualification=qualification,
-                                                                   qualification_types=types,
-                                                                   page=page)
+    qualification_types=types,page=page)
+
     context : JobSearchContext = {
         'current_user': user,
         'jobs': result.get('jobs', []),
