@@ -1,16 +1,7 @@
 from abc import abstractmethod, ABC
 from enum import Enum
-from typing import List, Dict, Optional
+from typing import Any
 
-from pydantic import BaseModel, Field
-
-from src.database.models.jobs_model import Job
-from src.database.models.jobseeker_profile import JobSeekerProfile
-
-
-class JobRecommenderResult(BaseModel):
-    profile : JobSeekerProfile
-    recommended_jobs: List[Job]
 
 class AdminPermissionLevel(Enum):
     __doc__ = """
@@ -29,27 +20,6 @@ class AdminPermissionLevel(Enum):
     MODERATOR = "moderator"
     ADMIN = "admin"
     SUPER_ADMIN = "super_admin"
-
-
-class AdminActionResult(BaseModel):
-    __doc__ = """
-    Standardized structure for returning results from admin service actions.
-
-    This object is returned by all admin services and encapsulates the outcome of
-    an operation, including whether it succeeded, a user-readable message, and
-    optionally any resulting data or error details.
-
-    Attributes:
-        success (bool): Indicates whether the operation was successful.
-        message (str): A human-readable message describing the result.
-        data (Optional[Dict]): Additional payload data from the action (e.g., a report or entity info).
-        errors (Optional[List[str]]): A list of errors encountered during the operation, if any.
-    """
-    success: bool
-    message: str
-    data: Optional[Dict] = None
-    list_data: Optional[list[JobRecommenderResult]] = Field(default_factory=list)
-    errors: Optional[List[str]] = None
 
 
 class AdminServiceInterface(ABC):
@@ -94,7 +64,7 @@ class AdminServiceInterface(ABC):
     """
 
     @abstractmethod
-    def execute(self, *args, **kwargs) -> AdminActionResult:
+    def execute(self, *args, **kwargs) -> Any:
         """
         Execute the main logic of the admin service.
 

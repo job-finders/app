@@ -256,6 +256,7 @@ async def full_job_details(user: User, job_id: str):
     argument -- description
     Return: return_description
     """
+
     job_search_controller = get_controller('jobs_search')
     job = await job_search_controller.get_job_by_id(job_id)
 

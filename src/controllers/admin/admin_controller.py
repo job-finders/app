@@ -3,13 +3,13 @@ from datetime import datetime, timezone, timedelta
 from typing import List
 
 from flask import Flask, render_template
+from pydantic import BaseModel, Field
 from sqlalchemy import func, or_
 
-from src.controllers.admin.interfaces import AdminActionResult, JobRecommenderResult
 from src.controllers.admin.services.analytics_service import AnalyticsService
 from src.controllers.admin.services.compliance_service import ComplianceService
 from src.controllers.admin.services.job_moderation import JobModerationService
-from src.controllers.admin.services.job_recommendations import JobRecommendationService
+from src.controllers.admin.services.job_recommendations import JobRecommendationService, JobRecommenderResult
 from src.controllers.admin.services.security_service import SecurityService
 from src.controllers.controller import error_handler, Controllers
 from src.database.constants import utc_time
@@ -26,6 +26,11 @@ from src.database.sql.users import UserORM
 from src.emailer import EmailModel
 from src.utils.route_helpers import get_service
 
+
+class AdminActionResult(BaseModel):
+    success: bool
+    message: str
+    data: dict | None = Field(default=None)
 
 class AdminController(Controllers):
     __doc__ ="""
@@ -172,7 +177,8 @@ class AdminController(Controllers):
                 deleted = session.query(JobApprovalRequestORM).filter(
                     JobApprovalRequestORM.requested_at < cutoff).delete()
                 session.commit()
-                return AdminActionResult(success=True, message=f"Cleaned up {deleted} old approvals", data={"deleted_count": deleted})
+                return AdminActionResult(success=True, message=f"Cleaned up {deleted} old approvals",
+                                         data={"deleted_count": deleted})
         except Exception as e:
             return AdminActionResult(success=False, message=f"Error cleaning up approvals: {str(e)}")
 
@@ -181,7 +187,13 @@ class AdminController(Controllers):
         """Send job alerts to users based on their preferences"""
 
         self.logger.info("Scheduler Started - Job Alerts Notifications Service - send_job_alerts_to_users")
-        profiles_job_alerts: list[JobRecommenderResult] = await self.job_recommendation_service.execute("recommend_jobs")
+        results = await self.job_recommendation_service.execute("recommend_jobs")
+
+        if not results.success:
+            self.logger.info("There are no Job Alerts to send")
+            return AdminActionResult(success=False, message="There are no recommended jobs to send")
+
+        profiles_job_alerts: list[JobRecommenderResult] = results.list_data
         alerts_tasks = []
 
         for recommendation in profiles_job_alerts:
@@ -214,6 +226,7 @@ class AdminController(Controllers):
         """
         with self.app.app_context():
             job_data = [{
+                'job_id': job.job_id,
                 'title': job.title,
                 'company': job.company.name if job.company else "Confidential",
                 'location': job.location,

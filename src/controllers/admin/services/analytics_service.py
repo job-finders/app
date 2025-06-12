@@ -1,12 +1,19 @@
 import inspect
 from datetime import datetime, timezone, timedelta
 
+from pydantic import BaseModel, Field
 from sqlalchemy import func, case, text
 
-from src.controllers.admin.interfaces import AdminServiceInterface, AdminActionResult
+from src.controllers.admin.interfaces import AdminServiceInterface
 from src.database.sql.analytics import UserSearchActivityORM
 from src.database.sql.jobs_sql import JobsORM, JobVersionHistoryORM, JobApplicationORM
 from src.database.sql.users import UserORM
+
+
+class AdminActionResult(BaseModel):
+    success: bool
+    message: str
+    data: dict | None = Field(default=None)
 
 
 class AnalyticsService(AdminServiceInterface):

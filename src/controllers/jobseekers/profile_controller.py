@@ -169,8 +169,6 @@ class JobSeekerProfilesController(Controllers):
     async def list_profiles_by_role(self, role: str) -> list[JobSeekerProfile]:
         """Fetch all profiles matching a given role."""
         # TODO - needs to include ways to browse through the profiles using page and page size
-        if not (isinstance(role, str) and role.strip()):
-            return []
 
         with self.get_session() as session:
             job_seeker_orm_list = session.query(JobSeekerProfileORM).filter_by(visibility=True).limit(100).all()

@@ -1,10 +1,12 @@
 import asyncio
 import inspect
 from datetime import datetime, timezone
+from typing import Optional, Any
 
+from pydantic import Field, BaseModel
 from sqlalchemy import or_
 
-from src.controllers.admin.interfaces import AdminServiceInterface, AdminActionResult, JobRecommenderResult
+from src.controllers.admin.interfaces import AdminServiceInterface
 from src.controllers.controller import error_handler
 from src.database.models.jobs_model import Job, JobStatusEnum
 from src.database.models.jobseeker_profile import JobSeekerProfile
@@ -12,6 +14,30 @@ from src.database.models.resume import JobSeekerCV
 from src.database.models.users import RolesEnum
 from src.database.sql.jobs_sql import JobsORM, ATSReportORM, JobApplicationORM, JobCategoryORM
 from src.utils.route_helpers import get_controller, get_service
+
+
+class JobRecommenderResult(BaseModel):
+    profile: Any
+    recommended_jobs: list
+
+
+class AdminActionResult(BaseModel):
+    __doc__ = """
+    Standardized structure for returning results from admin service actions.
+
+    This object is returned by all admin services and encapsulates the outcome of
+    an operation, including whether it succeeded, a user-readable message, and
+    optionally any resulting data or error details.
+
+    Attributes:
+        success (bool): Indicates whether the operation was successful.
+        message (str): A human-readable message describing the result.
+        data (Optional[Dict]): Additional payload data from the action (e.g., a report or entity info).
+        errors (Optional[List[str]]): A list of errors encountered during the operation, if any.
+    """
+    success: bool
+    message: str
+    list_data: Optional[list[JobRecommenderResult]] = Field(default_factory=list)
 
 
 class JobRecommendationService(AdminServiceInterface):
@@ -75,7 +101,12 @@ class JobRecommendationService(AdminServiceInterface):
         """
         job_seeker_profiles: list[JobSeekerProfile] = await self.job_seekers_profile_controller.list_profiles_by_role(
             role=RolesEnum.JOBSEEKER.value)
-        profiles_we_can_send_recommendations = [prof for prof in job_seeker_profiles if prof.can_send_job_recommendations]
+
+        profiles_we_can_send_recommendations = [prof for prof in job_seeker_profiles
+                                                if prof.can_send_job_recommendations] if job_seeker_profiles else []
+        if not profiles_we_can_send_recommendations:
+            return AdminActionResult(success=False, message="Unable to find Profiles to recommend jobs for")
+
         errors = []
         success : list[JobRecommenderResult] = []
         for i in range(0, len(profiles_we_can_send_recommendations), 50):
@@ -123,13 +154,13 @@ class JobRecommendationService(AdminServiceInterface):
             # This will recommended jobs that are similar to the ones the Job Seeker already applied for.
             # But also jobs that have the least number of applications already - and if they are
             # featured and posted recently
-            results = query.order_by(
+            jobs_orm_list = query.order_by(
                 JobsORM.application_count.asc(),
                 JobsORM.is_featured.desc(),
                 JobsORM.posted_at.desc()
             ).limit(self._limit_recommended_per_jobseeker).all()
-
-            _result_dict = JobRecommenderResult(profile=profile, recommended_jobs=[Job(**job.to_dict()) for job in results])
+            recommended_list = [Job(**job.to_dict()) for job in jobs_orm_list if job] if jobs_orm_list else []
+            _result_dict = JobRecommenderResult(profile=profile, recommended_jobs=recommended_list)
             return _result_dict
 
     @error_handler

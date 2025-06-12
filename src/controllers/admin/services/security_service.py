@@ -1,8 +1,8 @@
 import inspect
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
-
-from src.controllers.admin.interfaces import AdminServiceInterface, AdminActionResult
+from pydantic import BaseModel, Field
+from src.controllers.admin.interfaces import AdminServiceInterface
 from src.controllers.admin.security_rules import JobSeekerRuleEngine, EmployerRuleEngine
 from src.controllers.controller import error_handler
 from src.database.constants import utc_time
@@ -13,6 +13,12 @@ from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.models.users import RolesEnum
 from src.database.sql.admin_sql import FlaggedUserORM, AdminRecommendationORM, AdminORM
 from src.utils.route_helpers import get_controller, get_service
+
+
+class AdminActionResult(BaseModel):
+    success: bool
+    message: str
+    data: dict | None = Field(default=None)
 
 
 class SecurityService(AdminServiceInterface):
@@ -105,8 +111,10 @@ class SecurityService(AdminServiceInterface):
                 raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
 
             if inspect.iscoroutinefunction(method_to_execute):
+                # noinspection PyArgumentList
                 return await method_to_execute(*args, **kwargs)
             else:
+                # noinspection PyArgumentList
                 return method_to_execute(*args, **kwargs)
 
         # Catch specific exceptions that might be raised by the lookup or the method itself.
