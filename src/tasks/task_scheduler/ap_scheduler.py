@@ -5,8 +5,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 
 def create_scheduler(app):
-    scheduler = BackgroundScheduler()
-
+    
+    scheduler = BackgroundScheduler(timezone='UTC')
     def shutdown_scheduler(exc=None):
         scheduler.shutdown()
     return scheduler

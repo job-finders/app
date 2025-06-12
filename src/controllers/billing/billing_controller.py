@@ -17,9 +17,11 @@ from src.utils.route_helpers import get_controller
 class BillingController(Controllers):
     def __init__(self, factory):
         super().__init__(factory)
+        # Initializing Controllers and Services
         company_repo  = get_controller('company')
         email_service = BillingEmailerService(company_repo=company_repo,email_queue=enqueue_email)
         payfast_client = PayFastClient(settings=config_instance().PAYFAST_SETTINGS)
+
         self.billing_events = BillingEventService(session_factory=self.get_session)
         self.billing_service: BillingService = BillingService(session_factory=self.get_session, billing_events=self.billing_events)
         self.invoice_service: InvoiceService = InvoiceService(session_factory=self.get_session)
@@ -124,6 +126,7 @@ class BillingController(Controllers):
             cron jobs to update all company subscriptions.
         :return:
         """
+        self.logger.info("Scheduler Started Service : cron_update_subscription_states")
         return await self.billing_service.execute("update_all_subscription_states")
 
     @error_handler
@@ -132,6 +135,7 @@ class BillingController(Controllers):
             cron job to run billing tasks
         :return:
         """
+        self.logger.info("Scheduler Started Task : Billing Cron Service")
         return await self.billing_cron_service.execute("run")
 
 

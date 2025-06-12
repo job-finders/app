@@ -171,6 +171,7 @@ class AdminController(Controllers):
     async def cleanup_old_approvals(self) -> AdminActionResult:
         """Cleanup job approvals older than 30 days"""
         try:
+            self.logger.info("Scheduler Started Cron Job - cleanup_old_approvals")
             with self.get_session() as session:
                 cutoff = datetime.now(timezone.utc) - timedelta(days=30)
                 deleted = session.query(JobApprovalRequestORM).filter(
@@ -183,6 +184,8 @@ class AdminController(Controllers):
     @error_handler
     async def send_job_alerts_to_users(self) -> AdminActionResult:
         """Send job alerts to users based on their preferences"""
+
+        self.logger.info("Scheduler Started - Job Alerts Notifications Service - send_job_alerts_to_users")
         profiles_job_alerts: list[JobRecommenderResult] = await self.job_recommendation_service.execute("recommend_jobs")
         alerts_tasks = []
 
@@ -243,9 +246,10 @@ class AdminController(Controllers):
     def approve_jobs(self) -> AdminActionResult:
 
         """
+        scheduled using task scheduler cron jobs
         Every 30 Minutes the system will run and try to approve jobs that, have been posted by companies
         """
-
+        self.logger.info("Scheduler - Running Approve Jobs - Cron Job")
         return self.job_moderation_service.execute('approve')
 
     @error_handler
@@ -266,6 +270,7 @@ class AdminController(Controllers):
     @error_handler
     async def detect_anomalous_job_postings(self) -> AdminActionResult:
         """Identify suspicious jobs using multi-factor analysis"""
+        self.logger.info("Scheduler Started Service : detect_anomalous_job_postings")
         return self.job_moderation_service.execute('detect_anomalies')
 
     @error_handler
@@ -284,8 +289,7 @@ class AdminController(Controllers):
                     "requested_at": job.approval_request.requested_at.isoformat() if job.approval_request.requested_at else None
                 } for job in pending_jobs]
 
-                return AdminActionResult(success=True, message=f"Found {len(pending_jobs)} pending approvals",
-                                         data={"pending_jobs": pending_data})
+                return AdminActionResult(success=True, message=f"Found {len(pending_jobs)} pending approvals", data={"pending_jobs": pending_data})
         except Exception as e:
             return AdminActionResult(success=False, message=f"Error retrieving pending approvals: {str(e)}")
 
@@ -329,19 +333,18 @@ class AdminController(Controllers):
         with self.get_session() as session:
             admin_user_orm = session.query(UserORM).filter_by(role=RolesEnum.SYSTEM_ADMIN.value).first()
             data = User(**admin_user_orm.to_dict()) if isinstance(admin_user_orm, UserORM) else None
-            return AdminActionResult(success=isinstance(data, User), message="Successfully ran get_system_admin",
-                                     data=data)
+            return AdminActionResult(success=isinstance(data, User), message="Successfully ran get_system_admin",data=data)
 
 
     @error_handler
     async def flag_unusual_user_activity(self, admin_uid: str) -> AdminActionResult:
         """Detect suspicious user behavior patterns"""
+        self.logger.info("Scheduler Started Service : flag_unusual_user_activity")
         action_result: AdminActionResult = await self.security_service.execute('flag_unusual_user_activity')
         flagged_users_models = []
         if action_result.success:
             for reference_id, message in action_result.list_data:
-                flagged_users_models.append(FlaggedUserORM(**FlaggedUser(reference_id=reference_id, reason=message,
-                                                                         flagged_by=admin_uid).model_dump()))
+                flagged_users_models.append(FlaggedUserORM(**FlaggedUser(reference_id=reference_id, reason=message, flagged_by=admin_uid).model_dump()))
 
         with self.get_session() as session:
             session.add_all(flagged_users_models)
@@ -353,6 +356,7 @@ class AdminController(Controllers):
         """
         Run risk evaluations on flagged users and log admin recommendations.
         """
+        self.logger.info("Scheduler Started Task : evaluate_user_risks")
         try:
             recommendations = await self.security_service.execute('apply_user_risk_recommendations', admin_uid=admin_uid)
             return recommendations

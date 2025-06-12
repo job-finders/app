@@ -4,6 +4,8 @@ import os
 import timedelta
 from flask import g, Flask, request
 from werkzeug.middleware.proxy_fix import ProxyFix
+import atexit
+
 
 
 def _register_blueprints(app):
@@ -230,5 +232,6 @@ def create_app(config):
         # This Schedules Admin Jobs that are suppose to run in AP Scheduler
         schedule_app_tasks(scheduler=scheduler, app=app)
         scheduler.start()
+        atexit.register(scheduler.shutdown)        
 
     return app
