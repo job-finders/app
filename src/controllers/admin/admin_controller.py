@@ -269,7 +269,10 @@ class AdminController(Controllers):
 
     @error_handler
     async def detect_anomalous_job_postings(self) -> AdminActionResult:
-        """Identify suspicious jobs using multi-factor analysis"""
+        """Identify suspicious jobs using multi-factor analysis
+        Identified Jobs will be shown on the admin interface where the admin could either activate the job or 
+        de-activate it.
+        """
         self.logger.info("Scheduler Started Service : detect_anomalous_job_postings")
         return self.job_moderation_service.execute('detect_anomalies')
 

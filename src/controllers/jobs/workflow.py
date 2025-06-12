@@ -62,9 +62,13 @@ class JobsWorkflowController(Controllers):
     @error_handler
     async def de_activate_job_listing(self, job_id: str, reviewer_id: str) -> Job | None:
         """Mark job as inactive by setting expiration date to past"""
-        return await self.update_approval_status(job_id=job_id,
-                                                 decision=JobStatusEnum.CLOSED.value,
-                                                 reviewer_id=reviewer_id)
+        self.logger.info("Called Activate job listing")
+        if not(isinstance(job_id, str) and job_id.strip()):
+            return None
+        if not(isinstance(reviewer_id, str) and reviewer_id.strip()):
+            return None
+
+        return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.CLOSED.value,reviewer_id=reviewer_id)
 
     @error_handler
     async def activate_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
@@ -72,9 +76,7 @@ class JobsWorkflowController(Controllers):
         return await self.update_approval_status(job_id=job_id,
                                                  decision=JobStatusEnum.ACTIVE.value,
                                                  reviewer_id=reviewer_id,
-                                                 validation_result=validation_result
-
-                                                 )
+                                                 validation_result=validation_result)
 
     @error_handler
     async def reject_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
@@ -1318,15 +1320,23 @@ class JobsWorkflowController(Controllers):
         except ValueError:
             raise ValueError(f"Invalid salary format: {value}")
 
-    # Add to JobsController
+        # Add to JobsController
     @error_handler
-    async def get_pending_approvals(self) -> list[Job]:
-        """Get jobs needing admin approval"""
+    def get_pending_approvals(self) -> list[Job]:
+        """Get jobs needing admin approval - fetch featured jobs first"""
         with self.get_session() as session:
-            jobs = session.query(JobsORM).join(JobApprovalRequestORM).filter(
-                JobApprovalRequestORM.status == JobApprovalStatusEnum.PENDING.value
-            ).all()
-            return [Job(**job.to_dict()) for job in jobs]
+            # Query for pending approval jobs with featured priority
+            jobs = (
+                session.query(JobsORM).join(JobApprovalRequestORM).filter(
+                    JobApprovalRequestORM.status == JobApprovalStatusEnum.PENDING.value
+                ).order_by(
+                    JobsORM.is_featured.desc(),  # Featured jobs first
+                    JobsORM.created_at.desc()    # Then newest first
+                ).options(joinedload(JobsORM.approval_request)).limit(100).all()  # Eager load relationship
+            )
+
+            #TODO- Consider including approval requssts with the job in this response
+            return [Job(**job.to_dict()) for job in jobs if job] if jobs else []
 
     @staticmethod
     def format_validation_feedback(validation_result: dict) -> str:

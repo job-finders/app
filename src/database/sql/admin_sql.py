@@ -56,7 +56,9 @@ class FlaggedUserORM(Base):
 
 
 class AdminRecommendationORM(Base):
-    """security recommendations after the recommendations are stored
+    """
+    Security Recommendations are related to Flagged User Accounts
+    security recommendations after the recommendations are stored
     then admin can choose to apply the recommendation or not
     """
     __tablename__ = "admin_recommendations"
@@ -67,4 +69,6 @@ class AdminRecommendationORM(Base):
     recommended_by = Column(String(ID_LEN), nullable=False)
     recommended_at = Column(DateTime(timezone=True), default=utc_time)
     reason = Column(Text, nullable=True)
+
+
 

@@ -108,6 +108,7 @@ class JobModerationService(AdminServiceInterface):
         self.session_factory = session_factory
         self.jobs_workflow = get_controller('jobs_workflow')
         self.system_admin: User = system_admin
+        self.logger = get_service("logger")()(self.__class__.__qualname__)
 
     def execute(self, action: str, **kwargs) -> AdminActionResult:
         """Execute job moderation action"""
@@ -139,37 +140,41 @@ class JobModerationService(AdminServiceInterface):
         If an employer edits a job, they can seek approval again. This creates an
         Approval Request entry which is handled by another scheduled job.
         """
-        approval_batch_max = 20  # Reasonable cap to avoid approving too many jobs at once
+        approval_batch_max = 100  # Reasonable cap to avoid approving too many jobs at once
 
         try:
             jobs_needing_approval = await self.jobs_workflow.get_pending_approvals()
 
             if not jobs_needing_approval:
+                self.logger.info("There are no Jobs in Need of Approval/ Validation")
                 return AdminActionResult(success=True, message="No jobs pending approval.")
 
             # Apply the limit
-            jobs_to_process = jobs_needing_approval[:approval_batch_max]
+            to = min(approval_batch_max, len(jobs_needing_approval))
+            jobs_to_process = jobs_needing_approval[:to]
             results = []
-
+            self.logger.info(f"We will start approving {len(jobs_to_process)} out of {len(jobs_needing_approval)} Jobs needing Approcal")
             for job in jobs_to_process:
+                
+                # This is where we actucally validate a job post
                 validation_result = await self.jobs_workflow.validate_job_post(job=job)
+                self.logger.init(f"Job Approval Result : {validation_result}")
 
                 if validation_result.get('valid', False):
+                    # If Job is validated then it is activated here - activated jobs will be listed on the portal
                     approved_job = await self.jobs_workflow.activate_job_listing(validation_result=validation_result,
-                        job_id=job.job_id, reviewer_id=self.system_admin.uid
-                    )
+                        job_id=job.job_id, reviewer_id=self.system_admin.uid)
+
                     results.append(approved_job)
                 else:
                     rejected_job = await self.jobs_workflow.reject_job_listing(validation_result=validation_result,
-                        job_id=job.job_id, reviewer=self.system_admin.uid
-                    )
+                        job_id=job.job_id, reviewer=self.system_admin.uid)
                     results.append(rejected_job)
 
             return AdminActionResult(
                 success=True,
                 message=f"Successfully evaluated {len(results)} job approval requests.",
-                list_data=results
-            )
+                list_data=results)
 
         except Exception as e:
             return AdminActionResult(success=False, message=f"Error approving jobs: {str(e)}")
@@ -177,7 +182,7 @@ class JobModerationService(AdminServiceInterface):
     def _flag_jobs(self, job_id: str, reporter_id: str) -> AdminActionResult:
         """Flag a job for admin review based on multiple heuristics"""
         try:
-
+            
             with self.session_factory() as session:
                 job = session.query(JobsORM).filter_by(job_id=job_id).first()
                 if not job:
@@ -263,7 +268,11 @@ class JobModerationService(AdminServiceInterface):
             return AdminActionResult(success=False, message=f"Error updating jobs: {str(e)}")
 
     def _detect_anomalous_postings(self) -> AdminActionResult:
-        """Detect suspicious job postings"""
+        """Detect suspicious job postings
+        
+            The Admin calls this endpoint , then make decisions , The decision will be to either 
+            activate or de-active the job
+        """
         try:
             with self.session_factory() as session:
                 anomalies = []
@@ -272,13 +281,17 @@ class JobModerationService(AdminServiceInterface):
                 unverified = session.query(JobsORM).join(CompanyORM).filter(
                     CompanyORM.is_verified == False
                 ).all()
-
+                self.logger.info(f"Found {len(unverified)} Jobs from Unverified Companies")
                 # Spam patterns
+
+                #TODO- Use Config Table on the database to store anomalous job Titles.               
                 spam_keywords = ["earn fast", "work from home", "no experience needed"]
+
                 spam_jobs = session.query(JobsORM).filter(
                     or_(*[JobsORM.description.ilike(f"%{kw}%") for kw in spam_keywords])
                 ).all()
 
+                self.logger.info(f"Found {len(spam_jobs)} Spam Jobs")
                 # Combine results
                 all_anomalies = list({j.job_id: j for j in unverified + spam_jobs}.values())
 
