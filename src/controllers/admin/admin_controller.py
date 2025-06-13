@@ -159,7 +159,8 @@ class AdminController(Controllers):
 
     def __init__(self, factory):
         super().__init__(factory)
-        self.job_moderation_service = JobModerationService(self.get_session, system_admin=self.get_system_admin)
+        system_admin = self.get_system_admin().data.get("system_admin")
+        self.job_moderation_service = JobModerationService(self.get_session, system_admin=system_admin)
         self.compliance_service = ComplianceService(self.get_session)
         self.analytics_service = AnalyticsService(self.get_session)
         self.security_service = SecurityService(self.get_session)
@@ -190,17 +191,16 @@ class AdminController(Controllers):
         results = await self.job_recommendation_service.execute("recommend_jobs")
 
         if not results.success:
-            self.logger.info("There are no Job Alerts to send")
+            self.logger.info(f"There are no Job Alerts to send : {results.message}")
             return AdminActionResult(success=False, message="There are no recommended jobs to send")
 
-        profiles_job_alerts: list[JobRecommenderResult] = results.list_data
+        profiles_job_alerts: list[JobRecommenderResult] = results.data.get("recommendation", [])
         alerts_tasks = []
 
         for recommendation in profiles_job_alerts:
             email_template = await self._compose_matching_jobs_email_body(recommended_jobs=recommendation.recommended_jobs, profile=recommendation.profile)
-            _comp_email = dict(
-                _html=email_template, _to=recommendation.profile.email, _subject="Recommended Job Alerts - Jobfinders.site"
-            )
+            _comp_email = dict(_html=email_template, _to=recommendation.profile.email,
+                               _subject="Recommended Job Alerts - Jobfinders.site")
             email_message = EmailModel(**_comp_email)
             alerts_tasks.append(self._send_alert(email=email_message))
 
@@ -235,9 +235,8 @@ class AdminController(Controllers):
                 'salary': await self._format_salary(job),
                 'description': job.description[:200] + '...' if job.description else "",
                 'url': job.application_url,
-                'deadline': job.application_deadline.replace(
-                    tzinfo=timezone.utc) if job.application_deadline else "ASAP"
-            } for job in recommended_jobs if job.is_active]
+                'deadline': job.application_deadline if job.application_deadline else "ASAP"
+            } for job in recommended_jobs if job.is_active] if recommended_jobs else []
             context = dict(first_name=profile.first_name, jobs=job_data, count=len(job_data))
             return render_template('jobseekers/email/job_alert.html', **context)
 
@@ -319,7 +318,7 @@ class AdminController(Controllers):
     async def analyze_platform_engagement(self) -> AdminActionResult:
         """Track key engagement metrics"""
         return await self.analytics_service.execute('engagement')
-    @error_handler
+
     def get_system_admin(self) -> AdminActionResult:
         """
             returns system admin user
@@ -328,32 +327,53 @@ class AdminController(Controllers):
         with self.get_session() as session:
             admin_user_orm = session.query(UserORM).filter_by(role=RolesEnum.SYSTEM_ADMIN.value).first()
             data = User(**admin_user_orm.to_dict()) if isinstance(admin_user_orm, UserORM) else None
-            return AdminActionResult(success=isinstance(data, User), message="Successfully ran get_system_admin",data=data)
+            return AdminActionResult(success=isinstance(data, User), message="Successfully ran get_system_admin", data=
+            {"system_admin": data})
 
 
     @error_handler
-    async def flag_unusual_user_activity(self, admin_uid: str) -> AdminActionResult:
+    async def flag_unusual_user_activity(self) -> AdminActionResult:
         """Detect suspicious user behavior patterns"""
         self.logger.info("Scheduler Started Service : flag_unusual_user_activity")
+        results = self.get_system_admin()
+        admin_user: User | None = None
+        if results.success:
+            admin_user = results.data.get("system_admin")
+        self.logger.info(f" Do We have System Admin : {admin_user}")
         action_result: AdminActionResult = await self.security_service.execute('flag_unusual_user_activity')
+        self.logger.info(f"{action_result.message}")
         flagged_users_models = []
         if action_result.success:
-            for reference_id, message in action_result.list_data:
-                flagged_users_models.append(FlaggedUserORM(**FlaggedUser(reference_id=reference_id, reason=message, flagged_by=admin_uid).model_dump()))
+            for reference_id, message in action_result.data.get("flagged_users", []):
+                flagged_by = admin_user.uid if admin_user else "system"
+                flagged_users_models.append(FlaggedUserORM(
+                    **FlaggedUser(reference_id=reference_id, reason=message, flagged_by=flagged_by).model_dump()))
 
         with self.get_session() as session:
             session.add_all(flagged_users_models)
 
-        return AdminActionResult(success=action_result.success, message=action_result.message, list_data=flagged_users_models)
+        return AdminActionResult(success=action_result.success, message=action_result.message,
+                                 data={"flagged_user_models": flagged_users_models})
 
     @error_handler
-    async def evaluate_user_risks(self, admin_uid: str) -> AdminActionResult:
+    async def evaluate_user_risks(self) -> AdminActionResult:
         """
         Run risk evaluations on flagged users and log admin recommendations.
         """
         self.logger.info("Scheduler Started Task : evaluate_user_risks")
         try:
+            results = self.get_system_admin()
+            if results.success:
+                admin_user = results.data.get("system_admin")
+                admin_uid = admin_user.uid if admin_user else "system"
+            else:
+                admin_user = None
+                admin_uid = "system"
+
+            self.logger.info(f"Found System Admin Account : {admin_user}")
+
             recommendations = await self.security_service.execute('apply_user_risk_recommendations', admin_uid=admin_uid)
+            self.logger.info(f"Recommendations Appliead : {recommendations}")
             return recommendations
 
         except Exception as e:

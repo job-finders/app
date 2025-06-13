@@ -37,7 +37,7 @@ class AdminActionResult(BaseModel):
     """
     success: bool
     message: str
-    list_data: Optional[list[JobRecommenderResult]] = Field(default_factory=list)
+    data: dict[str, Any] | None = Field(default=None)
 
 
 class JobRecommendationService(AdminServiceInterface):
@@ -122,7 +122,8 @@ class JobRecommendationService(AdminServiceInterface):
             self.logger.error(error)
 
         # returns a list of Profiles and Recommended Jobs so the Admin Controller can send the Emails.
-        return AdminActionResult(success=len(success) > 1,message="Job Recommendations Processed", list_data=success)
+        return AdminActionResult(success=len(success) > 1, message="Job Recommendations Processed",
+                                 data={"recommendation": success, })
 
 
     @error_handler

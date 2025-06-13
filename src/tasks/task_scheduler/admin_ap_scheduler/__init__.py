@@ -90,13 +90,13 @@ def schedule_app_tasks(scheduler, app):
             replace_existing=True)
         # Approve Job Schedule must run every 30 minutes
         scheduler.add_job(
-            async_job_wrapper("approve_jobs", admin_controller.send_job_alerts_to_users),
+            async_job_wrapper("approve_jobs", admin_controller.approve_jobs),
             trigger='interval',
-            minutes=2,
+            minutes=30,
             id='approve_jobs',
             jitter=300,
             replace_existing=True)
-
+        # cron hour 7
         scheduler.add_job(
             async_job_wrapper("send_job_alerts", admin_controller.send_job_alerts_to_users),
             trigger='cron',
@@ -107,38 +107,41 @@ def schedule_app_tasks(scheduler, app):
             replace_existing=True)
 
         # Flagging suspicious activity
+        # cron hour 2
         scheduler.add_job(
             async_job_wrapper("flag_unusual_user_activity", admin_controller.flag_unusual_user_activity),
             trigger='cron',
+            minute=5,
             hour=2,
-            minute=0,
             id='flag_unusual_user_activity',
             jitter=300,
             replace_existing=True)
 
         # Evaluate risks based on that flag
+        # cron hour 2 , minute 45
         scheduler.add_job(
             async_job_wrapper("evaluate_user_risks", admin_controller.evaluate_user_risks),
             trigger='cron',
+            minute=2,
             hour=2,
-            minute=30,
             id='evaluate_user_risks',
             jitter=300,
             replace_existing=True)
         # This will detect anomalous job postings
+        # CRON hour 3
         scheduler.add_job(
             async_job_wrapper("detect_anomalous_jobs", admin_controller.detect_anomalous_job_postings),
             trigger='cron',
+            minute=3,
             hour=3,
-            minute=0,
             id='detect_anomalous_jobs',
             jitter=300,
             replace_existing=True)
+        # cron hour 4
         scheduler.add_job(
             async_job_wrapper("update_subscriptions", billing_controller.cron_update_subscription_states),
-            trigger='cron',
-            hour=4,
-            minute=0,
+            trigger='interval',
+            minutes=1,
             timezone='UTC',
             id='update_billing_subscriptions',
             jitter=300,

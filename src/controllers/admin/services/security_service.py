@@ -135,10 +135,11 @@ class SecurityService(AdminServiceInterface):
 
         # Several Algorithms will be affected by the recommendations stored here.
         """
+        self.logger.info("Started Applying User Security Recommendations")
         with self.session_factory() as session:
             admin_orm = session.query(AdminORM).first()
             admin_model: AdminModel = AdminModel(**admin_orm.to_dict(include_relationships=True)) if admin_orm else None
-
+            self.logger.info(f"Found Admin Model : {admin_model}")
             actions_to_store = []
             for ref_id, recommendation in admin_model.user_risk_recommendations.items():
                 action = AdminRecommendationORM(
@@ -167,7 +168,7 @@ class SecurityService(AdminServiceInterface):
                 flagged_users.extend(self._flag_unusual_employer_activity(employer, company))
 
         for user in jobseekers_user_accounts:
-            jobseeker = self.jobseekers_controller.get_profile_by_uid(user_uid=user.uid)
+            jobseeker = await self.jobseekers_controller.get_profile_by_uid(user_uid=user.uid)
             if jobseeker:
                 flagged_users.extend(self._flag_unusual_jobseeker_activity(jobseeker))
 
@@ -177,7 +178,8 @@ class SecurityService(AdminServiceInterface):
         else:
             self.logger.info("No unusual activity detected.")
 
-        return AdminActionResult(success=True,message="succcessfully flagged users", list_data=flagged_users)
+        return AdminActionResult(success=len(flagged_users) > 0, message="successfully Ran flagged users",
+                                 data={"flagged_users": flagged_users})
 
     @staticmethod
     def should_flag_user(session, reference_id: str, reason: str, cooldown_days: int = 7) -> bool:

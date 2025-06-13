@@ -5,6 +5,7 @@ import inspect
 from src.database.models.billing import CompanyBillingProfile, BillingPlan
 from src.database.sql.billing_sql import CompanyBillingProfileORM, BillingPlanORM
 from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType
+from src.utils.route_helpers import get_service
 
 
 class BillingService(BillingServiceInterface):
@@ -32,6 +33,8 @@ class BillingService(BillingServiceInterface):
             "apply_subscription": self._apply_subscription,
             "expire_subscription": self._expire_subscription,  # Added for cron service usage
         }
+        self.logger = get_service("logger")()(self.__class__.__name__)
+
     async def execute(self, action: str, *args, **kwargs):
         """
         Dynamically executes a method based on the provided action name.
@@ -142,10 +145,13 @@ class BillingService(BillingServiceInterface):
             cron job to update all company subscriptions
             for all companies with subscriptions update all subscriptions.
         """
+        self.logger.info("Started Update Service")
         with self.session_factory() as session:
-            company_ids = session.query(CompanyBillingProfileORM.company_id).all()
-            company_ids = [c[0] for c in company_ids]
-            tasks = [self._update_subscription_state(company_id=company_id) for company_id in company_ids]
+            company_ids_orm = session.query(CompanyBillingProfileORM.company_id).all()
+            company_ids = [c[0] for c in company_ids_orm] if company_ids_orm else []
+            self.logger.info(f"Found {len(company_ids)} Companies to update subscription records for")
+            tasks = [self._update_subscription_state(company_id=company_id) for company_id in
+                     company_ids] if company_ids else []
             return await asyncio.gather(*tasks)
 
     async def _update_subscription_state(self, company_id: str) -> CompanyBillingProfile | None:
@@ -174,10 +180,10 @@ class BillingService(BillingServiceInterface):
             #                                      event_metadata={"reason": "expired", "auto_check": "true"})
 
             # 2. Check if subscription has ended and apply expiry/grace logic
-            if profile_orm.is_active_subscription_plan:
+            if profile.is_active_subscription_plan:
                 # If subscription end date has passed, apply grace or expire
-                if profile_orm.subscription_end.date() < today:
-                    if profile_orm.grace_period_ended:  # This property needs to be managed
+                if profile.subscription_end < today:
+                    if profile.grace_period_ended:  # This property needs to be managed
                         # Subscription fully expired, no grace left
                         profile_orm.current_plan_id = None  # No active plan
                         profile_orm.subscription_start = None
