@@ -147,6 +147,7 @@ def schedule_app_tasks(scheduler, app):
             id='update_billing_subscriptions',
             jitter=300,
             replace_existing=True)
+        # interval every 2 hours
         scheduler.add_job(
             async_job_wrapper("billing_cron_jobs", billing_controller.cron_billing),
             trigger='interval',
