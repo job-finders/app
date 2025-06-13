@@ -137,11 +137,12 @@ def schedule_app_tasks(scheduler, app):
             id='detect_anomalous_jobs',
             jitter=300,
             replace_existing=True)
-        # cron hour 4
+        # cron hour 4 TODO - standardize Update Subscription and Billing
         scheduler.add_job(
             async_job_wrapper("update_subscriptions", billing_controller.cron_update_subscription_states),
-            trigger='interval',
-            minutes=1,
+            trigger='cron',
+            hour=4,
+            minute=4,
             timezone='UTC',
             id='update_billing_subscriptions',
             jitter=300,
