@@ -100,6 +100,7 @@ class CompanyBillingProfile(BaseModel):
 
     auto_renew: bool = True
     last_invoice_id: Optional[str]
+    invoices: list['Invoice'] = Field(default_factory=list)
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -107,6 +108,11 @@ class CompanyBillingProfile(BaseModel):
     def is_trial_valid(self):
         today = utc_time()
         return self.trial_active and today <= self.trial_end_date
+
+    @property
+    def all_invoices_paid(self) -> bool:
+        """Check if all invoices for this company are paid."""
+        return all(invoice.is_paid for invoice in self.invoices) if self.invoices else True
 
 
     @property
@@ -122,6 +128,7 @@ class CompanyBillingProfile(BaseModel):
         return None
 
 
+
     @property
     def is_active_subscription_plan(self) -> bool:
         """
@@ -131,6 +138,12 @@ class CompanyBillingProfile(BaseModel):
         # Must have a plan and valid subscription period
         if not self.current_plan_id:
             return False
+        if self.is_trial_valid:
+            return True
+
+        if not self.all_invoices_paid:
+            return False
+
         if self.subscription_start and self.subscription_end:
             return self.subscription_start <= utc_time() <= self.subscription_end
         return False
@@ -211,6 +224,10 @@ class Invoice(BaseModel):
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
     model_config = ConfigDict(from_attributes=True)
 
+    @property
+    def is_paid(self) -> bool:
+        """checks if a certain invoice is paid"""
+        return self.status == InvoiceStatusEnum.PAID.value
 
 class PaymentMethod(BaseModel):
     """

@@ -53,6 +53,7 @@ async def get_dashboard(user: User):
 @employer_login
 async def subscribe(user: User, plan_slug: str):
     """
+    :param plan_slug:
     :param user:
     :return:
     """
