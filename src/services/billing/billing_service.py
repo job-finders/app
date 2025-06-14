@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional
 import inspect
 
-from database.constants import utc_time
+from src.database.constants import utc_time
 from src.database.models.billing import CompanyBillingProfile, BillingPlan
 from src.database.sql.billing_sql import CompanyBillingProfileORM, BillingPlanORM
 from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType

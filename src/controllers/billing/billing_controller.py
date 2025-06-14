@@ -50,13 +50,14 @@ class BillingController(Controllers):
             else:
                 billing_profile: CompanyBillingProfile = await self.billing_service.execute('start_trial',  company_id=company_id, plan_id=plan_id)
 
-        company_controller = get_controller("company")
-        company = await company_controller.get_company_by_id(company_id=company_id)
         if not billing_plan.is_trial:
             invoice = await self.invoice_service.execute(action="create_invoice", billing_profile=billing_profile, plan=billing_plan)
             await self.billing_events.execute('record_event',
                                               company_id=billing_profile.company_id,
                                               type='invoice_created', metadata={"invoice_id": invoice.invoice_id})
+
+            company_controller = get_controller("company")
+            company = await company_controller.get_company_by_id(company_id=company_id)
 
             return await self.payment_service.execute('generate_payfast_form',invoice=invoice,company=company)
         else:

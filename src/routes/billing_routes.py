@@ -16,7 +16,7 @@ async def payfast_ipn():
     """
 
     billing_controller = get_controller("billing")
-    return await billing_controller.itn_callback(data=request.form.get())
+    return await billing_controller.itn_callback(data=request.form)
 
 
 

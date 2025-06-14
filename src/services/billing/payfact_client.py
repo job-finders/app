@@ -69,7 +69,7 @@ class PayFastClient:
 
         # Step 2: Confirm IPN with PayFast
         # Mocking the httpx call
-        self.logger.info("Mocking PayFast IPN verification request...")
+        self.logger.info("PayFast IPN verification request...")
         await asyncio.sleep(0.1)  # Simulate network call
         # In a real scenario:
         async with httpx.AsyncClient() as client:
@@ -79,6 +79,6 @@ class PayFastClient:
         return results.text == "VALID" # PayFast sends "VALID" or "INVALID"
 
     async def generate_payment_form(self, invoice, company):
-        """Mock method for generating payment form data."""
-        self.logger.info(f"Mock PayFast Client: Generating form for invoice {invoice.invoice_id}")
+        """method for generating payment form data."""
+        self.logger.info(f"PayFast Client: Generating form for invoice {invoice.invoice_id}")
         return self.create_payment_data(invoice)  # Reuse create_payment_data
