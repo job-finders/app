@@ -1,6 +1,7 @@
 import inspect
 from src.database.models.billing import InvoiceStatusEnum
 from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType
+from src.utils.route_helpers import get_service
 
 
 class BillingCronService(BillingServiceInterface):
@@ -21,7 +22,8 @@ class BillingCronService(BillingServiceInterface):
         self.invoice_service = invoice_service
         self.billing_service = billing_service
         self.email_service = email_service
-        self._interface_schema = {
+        self.logger = get_service("logger")()(self.__class__.__name__)
+        self.__interface_map = {
             "run": self.run
         }
 
@@ -66,6 +68,7 @@ class BillingCronService(BillingServiceInterface):
 
     async def run(self):
         companies_model_list = await self.billing_service.execute("list_all_companies")
+        self.logger.info(f"Companies List : {companies_model_list}")
         for company in companies_model_list:
             company_id = company.company_id
             await self.check_subscription_health(company_id)

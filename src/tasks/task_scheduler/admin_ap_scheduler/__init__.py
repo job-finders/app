@@ -151,7 +151,8 @@ def schedule_app_tasks(scheduler, app):
         scheduler.add_job(
             async_job_wrapper("billing_cron_jobs", billing_controller.cron_billing),
             trigger='interval',
-            minutes=120,
+            minutes=1,
+            hours=2,
             id='billing_cron_jobs',
             jitter=300,
             replace_existing=True)

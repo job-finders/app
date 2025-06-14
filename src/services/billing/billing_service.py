@@ -2,6 +2,8 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional
 import inspect
+
+from database.constants import utc_time
 from src.database.models.billing import CompanyBillingProfile, BillingPlan
 from src.database.sql.billing_sql import CompanyBillingProfileORM, BillingPlanORM
 from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType
@@ -58,17 +60,14 @@ class BillingService(BillingServiceInterface):
 
             if method_to_execute is None:
                 raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
-
             if inspect.iscoroutinefunction(method_to_execute):
                 return await method_to_execute(*args, **kwargs)
             else:
                 return method_to_execute(*args, **kwargs)
-
         # Catch specific exceptions that might be raised by the lookup or the method itself.
         except ValueError as e:
             # Re-raise the ValueError if it's one of the ones we explicitly raised.
             raise e
-
         except Exception as e:
             # Catch any other unexpected exceptions and wrap them in a RuntimeError.
             # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
@@ -76,39 +75,62 @@ class BillingService(BillingServiceInterface):
 
     # Mock list_all_companies for cron service
     async def _list_all_companies(self) -> list[CompanyBillingProfile]:
+        """List of all company Billing Profiles"""
         with self.session_factory() as session:
             companies_orm = session.query(CompanyBillingProfileORM).all()
-            return [CompanyBillingProfile(**c.to_dict()) for c in companies_orm]
+            return [CompanyBillingProfile(**c.to_dict()) for c in companies_orm] if companies_orm else []
 
     async def _look_up_plan(self, plan_id: str) -> CompanyBillingProfile | None:
         """Returns the billing plan details for a given plan_id"""
+        if not (isinstance(plan_id, str) and plan_id.strip()):
+            self.logger.error("Cannot Look Up Plan as Plan ID is Invalid")
+            return None
+
         with self.session_factory() as session:
-            plan = session.query(BillingPlanORM).filter_by(plan_id=plan_id).first()
-            if not plan:
+            billing_plan_orm = session.query(BillingPlanORM).filter_by(plan_id=plan_id).first()
+            if not billing_plan_orm:
+                self.logger.info("Billing Plan Not Found")
                 return None
-            return CompanyBillingProfile(**plan.to_dict())
+            billing_plan = CompanyBillingProfile(**billing_plan_orm.to_dict())
+            self.logger.info(f"Billing Plan Found : {billing_plan}")
+            return billing_plan
 
     async def _all_billing_plans(self):
         """returns all billing plans"""
         with self.session_factory() as session:
             billing_plams_orm_list = session.query(BillingPlanORM).all()
-            return [BillingPlan(**plan_orm.to_dict()) for plan_orm in billing_plams_orm_list]
+            billing_plans_list = [BillingPlan(**plan_orm.to_dict()) for plan_orm in billing_plams_orm_list
+                                  if plan_orm] if billing_plams_orm_list else []
+            return billing_plans_list
 
-    async def _expire_trial(self, company_id: str) -> CompanyBillingProfile:
+    async def _expire_trial(self, company_id: str) -> CompanyBillingProfile | None:
+        """Will mark a Trial Billing Plan as Expired then send an event """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            self.logger.error("Unable to run Expire Trial as Company ID is Invalid")
+            return None
+
         with self.session_factory() as session:
             profile_orm = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).first()
             profile = CompanyBillingProfile(**profile_orm.to_dict()) if profile_orm else None
             if profile and profile_orm.is_trial_valid:  # Check ORM's is_trial_valid
                 profile_orm.trial_active = False
+                profile_orm.trial_end_date = utc_time().date()
+                profile_orm.auto_renew = False
                 await self.billing_events.execute("record_event", company_id=company_id,
                                                   type=BillingEventType.TRIAL_ENDED,
                                                   event_metadata={"reason": "expired"})  # Using Enum
 
                 session.commit()
+                session.refresh()
+
             return CompanyBillingProfile(**profile_orm.to_dict())  # Return updated ORM as model
 
-    async def _start_trial(self, company_id: str) -> CompanyBillingProfile:
+    async def _start_trial(self, company_id: str) -> CompanyBillingProfile | None:
         """Start a trial for a company (if not already active)."""
+        if not (isinstance(company_id, str) and company_id.strip()):
+            self.logger.error("Cannot Look Up Plan as Plan ID is Invalid")
+            return None
+
         with self.session_factory() as session:
             profile_orm = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).first()
 
@@ -119,6 +141,7 @@ class BillingService(BillingServiceInterface):
                     trial_active=True,
                     trial_end_date=datetime.now(timezone.utc).date() + timedelta(days=self.trial_period_days),
                 )
+
                 await self.billing_events.execute("record_event",
                                                   company_id=company_id,
                                                   type=BillingEventType.TRIAL_PROFILE_CREATED,  # Using Enum
@@ -140,7 +163,7 @@ class BillingService(BillingServiceInterface):
             session.refresh(profile_orm)  # Refresh to get latest state after commit
             return CompanyBillingProfile(**profile_orm.to_dict())
 
-    async def _update_all_subscription_states(self):
+    async def _update_all_subscription_states(self) -> list[CompanyBillingProfile]:
         """
             cron job to update all company subscriptions
             for all companies with subscriptions update all subscriptions.
@@ -152,7 +175,9 @@ class BillingService(BillingServiceInterface):
             self.logger.info(f"Found {len(company_ids)} Companies to update subscription records for")
             tasks = [self._update_subscription_state(company_id=company_id) for company_id in
                      company_ids] if company_ids else []
-            return await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks)
+            self.logger.info(f"Company ID's of all subscriptions : {results}")
+            return results
 
     async def _update_subscription_state(self, company_id: str) -> CompanyBillingProfile | None:
         """
@@ -162,28 +187,27 @@ class BillingService(BillingServiceInterface):
         - Applies grace periods
         - Can be triggered via CRON or login
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            self.logger.error("Cannot Update Subscription Company ID is Invalid")
+            return None
+
         today = datetime.now(timezone.utc).date()
 
         with self.session_factory() as session:
             profile_orm = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).first()
-
             if not profile_orm:
                 return None
 
             profile = CompanyBillingProfile(**profile_orm.to_dict())
 
-            # 1. Handle expired trial - Moved to a dedicated expire_trial or check in cron
-            # This logic should be handled by the _expire_trial method or _expire_subscription
-            # if profile_orm.is_trial_valid and profile_orm.trial_end_date < today:
-            #    profile_orm.trial_active = False
-            #    await self.billing_events.execute("record_event", company_id=company_id, type=BillingEventType.TRIAL_ENDED,
-            #                                      event_metadata={"reason": "expired", "auto_check": "true"})
-
             # 2. Check if subscription has ended and apply expiry/grace logic
             if profile.is_active_subscription_plan:
                 # If subscription end date has passed, apply grace or expire
+
                 if profile.subscription_end < today:
+                    self.logger.info(f"Subscription has ended : {profile}")
                     if profile.grace_period_ended:  # This property needs to be managed
+                        self.logger.info(f"Grace Period has Ended : {profile}")
                         # Subscription fully expired, no grace left
                         profile_orm.current_plan_id = None  # No active plan
                         profile_orm.subscription_start = None
@@ -194,6 +218,7 @@ class BillingService(BillingServiceInterface):
                                                           type=BillingEventType.SUBSCRIPTION_EXPIRED,  # Using Enum
                                                           event_metadata={"reason": "grace_period_expired",
                                                                           "auto_check": "true"})
+                        self.logger.info(f" Event Created : {BillingEventType.SUBSCRIPTION_EXPIRED.value}")
                     else:
                         # Enter grace period (assuming grace_period_ended is set after grace)
                         # This logic needs to be robust, possibly setting a grace_end_date
@@ -206,14 +231,20 @@ class BillingService(BillingServiceInterface):
             session.refresh(profile_orm)
             return CompanyBillingProfile(**profile_orm.to_dict())
 
-    async def _expire_subscription(self, company_id: str) -> CompanyBillingProfile:
+    async def _expire_subscription(self, company_id: str) -> CompanyBillingProfile | None:
         """
         Explicitly expires a company's subscription. This might be called by cron for past-due subscriptions.
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            self.logger.error("Cannot Expire Subscription Company ID is Invalid")
+            return None
+
         with self.session_factory() as session:
             profile_orm = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).first()
             if not profile_orm:
-                raise ValueError(f"Billing profile for company {company_id} not found.")
+                self.logger.info(f"Billing profile for company {company_id} not found.")
+                return None
+
 
             # Assuming the logic means setting the current_plan_id to None
             # and marking it inactive or expired.
@@ -229,18 +260,28 @@ class BillingService(BillingServiceInterface):
                 await self.billing_events.execute("record_event", company_id=company_id,
                                                   type=BillingEventType.SUBSCRIPTION_EXPIRED,  # Using Enum
                                                   event_metadata={"reason": "manual_or_cron_expiry"})
+                self.logger.info(f"Created an Event : {BillingEventType.SUBSCRIPTION_EXPIRED.value}")
+
             session.commit()
             session.refresh(profile_orm)
-            return CompanyBillingProfile(**profile_orm.to_dict())
+            billing_profile = CompanyBillingProfile(**profile_orm.to_dict())
+            self.logger.info(f"Billing Profile : {billing_profile}")
+            return billing_profile
 
-    async def _create_billing_profile(self, company_id: str, plan_id: str) -> Optional[CompanyBillingProfile]:
+    async def _create_billing_profile(self, company_id: str, plan_id: str) -> CompanyBillingProfile | None:
         """
         Creates a new billing profile for a company.
-
         :param company_id: The ID of the company.
         :param plan_id: The ID of the initial billing plan.
         :return: The newly created CompanyBillingProfile, or None if it already exists.
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            self.logger.error("Cannot Create Billing Profile : Invalid Company ID")
+            return None
+        if not (isinstance(plan_id, str) and plan_id.strip()):
+            self.logger.error("Cannot Expire Subscription: Billing Plan ID is Invalid")
+            return None
+
         with self.session_factory() as session:
             billing_profile_orm = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).first()
             if billing_profile_orm:
@@ -249,14 +290,17 @@ class BillingService(BillingServiceInterface):
 
             billing_plan: BillingPlanORM = session.query(BillingPlanORM).filter_by(plan_id=plan_id).first()
             if not billing_plan:
-                raise ValueError(f"Billing plan '{plan_id}' not found.")
+                self.logger.error(f"Billing Plan : {plan_id} Not Found - creating New Billing Profile")
+                return None
 
             today = datetime.now(timezone.utc).date()
 
             # If the plan is a trial, use _start_trial
             if billing_plan.is_trial:
                 self.logger.info(f"Creating billing profile for {company_id} with trial plan {plan_id}.")
-                return await self._start_trial(company_id=company_id)
+                trial_billing_profile = await self._start_trial(company_id=company_id)
+                self.logger.info(f"Created Trial Billing Profile : Plan : {trial_billing_profile}")
+                return trial_billing_profile
             else:
                 # Create a non-trial profile
                 subscription_end = today + timedelta(days=billing_plan.duration_days)
@@ -279,7 +323,9 @@ class BillingService(BillingServiceInterface):
                 session.commit()
                 session.refresh(billing_profile_orm)
                 self.logger.info(f"Billing profile created for {company_id} with plan {plan_id}.")
-                return CompanyBillingProfile(**billing_profile_orm.to_dict())
+                billing_profile = CompanyBillingProfile(**billing_profile_orm.to_dict())
+                self.logger.ingo(f"Created Billing Profile : {billing_profile}")
+                return billing_profile
 
     async def _get_billing_profile(self, company_id: str) -> CompanyBillingProfile | None:
         """
@@ -288,14 +334,21 @@ class BillingService(BillingServiceInterface):
         :param company_id: The ID of the company.
         :return: The CompanyBillingProfile if found, otherwise None.
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            self.logger.error("Cannot get A Billing Profile : Invalid Company ID")
+            return None
+
         with self.session_factory() as session:
             profile = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).first()
             if not profile:
+                self.logger.error(f"BIlling Profile for Company ID : {company_id} Cannot Be found")
                 return None
-            return CompanyBillingProfile(**profile.to_dict())
+            billing_profile = CompanyBillingProfile(**profile.to_dict())
+            self.logger.info(f"Billing Profile found  : {billing_profile}")
+            return billing_profile
 
     async def _apply_subscription(self, company_id: str, plan_id: str,
-                                  duration_days: int = 30) -> CompanyBillingProfile:
+                                  duration_days: int = 30) -> CompanyBillingProfile | None:
         """
         Apply a new active subscription to the company. Cancels trial if active.
 
@@ -310,6 +363,18 @@ class BillingService(BillingServiceInterface):
         Raises:
             ValueError: If the company profile or plan is not found.
         """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            self.logger.error("Cannot apply new Subscription as Company ID is Invalid")
+            return None
+
+        if not (isinstance(plan_id, str) and plan_id.strip()):
+            self.logger.error("Cannot Apply a new Subscription : Invalid Plan ID")
+            return None
+
+        if not (isinstance(duration_days, int) and (duration_days >= 30)):
+            self.logger.error("Cannot Apply a new Subscription : Invalid Plan Duration")
+            return None
+
         now = datetime.now(timezone.utc)
         subscription_end = now.date() + timedelta(days=duration_days)
 
@@ -363,5 +428,6 @@ class BillingService(BillingServiceInterface):
                                                               "subscription_end": str(subscription_end)})
             session.commit()
             session.refresh(profile_orm)
-
-            return CompanyBillingProfile(**profile_orm.to_dict())
+            new_billing_profile = CompanyBillingProfile(**profile_orm.to_dict())
+            self.logger.info(f"Created New Billing Profile : {new_billing_profile}")
+            return new_billing_profile
