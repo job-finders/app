@@ -39,6 +39,9 @@ class BillingEventType(str, Enum):
     TRIAL_ENDED = "trial_ended"
     TRIAL_PROFILE_CREATED = "trial_profile_created"
     EMAIL_SEND_FAILED = "email_send_failed"
+    MANUAL_PAYMENT_RECEIVED = "manual_payment_received"
+    PLAN_UPGRADE = "plan_upgrade"
+    PLAN_DOWNGRADE = "plan_downgrade"
 
 class BillingServiceRouterException(Exception):
     """ raise this exception for errors with routing"""

@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from sqlalchemy import Column, Integer, String, inspect, ForeignKey, DateTime, Text
 
 from src.database.constants import ID_LEN, utc_time

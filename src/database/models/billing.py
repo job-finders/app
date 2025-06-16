@@ -64,6 +64,10 @@ class BillingPlan(BaseModel):
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
     updated_at: Optional[AwareDatetime] = None
     duration_days: int = Field(default=30)
+    invoices: list['Invoice'] = Field(default_factory=list)
+    billing_profiles: list['CompanyBillingProfile'] = Field(default_factory=list)
+
+
     model_config = ConfigDict(from_attributes=True)
 
     @property
@@ -97,17 +101,19 @@ class CompanyBillingProfile(BaseModel):
     subscription_end: Optional[date]
     trial_active: bool = False
     trial_end_date: Optional[date]
-    is_payment_overdue: bool = False
+    is_payment_overdue: bool = Field(default=False)
 
-    auto_renew: bool = True
-    last_invoice_id: Optional[str]
+    auto_renew: bool = Field(default=True)
+    last_invoice_id: Optional[str] = Field(default=None)
     invoices: list['Invoice'] = Field(default_factory=list)
+    billing_plan: Optional[BillingPlan] = Field(default=None)
+
     model_config = ConfigDict(from_attributes=True)
 
 
     @property
     def is_trial_valid(self):
-        today = utc_time()
+        today = utc_time().date()
         return self.trial_active and today <= self.trial_end_date
 
     @property
@@ -128,8 +134,6 @@ class CompanyBillingProfile(BaseModel):
                 return self.current_plan_id
         return None
 
-
-
     @property
     def is_active_subscription_plan(self) -> bool:
         """
@@ -146,7 +150,7 @@ class CompanyBillingProfile(BaseModel):
             return False
 
         if self.subscription_start and self.subscription_end:
-            return self.subscription_start <= utc_time() <= self.subscription_end
+            return self.subscription_start <= utc_time().date() <= self.subscription_end
         return False
 
     @property
@@ -216,6 +220,7 @@ class Invoice(BaseModel):
     """
     invoice_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     company_id: str
+    subscription_id: Optional[str] = Field(default=None)
     plan_id: Optional[str]
     status: str = Field(default=InvoiceStatusEnum.PENDING.value)
     amount: float
@@ -223,6 +228,10 @@ class Invoice(BaseModel):
     due_date: date
     paid_at: Optional[AwareDatetime]
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
+
+    billing_profile: Optional[CompanyBillingProfile] = Field(default=None)
+    billing_plan: Optional[BillingPlan] = Field(default=None)
+
     model_config = ConfigDict(from_attributes=True)
 
     @property
@@ -277,20 +286,31 @@ class BillingEvent(BaseModel):
     event_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     company_id: str
 
-    type: Literal[
-        'plan_upgrade',
-        'plan_downgrade',
-        'trial_started',
-        'trial_ended',
-        'cancelled',
-        'payment_failed',
-        'payment_success',
-        'subscription_created',
-        'subscription_cancelled',
-        'invoice_generated',
-        'manual_payment_received'
+    event_type: Literal[
+        "payment_success",
+        "payment_failed",
+        "invoice_closed",
+        "invoice_created",
+        "subscription_applied",
+        "subscription_created",
+        "subscription_expiring_soon",
+        "subscription_expired",
+        "subscription_cancelled",
+        "subscription_started",
+        "billing_profile_missing",
+        "billing_profile_created",
+        "trial_started",
+        "trial_ended",
+        "trial_profile_created",
+        "email_send_failed",
+        "manual_payment_received",
+        "plan_upgrade",
+        "plan_downgrade",
     ]
     model_config = ConfigDict(from_attributes=True)
 
     event_metadata: Dict[str, str] = Field(default_factory=dict)
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
+
+
+BillingPlan.model_rebuild()

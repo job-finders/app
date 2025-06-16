@@ -67,9 +67,8 @@ class EmployerORM(Base):
             "is_verified": self.is_verified,
             "verification_token": self.verification_token,
             "verification_token_expires_at": self.verification_token_expires_at,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc),
-            "updated_at": self.updated_at.replace(tzinfo=timezone.utc),
-
+            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
             # Personal information
             "full_name": self.full_name,
             "job_title": self.job_title,
@@ -88,7 +87,7 @@ class EmployerORM(Base):
 
             # Professional details
             "department": self.department,
-            "hire_date": self.hire_date.replace(tzinfo=timezone.utc),
+            "hire_date": self.hire_date.replace(tzinfo=timezone.utc) if self.hire_date else None,
             "responsibilities": self.responsibilities,
             "hiring_authority": self.hiring_authority,
             "signature": self.signature,

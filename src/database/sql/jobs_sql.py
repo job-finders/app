@@ -583,7 +583,7 @@ class ApplicationDashboardORM(Base):
         return {
             "dashboard_id": self.dashboard_id,
             "company_id": self.company_id,
-            "snapshot_date": self.snapshot_date.replace(tzinfo=timezone.info) if self.snapshot_date else None,
+            "snapshot_date": self.snapshot_date.replace(tzinfo=timezone.utc) if self.snapshot_date else None,
             "data": self.data,
             "metrics": self.metrics
         }

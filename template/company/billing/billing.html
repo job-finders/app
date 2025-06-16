@@ -7,7 +7,7 @@
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h2 class="h5 fw-bold text-primary mb-0"><i class="bi bi-credit-card-2-front me-2"></i>Billing Overview</h2>
-            {% if billing.auto_renew %}
+            {% if billing and billing.auto_renew %}
                 <span class="badge bg-success">Auto-Renew Enabled</span>
             {% else %}
                 <span class="badge bg-secondary">Manual Renewal</span>
@@ -16,6 +16,7 @@
         <div class="card-body">
             <div class="row gy-4">
                 <!-- Current Plan -->
+
                 <div class="col-md-6">
                     <div class="border rounded p-3 bg-light h-100">
                         <h5 class="fw-bold">{{ current_plan.name }}</h5>
@@ -39,14 +40,14 @@
                 <!-- Subscription Status -->
                 <div class="col-md-6">
                     <div class="border rounded p-3 bg-light h-100">
-                        {% if billing.trial_active %}
+                        {% if billing and billing.trial_active %}
                             <h6 class="fw-bold text-warning mb-1">Trial Active</h6>
                             <p class="mb-2 small">Ends on {{ billing.trial_end_date }}</p>
                         {% else %}
                             <h6 class="fw-bold text-success mb-1">Subscribed</h6>
                             <p class="mb-2 small">Renewal: {{ billing.subscription_end }}</p>
                         {% endif %}
-                        {% if billing.is_payment_overdue %}
+                        {% if billing and billing.is_payment_overdue %}
                             <span class="badge bg-danger">Payment Overdue</span>
                         {% endif %}
                     </div>

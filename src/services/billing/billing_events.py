@@ -104,7 +104,7 @@ class BillingEventService(BillingServiceInterface):
         Returns:
             BillingEvent: The created billing event.
         """
-        if not company_id or not type:
+        if not company_id or not event_type:
             raise ValueError("company_id and event_type are required.")
 
         event_metadata = event_metadata or {}
@@ -113,12 +113,12 @@ class BillingEventService(BillingServiceInterface):
             # Store the string value of the Enum
             event_orm = BillingEventORM(
                 company_id=company_id,
-                event_type=type.value,  # Store the string value of the Enum
+                event_type=event_type.value,  # Store the string value of the Enum
                 event_metadata=event_metadata,
                 created_at=datetime.now(timezone.utc),
             )
             # Check if the event event_type is considered real-time
-            if type in self.__realtime_event_types:
+            if event_type in self.__realtime_event_types:
                 # event is realtime store it in the queue
                 enqueue_realtime_event(event_orm.to_dict())
 

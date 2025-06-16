@@ -1,4 +1,8 @@
+import asyncio
+from decimal import Decimal
+
 from flask import Flask, redirect, url_for, flash
+
 
 from src.services.billing.schemas_interfaces import BillingEventType
 from src.config import config_instance
@@ -34,6 +38,15 @@ class BillingController(Controllers):
 
     def init_app(self, app: Flask):
         super().init_app(app)
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(self._safe_execute())
+        else:
+            loop.create_task(self._safe_execute())
+
+    async def _safe_execute(self):
+        await self.billing_service.execute("init_standard_billing_plans")
 
 
     async def create_subscription(self, company_id: str, plan_id: str):
@@ -66,6 +79,17 @@ class BillingController(Controllers):
         else:
             flash(message="Your Trial Period has started", category="success")
             return redirect(url_for('company.get_dashboard'))
+
+    async def get_trial_billing_plan(self) -> BillingPlan | None:
+        """
+
+        :return:
+        """
+        all_billing_plans = await self.billing_service.execute('list_all_billing_plans')
+        for billing_plan in all_billing_plans:
+            if billing_plan.is_trial:
+                return billing_plan
+        return None
 
     async def itn_callback(self, data: dict):
         """
@@ -105,6 +129,11 @@ class BillingController(Controllers):
             'current_plan': billing_plan,
             'list_invoices': list_invoices,
             'recent_events': billing_events}
+
+    @error_handler
+    async def has_billing_profile(self, company_id: str) -> bool:
+        billing_profile = await self.billing_service.execute("get_billing_profile", company_id=company_id)
+        return billing_profile.is_active_subscription_plan if billing_profile else False
 
     @error_handler
     async def handle_trial_expiry(self, company_id: str):

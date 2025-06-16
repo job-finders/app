@@ -1,8 +1,13 @@
 from src.database import *
 from src.database.sql import Base, engine
-
 def boot():
     try:
+        InvoiceORM.delete_table()
+        BillingEventORM.delete_table()
+        CompanyBillingProfileORM.delete_table()
+        BillingPlanORM.delete_table()
+
+
 
         # Drop all existing tables first
         print("Dropping all existing database tables...")

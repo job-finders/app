@@ -3,10 +3,10 @@ from flask import Blueprint, request, render_template, flash, redirect, url_for
 from src.authentication import employer_login
 from src.database.models.users import User
 from src.routes import flask_error_handler
-from src.utils.route_helpers import get_controller
+from src.utils.route_helpers import get_controller, get_service
 
 billing_route = Blueprint('billing', __name__, url_prefix="/company/billing")
-
+billing_logger = get_service("logger")()("billing_route")
 
 @billing_route.post("/ipn/payfast")
 async def payfast_ipn():
@@ -41,11 +41,24 @@ async def get_dashboard(user: User):
     if not company_profile:
         flash(message="Something has gone wrong if this error persists please inform admin", category="danger")
         return redirect(url_for("company.get_dashboard"))
+    billing_logger.info("trying to fetch billing profile")
 
-    billing_dashboard = await billing_controller.get_billing_dashboard(company_id=employer_profile.company_id)
+    has_billing_profile = await billing_controller.has_billing_profile(company_id=company_profile.company_id)
+    billing_logger.info(f"Billing profile found : {str(has_billing_profile)}")
 
-    context = dict(user=user, employer_profile=employer_profile,company_profile=company_profile,  **billing_dashboard)
-    return render_template('company/billing/billing.html', **context)
+    if has_billing_profile:
+        billing_logger.info(f"Company Profile : {company_profile}")
+        billing_context = await billing_controller.get_billing_dashboard(company_id=employer_profile.company_id)
+        billing_logger.info(f"Billing Dashboard Context : {billing_context}")
+        billing_context.update(current_user=user, employer_profile=employer_profile, company_profile=company_profile)
+        billing_logger.info("==============================================================================")
+        billing_logger.info(f"Billing Context : {billing_context}")
+        return render_template('company/billing/billing.html', **billing_context)
+    trial = await billing_controller.get_trial_billing_plan()
+    response = await billing_controller.create_subscription(
+        company_id=company_profile.company_id, plan_id=trial.plan_id)
+    flash(f"{company_profile.name}, your trial is active. You’re all set!", category="success")
+    return response
 
 
 @billing_route.get("/subscribe/<string:plan_slug>")

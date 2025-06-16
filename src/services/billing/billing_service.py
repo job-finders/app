@@ -1,5 +1,6 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
+from decimal import Decimal
 from typing import Callable, Optional
 import inspect
 
@@ -34,6 +35,7 @@ class BillingService(BillingServiceInterface):
             'create_billing_profile': self._create_billing_profile,
             "apply_subscription": self._apply_subscription,
             "expire_subscription": self._expire_subscription,  # Added for cron service usage
+            "init_standard_billing_plans": self._init_standard_billing_plans
         }
         self.logger = get_service("logger")()(self.__class__.__name__)
 
@@ -80,6 +82,111 @@ class BillingService(BillingServiceInterface):
             companies_orm = session.query(CompanyBillingProfileORM).all()
             return [CompanyBillingProfile(**c.to_dict()) for c in companies_orm] if companies_orm else []
 
+    def _init_standard_billing_plans(self) -> list[BillingPlan]:
+        """
+        Creates a set of standard billing plans for the platform.
+
+        Returns:
+            List of BillingPlan instances ready for database insertion
+        """
+        standard_plans = [
+            # Free Trial Plan
+            BillingPlan(
+                name="Free Trial",
+                description="14-day free trial to test all features",
+                price=Decimal("0.00"),
+                is_active=True,
+                is_trial=True,
+                max_open_jobs=2,
+                max_users=1,
+                max_applicants_per_job=50,
+                allow_priority_support=False,
+                show_branding=True,
+                sort_order=1,
+                duration_days=7
+            ),
+
+            # Starter Plan
+            BillingPlan(
+                name="Starter",
+                description="Perfect for small businesses and startups",
+                price=Decimal("299.00"),
+                is_active=True,
+                is_featured=False,
+                max_open_jobs=5,
+                max_users=2,
+                max_applicants_per_job=100,
+                allow_priority_support=False,
+                show_branding=True,
+                sort_order=2
+            ),
+
+            # Growth Plan
+            BillingPlan(
+                name="Growth",
+                description="Ideal for growing companies with multiple hiring needs",
+                price=Decimal("699.00"),
+                is_active=True,
+                is_featured=True,
+                max_open_jobs=15,
+                max_users=5,
+                max_applicants_per_job=250,
+                allow_priority_support=True,
+                show_branding=False,
+                sort_order=3
+            ),
+
+            # Professional Plan
+            BillingPlan(
+                name="Professional",
+                description="Advanced features for established businesses",
+                price=Decimal("1299.00"),
+                is_active=True,
+                is_featured=False,
+                max_open_jobs=50,
+                max_users=15,
+                max_applicants_per_job=500,
+                allow_priority_support=True,
+                show_branding=False,
+                sort_order=4
+            ),
+
+            # Enterprise Plan
+            BillingPlan(
+                name="Enterprise",
+                description="Unlimited access for large organizations",
+                price=Decimal("2999.00"),
+                is_active=True,
+                is_featured=False,
+                max_open_jobs=None,  # Unlimited
+                max_users=None,  # Unlimited
+                max_applicants_per_job=None,  # Unlimited
+                allow_priority_support=True,
+                show_branding=False,
+                sort_order=5
+            )
+        ]
+        self.logger.info(f"Started Initializing Standard Billing Plans : {standard_plans}")
+        with self.session_factory() as session:
+            saved_plans = []
+
+            if standard_plans:
+                for s_plan in standard_plans:
+                    if not s_plan:
+                        continue
+
+                    existing = session.query(BillingPlanORM).filter_by(name=s_plan.name).first()
+                    if not existing:
+                        orm_plan = BillingPlanORM(**s_plan.model_dump())
+                        session.add(orm_plan)
+                        session.commit()
+                        session.refresh(orm_plan)
+                        saved_plans.append(BillingPlan(**orm_plan.to_dict()))
+                    else:
+                        saved_plans.append(BillingPlan(**existing.to_dict()))
+
+            return saved_plans
+
     async def _look_up_plan(self, plan_id: str) -> CompanyBillingProfile | None:
         """Returns the billing plan details for a given plan_id"""
         if not (isinstance(plan_id, str) and plan_id.strip()):
@@ -91,7 +198,7 @@ class BillingService(BillingServiceInterface):
             if not billing_plan_orm:
                 self.logger.info("Billing Plan Not Found")
                 return None
-            billing_plan = CompanyBillingProfile(**billing_plan_orm.to_dict())
+            billing_plan = BillingPlan(**billing_plan_orm.to_dict())
             self.logger.info(f"Billing Plan Found : {billing_plan}")
             return billing_plan
 
@@ -125,22 +232,30 @@ class BillingService(BillingServiceInterface):
 
             return CompanyBillingProfile(**profile_orm.to_dict())  # Return updated ORM as model
 
-    async def _start_trial(self, company_id: str) -> CompanyBillingProfile | None:
+    async def _start_trial(self, company_id: str, plan_id: str) -> CompanyBillingProfile | None:
         """Start a trial for a company (if not already active)."""
         if not (isinstance(company_id, str) and company_id.strip()):
             self.logger.error("Cannot Look Up Plan as Plan ID is Invalid")
             return None
-
+        self.logger.info(f"Starting Trial Billing for : {company_id}")
         with self.session_factory() as session:
             profile_orm = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).first()
+            plan_orm = session.query(BillingPlanORM).filter_by(plan_id=plan_id).first()
+            trial_plan = BillingPlan(**plan_orm.to_dict())
+
 
             if not profile_orm:
                 # If profile doesn't exist, create a fresh one with trial enabled
+                trial_end_date: date = datetime.now(timezone.utc).date() + timedelta(days=self.trial_period_days)
+
+                company_profile = CompanyBillingProfile(
+                    company_id=company_id, current_plan_id=trial_plan.plan_id,
+                    subscription_start=datetime.now(timezone.utc).date(),
+                    subscription_end=trial_end_date,
+                    trial_end_date=trial_end_date,
+                    trial_active=True)
                 profile_orm = CompanyBillingProfileORM(
-                    company_id=company_id,
-                    trial_active=True,
-                    trial_end_date=datetime.now(timezone.utc).date() + timedelta(days=self.trial_period_days),
-                )
+                    **company_profile.model_dump(exclude={'invoices', 'billing_plan'}))
 
                 await self.billing_events.execute("record_event",
                                                   company_id=company_id,
