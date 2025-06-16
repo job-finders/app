@@ -61,7 +61,7 @@ async def view_company_by_company_id(user: User, company_id: str):
         flash("No saved CVs found for this company.", "info")
 
     return render_template(
-    'company/view_company.html',
+        'company/view_company_profile.html',
         current_user=user,
         company=company_data,
         jobs=jobs,
