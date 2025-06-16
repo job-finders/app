@@ -38,7 +38,7 @@ class SecurityService(AdminServiceInterface):
 
     Methods:
         execute(security_event: str, **kwargs) -> AdminActionResult:
-            Dispatches execution to the appropriate security handler based on the event type.
+            Dispatches execution to the appropriate security handler based on the event event_type.
 
         _analyze_jobseeker_risk(user_id: str) -> AdminActionResult:
             Analyzes application frequency and search patterns to assign a composite risk score to a jobseeker.

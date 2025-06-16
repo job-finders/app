@@ -6125,7 +6125,7 @@ module.exports = function(Chart) {
 		}
 	};
 
-	// Register the default config for this type
+    // Register the default config for this event_type
 	Chart.defaults.scatter = defaultConfig;
 
 	// Scatter charts use line controllers
@@ -8996,14 +8996,14 @@ module.exports = function(Chart) {
 	helpers.extend(Chart.DatasetController.prototype, {
 
 		/**
-		 * Element type used to generate a meta dataset (e.g. Chart.element.Line).
-		 * @type {Chart.core.element}
+         * Element event_type used to generate a meta dataset (e.g. Chart.element.Line).
+         * @event_type {Chart.core.element}
 		 */
 		datasetElementType: null,
 
 		/**
-		 * Element type used to generate a meta data (e.g. Chart.element.Point).
-		 * @type {Chart.core.element}
+         * Element event_type used to generate a meta data (e.g. Chart.element.Point).
+         * @event_type {Chart.core.element}
 		 */
 		dataElementType: null,
 
@@ -10494,7 +10494,7 @@ module.exports = function(Chart) {
 	/**
 	 * If true, only consider items that intersect the point
 	 * @name IInterfaceOptions#boolean
-	 * @type Boolean
+     * @event_type Boolean
 	 */
 
 	/**
@@ -11160,13 +11160,13 @@ module.exports = function(Chart) {
 			// Contains hit boxes for each dataset (in dataset order)
 			this.legendHitBoxes = [];
 
-			// Are we in doughnut mode which has a different data type
+            // Are we in doughnut mode which has a different data event_type
 			this.doughnutMode = false;
 		},
 
 		// These methods are ordered by lifecycle. Utilities then follow.
 		// Any function defined here is inherited by all legend types.
-		// Any function can be extended by the legend type
+        // Any function can be extended by the legend event_type
 
 		beforeUpdate: noop,
 		update: function(maxWidth, maxHeight, margins) {
@@ -11762,7 +11762,7 @@ module.exports = function(Chart) {
 
 		// These methods are ordered by lifecycle. Utilities then follow.
 		// Any function defined here is inherited by all scale types.
-		// Any function can be extended by the scale type
+        // Any function can be extended by the scale event_type
 
 		beforeUpdate: function() {
 			helpers.callCallback(this.options.beforeUpdate, [this]);
@@ -12093,7 +12093,7 @@ module.exports = function(Chart) {
 			return (this.options.fullWidth);
 		},
 
-		// Get the correct value. NaN bad inputs, If the value type is object get the x or y based on whether we are horizontal or not
+        // Get the correct value. NaN bad inputs, If the value event_type is object get the x or y based on whether we are horizontal or not
 		getRightValue: function(rawValue) {
 			// Null and undefined values first
 			if (rawValue === null || typeof(rawValue) === 'undefined') {
@@ -12524,24 +12524,24 @@ module.exports = function(Chart) {
 			/**
 			 * The maximum number of ticks to display
 			 * @name INumericTickGenerationOptions#maxTicks
-			 * @type Number
+             * @event_type Number
 			 */
 			/**
 			 * The distance between each tick.
 			 * @name INumericTickGenerationOptions#stepSize
-			 * @type Number
+             * @event_type Number
 			 * @optional
 			 */
 			/**
 			 * Forced minimum for the ticks. If not specified, the minimum of the data range is used to calculate the tick minimum
 			 * @name INumericTickGenerationOptions#min
-			 * @type Number
+             * @event_type Number
 			 * @optional
 			 */
 			/**
 			 * The maximum value of the ticks. If not specified, the maximum of the data range is used to calculate the tick maximum
 			 * @name INumericTickGenerationOptions#max
-			 * @type Number
+             * @event_type Number
 			 * @optional
 			 */
 
@@ -14516,7 +14516,7 @@ module.exports = function(Chart) {
 						};
 					}
 
-					// Store these per type
+                    // Store these per event_type
 					var positiveValues = valuesPerType[meta.type].positiveValues;
 					var negativeValues = valuesPerType[meta.type].negativeValues;
 

@@ -902,14 +902,14 @@ async def test_search_by_type_full_time_match(get_controller, session):
     create_job(session, position_type="Full-Time", status="active")
     result = await get_controller.search_by_type("full-time")
     assert result["total_jobs"] == 1
-    assert result["jobs"][0].type.lower() == "full-time"
+    assert result["jobs"][0].event_type.lower() == "full-time"
 
 @pytest.mark.asyncio
 async def test_search_by_type_case_insensitive(get_controller, session):
     create_job(session, position_type="Part-Time", status="active")
     result = await get_controller.search_by_type("part-time")
     assert result["total_jobs"] == 1
-    assert result["jobs"][0].type.lower() == "part-time"
+    assert result["jobs"][0].event_type.lower() == "part-time"
 
 
 @pytest.mark.asyncio
@@ -931,7 +931,7 @@ async def test_search_by_type_empty_string(get_controller, session):
     create_job(session, position_type="Full-Time", status="active")
     create_job(session, position_type="Part-Time", status="active")
     result = await get_controller.search_by_type("")
-    # Will return nothing if no job has empty string as a type
+    # Will return nothing if no job has empty string as a event_type
     assert result["total_jobs"] == 0
 
 @pytest.mark.asyncio

@@ -70,14 +70,14 @@ function generatePlaceholder() {
 //var messageSenderType = { in: 1, out: 2 }
 //var _messageDate = '<div class="date">{0}</div>';
 
-//function messageAdd(dataId, message, type, senderType) {
-//    type = type || messageType.text;
+//function messageAdd(dataId, message, event_type, senderType) {
+//    event_type = event_type || messageType.text;
 //    senderType = senderType || messageSenderType.in;
 
 //    $('#mmc-chat .chat-box .boxs .box').each(function () {
 //        if ($(this).data('id') == dataId) {
 
-//            switch (type) {
+//            switch (event_type) {
 //                case messageType.date:
 //                    $(this).find('.messages').append(_messageDate.format(message));
 //                    break;

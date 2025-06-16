@@ -54,7 +54,7 @@ class UserEngagementController(Controllers):
                 'title': job.title,
                 'company': job.company.name if job.company else "Confidential",
                 'location': job.location,
-                'type': job.position_type.replace('_', ' ').title(),
+                'event_type': job.position_type.replace('_', ' ').title(),
                 'remote': job.remote_policy.title(),
                 'salary': await self._format_salary(job),
                 'description': job.description[:200] + '...' if job.description else "",

@@ -41,7 +41,7 @@
             if (s == "") {
                 return false;
             } else {
-                $(".tdl-content ul").append("<li><label><input type='checkbox'><i></i><span>" + v + "</span><a href='#' class='ti-close'></a></label></li>");
+                $(".tdl-content ul").append("<li><label><input event_type='checkbox'><i></i><span>" + v + "</span><a href='#' class='ti-close'></a></label></li>");
                 $(this).val("");
             }
         }

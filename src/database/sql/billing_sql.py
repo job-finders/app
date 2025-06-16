@@ -63,6 +63,7 @@ class BillingPlanORM(Base):
 
 class CompanyBillingProfileORM(Base):
     __tablename__ = "company_billing"
+    subscription_id = Column(String(ID_LEN), primary_key=True, index=True)
     company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), primary_key=True, index=True)
     current_plan_id = Column(String(ID_LEN), ForeignKey('billing_plan.plan_id') , index=True)
     subscription_start = Column(Date, nullable=True, default=None)
@@ -165,7 +166,7 @@ class BillingEventORM(Base):
     event_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
     company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"), nullable=False)
 
-    type = Column(String(50), nullable=False)  # Use Enum if you prefer strict validation
+    event_type = Column(String(50), nullable=False)  # Use Enum if you prefer strict validation
     event_metadata = Column(JSON, default=dict)
     email_sent = Column(Boolean, default=False, index=True)
     created_at = Column(DateTime(timezone=True), default=utc_time(), index=True)
@@ -175,7 +176,7 @@ class BillingEventORM(Base):
             "event_id": self.event_id,
             "company_id": self.company_id,
             "email_sent": self.email_sent,
-            "type": self.type,
+            "event_type": self.event_type,
             "event_metadata": self.event_metadata,
             "created_at": self.created_at.replace(tzinfo=timezone.utc)
         }

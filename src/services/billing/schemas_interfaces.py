@@ -26,6 +26,7 @@ class BillingEventType(str, Enum):
     PAYMENT_SUCCESS = "payment_success"
     PAYMENT_FAILED = "payment_failed"
     INVOICE_CLOSED = "invoice_closed"
+    INVOICE_CREATED = "invoice_created"
     SUBSCRIPTION_APPLIED = "subscription_applied"
     SUBSCRIPTION_CREATED = "subscription_created" # Renamed from subscription_applied to be more specific
     SUBSCRIPTION_EXPIRING_SOON = "subscription_expiring_soon"
@@ -124,7 +125,7 @@ class BillingServiceInterface:
                     param_type = str(hints.get(param_name, "Any"))
                     params.append({
                         "name": param_name,
-                        "type": param_type,
+                        "event_type": param_type,
                         "required": param.default == inspect.Parameter.empty
                     })
 

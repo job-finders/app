@@ -44,7 +44,7 @@ class AnalyticsService(AdminServiceInterface):
             Initialize the service with a SQLAlchemy session factory.
 
         execute(metric_type: str, **kwargs) -> AdminActionResult
-            Dispatches the analytics task based on the given metric type.
+            Dispatches the analytics task based on the given metric event_type.
 
             Args:
                 metric_type (str): One of ['system_health', 'engagement', 'audit_log', 'company_stats'].

@@ -18,7 +18,7 @@ def ping_search_engines(
             credentials = service_account.Credentials.from_service_account_file(
                 google_service_account_path, scopes=GOOGLE_SCOPES)
             service = build("indexing", "v3", credentials=credentials)
-            body = {"url": url, "type": "URL_UPDATED"}
+            body = {"url": url, "event_type": "URL_UPDATED"}
             r = service.urlNotifications().publish(body=body).execute()
             results['google_indexing'] = r
         except Exception as e:

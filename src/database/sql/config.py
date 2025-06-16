@@ -33,7 +33,7 @@ class ConfigurationORM(Base):
 
         return {
             "id": self.id,
-            "type": self.type,
+            "event_type": self.type,
             "value": casted_value,
             "data_type": self.data_type,
             "description": self.description,

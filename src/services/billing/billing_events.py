@@ -91,20 +91,21 @@ class BillingEventService(BillingServiceInterface):
             # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
             raise RuntimeError(f"Error executing action '{action}': {str(e)}") from e
 
-    async def _record_event(self, company_id: str, type: BillingEventType, event_metadata: Optional[dict] = None) -> BillingEvent:
+    async def _record_event(self, company_id: str, event_type: BillingEventType,
+                            event_metadata: Optional[dict] = None) -> BillingEvent:
         """
         Records a new billing event.
 
         Args:
             company_id (str): The ID of the company.
-            type (str): Type of the event (e.g., 'trial_started', 'payment_success').
+            event_type (str): Type of the event (e.g., 'trial_started', 'payment_success').
             event_metadata (dict, optional): Additional data about the event.
 
         Returns:
             BillingEvent: The created billing event.
         """
         if not company_id or not type:
-            raise ValueError("company_id and type are required.")
+            raise ValueError("company_id and event_type are required.")
 
         event_metadata = event_metadata or {}
 
@@ -112,11 +113,11 @@ class BillingEventService(BillingServiceInterface):
             # Store the string value of the Enum
             event_orm = BillingEventORM(
                 company_id=company_id,
-                type=type.value,  # Store the string value of the Enum
+                event_type=type.value,  # Store the string value of the Enum
                 event_metadata=event_metadata,
                 created_at=datetime.now(timezone.utc),
             )
-            # Check if the event type is considered real-time
+            # Check if the event event_type is considered real-time
             if type in self.__realtime_event_types:
                 # event is realtime store it in the queue
                 enqueue_realtime_event(event_orm.to_dict())
@@ -154,7 +155,7 @@ class BillingEventService(BillingServiceInterface):
     async def _list_events(
             self,
             company_id: str,
-            type: Optional[BillingEventType] = None,  # Expect Enum here
+            event_type: Optional[BillingEventType] = None,  # Expect Enum here
             start_date: Optional[str] = None,
             end_date: Optional[str] = None,
             limit: int = 20,
@@ -165,7 +166,7 @@ class BillingEventService(BillingServiceInterface):
 
         Args:
             company_id (str): Company ID to fetch events for.
-            type (str, optional): Filter by event type.
+            event_type (str, optional): Filter by event event_type.
             start_date (str, optional): ISO date filter from.
             end_date (str, optional): ISO date filter to.
             limit (int): Max number of events to return.
@@ -177,8 +178,8 @@ class BillingEventService(BillingServiceInterface):
         with self.session_factory() as session:
             query = session.query(BillingEventORM).filter_by(company_id=company_id)
 
-            if type:
-                query = query.filter(BillingEventORM.type == type)
+            if event_type:
+                query = query.filter(BillingEventORM.event_type == event_type)
 
             if start_date:
                 query = query.filter(BillingEventORM.created_at >= datetime.fromisoformat(start_date))
@@ -236,7 +237,7 @@ class BillingEventService(BillingServiceInterface):
             events_orm = (
                 session.query(BillingEventORM)
                 .filter(BillingEventORM.email_sent == False,
-                        BillingEventORM.type.in_(event_type_values))
+                        BillingEventORM.event_type.in_(event_type_values))
                 .order_by(BillingEventORM.created_at.asc())
                 .limit(limit)
                 .all()
@@ -245,11 +246,11 @@ class BillingEventService(BillingServiceInterface):
 
     async def _get_last_event(self, company_id: str, event_type: str) -> Optional[BillingEvent]:
         """
-        Retrieves the last recorded event of a specific type for a company.
+        Retrieves the last recorded event of a specific event_type for a company.
 
         Args:
             company_id (str): The ID of the company.
-            event_type (str): The type of the event (string value, as stored in DB).
+            event_type (str): The event_type of the event (string value, as stored in DB).
 
         Returns:
             BillingEvent or None: The last matching event if found.

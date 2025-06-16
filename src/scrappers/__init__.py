@@ -51,7 +51,7 @@ class ScrapedJobDTO:
         job_url (HttpUrl): URL to the job posting
         salary_text (str): Raw salary information text
         location (str): Job location string
-        position_type (str): Employment type (e.g., Full-time, Part-time)
+        position_type (str): Employment event_type (e.g., Full-time, Part-time)
         expires (str): Expiration date text
         skills (List[str]): List of required skills
         external_source (str): Source platform name (default: "careerjunction")
@@ -311,8 +311,8 @@ class Scraper:
         # Parse salary and location
         salary_min, salary_max = self.parse_salary(dto.salary_text)
         city, province, country = self.parse_location(dto.location)
-        
-        # Determine position type from text
+
+        # Determine position event_type from text
         position_type = "FULL_TIME"
         lower_position = dto.position_type.lower()
         if "part" in lower_position:

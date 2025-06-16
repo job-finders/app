@@ -9,7 +9,7 @@ class DocumentVerificationInput(BaseModel):
     Input schema for evaluating the authenticity of a submitted company-related document using AI agents.
 
     This model provides a comprehensive data package used to verify various types of documents submitted
-    by companies or their directors. It includes the type of document, the document contents (PDF), and
+    by companies or their directors. It includes the event_type of document, the document contents (PDF), and
     contextual metadata such as director identity and registered company information. AI agents can use
     this structured input to:
 
@@ -72,7 +72,7 @@ class DocumentVerificationOutPut(BaseModel):
     requires_human_review: Optional[bool] = Field(
         default=False, description="Whether this document needs to be manually reviewed by a human based on AI uncertainty or fraud likelihood."
     )
-    document_type: str = Field(..., description="Echo back the document type being validated.")
+    document_type: str = Field(..., description="Echo back the document event_type being validated.")
 
     score: Optional[float] = Field(
         None, description="A confidence score from 0.0 to 1.0 indicating AI's certainty about the document's validity."

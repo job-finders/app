@@ -102,10 +102,10 @@ class BillingEmailerService(BillingServiceInterface):
     @staticmethod
     async def _compose_email(event_type: BillingEventType, company: Any, metadata: dict) -> tuple[str, str]:
         """
-            Composes the email subject and HTML content based on the event type.
+            Composes the email subject and HTML content based on the event event_type.
 
             Args:
-                event_type (BillingEventType): The type of billing event.
+                event_type (BillingEventType): The event_type of billing event.
                 company (Any): The company object with relevant details.
                 metadata (dict): Additional event-specific metadata.
 
@@ -113,7 +113,7 @@ class BillingEmailerService(BillingServiceInterface):
                 tuple[str, str]: A tuple containing the email subject and HTML content.
 
             Raises:
-                ValueError: If an unsupported email event type is provided.
+                ValueError: If an unsupported email event event_type is provided.
         """
         match event_type:
             # Use event_type.value to match against the string values defined in the Enum
@@ -176,7 +176,12 @@ class BillingEmailerService(BillingServiceInterface):
                     "original_event_id": metadata.get("event_id"),
                     "error_message": metadata.get("error")
                 })
+            case BillingEventType.INVOICE_CREATED:
+                subject = f"Here is your Upcoming Invoice"
+                html = render_template("email/invoice.html", **{
+
+                })
             case _:
-                raise ValueError(f"Unsupported email event type: {event_type.value}")
+                raise ValueError(f"Unsupported email event event_type: {event_type.value}")
 
         return subject, html

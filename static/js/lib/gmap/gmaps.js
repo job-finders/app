@@ -240,7 +240,7 @@ var GMaps = (function(global) {
             /**
              * Container element
              *
-             * @type {HTMLElement}
+             * @event_type {HTMLElement}
              */
             this.el = getElementById(identifier, options.context);
         } else {
@@ -260,49 +260,49 @@ var GMaps = (function(global) {
     /**
      * Collection of custom controls in the map UI
      *
-     * @type {array}
+     * @event_type {array}
      */
     this.controls = [];
     /**
      * Collection of map's overlays
      *
-     * @type {array}
+     * @event_type {array}
      */
     this.overlays = [];
     /**
      * Collection of KML/GeoRSS and FusionTable layers
      *
-     * @type {array}
+     * @event_type {array}
      */
     this.layers = [];
     /**
      * Collection of data layers (See {@link GMaps#addLayer})
      *
-     * @type {object}
+     * @event_type {object}
      */
     this.singleLayers = {};
     /**
      * Collection of map's markers
      *
-     * @type {array}
+     * @event_type {array}
      */
     this.markers = [];
     /**
      * Collection of map's lines
      *
-     * @type {array}
+     * @event_type {array}
      */
     this.polylines = [];
     /**
      * Collection of map's routes requested by {@link GMaps#getRoutes}, {@link GMaps#renderRoute}, {@link GMaps#drawRoute}, {@link GMaps#travelRoute} or {@link GMaps#drawSteppedRoute}
      *
-     * @type {array}
+     * @event_type {array}
      */
     this.routes = [];
     /**
      * Collection of map's polygons
      *
-     * @type {array}
+     * @event_type {array}
      */
     this.polygons = [];
     this.infoWindow = null;
@@ -310,7 +310,7 @@ var GMaps = (function(global) {
     /**
      * Current map's zoom
      *
-     * @type {number}
+     * @event_type {number}
      */
     this.zoom = options.zoom;
     this.registered_events = {};
@@ -341,7 +341,7 @@ var GMaps = (function(global) {
     /**
      * Google Maps map instance
      *
-     * @type {google.maps.Map}
+     * @event_type {google.maps.Map}
      */
     this.map = new google.maps.Map(this.el, map_options);
 
@@ -349,7 +349,7 @@ var GMaps = (function(global) {
       /**
        * Marker Clusterer instance
        *
-       * @type {object}
+       * @event_type {object}
        */
       this.markerClusterer = markerClustererFunction.apply(this, [this.map]);
     }

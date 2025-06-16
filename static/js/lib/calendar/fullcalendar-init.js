@@ -39,7 +39,7 @@
         var $this = this;
             var form = $("<form></form>");
             form.append("<label>Change event name</label>");
-            form.append("<div class='input-group'><input class='form-control' type=text value='" + calEvent.title + "' /><span class='input-group-btn'><button type='submit' class='btn btn-success waves-effect waves-light'><i class='fa fa-check'></i> Save</button></span></div>");
+        form.append("<div class='input-group'><input class='form-control' event_type=text value='" + calEvent.title + "' /><span class='input-group-btn'><button event_type='submit' class='btn btn-success waves-effect waves-light'><i class='fa fa-check'></i> Save</button></span></div>");
             $this.$modal.modal({
                 backdrop: 'static'
             });
@@ -50,7 +50,7 @@
                 $this.$modal.modal('hide');
             });
             $this.$modal.find('form').on('submit', function () {
-                calEvent.title = form.find("input[type=text]").val();
+                calEvent.title = form.find("input[event_type=text]").val();
                 $this.$calendarObj.fullCalendar('updateEvent', calEvent);
                 $this.$modal.modal('hide');
                 return false;
@@ -65,7 +65,7 @@
             var form = $("<form></form>");
             form.append("<div class='row'></div>");
             form.find(".row")
-                .append("<div class='col-md-6'><div class='form-group'><label class='control-label'>Event Name</label><input class='form-control' placeholder='Insert Event Name' type='text' name='title'/></div></div>")
+                .append("<div class='col-md-6'><div class='form-group'><label class='control-label'>Event Name</label><input class='form-control' placeholder='Insert Event Name' event_type='text' name='title'/></div></div>")
                 .append("<div class='col-md-6'><div class='form-group'><label class='control-label'>Category</label><select class='form-control' name='category'></select></div></div>")
                 .find("select[name='category']")
                 .append("<option value='bg-danger'>Danger</option>")

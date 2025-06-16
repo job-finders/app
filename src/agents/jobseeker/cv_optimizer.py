@@ -31,7 +31,7 @@ class MissingSkill(BaseModel):
 
     Attributes:
     - skill: The name of the missing skill (e.g., "Python", "project management").
-    - type: Indicates whether the skill is "required" or "preferred".
+    - event_type: Indicates whether the skill is "required" or "preferred".
     - reason: Explanation of why this skill is important for the job or why its absence is notable.
     """
     skill: str

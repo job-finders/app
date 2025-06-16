@@ -61,7 +61,7 @@ function calculate() {
 }
 
 
-var newRow = '<tr><td><a class="control removeRow" href="#">x</a><span contenteditable>Jeans</span></td><td><span contenteditable>Blue and black</span></td><td class="daterelated"><span contenteditable>Datum</span></td><td class="rental_amount"><input type="text" value="1"/></td><td class="rate"><input type="text" value="60" /></td><td class="tax taxrelated"></td><td class="sum"></td></tr>';
+var newRow = '<tr><td><a class="control removeRow" href="#">x</a><span contenteditable>Jeans</span></td><td><span contenteditable>Blue and black</span></td><td class="daterelated"><span contenteditable>Datum</span></td><td class="rental_amount"><input event_type="text" value="1"/></td><td class="rate"><input event_type="text" value="60" /></td><td class="tax taxrelated"></td><td class="sum"></td></tr>';
 
 $('.invoicelist-body').on('keyup', 'input', function () {
     calculate();

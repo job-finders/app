@@ -440,10 +440,10 @@ class JobsSearchController(Controllers):
     @error_handler
     async def search_by_type(self, job_type: str, page: int = 1, page_size: int = 25) -> dict:
         """
-        Search for jobs filtered by job type (e.g., full-time, part-time).
+        Search for jobs filtered by job event_type (e.g., full-time, part-time).
 
         Args:
-            job_type (str): The job type to filter on.
+            job_type (str): The job event_type to filter on.
             page (int): Page number.
             page_size (int): Number of jobs per page.
 

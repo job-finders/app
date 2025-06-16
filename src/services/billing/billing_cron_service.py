@@ -1,5 +1,7 @@
 import inspect
-from src.database.models.billing import InvoiceStatusEnum
+from datetime import date, timedelta
+
+from src.database.models.billing import InvoiceStatusEnum, CompanyBillingProfile
 from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType
 from src.utils.route_helpers import get_service
 
@@ -24,7 +26,8 @@ class BillingCronService(BillingServiceInterface):
         self.email_service = email_service
         self.logger = get_service("logger")()(self.__class__.__name__)
         self.__interface_map = {
-            "run": self.run
+            "run": self.run,
+            "renew_subscription": self.renew_subscriptions
         }
 
     async def execute(self, action: str, *args, **kwargs):
@@ -73,8 +76,17 @@ class BillingCronService(BillingServiceInterface):
             company_id = company.company_id
             await self.check_subscription_health(company_id)
             await self.send_billing_notifications()
-            # await self.reconcile_invoices(company_id)
+            await self.reconcile_invoices(company_id)
 
+    async def renew_subscriptions(self):
+        """Run Once a Week on a Monday Morning"""
+        companies_model_list = await self.billing_service.execute("list_all_companies")
+        self.logger.info(f"Companies List : {companies_model_list}")
+
+        for company in companies_model_list:
+            company_id = company.company_id
+            await self.create_upcoming_auto_renew_subscriptions(company_id)  # Add this line
+            await self.send_billing_notifications()
 
     async def reconcile_invoices(self, company_id: str):
         unpaid_invoices_model_list = await self.invoice_service.execute("get_paid_invoices", company_id=company_id)
@@ -85,8 +97,40 @@ class BillingCronService(BillingServiceInterface):
                 await self.invoice_service.execute("close_invoice", invoice_id=invoice.invoice_id)
                 await self.billing_events.execute("record_event",
                                                   company_id=company_id,
-                                                  type=BillingEventType.INVOICE_CLOSED,
+                                                  event_type=BillingEventType.INVOICE_CLOSED,
                                                   event_metadata={"invoice_id": invoice.invoice_id})
+
+    async def create_upcoming_auto_renew_subscriptions(self, company_id: str):
+        """
+        Creates new subscriptions with same terms starting day after current expiry
+        for all active subscriptions set to auto-renew
+        """
+        # Find active subscriptions with auto-renew enabled
+        # TODO - this needs to be looked at
+        active_subscriptions = await self.get_active_subscriptions(
+            company_id, auto_renew=True
+        )
+
+        created_subscriptions = []
+
+        for subscription in active_subscriptions:
+            # Calculate new start date (day after current expiry)
+            new_start_date = subscription.end_date + timedelta(days=1)
+
+            # Create new subscription with same terms
+            new_subscription = CompanyBillingProfile(**{
+                'company_id': company_id,
+                'plan_id': subscription.plan_id,
+                'start_date': new_start_date,
+                'duration': subscription.duration,
+                'price': subscription.price,
+                'auto_renew': subscription.auto_renew,
+                'parent_subscription_id': subscription.id
+            })
+
+            created_subscriptions.append(new_subscription)
+
+        return created_subscriptions
 
     async def check_subscription_health(self, company_id: str):
         self.logger.info(f"BillingCronService: Checking subscription health for company: {company_id}")
@@ -98,17 +142,17 @@ class BillingCronService(BillingServiceInterface):
             self.logger.info(f"BillingCronService: Billing profile missing for {company_id}. Recording event.")
             await self.billing_events.execute("record_event",
                                               company_id=company_id,
-                                              type=BillingEventType.BILLING_PROFILE_MISSING,
+                                              event_type=BillingEventType.BILLING_PROFILE_MISSING,
                                               event_metadata={'company_id': company_id})
             return None
 
         if billing_profile.is_about_to_expire:
             self.logger.info(f"BillingCronService: Subscription expiring soon for {company_id}. Recording event.")
+
             await self.billing_events.execute("record_event",
                                               company_id=company_id,
-                                              type=BillingEventType.SUBSCRIPTION_EXPIRING_SOON,
+                                              event_type=BillingEventType.SUBSCRIPTION_EXPIRING_SOON,
                                               metadata={"days_left": billing_profile.days_to_expire})
-
         elif billing_profile.is_active_subscription_plan:
             # Check if subscription has actually expired or is overdue
             # The logic for 'is_active_subscription_plan' and 'expire_subscription' seems to be
@@ -133,7 +177,7 @@ class BillingCronService(BillingServiceInterface):
                 if not last_event:
                     self.logger.info(f"BillingCronService: Recording subscription expired event for {company_id}.")
                     await self.billing_events.execute("record_event", company_id=company_id,
-                                                      type=BillingEventType.SUBSCRIPTION_EXPIRED,  # Using Enum
+                                                      event_type=BillingEventType.SUBSCRIPTION_EXPIRED,  # Using Enum
                                                       event_metadata={})
         else:
             self.logger.info(f"BillingCronService: No active subscription or trial for {company_id}.")
@@ -144,15 +188,16 @@ class BillingCronService(BillingServiceInterface):
         self.logger.info("BillingCronService: Sending billing notifications (emails)...")
         pending_events = await self.billing_events.execute("list_unsent_email_events")
         for event in pending_events:
-            self.logger.info(f"BillingCronService: Processing pending email event: {event.type} for company {event.company_id}")
+            self.logger.info(
+                f"BillingCronService: Processing pending email event: {event.event_type} for company {event.company_id}")
             try:
                 # Assuming email_service.send takes event_type as a string or Enum value directly
                 is_success = await self.email_service.send(
-                    event_type=event.type,  # event.type is already the string value from ORM
+                    event_type=event.event_type,  # event.event_type is already the string value from ORM
                     company_id=event.company_id,
                     metadata=event.metadata
                 )
-                if event.type == BillingEventType.PAYMENT_SUCCESS.value:  # Using Enum for comparison
+                if event.event_type == BillingEventType.PAYMENT_SUCCESS.value:  # Using Enum for comparison
                     # Reconcile the Invoice after payment success notification is sent.
                     self.logger.info(f"BillingCronService: Reconciling invoices after payment success for {event.company_id}")
                     await self.reconcile_invoices(company_id=event.company_id)
@@ -165,7 +210,7 @@ class BillingCronService(BillingServiceInterface):
             except Exception as e:
                 self.logger.info(f"BillingCronService: Error sending email for event {event.event_id}: {e}")
                 await self.billing_events.execute("record_event", company_id=event.company_id,
-                                                  type=BillingEventType.EMAIL_SEND_FAILED,
+                                                  event_type=BillingEventType.EMAIL_SEND_FAILED,
                                                   event_metadata={"event_id": event.event_id, "error": str(e)})  # Using Enum
 
     async def send_realtime_notifications(self):
@@ -179,7 +224,7 @@ class BillingCronService(BillingServiceInterface):
         for event in realtime_events:
             try:
                 is_success = await self.email_service.send(
-                    event_type=event["type"],
+                    event_type=event["event_type"],
                     company_id=event["company_id"],
                     metadata=event.get("metadata", {})
                 )
@@ -190,7 +235,7 @@ class BillingCronService(BillingServiceInterface):
             except Exception as e:
                 self.logger.info(f"BillingCronService: Error processing real-time event {event['event_id']}: {e}")
                 await self.billing_events.execute("record_event", company_id=event["company_id"],
-                                                  type=BillingEventType.EMAIL_SEND_FAILED,
+                                                  event_type=BillingEventType.EMAIL_SEND_FAILED,
                                                   event_metadata={"event_id": event["event_id"],
                                                                   "error": str(e)})  # Using Enum
 

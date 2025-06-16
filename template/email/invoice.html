@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Invoice - {{ invoice_number }}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4; font-family: Arial, sans-serif;">
+<div style="max-width:600px; margin:30px auto; background-color:#ffffff; border:1px solid #dddddd; border-radius:4px; overflow:hidden;">
+    <!-- Header -->
+    <div style="background-color:#007bff; color:#ffffff; padding:20px; text-align:center;">
+        <h2 style="margin:0; font-size:24px;">Invoice</h2>
+        <p style="margin:5px 0 0; font-size:14px; opacity:0.9;">{{ invoice_number }}</p>
+    </div>
+
+    <!-- Introduction -->
+    <div style="padding:20px; color:#333333; font-size:16px; line-height:1.5;">
+        <p style="margin:0 0 15px;">Dear {{ company_name }},</p>
+        <p style="margin:0 0 15px;">Thank you for your continued business. Please find your invoice details below. Your
+            payment is due by {{ due_date }}.</p>
+    </div>
+
+    <!-- Invoice Details -->
+    <div style="padding:0 20px 20px;">
+        <div style="background-color:#f8f9fa; padding:15px; border-radius:4px; margin-bottom:20px;">
+            <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                    <td style="padding:5px 0; font-weight:bold; color:#555555;">Invoice Number:</td>
+                    <td style="padding:5px 0; text-align:right;">{{ invoice_number }}</td>
+                </tr>
+                <tr>
+                    <td style="padding:5px 0; font-weight:bold; color:#555555;">Issue Date:</td>
+                    <td style="padding:5px 0; text-align:right;">{{ issue_date }}</td>
+                </tr>
+                <tr>
+                    <td style="padding:5px 0; font-weight:bold; color:#555555;">Due Date:</td>
+                    <td style="padding:5px 0; text-align:right;">{{ due_date }}</td>
+                </tr>
+                <tr>
+                    <td style="padding:5px 0; font-weight:bold; color:#555555;">Plan:</td>
+                    <td style="padding:5px 0; text-align:right;">{{ plan_name }}</td>
+                </tr>
+                <tr style="border-top:2px solid #007bff;">
+                    <td style="padding:10px 0 5px; font-weight:bold; font-size:18px; color:#007bff;">Total Amount:</td>
+                    <td style="padding:10px 0 5px; text-align:right; font-weight:bold; font-size:18px; color:#007bff;">{{ currency }} {{ amount }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="padding:0 20px 20px; text-align:center;">
+        <a href="{{ pay_now_link }}"
+           style="display:inline-block; padding:15px 30px; font-size:16px; color:#ffffff; background-color:#28a745; text-decoration:none; border-radius:4px; margin:0 10px 10px 0;">Pay
+            Now</a>
+        <a href="{{ download_invoice_link }}"
+           style="display:inline-block; padding:15px 30px; font-size:16px; color:#007bff; background-color:#ffffff; text-decoration:none; border-radius:4px; border:2px solid #007bff; margin:0 0 10px 0;">Download
+            Invoice</a>
+    </div>
+
+    <!-- Payment Instructions -->
+    <div style="padding:20px; color:#555555; font-size:14px; line-height:1.5; background-color:#f8f9fa; margin:0 20px 20px; border-radius:4px;">
+        <h4 style="margin:0 0 10px; color:#333333;">Payment Instructions:</h4>
+        <p style="margin:0 0 10px;">• Click "Pay Now" to pay securely online with your credit card</p>
+        <p style="margin:0 0 10px;">• Download your invoice for your records</p>
+        <p style="margin:0;">• Contact us if you have any questions about this invoice</p>
+    </div>
+
+    <!-- Support -->
+    <div style="padding:20px; color:#555555; font-size:14px; text-align:center;">
+        <p style="margin:0 0 10px;">Questions about this invoice?</p>
+        <p style="margin:0;">Contact our billing support: <a href="mailto:{{ support_email }}"
+                                                             style="color:#007bff; text-decoration:none;">{{ support_email }}</a>
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:20px; color:#777777; font-size:12px; text-align:center; border-top:1px solid #dddddd;">
+        <p style="margin:0;">© 2025 JobFinders.site. All rights reserved.</p>
+        <p style="margin:5px 0 0;">This is an automated message. Please do not reply to this email.</p>
+    </div>
+</div>
+</body>
+</html>

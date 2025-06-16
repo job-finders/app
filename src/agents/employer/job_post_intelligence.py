@@ -60,7 +60,7 @@ class EnhanceJobPostOutput(BaseModel):
     description: str = Field(..., description="Detailed job description")
     position_type: str = Field(
         ...,
-        description="Position type (FULL_TIME, PART_TIME, CONTRACT)",
+        description="Position event_type (FULL_TIME, PART_TIME, CONTRACT)",
         pattern="FULL_TIME|PART_TIME|CONTRACT"
     )
     remote_policy: str = Field(
@@ -146,7 +146,7 @@ Create a complete, professional job post based on the following partial informat
 Generate a comprehensive job post including:
 1. An attractive, clear job title (5-255 characters)
 2. Detailed job description with responsibilities and expectations
-3. Position type (FULL_TIME, PART_TIME, or CONTRACT)
+3. Position event_type (FULL_TIME, PART_TIME, or CONTRACT)
 4. Remote work policy (ONSITE, HYBRID, or REMOTE)
 5. Competitive salary range as numbers (min and max)
 6. Salary currency (3-letter code, default to ZAR)

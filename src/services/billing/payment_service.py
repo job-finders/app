@@ -90,7 +90,7 @@ class PaymentService(BillingServiceInterface):
             }
 
     async def _generate_payfast_form(self, invoice: InvoiceORM,
-                                     company):  # Removed Company type hint as it's not defined
+                                     company):  # Removed Company event_type hint as it's not defined
         """
         Generates the PayFast payment form for the given invoice and company.
 

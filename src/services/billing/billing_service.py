@@ -117,7 +117,7 @@ class BillingService(BillingServiceInterface):
                 profile_orm.trial_end_date = utc_time().date()
                 profile_orm.auto_renew = False
                 await self.billing_events.execute("record_event", company_id=company_id,
-                                                  type=BillingEventType.TRIAL_ENDED,
+                                                  event_type=BillingEventType.TRIAL_ENDED,
                                                   event_metadata={"reason": "expired"})  # Using Enum
 
                 session.commit()
@@ -144,7 +144,7 @@ class BillingService(BillingServiceInterface):
 
                 await self.billing_events.execute("record_event",
                                                   company_id=company_id,
-                                                  type=BillingEventType.TRIAL_PROFILE_CREATED,  # Using Enum
+                                                  event_type=BillingEventType.TRIAL_PROFILE_CREATED,  # Using Enum
                                                   event_metadata={"trigger": "subscription_payment"})
                 session.add(profile_orm)
 
@@ -156,7 +156,7 @@ class BillingService(BillingServiceInterface):
                 profile_orm.trial_active = True
                 profile_orm.trial_end_date = datetime.now(timezone.utc).date() + timedelta(days=14)  # Use .date()
             await self.billing_events.execute("record_event", company_id=company_id,
-                                              type=BillingEventType.TRIAL_STARTED,  # Using Enum
+                                              event_type=BillingEventType.TRIAL_STARTED,  # Using Enum
                                               event_metadata={"duration_days": str(self.trial_period_days)})
 
             session.commit()
@@ -215,7 +215,8 @@ class BillingService(BillingServiceInterface):
                         profile_orm.is_payment_overdue = True  # Mark as overdue if it was for payment.
                         profile_orm.auto_renew = False  # Ensure it doesn't auto-renew
                         await self.billing_events.execute("record_event", company_id=company_id,
-                                                          type=BillingEventType.SUBSCRIPTION_EXPIRED,  # Using Enum
+                                                          event_type=BillingEventType.SUBSCRIPTION_EXPIRED,
+                                                          # Using Enum
                                                           event_metadata={"reason": "grace_period_expired",
                                                                           "auto_check": "true"})
                         self.logger.info(f" Event Created : {BillingEventType.SUBSCRIPTION_EXPIRED.value}")
@@ -258,7 +259,7 @@ class BillingService(BillingServiceInterface):
 
                 # Record event for subscription expiration
                 await self.billing_events.execute("record_event", company_id=company_id,
-                                                  type=BillingEventType.SUBSCRIPTION_EXPIRED,  # Using Enum
+                                                  event_type=BillingEventType.SUBSCRIPTION_EXPIRED,  # Using Enum
                                                   event_metadata={"reason": "manual_or_cron_expiry"})
                 self.logger.info(f"Created an Event : {BillingEventType.SUBSCRIPTION_EXPIRED.value}")
 
@@ -317,7 +318,7 @@ class BillingService(BillingServiceInterface):
                 # Record event for billing profile creation
                 await self.billing_events.execute("record_event",
                                                   company_id=company_id,
-                                                  type=BillingEventType.BILLING_PROFILE_CREATED,  # Using Enum
+                                                  event_type=BillingEventType.BILLING_PROFILE_CREATED,  # Using Enum
                                                   event_metadata={"trigger": "create_billing_profile",
                                                                   "plan_id": plan_id})
                 session.commit()
@@ -400,7 +401,7 @@ class BillingService(BillingServiceInterface):
                 session.add(profile_orm)
                 self.logger.info(f"Created new profile for {company_id} while applying subscription.")
                 await self.billing_events.execute("record_event", company_id=company_id,
-                                                  type=BillingEventType.BILLING_PROFILE_CREATED,  # Using Enum
+                                                  event_type=BillingEventType.BILLING_PROFILE_CREATED,  # Using Enum
                                                   event_metadata={"trigger": "apply_subscription_new_profile"})
             else:
                 # If profile exists, end trial if active
@@ -408,7 +409,7 @@ class BillingService(BillingServiceInterface):
                     profile_orm.trial_active = False
                     self.logger.info(f"Trial ended for {company_id} due to subscription application.")
                     await self.billing_events.execute("record_event", company_id=company_id,
-                                                      type=BillingEventType.TRIAL_ENDED,  # Using Enum
+                                                      event_type=BillingEventType.TRIAL_ENDED,  # Using Enum
                                                       event_metadata={"reason": "replaced_by_subscription"})
 
                 # Apply new subscription details to existing profile
@@ -423,7 +424,7 @@ class BillingService(BillingServiceInterface):
 
             # Record subscription created/applied event
             await self.billing_events.execute("record_event", company_id=company_id,
-                                              type=BillingEventType.SUBSCRIPTION_CREATED,  # Using Enum
+                                              event_type=BillingEventType.SUBSCRIPTION_CREATED,  # Using Enum
                                               event_metadata={"plan_id": plan_id, "duration_days": duration_days,
                                                               "subscription_end": str(subscription_end)})
             session.commit()

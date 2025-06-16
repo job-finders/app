@@ -84,7 +84,7 @@
     return !this.$body.hasClass('sidebar-hide');
   }
 
-  // check show type
+    // check show event_type
   sidebar.prototype.showType = function() {
     if(this.$sidebar.hasClass('sidebar-overlay')) return 'overlay';
     if(this.$sidebar.hasClass('sidebar-push')) return 'push';

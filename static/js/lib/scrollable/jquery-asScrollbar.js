@@ -741,7 +741,7 @@
             return;
           }
 
-          // this.$bar.toggleClass(this.options.draggingClass, event.type === 'mousedown');
+            // this.$bar.toggleClass(this.options.draggingClass, event.event_type === 'mousedown');
           this.$bar.addClass(this.options.draggingClass);
 
           this._drag.time = new Date().getTime();

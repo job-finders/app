@@ -1808,7 +1808,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var toString = Object.prototype.toString;
 
 	/**
-	 * Return the type of `val`.
+     * Return the event_type of `val`.
 	 *
 	 * @param {Mixed} val
 	 * @return {String}

@@ -189,13 +189,13 @@ class SmartRateLimiter:
             base_key = f"ip:{ip}:{endpoint}"
             user_type = 'anonymous'
 
-        # Get limits for this endpoint and user type
+        # Get limits for this endpoint and user event_type
         limits = self.get_limits_for_endpoint(endpoint, user_type)
 
         return base_key, limits
 
     def get_user_type(self, user_id: str) -> str:
-        """Determine user type (cached)"""
+        """Determine user event_type (cached)"""
         # This should be cached and fetched from your user service
         # Simplified example:
         cache_key = f"user_type:{user_id}"
@@ -212,7 +212,7 @@ class SmartRateLimiter:
         return user_type
 
     def get_limits_for_endpoint(self, endpoint: str, user_type: str) -> Tuple[int, int]:
-        """Get rate limits for specific endpoint and user type"""
+        """Get rate limits for specific endpoint and user event_type"""
         endpoint_limits = self.config.get(endpoint, self.config.get('default', {}))
 
         if isinstance(endpoint_limits, dict):

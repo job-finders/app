@@ -172,13 +172,10 @@ class InvoiceService(BillingServiceInterface):
     async def _mark_invoice_paid(self, invoice_id: str):
         """
         Marks a given invoice as paid.
-
         Args:
             invoice_id (str): The ID of the invoice to mark as paid.
-
         Returns:
             Invoice: The updated invoice.
-
         Raises:
             ValueError: If the invoice doesn't exist.
         """

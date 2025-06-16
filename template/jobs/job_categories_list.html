@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
             sortButtons.forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
 
-            // Get sort type
+            // Get sort event_type
             const sortBy = this.dataset.sort;
             const cards = Array.from(container.querySelectorAll('.category-card'));
 

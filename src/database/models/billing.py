@@ -90,6 +90,7 @@ class CompanyBillingProfile(BaseModel):
         auto_renew: Whether the subscription should automatically renew
         last_invoice_id: Reference to the most recent invoice
     """
+    subscription_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     company_id: str
     current_plan_id: Optional[str]
     subscription_start: Optional[date]

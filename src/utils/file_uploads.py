@@ -13,7 +13,7 @@ def allowed_file(filename):
 def save_company_logo(file, company_id):
     """Save company logo and return its URL"""
     if not allowed_file(file.filename):
-        raise ValueError("Invalid file type")
+        raise ValueError("Invalid file event_type")
 
     # Generate unique filename
     ext = file.filename.rsplit('.', 1)[1].lower()

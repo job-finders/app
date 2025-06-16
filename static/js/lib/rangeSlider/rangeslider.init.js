@@ -12,8 +12,7 @@ $(function () {
     });
 
 
-
-//Set type to double and specify range, also showing grid and adding prefix "$"
+//Set event_type to double and specify range, also showing grid and adding prefix "$"
 
     $("#range_03").ionRangeSlider({
         type: "double",

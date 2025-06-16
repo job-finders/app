@@ -1,5 +1,6 @@
 from flask import Flask, redirect, url_for, flash
 
+from src.services.billing.schemas_interfaces import BillingEventType
 from src.config import config_instance
 from src.controllers.controller import Controllers, error_handler
 from src.database.models.billing import CompanyBillingProfile, BillingPlan
@@ -54,14 +55,15 @@ class BillingController(Controllers):
             invoice = await self.invoice_service.execute(action="create_invoice", billing_profile=billing_profile, plan=billing_plan)
             await self.billing_events.execute('record_event',
                                               company_id=billing_profile.company_id,
-                                              type='invoice_created', metadata={"invoice_id": invoice.invoice_id})
+                                              event_type=BillingEventType.INVOICE_CREATED,
+                                              metadata={"invoice_id": invoice.invoice_id})
 
             company_controller = get_controller("company")
             company = await company_controller.get_company_by_id(company_id=company_id)
-
+            # This will create the payment request and send to the user via the web - if the user pays then we will mark the invoice as paid
+            # This will ensure that endpoints that needs to be accessed through a billing plan are not accessible to the user
             return await self.payment_service.execute('generate_payfast_form',invoice=invoice,company=company)
         else:
-
             flash(message="Your Trial Period has started", category="success")
             return redirect(url_for('company.get_dashboard'))
 
@@ -87,7 +89,7 @@ class BillingController(Controllers):
                 await self.billing_events.execute("record_event", company_id=result['company_id'], type='payment_success', metadata=result)
             else:
                 await self.billing_events.execute("record_event", company_id=result['company_id'],
-                                                  type='payment_failed', metadata=result)
+                                                  event_type='payment_failed', metadata=result)
         return result
 
     async def get_billing_dashboard(self, company_id: str):

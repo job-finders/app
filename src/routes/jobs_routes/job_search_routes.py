@@ -341,11 +341,11 @@ async def jobs_by_location(user: User, location: str):
 @user_details
 async def jobs_by_type(user: User, job_type: str):
     """
-    Display a paginated list of jobs filtered by job type (e.g., full-time, part-time).
+    Display a paginated list of jobs filtered by job event_type (e.g., full-time, part-time).
 
     Args:
         user (User): The currently authenticated user.
-        job_type (str): The job type to filter by (e.g., "full-time").
+        job_type (str): The job event_type to filter by (e.g., "full-time").
 
     Returns:
         HTML page rendering the filtered jobs.
@@ -556,7 +556,7 @@ async def jobs_by_qualification(user: User):
 
     page = int(request.args.get('page', 1))
     qualification = request.args.get('q', '')
-    types = request.args.getlist('type') or None
+    types = request.args.getlist('event_type') or None
     job_search_controller = get_controller('jobs_search')
     result = await job_search_controller.get_jobs_by_qualification(qualification=qualification,
     qualification_types=types,page=page)
