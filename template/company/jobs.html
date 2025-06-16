@@ -136,9 +136,9 @@
                 <div class="card border-0 shadow-sm mb-4">
                   <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Job Quality Insights</h5>
-                    <span class="badge bg-{{ job.is_active ? 'success' : 'secondary' }}">
-                      {{ job.is_active ? 'Active' : 'Not Active' }}
-                    </span>
+                      <span class="badge bg-{% if job.is_active %}success{% else %}secondary{% endif %}">
+                          {% if job.is_active %}Active{% else %}Not Active{% endif %}
+                        </span>
                   </div>
                   <div class="card-body">
                     <div class="row mb-3">
@@ -150,39 +150,41 @@
                           </div>
                         </div>
                       </div>
-                      <div class="col-md-4 mb-2">
-                        <strong>Completeness:</strong>
-                        <span class="badge bg-{{ job.job_completeness_score >= 7 ? 'success' : 'warning' }}">
-                          {{ job.job_completeness_score }}/10
-                        </span>
-                      </div>
-                      <div class="col-md-4 mb-2">
-                        <strong>Readability:</strong>
-                        <span class="badge bg-{{ job.readability_is_ok ? 'success' : 'danger' }}">
-                          {{ job.readability_is_ok ? 'Good' : 'Needs Work' }}
-                        </span>
-                      </div>
+                        <div class="col-md-4 mb-2">
+                            <strong>Completeness:</strong>
+                            <span class="badge bg-{% if job.job_completeness_score >= 7 %}success{% else %}warning{% endif %}">
+                            {{ job.job_completeness_score }}/10
+                          </span>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <strong>Readability:</strong>
+                            <span class="badge bg-{% if job.readability_is_ok %}success{% else %}danger{% endif %}">
+                            {% if job.readability_is_ok %}Good{% else %}Needs Work{% endif %}
+                          </span>
+                        </div>
+
                     </div>
 
-                    <div class="row mb-3">
-                      <div class="col-md-6">
-                        <strong>ATS Match Rate:</strong>
-                        <span>{{ job.job_ats_match_rate || 0 }}%</span>
-                        <div class="small text-muted">Candidates scoring above 60</div>
+                      <div class="row mb-3">
+                          <div class="col-md-6">
+                              <strong>ATS Match Rate:</strong>
+                              <span>{{ job.job_ats_match_rate | default(0) }}%</span>
+                              <div class="small text-muted">Candidates scoring above 60</div>
+                          </div>
+                          <div class="col-md-6">
+                              <strong>Top Missing Keywords:</strong>
+                              <ul class="list-inline mb-0">
+                                  {% for kw in job.job_common_missing_keywords %}
+                                      <li class="list-inline-item badge bg-secondary">{{ kw }}</li>
+                                  {% endfor %}
+                              </ul>
+                          </div>
                       </div>
-                      <div class="col-md-6">
-                        <strong>Top Missing Keywords:</strong>
-                        <ul class="list-inline mb-0">
-                          {% for kw in job.job_common_missing_keywords %}
-                            <li class="list-inline-item badge bg-secondary">{{ kw }}</li>
-                          {% endfor %}
-                        </ul>
-                      </div>
-                    </div>
 
+                  </div>
                     <div class="mb-3">
                       <strong>Spam Score:</strong>
-                      <span class="badge bg-{{ job.spam_severity_score >= 6 ? 'danger' : 'secondary' }}">
+                        <span class="badge bg-{% if job.spam_severity_score >= 6 %}danger{% else %}secondary{% endif %}">
                         {{ job.spam_severity_score }}/10
                       </span>
                       {% if job.is_spammy_job %}
@@ -276,7 +278,7 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form method="POST">
-        {{ csrf_token() }}
+          {#        {{ csrf_token() }}#}
 
         <div class="modal-header bg-light">
           <h5 class="modal-title text-info">
@@ -369,14 +371,14 @@
               <div class="form-group">
                 <label>Application Deadline</label>
                 <input type="date" name="application_deadline" class="form-control"
-                       min="{{ datetime.now().date().isoformat() }}">
+                       min="{{ today }}">
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-group">
                 <label>Expiration Date *</label>
                 <input type="date" name="expires_at" class="form-control" required
-                       min="{{ datetime.now().date().isoformat() }}">
+                       min="{{ today }}">
               </div>
             </div>
           </div>

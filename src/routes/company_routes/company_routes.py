@@ -1,6 +1,6 @@
 import asyncio
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError
@@ -345,16 +345,18 @@ async def manage_jobs(user: User):
         flash("Please create your employer profile before posting or viewing jobs", "danger")
         return redirect(url_for('company.view_employer_profile'))
 
-    if not (_employer_profile.is_valid and _employer_profile.is_verified):
-        flash("Please verify your employer profile before posting or viewing jobs", "danger")
-        return redirect(url_for('company.view_employer_profile'))
+    # if not (_employer_profile.is_valid and _employer_profile.is_verified):
+    #     flash("Please verify your employer profile before posting or viewing jobs", "danger")
+    #     return redirect(url_for('company.view_employer_profile'))
 
     if request.method == "GET":
         # get methods allows employer to view jobs
         company_id=_employer_profile.company_id
         jobs:list[Job] = await company_controller.get_company_jobs(company_id=company_id)
         company_data = await company_controller.get_company_by_id(company_id=company_id)
-        context = dict(current_user=user,employer_profile=_employer_profile, company=company_data,jobs=jobs)
+        today = datetime.now(timezone.utc).date().isoformat()
+        context = dict(current_user=user, employer_profile=_employer_profile, company=company_data, jobs=jobs,
+                       today=today)
 
         return render_template("company/jobs.html", **context)
 
