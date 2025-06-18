@@ -33,7 +33,18 @@
             <i class="ti-bell"></i> Notifications
           </a>
         </li>
-        <li>
+          <li>
+              <a class="sidebar-sub-toggle">
+                  <i class="ti-user"></i> System Admin
+                  <span class="sidebar-collapse-icon ti-angle-down"></span>
+              </a>
+              <ul>
+                  <li><a href="{{ url_for('system_admin.get_admin_dashboard') }}"><i class="ti-power-off"></i> Admin</a>
+                  </li>
+              </ul>
+          </li>
+
+          <li>
           <a href="{{ url_for('auth.logout') }}">
             <i class="ti-power-off"></i> Logout
           </a>

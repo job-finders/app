@@ -277,126 +277,126 @@
 <div class="modal fade" id="newJobModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <form method="POST">
-          {#        {{ csrf_token() }}#}
+        <form method="POST">
+            {# {{ csrf_token() }} #}
 
-        <div class="modal-header bg-light">
-          <h5 class="modal-title text-info">
-            <i class="ti-plus mr-2"></i>Create New Job Post
-          </h5>
-          <button type="button" class="close" data-dismiss="modal">
-            <span>&times;</span>
-          </button>
-        </div>
+            <div class="modal-header bg-light border-bottom">
+                <h5 class="modal-title text-primary font-weight-bold">
+                    <i class="ti-plus mr-2"></i> Create New Job Post
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
 
-        <div class="modal-body">
-          <!-- Core Job Details -->
-          <div class="form-group">
-            <label>Job Title *</label>
-            <input type="text" name="title" class="form-control" required
-                   minlength="5" maxlength="255">
-          </div>
+            <div class="modal-body">
+                <!-- Core Job Details -->
+                <div class="mb-4">
+                    <h6 class="text-muted font-weight-bold mb-3">Job Information</h6>
+                    <div class="form-group">
+                        <label for="title">Job Title *</label>
+                        <input type="text" id="title" name="title" class="form-control" required minlength="5"
+                               maxlength="255">
+                    </div>
 
-          <div class="row">
-            <div class="col-md-6">
               <div class="form-group">
-                <label>Position Type *</label>
-                <select name="position_type" class="form-control" required>
-                  <option value="FULL_TIME">Full Time</option>
-                  <option value="PART_TIME">Part Time</option>
-                  <option value="CONTRACT">Contract</option>
-                </select>
+                  <label for="description">Description *</label>
+                  <textarea id="description" name="description" class="form-control" rows="6" required></textarea>
               </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label>Remote Policy *</label>
-                <select name="remote_policy" class="form-control" required>
-                  <option value="ONSITE">Onsite</option>
-                  <option value="HYBRID">Hybrid</option>
-                  <option value="REMOTE">Remote</option>
-                </select>
-              </div>
-            </div>
-          </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="position_type">Position Type *</label>
+                            <select id="position_type" name="position_type" class="form-control" required>
+                                <option value="FULL_TIME">Full Time</option>
+                                <option value="PART_TIME">Part Time</option>
+                                <option value="CONTRACT">Contract</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="remote_policy">Remote Policy *</label>
+                            <select id="remote_policy" name="remote_policy" class="form-control" required>
+                                <option value="ONSITE">Onsite</option>
+                                <option value="HYBRID">Hybrid</option>
+                                <option value="REMOTE">Remote</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
 
-          <!-- Salary Details -->
-          <div class="row">
-            <div class="col-md-4">
-              <div class="form-group">
-                <label>Min Salary</label>
-                <input type="number" name="salary_min" class="form-control" min="0">
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-group">
-                <label>Max Salary</label>
-                <input type="number" name="salary_max" class="form-control" min="0">
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-group">
-                <label>Currency *</label>
-                <input type="text" name="salary_currency" class="form-control"
-                       value="ZAR" required maxlength="3">
-              </div>
-            </div>
-          </div>
+                <!-- Salary Details -->
+                <div class="mb-4">
+                    <h6 class="text-muted font-weight-bold mb-3">Salary & Compensation</h6>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="salary_min">Min Salary</label>
+                            <input type="number" id="salary_min" name="salary_min" class="form-control" min="0">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="salary_max">Max Salary</label>
+                            <input type="number" id="salary_max" name="salary_max" class="form-control" min="0">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="salary_currency">Currency *</label>
+                            <input type="text" id="salary_currency" name="salary_currency" class="form-control"
+                                   value="ZAR" required maxlength="3">
+                        </div>
+                    </div>
+                </div>
 
-          <!-- Location Details -->
-          <div class="row">
-            <div class="col-md-4">
-              <div class="form-group">
-                <label>City *</label>
-                <input type="text" name="city" class="form-control" required>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-group">
-                <label>Province *</label>
-                <input type="text" name="province" class="form-control" required>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-group">
-                <label>Country *</label>
-                <input type="text" name="country" class="form-control" required>
-              </div>
-            </div>
-          </div>
-          <!-- Timeline -->
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label>Application Deadline</label>
-                <input type="date" name="application_deadline" class="form-control"
-                       min="{{ today }}">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label>Expiration Date *</label>
-                <input type="date" name="expires_at" class="form-control" required
-                       min="{{ today }}">
-              </div>
-            </div>
-          </div>
+                <!-- Location Details -->
+                <div class="mb-4">
+                    <h6 class="text-muted font-weight-bold mb-3">Location</h6>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="city">City *</label>
+                            <input type="text" id="city" name="city" class="form-control" required>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="province">Province *</label>
+                            <input type="text" id="province" name="province" class="form-control" required>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="country">Country *</label>
+                            <input type="text" id="country" name="country" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
 
-          <!-- Status -->
-          <div class="form-group">
-            <label>Initial Status *</label>
-            <select name="status" class="form-control" required>
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-            </select>
-          </div>
-        </div>
+                <!-- Timeline -->
+                <div class="mb-4">
+                    <h6 class="text-muted font-weight-bold mb-3">Timeline</h6>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="application_deadline">Application Deadline</label>
+                            <input type="date" id="application_deadline" name="application_deadline"
+                                   class="form-control" min="{{ today }}">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="expires_at">Expiration Date *</label>
+                            <input type="date" id="expires_at" name="expires_at" class="form-control" required
+                                   min="{{ today }}">
+                        </div>
+                    </div>
+                </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary">Create Job Post</button>
-        </div>
-      </form>
+                <!-- Status -->
+                <div class="form-group mb-0">
+                    <h6 class="text-muted font-weight-bold mb-3">Status</h6>
+                    <label for="status">Initial Status *</label>
+                    <select id="status" name="status" class="form-control" required>
+                        <option value="draft">Draft</option>
+                        <option value="active">Active</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light border-top">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Job Post</button>
+            </div>
+        </form>
+
+
     </div>
   </div>
 </div>
