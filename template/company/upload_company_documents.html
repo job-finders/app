@@ -1,0 +1,199 @@
+{% extends "company/layout/page.html" %}
+
+{% block css %}
+    {{ super() }}
+    {# Bootstrap Icons are essential for the theme #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    {# Custom CSS for the drop zone, colors updated to match the theme's primary color if needed #}
+    <style>
+        #drop-zone {
+            border: 3px dashed var(--bs-primary); /* Use Bootstrap's CSS variable for the primary color */
+            border-radius: .5rem; /* Slightly larger radius to match softer theme */
+            background-color: var(--bs-light-bg-subtle); /* Use subtle light background */
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+
+        #drop-zone:hover {
+            background-color: var(--bs-primary-bg-subtle); /* Use primary subtle background on hover */
+            border-color: var(--bs-primary-text-emphasis);
+        }
+
+        /* Style for when a file is dragged over the zone */
+        #drop-zone.drag-over {
+            background-color: var(--bs-primary-bg-subtle);
+            border-style: solid;
+            transform: scale(1.01);
+        }
+
+        /* Hide the default file input */
+        #fileUpload {
+            display: none;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-9 col-lg-8">
+
+                <div class="text-center mb-5">
+                    <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
+                    <h1 class="h2 mt-2 fw-bold">Company Verification</h1>
+                    <p class="text-muted">Securely upload your documents to complete the verification process.</p>
+                </div>
+
+                {# --- VERIFIED STATUS --- #}
+                {# Adopts the style of a modern alert or status card from your theme #}
+                {% if company.verification_status == "verified" %}
+                    <div class="card border-0 border-start border-success border-3 shadow-sm text-center">
+                        <div class="card-body p-4 p-md-5">
+                            <i class="bi bi-patch-check-fill fs-1 text-success mb-3"></i>
+                            <h2 class="h4 card-title fw-bold">You are Verified!</h2>
+                            <p class="card-text text-muted">Your company's information has been successfully verified.
+                                No further action is required.</p>
+                            <div class="mt-4">
+                                <a href="{{ url_for('company.company_profile') }}" class="btn btn-outline-primary">
+                                    <i class="bi bi-person-badge me-1"></i>View Your Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# --- UPLOAD FORM --- #}
+                    {# This is the main card, styled to match your example's look and feel #}
+                {% elif company.verification_status in ["pending", "unverified", "requires_documents"] %}
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h2 class="h5 mb-0 fw-bold">
+                                <i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i>Upload a Verification
+                                Document
+                            </h2>
+                        </div>
+                        <div class="card-body p-4">
+                            <p class="text-muted mb-4">
+                                To complete your company's verification, please select the type of document you are
+                                uploading, then attach the file. Your current status is:
+                                <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">{{ company.verification_status }}</span>
+                            </p>
+
+                            <form id="uploadForm" method="post"
+                                  action="{{ url_for('company.upload_company_verification_documents') }}"
+                                  enctype="multipart/form-data">
+                                {# CSRF Token Placeholder #}
+                                {# {{ form.csrf_token if form and form.csrf_token }} #}
+
+                                <!-- 1. Document Type Selector -->
+                                <div class="mb-4">
+                                    <label for="documentType" class="form-label fw-bold">1. Choose Document Type</label>
+                                    <select class="form-control form-control-lg" id="documentType" name="document_type"
+                                            required>
+                                        <option value="" selected disabled>-- Please select a document type --</option>
+                                        {% for doc_name in document_options %}
+                                            <option value="{{ doc_name }}">{{ doc_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text mt-2">Select the document from this list that matches the file
+                                        you will upload.
+                                    </div>
+                                </div>
+
+                                <!-- 2. File Upload Control -->
+                                <div class="mb-4">
+                                    <label for="fileUpload" class="form-label fw-bold">2. Attach Your File</label>
+                                    <div id="drop-zone" class="p-5 text-center">
+                                        <i class="bi bi-cloud-arrow-up-fill fs-1 text-primary"></i>
+                                        <div id="drop-zone-text" class="mt-3">
+                                            <h5 class="fw-bold mb-1">Drag & drop your file here</h5>
+                                            <p class="text-muted mb-0">or click to select a file</p>
+                                            <small class="text-muted">(PDF, JPG, PNG accepted, max 5MB)</small>
+                                        </div>
+                                        <p class="text-success fw-bold mt-2" id="file-name-display"></p>
+                                    </div>
+                                    <input type="file" id="fileUpload" name="document_file" required
+                                           accept=".pdf,.jpg,.jpeg,.png">
+                                </div>
+
+                                <div class="d-grid gap-2 mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-upload me-2"></i>Upload and Submit
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer bg-light-subtle border-0 p-4">
+                            <h3 class="h6 text-muted mb-3"><i class="bi bi-card-checklist me-2"></i>Acceptable Documents
+                            </h3>
+                            <ul class="list-group list-group-flush">
+                                {% for doc_name in document_options %}
+                                    <li class="list-group-item bg-transparent ps-0 border-0 py-1">
+                                        <i class="bi bi-check-circle text-success me-2"></i>{{ doc_name }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+                {% else %}
+                    {# A fallback for any other status #}
+                    <div class="alert alert-info d-flex align-items-center" role="alert">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <div>
+                            <strong>Verification Status:</strong> {{ company.verification_status }}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    {# The JavaScript remains the same, it's independent of the theme #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('fileUpload');
+            const dropZoneText = document.getElementById('drop-zone-text');
+            const fileNameDisplay = document.getElementById('file-name-display');
+
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
+            });
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, e => e.preventDefault());
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'));
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'));
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFile(files[0]);
+                }
+            });
+
+            function handleFile(file) {
+                dropZoneText.style.display = 'none';
+                fileNameDisplay.textContent = `File ready: ${file.name}`;
+                fileNameDisplay.classList.add('p-3', 'bg-success-subtle', 'rounded');
+            }
+        });
+    </script>
+{% endblock %}

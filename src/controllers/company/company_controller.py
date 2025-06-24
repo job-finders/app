@@ -652,6 +652,19 @@ class CompanyController(Controllers):
         # Return a mock verification ID
         return f"Verifying documents for -{company_id}-{datetime.now().timestamp()}"
 
+    async def get_verification_documents(self, company_id: str) -> list[CompanyVerificationDocument]:
+        """
+        Retrieve verification documents for a company.
+        :param company_id: UUID of the company
+        :return: List of CompanyVerificationDocument objects
+        """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return []
+
+        with self.get_session() as session:
+            documents_orm = session.query(CompanyVerificationDocumentORM).filter_by(company_id=company_id).all()
+            return [CompanyVerificationDocument(**doc.to_dict()) for doc in documents_orm] if documents_orm else []
+
 
     @error_handler
     async def _analyze_documents_with_ai(self, company_id: str ) -> dict:

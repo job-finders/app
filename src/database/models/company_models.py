@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import timedelta
+from datetime import timedelta, date
 from difflib import SequenceMatcher
 from enum import Enum
 from typing import Optional, List, Union
@@ -67,7 +67,7 @@ class Company(BaseModel):
 
     is_verified: Optional[bool] = Field(default=False)
     time_verification_process_started: Optional[AwareDatetime] = Field(default=None)
-    verification_status: str = Field(default=CompanyVerificationStatus.PENDING.value)
+    verification_status: str = Field(default=CompanyVerificationStatus.NOT_VERIFIED.value)
 
     # Relationships
     jobs: Optional[list['Job']] = Field(default_factory=list)  # Forward reference
@@ -389,7 +389,7 @@ class CompanyVerificationDocument(BaseModel):
 class CompanyCIPC(BaseModel):
     company_name: str
     registration_number: str
-    registration_date: Optional[AwareDatetime]
+    registration_date: Optional[date]
     registered_address: Optional[str]
     company_type: Optional[str]  # e.g., "Private Company", "Non-Profit"
     director_name: Optional[list[str]] = []

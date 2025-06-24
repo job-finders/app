@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timezone
 
 from flask import Blueprint, request, render_template, redirect, url_for, flash
-from pydantic import ValidationError
+from pydantic import ValidationError, HttpUrl
 from srsly.msgpack import utc
 from werkzeug.utils import secure_filename
 
@@ -32,6 +32,10 @@ UPLOAD_FOLDER = 'company_documents'
 def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+async def save_verification_file(file, company_id: str, doc_type: str) -> str:
+    pass
 
 
 @company_bp.route("/create-company", methods=["GET", "POST"])
@@ -598,6 +602,93 @@ async def initiate_company_verification(user: User):
     )
 
 
+@company_bp.route('/submit-company-verification-documents', methods=['GET', 'POST'])
+@flask_error_handler
+@employer_login
+async def upload_company_verification_documents(user: User):
+    """
+    Handles the display of the upload form and the processing of a single
+    uploaded company verification document.
+    """
+    company_controller = get_controller('company')
+
+    # --- 1. Setup: Get company context for both GET and POST ---
+    try:
+        employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
+        company = await company_controller.get_company_by_id(company_id=employer_details.company_id)
+        if not company:
+            flash("Associated company not found.", "danger")
+            return redirect(url_for('company.get_dashboard'))
+    except Exception as e:
+        flash(f"An error occurred while fetching company details: {e}", "danger")
+        return redirect(url_for('company.get_dashboard'))
+
+    # --- 2. Handle POST Request (Form Submission) ---
+    if request.method == 'POST':
+        # --- 2a. Validate Input ---
+        if 'document_file' not in request.files:
+            flash('No file part in the submission. Please select a file to upload.', 'danger')
+            return redirect(request.url)
+
+        file = request.files['document_file']
+        doc_type = request.form.get('document_type')
+
+        if not doc_type:
+            flash('You must select a document type from the list.', 'danger')
+            return redirect(request.url)
+
+        if file.filename == '':
+            flash('No file selected. Please choose a file to upload.', 'danger')
+            return redirect(request.url)
+
+        if not allowed_file(file.filename):
+            flash('Invalid file type. Please upload a PDF, JPG, or PNG file.', 'danger')
+            return redirect(request.url)
+
+        # --- 2b. Process and Save the File ---
+        try:
+            # Use the utility to save the file and get its URL
+            file_url_str = await save_verification_file(
+                file=file,
+                company_id=company.company_id,
+                doc_type=doc_type
+            )
+            file_url = HttpUrl(file_url_str)  # Validate that the URL is well-formed
+
+            # --- 2c. Create Database Record ---
+            # Create the Pydantic model instance for the database record
+            document_data = CompanyVerificationDocument(
+                company_id=company.company_id,
+                document_type=doc_type,
+                file_url=file_url,
+                # Other fields like document_id, updated_at have default factories
+            )
+
+            # Call the controller to create the record in the database
+            await company_controller.create_verification_document(document_data)
+
+            flash(f"'{doc_type}' document uploaded successfully! It is now pending review.", "success")
+            # Redirect to the main verification hub to see the updated status and history
+            return redirect(url_for('company.verification_status'))
+
+        except Exception as e:
+            # Catch errors from file saving or database creation
+            flash(f"An unexpected error occurred: {e}", "danger")
+            return redirect(request.url)
+
+    # --- 3. Handle GET Request (Display the Form) ---
+    # Get the list of document options for the dropdown
+    document_options = AllowableCompanyVerificationDocumentsEnum.sa_company_documents_list()
+
+    context = dict(
+        current_user=user,
+        company=company,
+        document_options=document_options
+    )
+    # The template name should match the file you created
+    return render_template("company/upload_company_documents.html", **context)
+
+
 # Pre-defined options for the dropdown menu in the template
 BEE_STATUS_OPTIONS = [
     "Level 1", "Level 2", "Level 3", "Level 4",
@@ -625,12 +716,12 @@ async def registered_company_cipc_details(user: User):
         employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
         if not employer_details or not employer_details.company_id:
             flash("Could not find an associated company. Please contact support.", "danger")
-            return redirect(url_for('company.dashboard'))  # Or some other appropriate page
+            return redirect(url_for('company.get_dashboard'))  # Or some other appropriate page
         company_id = employer_details.company_id
     except Exception as e:
         # Handle cases where the employer or company might not be found
         flash(f"An error occurred while fetching your company details: {e}", "danger")
-        return redirect(url_for('company.dashboard'))
+        return redirect(url_for('company.get_dashboard'))
 
     # --- Handle the form submission on POST request ---
     if request.method == 'POST':
@@ -646,13 +737,13 @@ async def registered_company_cipc_details(user: User):
             registration_datetime = None
             if reg_date_str:
                 # Parse the date string 'YYYY-MM-DD' and make it timezone-aware (UTC)
-                registration_datetime = utc.localize(datetime.strptime(reg_date_str, '%Y-%m-%d'))
+                registration_datetime = datetime.strptime(reg_date_str, '%Y-%m-%d')
 
             # 2. Create a dictionary with all the data
             cipc_details_dict = {
                 "company_name": form_data.get('company_name'),
                 "registration_number": form_data.get('registration_number'),
-                "registration_date": registration_datetime,
+                "registration_date": registration_datetime.date(),
                 "registered_address": form_data.get('registered_address'),
                 "company_type": form_data.get('company_type'),
                 "director_name": director_list,
@@ -702,24 +793,56 @@ async def registered_company_cipc_details(user: User):
         current_user=user,
         bee_options=BEE_STATUS_OPTIONS
     )
-    return render_template("company/company_details_form.html", **context)
+    return render_template("company/registered_company_cipc.html", **context)
 
 
-@company_bp.route('/verification-status')
+@company_bp.route('/verification-status', methods=['GET'])
 @flask_error_handler
 @employer_login
 async def verification_status(user: User):
-    """Show current verification status"""
+    """
+    Displays the central verification dashboard.
+    """
     company_controller = get_controller('company')
-    employer = await company_controller.get_employer_by_uid(user.uid)
-    if not employer or not employer.company_id:
-        return redirect(url_for('company.create_company_profile'))
 
-    company = await company_controller.get_company_by_id(employer.company_id)
-    status_info = await company_controller.get_company_verification_status(company.company_id)
+    # 1. Get the employer and company details
+    employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
+    company = await company_controller.get_company_by_id(company_id=employer_details.company_id)
+
+    # 2. Get the saved CIPC details for the company (if they exist)
+    cipc_details = await company_controller.get_cipc_record_by_company_id(company_id=company.company_id)
+
+    # 3. Get a list of already uploaded documents for the company
+    uploaded_documents = await company_controller.get_verification_documents(company_id=company.company_id)
+
+    # 4. Get the list of allowable document types for the uploader
     document_options = AllowableCompanyVerificationDocumentsEnum.sa_company_documents_list()
-    context = dict(company=company, status_info=status_info, document_options=document_options)
-    return render_template('company/verification_status.html', **context)
+    # --- Define the set of statuses that require user action ---
+    # This makes the logic clear and easy to modify in one place.
+    ACTIONABLE_STATUSES = {
+        CompanyVerificationStatus.NOT_VERIFIED,
+        CompanyVerificationStatus.DOCUMENTS_REJECTED,
+        CompanyVerificationStatus.CIPC_FAILED,
+        CompanyVerificationStatus.PENDING
+
+    }
+    # We'll check against the string values of the enum members
+    ACTIONABLE_STATUS_VALUES = {status.value for status in ACTIONABLE_STATUSES}
+
+    # 5. Determine if the user needs to take action
+    # This logic helps the template decide whether to show the uploader or a "pending" message.
+    needs_action = company.verification_status in ACTIONABLE_STATUS_VALUES
+
+    context = dict(
+        current_user=user,
+        company=company,
+        cipc_details=cipc_details,
+        uploaded_documents=uploaded_documents,
+        document_options=document_options,
+        needs_action=needs_action
+    )
+
+    return render_template("company/verification_hub.html", **context)
 
 
 @company_bp.route("/settings")
