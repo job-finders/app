@@ -2,8 +2,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
-
-from src.authentication import login_required, employer_login, system_admin_login, jobseeker_login
+from src.authentication import employer_login, system_admin_login, jobseeker_login
 from src.database.models.jobs_model import Job, JobApplication
 from src.database.models.users import User
 # from src.firewall.rate_limiting import rate_limit
@@ -43,9 +42,8 @@ async def create_job(user: User):
             ensure jobs could be posted under this company -
             check verification status of employer profile
             check verification status of company_profile
-        :param user_uid:
-        :param job_data:
-        :return:               
+        :param user:
+        :return:
     """
     data = request.form.to_dict()
     try:
