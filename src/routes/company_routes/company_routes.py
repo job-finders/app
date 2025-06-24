@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 from src.routes import flask_error_handler
 from src.authentication import login_required, employer_login
 from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate, CompanyCIPC, \
-    CompanyVerificationDocument, CompanySettings
+    CompanyVerificationDocument, CompanySettings, AllowableCompanyVerificationDocumentsEnum
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
 from src.database.models.resume import JobSeekerCV, SavedCV
@@ -438,7 +438,8 @@ async def initiate_employer_verification(user: User):
     employer = Employer(**employer_orm.to_dict())
 
     if not employer.is_valid:
-        flash(message="please ensure your employer profile is complete before attemmpting verification", category="danger")
+        flash(message="please ensure your employer profile is complete before attempting verification",
+              category="danger")
         return redirect(url_for("company.view_employer_profile"))
     try:
         response = await company_controller.initiate_employer_profile_verification(employer_id=employer.employer_id)
@@ -606,8 +607,9 @@ async def verification_status(user: User):
 
     company = await company_controller.get_company_by_id(employer.company_id)
     status_info = await company_controller.get_company_verification_status(company.company_id)
-
-    return render_template('company/verification_status.html',company=company,status_info=status_info)
+    document_options = AllowableCompanyVerificationDocumentsEnum.sa_company_documents_list()
+    context = dict(company=company, status_info=status_info, document_options=document_options)
+    return render_template('company/verification_status.html', **context)
 
 @company_bp.route("/settings")
 @flask_error_handler
