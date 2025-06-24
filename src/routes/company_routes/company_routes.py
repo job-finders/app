@@ -1,9 +1,11 @@
 import asyncio
+import json
 import os
 from datetime import datetime, timezone
 
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError
+from srsly.msgpack import utc
 from werkzeug.utils import secure_filename
 
 from src.routes import flask_error_handler
@@ -595,6 +597,114 @@ async def initiate_company_verification(user: User):
         cipc_data=cipc_record
     )
 
+
+# Pre-defined options for the dropdown menu in the template
+BEE_STATUS_OPTIONS = [
+    "Level 1", "Level 2", "Level 3", "Level 4",
+    "Level 5", "Level 6", "Level 7", "Level 8",
+    "Non-Compliant", "Exempt Micro-Enterprise (EME)"
+]
+
+
+@company_bp.route('/registered-cipc-details', methods=['GET', 'POST'])
+@flask_error_handler
+@employer_login
+async def registered_company_cipc_details(user: User):
+    """
+    Handles the creation and saving of a company's CIPC details.
+    - GET: Displays the form for the user to enter details.
+    - POST: Validates and saves the submitted details, then redirects to the
+            document upload/verification status page.
+    :param user: The currently logged-in employer user object.
+    :return: Rendered template or a redirect response.
+    """
+    company_controller = get_controller('company')
+
+    # First, we need to get the company ID associated with the logged-in employer
+    try:
+        employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
+        if not employer_details or not employer_details.company_id:
+            flash("Could not find an associated company. Please contact support.", "danger")
+            return redirect(url_for('company.dashboard'))  # Or some other appropriate page
+        company_id = employer_details.company_id
+    except Exception as e:
+        # Handle cases where the employer or company might not be found
+        flash(f"An error occurred while fetching your company details: {e}", "danger")
+        return redirect(url_for('company.dashboard'))
+
+    # --- Handle the form submission on POST request ---
+    if request.method == 'POST':
+        form_data = request.form
+
+        # 1. Prepare the data for Pydantic model creation
+        try:
+            # Safely parse the JSON string of director names from the hidden input
+            director_list = json.loads(form_data.get('director_names', '[]'))
+
+            # Convert date string to a timezone-aware datetime object
+            reg_date_str = form_data.get('registration_date')
+            registration_datetime = None
+            if reg_date_str:
+                # Parse the date string 'YYYY-MM-DD' and make it timezone-aware (UTC)
+                registration_datetime = utc.localize(datetime.strptime(reg_date_str, '%Y-%m-%d'))
+
+            # 2. Create a dictionary with all the data
+            cipc_details_dict = {
+                "company_name": form_data.get('company_name'),
+                "registration_number": form_data.get('registration_number'),
+                "registration_date": registration_datetime,
+                "registered_address": form_data.get('registered_address'),
+                "company_type": form_data.get('company_type'),
+                "director_name": director_list,
+                "tax_pin": form_data.get('tax_pin'),
+                "bee_status": form_data.get('bee_status'),
+                # The 'status' field defaults to 'pending' in the model
+            }
+
+            # 3. Validate the data by creating a Pydantic model instance
+            cipc_data_model = CompanyCIPC(**cipc_details_dict)
+
+        except json.JSONDecodeError:
+            flash("There was an error processing the director list. Please try again.", "danger")
+            # Redirect back to the form
+            return redirect(url_for('company.registered_company_cipc_details'))
+        except (ValidationError, ValueError) as e:
+            # Catches errors from Pydantic validation or date conversion
+            flash(f"Please correct the errors in the form: {e}", "danger")
+            # Redirect back to the form. For a better UX, you could re-render the template
+            # here, passing back the 'form_data' to pre-fill the fields.
+            return redirect(url_for('company.registered_company_cipc_details'))
+
+        # 4. Call the controller method to save the validated data
+        try:
+            # We assume a method like this exists on your controller
+
+            # Save/update CIPC record
+            existing_cipc = await company_controller.get_cipc_record_by_company_id(company_id=company_id)
+            if existing_cipc:
+                await company_controller.update_cipc_record(company_id=company_id, cipc_data=cipc_data_model)
+            else:
+                await company_controller.create_cipc_record(cipc_data=cipc_data_model)
+
+            flash(
+                "Your company details have been saved successfully. Please upload a supporting document to complete verification.",
+                "success")
+        except Exception as e:
+            # Handle potential database or other controller errors
+            flash(f"An unexpected error occurred while saving your details: {e}", "danger")
+            return redirect(url_for('company.registered_company_cipc_details'))
+
+        # 5. Redirect the user to the next step: the verification status/document upload page
+        return redirect(url_for('company.verification_status'))
+
+    # --- Handle the GET request: simply render the form ---
+    context = dict(
+        current_user=user,
+        bee_options=BEE_STATUS_OPTIONS
+    )
+    return render_template("company/company_details_form.html", **context)
+
+
 @company_bp.route('/verification-status')
 @flask_error_handler
 @employer_login
@@ -610,6 +720,7 @@ async def verification_status(user: User):
     document_options = AllowableCompanyVerificationDocumentsEnum.sa_company_documents_list()
     context = dict(company=company, status_info=status_info, document_options=document_options)
     return render_template('company/verification_status.html', **context)
+
 
 @company_bp.route("/settings")
 @flask_error_handler
