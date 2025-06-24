@@ -686,7 +686,9 @@ async def upload_company_verification_documents(user: User):
         document_options=document_options
     )
     # The template name should match the file you created
-    return render_template("company/upload_company_documents.html", **context)
+    return redirect(url_for('company.verification_status'))
+
+    # return render_template("company/upload_company_documents.html", **context)
 
 
 # Pre-defined options for the dropdown menu in the template
