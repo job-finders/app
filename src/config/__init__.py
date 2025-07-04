@@ -46,12 +46,12 @@ class RedisSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env.developer",
         env_file_encoding="utf-8",
-        extra="ignore"
-    )
+        extra="ignore")
 
 class JwtSecrets(BaseSettings):
     SECRET_KEY: str = Field(..., alias='JWT_SECRET')
     ALGO: str = Field(..., alias='JWT_ALGO')
+
     model_config = SettingsConfigDict(
         env_file=".env.developer",
         env_file_encoding="utf-8",
@@ -87,6 +87,7 @@ class Settings(BaseSettings):
     ACTIVITY_CACHE_TTL: int = 3600  # 1 hour
     JWT_SECRETS: JwtSecrets = Field(default_factory=JwtSecrets)
     PAYFAST_SETTINGS: PayfastSettings = Field(default_factory=PayfastSettings)
+    SECRET_KEY: str = Field(..., alias="SECRET_KEY")
 
     model_config = SettingsConfigDict(
         env_file=".env.developer",

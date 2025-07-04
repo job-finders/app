@@ -1,7 +1,7 @@
 from .sql.config import ConfigurationORM
 from .sql.company import (
     CompanyORM, CompanyFollowingORM, CompanyCIPCORM, CompanyVerificationDocumentORM,
-    SavedCandidatesORM, AIBasedDocumentReviewResultORM
+    SavedCandidatesORM, AIBasedDocumentReviewResultORM, DirectorDetailsORM
 )
 from .sql.billing_sql import (
     BillingEventORM, BillingPlanORM, CompanyBillingProfileORM, InvoiceORM, PaymentMethodORM
@@ -44,7 +44,7 @@ from .sql.blog_learning import (
 
 __all__ = [
     "ConfigurationORM",
-    "CompanyORM", "CompanyFollowingORM", "CompanyCIPCORM", "CompanyVerificationDocumentORM",
+    "CompanyORM", "CompanyFollowingORM", "CompanyCIPCORM", "CompanyVerificationDocumentORM", "DirectorDetailsORM",
     "SavedCandidatesORM", "AIBasedDocumentReviewResultORM",
     "BillingEventORM", "BillingPlanORM", "CompanyBillingProfileORM", "InvoiceORM",
     "JobsORM", "JobApplicationORM", "JobCategoryORM", "SavedJobORM", "ApplicationDashboardORM",

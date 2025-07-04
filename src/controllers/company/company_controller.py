@@ -261,7 +261,7 @@ class CompanyController(Controllers):
             if not employer_orm:
                 self.logger.info(f"Employer Record Not found : ")
                 return None
-            self.logger.info(f"Found Employer Record : {employer_orm.to_dict(include_relationships=True)}")
+            self.logger.info(f"Found Employer Record : ")
             return Employer(**employer_orm.to_dict(include_relationships=True))
 
 
@@ -839,7 +839,7 @@ class CompanyController(Controllers):
         if not isinstance(cipc_data, CompanyCIPC):
             return None
         with self.get_session() as session:
-            session.add(CompanyORM(**cipc_data.model_dump()))
+            session.add(CompanyCIPCORM(**cipc_data.model_dump()))
             return cipc_data
 
     @error_handler

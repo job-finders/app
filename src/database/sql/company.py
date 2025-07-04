@@ -2,7 +2,7 @@ import uuid
 from datetime import timezone
 from enum import Enum
 
-from sqlalchemy import Column, String, Text, Integer, Boolean, ForeignKey, JSON, DateTime, inspect, Index, Float
+from sqlalchemy import Column, String, Text, Integer, Boolean, ForeignKey, JSON, DateTime, inspect, Index, Float, Date
 from sqlalchemy.orm import relationship
 
 from src.database.constants import ID_LEN, NAME_LEN, utc_time
@@ -95,11 +95,11 @@ class CompanyORM(Base):
             "tech_stack": self.tech_stack,
             "linkedin_url": self.linkedin_url,
             "twitter_handle": self.twitter_handle,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
-            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc).isoformat() if self.updated_at else None,
             "is_verified": self.is_verified,
             "time_verification_process_started": self.time_verification_process_started.replace(
-                tzinfo=timezone.utc) if self.time_verification_process_started else None,
+                tzinfo=timezone.utc).isoformat() if self.time_verification_process_started else None,
             "verification_status": self.verification_status,
             "ip_address": self.ip_address,
 
@@ -175,13 +175,36 @@ class CompanyVerificationDocumentORM(Base):
             "ai_review_id": self.ai_review_id,
             "document_type": self.document_type,
             "file_url": self.file_url,
-            "uploaded_at": self.uploaded_at.replace(tzinfo=timezone.utc) if self.uploaded_at else None,
+            "uploaded_at": self.uploaded_at.replace(tzinfo=timezone.utc).isoformat() if self.uploaded_at else None,
             "status": self.status,
             "reviewed_by": str(self.reviewed_by) if self.reviewed_by else None,
-            "reviewed_at": self.reviewed_at.i.replace(tzinfo=timezone.utc) if self.reviewed_at else None,
+            "reviewed_at": self.reviewed_at.replace(tzinfo=timezone.utc).isoformat() if self.reviewed_at else None,
             "notes": self.notes,
             "ai_review": self.ai_review.to_dict() if self.ai_review and include_relationships else None
         }
+
+
+class DirectorDetailsORM(Base):
+    """
+        used for cipc company registration validation only.
+        details of the company director
+    """
+    __tablename__ = "company_directors"
+    cipc_id = Column(String(ID_LEN), ForeignKey("cipc_companies.cipc_id"))
+    director_id = Column(String(ID_LEN), primary_key=True, index=True)
+    full_names = Column(String(NAME_LEN), index=True)
+    id_number = Column(String(ID_LEN), index=True)
+
+    def to_dict(self) -> dict[str, str]:
+        """
+            :return:
+        """
+        return dict(
+            cipc_id=self.cipc_id,
+            director_id=self.director_id,
+            full_names=self.full_names,
+            id_number=self.id_number
+        )
 
 class CompanyCIPCORM(Base):
     """
@@ -192,12 +215,20 @@ class CompanyCIPCORM(Base):
 
     cipc_id = Column(String(ID_LEN), primary_key=True, index=True)
     company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), index=True)
-    name = Column(String(NAME_LEN), nullable=False)
+
+    company_name = Column(String(NAME_LEN), nullable=False)
     registration_number = Column(String(36), nullable=True)
-    director_name = Column(String(NAME_LEN), nullable=True)
+    registration_date = Column(Date, nullable=True)
+    registered_address = Column(String(NAME_LEN))
+    company_type = Column(String(36), index=True)
+
+
     tax_pin = Column(String(36), nullable=True)
+    status = Column(String(36), index=True)
     bee_status = Column(String(36), nullable=True)
-    is_verified = Column(Boolean, default=False)
+    verified_at = Column(DateTime(timezone=True), default=False)
+
+    director_details = relationship("DirectorDetailsORM", uselist=True)
 
     @classmethod
     def create_if_not_table(cls):
@@ -210,15 +241,21 @@ class CompanyCIPCORM(Base):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-    def to_dict(self):
+    def to_dict(self, include_relationships=False):
         return {
             "cipc_id": self.cipc_id,
             "company_id": self.company_id,
-            "name": self.name,
+            "company_name": self.company_name,
             "registration_number": self.registration_number,
+            "registration_date": self.registration_date.isoformat() if self.registration_date else None,
+            "registered_address": self.registered_address,
+            "company_type": self.company_type,
+            "status": self.status,
             "tax_pin": self.tax_pin,
             "bee_status": self.bee_status,
-            "is_verified": self.is_verified
+            "verified_at": self.verified_at.replace(tzinfo=timezone.utc).isoformat() if self.verified_at else None,
+            "director_details": [director.to_dict() for director in
+                                 self.director_details] if self.director_details else []
         }
 # Add new ORM model for tracking followed companies
 
@@ -264,8 +301,9 @@ class CompanyFollowingORM(Base):
             "follow_id": self.follow_id,
             "user_id": self.user_id,
             "company_id": self.company_id,
-            "followed_at": self.followed_at.replace(tzinfo=timezone.utc) if self.followed_at else None,
-            "last_notified_at": self.last_notified_at.replace(tzinfo=timezone.utc) if self.last_notified_at else None,
+            "followed_at": self.followed_at.replace(tzinfo=timezone.utc).isoformat() if self.followed_at else None,
+            "last_notified_at": self.last_notified_at.replace(
+                tzinfo=timezone.utc).isoformat() if self.last_notified_at else None,
             "interest_level": self.interest_level,
             "jobseeker_follower": self.jobseeker_follower.to_dict() if include_relationships and self.jobseeker_follower else None,
             "followed_company": self.followed_company.to_dict() if include_relationships else None,
@@ -344,10 +382,10 @@ class SavedCandidatesORM(Base):
             "notes": self.notes,
             "tags": self.tags,
             "last_contacted_at": self.last_contacted_at.replace(
-                tzinfo=timezone.utc) if self.last_contacted_at else None,
+                tzinfo=timezone.utc).isoformat() if self.last_contacted_at else None,
             "contact_count": self.contact_count,
-            "saved_at": self.saved_at.replace(tzinfo=timezone.utc) if self.saved_at else None,
-            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
+            "saved_at": self.saved_at.replace(tzinfo=timezone.utc).isoformat() if self.saved_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc).isoformat() if self.updated_at else None,
 
             "candidate": self.candidate.to_dict(include_relationships=False) if self.candidate and include_relationships else None,
             "company": self.company.to_dict(include_relationships=False) if self.company and include_relationships else None,

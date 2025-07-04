@@ -386,13 +386,23 @@ class CompanyVerificationDocument(BaseModel):
     ai_review: Optional[list[AIBasedDocumentReviewResult]]
     model_config = ConfigDict(from_attributes=True)
 
+
+class DirectorDetails(BaseModel):
+    director_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cipc_id: str
+    full_names: str
+    id_number: str
+
 class CompanyCIPC(BaseModel):
+    cipc_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    company_id: str
     company_name: str
     registration_number: str
     registration_date: Optional[date]
     registered_address: Optional[str]
     company_type: Optional[str]  # e.g., "Private Company", "Non-Profit"
-    director_name: Optional[list[str]] = []
+    director_details: list[Optional[DirectorDetails]] = Field(default_factory=list)
+
     tax_pin: Optional[str]
     bee_status: Optional[str]
     status: Optional[str] = Field(default="pending")  # pending, verified, failed

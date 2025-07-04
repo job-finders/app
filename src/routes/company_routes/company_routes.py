@@ -712,7 +712,7 @@ async def registered_company_cipc_details(user: User):
     :return: Rendered template or a redirect response.
     """
     company_controller = get_controller('company')
-
+    company_id: str | None = None
     # First, we need to get the company ID associated with the logged-in employer
     try:
         employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
@@ -756,7 +756,7 @@ async def registered_company_cipc_details(user: User):
 
             # 3. Validate the data by creating a Pydantic model instance
             cipc_data_model = CompanyCIPC(**cipc_details_dict)
-
+            logger.info(f"CIPC Model : {cipc_data_model}")
         except json.JSONDecodeError:
             flash("There was an error processing the director list. Please try again.", "danger")
             # Redirect back to the form
@@ -775,9 +775,13 @@ async def registered_company_cipc_details(user: User):
             # Save/update CIPC record
             existing_cipc = await company_controller.get_cipc_record_by_company_id(company_id=company_id)
             if existing_cipc:
+                logger.info("Company Found updating existing company.")
                 await company_controller.update_cipc_record(company_id=company_id, cipc_data=cipc_data_model)
+                logger.info("Updated Company")
             else:
-                await company_controller.create_cipc_record(cipc_data=cipc_data_model)
+                logger.info("Company Not Found")
+                created_company = await company_controller.create_cipc_record(cipc_data=cipc_data_model)
+                logger.info(f"Created Company : {created_company}")
 
             flash(
                 "Your company details have been saved successfully. Please upload a supporting document to complete verification.",
@@ -791,10 +795,14 @@ async def registered_company_cipc_details(user: User):
         return redirect(url_for('company.verification_status'))
 
     # --- Handle the GET request: simply render the form ---
-    context = dict(
-        current_user=user,
-        bee_options=BEE_STATUS_OPTIONS
-    )
+    context = dict(current_user=user, bee_options=BEE_STATUS_OPTIONS)
+    # if we have a company_id we try to load the registered company with this id.
+    if company_id:
+        registered_company = await company_controller.get_cipc_record_by_company_id(company_id=company_id)
+        # at this stage either there is actually a registered company or the controller
+        # returned None meaning there is no registered Company
+        context.update(registered_company=registered_company)
+
     return render_template("company/registered_company_cipc.html", **context)
 
 

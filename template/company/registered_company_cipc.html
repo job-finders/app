@@ -8,7 +8,7 @@
 {% block content %}
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-md-10 col-lg-8">
+            <div class="col-md-12 col-lg-12">
 
                 <div class="text-center mb-5">
                     <i class="bi bi-card-list text-primary" style="font-size: 3rem;"></i>
@@ -37,28 +37,31 @@
                                 <div class="col-md-6">
                                     <label for="companyName" class="form-label">Official Company Name</label>
                                     <input type="text" class="form-control" id="companyName" name="company_name"
-                                           required>
+                                           value="{{ registered_company.company_name or '' }}" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="registrationNumber" class="form-label">Registration Number</label>
                                     <input type="text" class="form-control" id="registrationNumber"
-                                           name="registration_number" required>
+                                           name="registration_number"
+                                           value="{{ registered_company.registration_number or '' }}" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="registrationDate" class="form-label">Registration Date</label>
                                     <input type="date" class="form-control" id="registrationDate"
-                                           name="registration_date">
+                                           name="registration_date"
+                                           value="{{ registered_company.registration_date.strftime('%Y-%m-%d') if registered_company.registration_date else '' }}">
                                 </div>
                                 <div class="col-md-6">
                                     <label for="companyType" class="form-label">Company Type</label>
                                     <input type="text" class="form-control" id="companyType" name="company_type"
-                                           placeholder="e.g., (Pty) Ltd">
+                                           placeholder="e.g., (Pty) Ltd"
+                                           value="{{ registered_company.company_type or '' }}">
                                 </div>
                                 <div class="col-12">
                                     <label for="registeredAddress" class="form-label">Registered Physical
                                         Address</label>
                                     <textarea class="form-control" id="registeredAddress" name="registered_address"
-                                              rows="3"></textarea>
+                                              rows="3">{{ registered_company.registered_address or '' }}</textarea>
                                 </div>
                             </div>
 
@@ -83,15 +86,19 @@
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
                                     <label for="taxPin" class="form-label">SARS Tax Compliance PIN</label>
-                                    <input type="text" class="form-control" id="taxPin" name="tax_pin">
+                                    <input type="text" class="form-control" id="taxPin" name="tax_pin"
+                                           value="{{ registered_company.tax_pin or '' }}">
                                     <div class="form-text">Optional, but helps speed up verification.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="beeStatus" class="form-label">B-BBEE Status</label>
                                     <select class="form-select" id="beeStatus" name="bee_status">
-                                        <option value="" selected>-- Not Specified --</option>
+                                        <option value="" {% if not registered_company.bee_status %}selected{% endif %}>
+                                            -- Not Specified --
+                                        </option>
                                         {% for status in bee_options %}
-                                            <option value="{{ status }}">{{ status }}</option>
+                                            <option value="{{ status }}"
+                                                    {% if registered_company.bee_status == status %}selected{% endif %}>{{ status }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -103,6 +110,7 @@
                                 </button>
                             </div>
                         </form>
+
                     </div>
                 </div>
             </div>
@@ -119,7 +127,7 @@
             const directorListContainer = document.getElementById('directorList');
             const hiddenDirectorInput = document.getElementById('directorNamesHidden');
 
-            let directors = [];
+            let directors = {{ registered_company.director_name | tojson | safe if registered_company.director_name else [] }};
 
             // Function to render the list of directors in the UI
             const renderDirectors = () => {
