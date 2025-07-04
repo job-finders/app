@@ -742,15 +742,17 @@ async def registered_company_cipc_details(user: User):
                 registration_datetime = datetime.strptime(reg_date_str, '%Y-%m-%d')
 
             # 2. Create a dictionary with all the data
+            logger.info(f"Form Data : {form_data}")
             cipc_details_dict = {
                 "company_name": form_data.get('company_name'),
                 "registration_number": form_data.get('registration_number'),
-                "registration_date": registration_datetime.date(),
+                "registration_date": registration_datetime,
                 "registered_address": form_data.get('registered_address'),
                 "company_type": form_data.get('company_type'),
                 "director_name": director_list,
                 "tax_pin": form_data.get('tax_pin'),
                 "bee_status": form_data.get('bee_status'),
+                "company_id": company_id
                 # The 'status' field defaults to 'pending' in the model
             }
 

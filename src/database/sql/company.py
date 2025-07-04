@@ -195,6 +195,17 @@ class DirectorDetailsORM(Base):
     full_names = Column(String(NAME_LEN), index=True)
     id_number = Column(String(ID_LEN), index=True)
 
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    # noinspection PyUnresolvedReferences
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
     def to_dict(self) -> dict[str, str]:
         """
             :return:
@@ -226,7 +237,7 @@ class CompanyCIPCORM(Base):
     tax_pin = Column(String(36), nullable=True)
     status = Column(String(36), index=True)
     bee_status = Column(String(36), nullable=True)
-    verified_at = Column(DateTime(timezone=True), default=False)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
 
     director_details = relationship("DirectorDetailsORM", uselist=True)
 

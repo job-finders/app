@@ -406,7 +406,7 @@ class CompanyCIPC(BaseModel):
     tax_pin: Optional[str]
     bee_status: Optional[str]
     status: Optional[str] = Field(default="pending")  # pending, verified, failed
-    verified_at: Optional[AwareDatetime] = None
+    verified_at: Optional[AwareDatetime] = Field(default=None)
     model_config = ConfigDict(from_attributes=True)
 
 class InterestLevel(str, Enum):
