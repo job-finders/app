@@ -157,19 +157,6 @@ class CompanyController(Controllers):
         :return: Company object with nested jobs and applications
         """
         with self.get_session() as session:
-            # Eager load all relationships to avoid N+1 queries
-            # company_orm: CompanyORM = (
-            #     session.query(CompanyORM)
-            #     .options(
-            #         joinedload(CompanyORM.jobs).options(
-            #             joinedload(JobsORM.applications)
-            #         ),
-            #         joinedload(CompanyORM.employers),
-            #         joinedload(CompanyORM.saved_candidates)
-            #     )
-            #     .filter(CompanyORM.company_id == company_id)  # Fixed filter condition
-            #     .first()
-            # )
             if not (isinstance(company_id, str) and company_id.strip()):
                 return None
 
@@ -878,9 +865,7 @@ class CompanyController(Controllers):
                             full_names=director.full_names,
                             id_number=director.id_number
                         ))
-
             session.add(cipc_orm)
-
             return cipc_data
 
     @error_handler
@@ -890,5 +875,5 @@ class CompanyController(Controllers):
         :return:
         """
         with self.get_session() as session:
-            session.add(CompanyVerificationDocumentORM(**ver_document.model_dump()))
+            session.add(CompanyVerificationDocumentORM(**ver_document.model_dump(exclude={'ai_review'})))
             return ver_document

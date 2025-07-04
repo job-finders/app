@@ -1,11 +1,11 @@
 import asyncio
 import json
 import os
+import uuid
 from datetime import datetime, timezone
 
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError, HttpUrl
-from srsly.msgpack import utc
 from werkzeug.utils import secure_filename
 
 from src.routes import flask_error_handler
@@ -18,7 +18,7 @@ from src.database.models.resume import JobSeekerCV, SavedCV
 from src.database.models.users import User
 from src.logger import init_logger
 
-from src.utils.file_uploads import save_company_logo
+from src.utils.file_uploads import save_company_logo, save_verification_file
 from src.utils.route_helpers import get_controller
 
 company_bp = Blueprint('company', __name__, url_prefix='/dashboard/company')
@@ -33,9 +33,6 @@ def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
-async def save_verification_file(file, company_id: str, doc_type: str) -> str:
-    pass
 
 
 @company_bp.route("/create-company", methods=["GET", "POST"])
@@ -648,16 +645,20 @@ async def upload_company_verification_documents(user: User):
         # --- 2b. Process and Save the File ---
         try:
             # Use the utility to save the file and get its URL
-            file_url_str = await save_verification_file(
+            document_id = str(uuid.uuid4())
+            file_url_str = save_verification_file(
                 file=file,
+                company_name=company.name,
                 company_id=company.company_id,
+                document_id=document_id,
                 doc_type=doc_type
             )
-            file_url = HttpUrl(file_url_str)  # Validate that the URL is well-formed
+            file_url = HttpUrl(file_url_str)
 
             # --- 2c. Create Database Record ---
             # Create the Pydantic model instance for the database record
             document_data = CompanyVerificationDocument(
+                document_id=document_id,
                 company_id=company.company_id,
                 document_type=doc_type,
                 file_url=file_url,
@@ -673,6 +674,7 @@ async def upload_company_verification_documents(user: User):
 
         except Exception as e:
             # Catch errors from file saving or database creation
+            logger.error(str(e))
             flash(f"An unexpected error occurred: {e}", "danger")
             return redirect(request.url)
 

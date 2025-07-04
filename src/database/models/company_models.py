@@ -374,16 +374,16 @@ class AIBasedDocumentReviewResult(BaseModel):
 class CompanyVerificationDocument(BaseModel):
     document_id: str = Field(default_factory=lambda : str(uuid.uuid4()))
     company_id: str
-    ai_review_id: Optional[str]
+    ai_review_id: Optional[str] = Field(default=None)
     document_type: str  # You can use Enum here for safety
     file_url: HttpUrl
-    updated_at: AwareDatetime = Field(default_factory=utc_time)
+    uploaded_at: AwareDatetime = Field(default_factory=utc_time)
 
-    status: Optional[str] = "pending"
-    reviewed_by: Optional[str]
-    reviewed_at: Optional[str]
-    notes: Optional[str]
-    ai_review: Optional[list[AIBasedDocumentReviewResult]]
+    status: Optional[str] = Field(default="pending")
+    reviewed_by: Optional[str] = Field(default=None)
+    reviewed_at: Optional[str] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+    ai_review: Optional[list[AIBasedDocumentReviewResult]] = Field(default_factory=list)
     model_config = ConfigDict(from_attributes=True)
 
 
