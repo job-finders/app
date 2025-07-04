@@ -13,7 +13,7 @@ from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Job, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
 from src.database.models.resume import JobSeekerCV, SavedCV
 from src.database.models.users import User
-from src.database.sql.company import CompanyORM, CompanyCIPCORM, CompanyVerificationDocumentORM
+from src.database.sql.company import CompanyORM, CompanyCIPCORM, CompanyVerificationDocumentORM, DirectorDetailsORM
 from src.database.sql.employer import EmployerORM
 from src.database.sql.users import UserORM
 from src.emailer import EmailModel
@@ -792,26 +792,26 @@ class CompanyController(Controllers):
             return False
 
     @error_handler
-    async def get_cipc_record_by_company_id(self, company_id: str) -> CompanyCIPC| None:
+    async def get_cipc_record_by_company_id(self, company_id: str) -> CompanyCIPC | None:
         """
-
-        :param company_id:
-        :return:
+        Fetch the CIPC company record by company ID, including associated director details.
         """
         if not (isinstance(company_id, str) and company_id.strip()):
             return None
 
         with self.get_session() as session:
-            cipc_orm = session.query(CompanyCIPCORM).filter_by(company_id=company_id).first()
+            cipc_orm = (
+                session.query(CompanyCIPCORM)
+                .options(joinedload(CompanyCIPCORM.director_details))  # <-- eager load directors
+                .filter_by(company_id=company_id)
+                .first()
+            )
             return CompanyCIPC(**cipc_orm.to_dict()) if isinstance(cipc_orm, CompanyCIPCORM) else None
 
     @error_handler
-    async def update_cipc_record(self, company_id: str, cipc_record: CompanyCIPC) -> CompanyCIPC| None:
+    async def update_cipc_record(self, company_id: str, cipc_record: CompanyCIPC) -> CompanyCIPC | None:
         """
-        Update the CIPC record for a given company.
-
-        For each set field in cipc_recourd, update the corresponding ORM field.
-        Commit the session and return a refreshed copy of the updated record.
+        Update the CIPC record and its related directors for a given company.
         """
         if not (isinstance(company_id, str) and company_id.strip()):
             return None
@@ -823,23 +823,64 @@ class CompanyController(Controllers):
             if not cipc_orm:
                 raise ValueError(f"No CIPC record found for company_id: {company_id}")
 
-            update_data = cipc_record.model_dump(exclude_unset=True)
-
+            # Update core fields
+            update_data = cipc_record.model_dump(exclude_unset=True, exclude={"director_details"})
             for field, value in update_data.items():
                 if hasattr(cipc_orm, field):
                     setattr(cipc_orm, field, value)
 
+            # --- Replace director details if provided ---
+            if cipc_record.director_details is not None:
+                # Clear existing directors
+                session.query(DirectorDetailsORM).filter_by(cipc_id=cipc_orm.cipc_id).delete()
+
+                # Re-add new director entries
+                for director in cipc_record.director_details:
+                    if director:
+                        session.add(DirectorDetailsORM(
+                            cipc_id=cipc_orm.cipc_id,
+                            director_id=director.director_id,
+                            full_names=director.full_names,
+                            id_number=director.id_number
+                        ))
             session.commit()
             session.refresh(cipc_orm)
-
             return CompanyCIPC(**cipc_orm.to_dict())
 
     @error_handler
     async def create_cipc_record(self, cipc_data: CompanyCIPC) -> CompanyCIPC | None:
         if not isinstance(cipc_data, CompanyCIPC):
             return None
+
         with self.get_session() as session:
-            session.add(CompanyCIPCORM(**cipc_data.model_dump()))
+            # Create the company ORM object
+            cipc_orm = CompanyCIPCORM(
+                cipc_id=cipc_data.cipc_id,
+                company_id=cipc_data.company_id,
+                company_name=cipc_data.company_name,
+                registration_number=cipc_data.registration_number,
+                registration_date=cipc_data.registration_date,
+                registered_address=cipc_data.registered_address,
+                company_type=cipc_data.company_type,
+                tax_pin=cipc_data.tax_pin,
+                bee_status=cipc_data.bee_status,
+                status=cipc_data.status,
+                verified_at=cipc_data.verified_at
+            )
+
+            # Handle nested director details if provided
+            if cipc_data.director_details:
+                for director in cipc_data.director_details:
+                    if director:  # skip None values in list
+                        cipc_orm.director_details.append(DirectorDetailsORM(
+                            cipc_id=cipc_data.cipc_id,
+                            director_id=director.director_id,
+                            full_names=director.full_names,
+                            id_number=director.id_number
+                        ))
+
+            session.add(cipc_orm)
+
             return cipc_data
 
     @error_handler

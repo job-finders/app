@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 from src.routes import flask_error_handler
 from src.authentication import login_required, employer_login
 from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate, CompanyCIPC, \
-    CompanyVerificationDocument, CompanySettings, AllowableCompanyVerificationDocumentsEnum
+    CompanyVerificationDocument, CompanySettings, AllowableCompanyVerificationDocumentsEnum, DirectorDetails
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
 from src.database.models.resume import JobSeekerCV, SavedCV
@@ -731,17 +731,14 @@ async def registered_company_cipc_details(user: User):
 
         # 1. Prepare the data for Pydantic model creation
         try:
-            # Safely parse the JSON string of director names from the hidden input
-            director_list = json.loads(form_data.get('director_names', '[]'))
 
             # Convert date string to a timezone-aware datetime object
             reg_date_str = form_data.get('registration_date')
             registration_datetime = None
             if reg_date_str:
-                # Parse the date string 'YYYY-MM-DD' and make it timezone-aware (UTC)
                 registration_datetime = datetime.strptime(reg_date_str, '%Y-%m-%d')
 
-            # 2. Create a dictionary with all the data
+            # Assemble the data dictionary
             logger.info(f"Form Data : {form_data}")
             cipc_details_dict = {
                 "company_name": form_data.get('company_name'),
@@ -749,16 +746,31 @@ async def registered_company_cipc_details(user: User):
                 "registration_date": registration_datetime,
                 "registered_address": form_data.get('registered_address'),
                 "company_type": form_data.get('company_type'),
-                "director_name": director_list,
+                "director_details": [],
                 "tax_pin": form_data.get('tax_pin'),
                 "bee_status": form_data.get('bee_status'),
                 "company_id": company_id
-                # The 'status' field defaults to 'pending' in the model
             }
 
-            # 3. Validate the data by creating a Pydantic model instance
+            # Validate and build the final model
             cipc_data_model = CompanyCIPC(**cipc_details_dict)
             logger.info(f"CIPC Model : {cipc_data_model}")
+            # Safely parse the JSON string of director names from the hidden input
+            director_list_raw = json.loads(form_data.get('director_names', '[]'))
+
+            # Build a list of DirectorDetails objects
+            director_details = []
+            for director in director_list_raw:
+                if isinstance(director, dict):
+                    director_details.append(DirectorDetails(
+                        director_id=director.get('director_id'),
+                        full_names=director.get('full_names'),
+                        id_number=director.get('id_number'),
+                        cipc_id=cipc_data_model.cipc_id  # this will be set by the ORM layer if needed
+                    ))
+            if director_details:
+                cipc_data_model.director_details = director_details
+
         except json.JSONDecodeError:
             flash("There was an error processing the director list. Please try again.", "danger")
             # Redirect back to the form
@@ -773,12 +785,15 @@ async def registered_company_cipc_details(user: User):
         # 4. Call the controller method to save the validated data
         try:
             # We assume a method like this exists on your controller
-
             # Save/update CIPC record
             existing_cipc = await company_controller.get_cipc_record_by_company_id(company_id=company_id)
             if existing_cipc:
                 logger.info("Company Found updating existing company.")
-                await company_controller.update_cipc_record(company_id=company_id, cipc_data=cipc_data_model)
+                cipc_data_model.cipc_id = existing_cipc.cipc_id
+                for director in cipc_data_model.director_details:
+                    director.cipc_id = existing_cipc.cipc_id
+
+                await company_controller.update_cipc_record(company_id=company_id, cipc_record=cipc_data_model)
                 logger.info("Updated Company")
             else:
                 logger.info("Company Not Found")
@@ -800,10 +815,11 @@ async def registered_company_cipc_details(user: User):
     context = dict(current_user=user, bee_options=BEE_STATUS_OPTIONS)
     # if we have a company_id we try to load the registered company with this id.
     if company_id:
-        registered_company = await company_controller.get_cipc_record_by_company_id(company_id=company_id)
+        registered_company: CompanyCIPC = await company_controller.get_cipc_record_by_company_id(company_id=company_id)
+        logger.info(f"Registered Directors details : {registered_company.director_details}")
         # at this stage either there is actually a registered company or the controller
         # returned None meaning there is no registered Company
-        context.update(registered_company=registered_company)
+        context.update(registered_company=registered_company.model_dump())
 
     return render_template("company/registered_company_cipc.html", **context)
 
