@@ -9,7 +9,7 @@ from pydantic import ValidationError, HttpUrl
 from werkzeug.utils import secure_filename
 
 from src.routes import flask_error_handler
-from src.authentication import login_required, employer_login
+from src.authentication import login_required, employer_login, company_access_required
 from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate, CompanyCIPC, \
     CompanyVerificationDocument, CompanySettings, AllowableCompanyVerificationDocumentsEnum, DirectorDetails
 from src.database.models.employer_models import Employer
@@ -113,6 +113,7 @@ async def create_company_profile(user: User):
 
 @company_bp.route('/profile/edit', methods=['GET'])
 @employer_login
+@company_access_required
 async def edit_company_profile(user: User):
     """Render company profile edit form"""
     company_controller = get_controller('company')
@@ -128,13 +129,12 @@ async def edit_company_profile(user: User):
         flash("Company not found. Please create your company profile.", "danger")
         return redirect(url_for("company.create_company_profile"))
 
-    return render_template('company/company_editor.html',
-                           company=company,
-                           current_year=datetime.now().year)
+    return render_template('company/company_editor.html',company=company, current_year=datetime.now().year)
 
 
 @company_bp.route('/profile/update', methods=['POST'])
 @employer_login
+@company_access_required
 async def update_company_profile(user: User):
     """Process company profile updates"""
     company_controller = get_controller('company')
@@ -268,6 +268,7 @@ async def update_employer_profile(user: User):
 @company_bp.route("/profile", methods=["GET"])
 @flask_error_handler
 @employer_login
+@company_access_required
 async def view_company(user: User):
     """Company profile viewing endpoint"""
     if not hasattr(user, "role") or user.role != "employer":
@@ -300,6 +301,7 @@ async def view_company(user: User):
 @company_bp.route("/employer/profile", methods=["GET"])
 @flask_error_handler
 @employer_login
+@company_access_required
 async def view_employer_profile(user: User):
     """
         this route allows the employer to view their own profile
@@ -335,6 +337,7 @@ async def view_employer_profile(user: User):
 @company_bp.route("/jobs", methods=["GET", "POST"])
 @flask_error_handler
 @employer_login
+@company_access_required
 async def manage_jobs(user: User):
     """Job post management (mirrors ATS tool pattern)"""
 
@@ -378,6 +381,7 @@ async def manage_jobs(user: User):
 @company_bp.route("/candidates", methods=["GET", "POST"])
 @flask_error_handler
 @employer_login
+@company_access_required
 async def candidate_management(user: User):
     """Candidate shortlisting (extends ATS functionality)"""
 
@@ -411,6 +415,7 @@ async def candidate_management(user: User):
 @company_bp.route("/analytics/applications", methods=["GET"])
 @flask_error_handler
 @employer_login
+@company_access_required
 async def application_analytics(user: User):
     """Hiring analytics dashboard (integrates with ATS reports)"""
 
@@ -430,6 +435,7 @@ async def application_analytics(user: User):
 @company_bp.route("/verify-employer-profile", methods=["POST"])
 @flask_error_handler
 @employer_login
+@company_access_required
 async def initiate_employer_verification(user: User):
     """Start company verification process"""
     company_controller = get_controller('company')
@@ -456,6 +462,7 @@ async def initiate_employer_verification(user: User):
 
 @company_bp.route("/do-verify-employer-profile/<string:token>/<string:employer_id>", methods=["GET"])
 @flask_error_handler
+@company_access_required
 async def verify_employer_profile(token: str, employer_id: str):
     """
     The employer lands here after clicking the verification link in the email.
@@ -485,6 +492,7 @@ async def verify_employer_profile(token: str, employer_id: str):
 @company_bp.route('/submit-company-verification', methods=['GET', 'POST'])
 @flask_error_handler
 @employer_login
+@company_access_required
 async def initiate_company_verification(user: User):
     """Endpoint for comprehensive company verification submission"""
     # Authorization check
@@ -602,6 +610,7 @@ async def initiate_company_verification(user: User):
 @company_bp.route('/submit-company-verification-documents', methods=['GET', 'POST'])
 @flask_error_handler
 @employer_login
+@company_access_required
 async def upload_company_verification_documents(user: User):
     """
     Handles the display of the upload form and the processing of a single
@@ -704,6 +713,7 @@ BEE_STATUS_OPTIONS = [
 @company_bp.route('/registered-cipc-details', methods=['GET', 'POST'])
 @flask_error_handler
 @employer_login
+@company_access_required
 async def registered_company_cipc_details(user: User):
     """
     Handles the creation and saving of a company's CIPC details.
@@ -829,6 +839,7 @@ async def registered_company_cipc_details(user: User):
 @company_bp.route('/verification-status', methods=['GET'])
 @flask_error_handler
 @employer_login
+@company_access_required
 async def verification_status(user: User):
     """
     Displays the central verification dashboard.
@@ -878,6 +889,7 @@ async def verification_status(user: User):
 @company_bp.route("/settings")
 @flask_error_handler
 @employer_login
+@company_access_required
 async def settings(user: User):
     company_controller = get_controller('company')
     employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
@@ -889,6 +901,7 @@ async def settings(user: User):
 @company_bp.route("/settings")
 @flask_error_handler
 @employer_login
+@company_access_required
 async def save_settings(user: User):
     """
 
@@ -908,6 +921,7 @@ async def save_settings(user: User):
 @company_bp.route("/employers")
 @flask_error_handler
 @employer_login
+@company_access_required
 async def employers_list(user: User):
     """
     List all employers associated with the company
@@ -935,6 +949,7 @@ async def employers_list(user: User):
 @company_bp.route("/me")
 @flask_error_handler
 @login_required
+@company_access_required
 async def get_dashboard(user: User):
     company_controller = get_controller('company')
     employer = await company_controller.get_employer_by_uid(user.uid)

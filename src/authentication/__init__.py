@@ -90,6 +90,59 @@ def employer_job_access_required(allow_admin=True):
         return wrapper
     return decorator
 
+# =========================
+# COMPANY ACCESS CONTROL
+
+def company_access_control(user, resource_company_id: str, allow_admin=True) -> bool:
+    """
+    Validates whether the user has access to a resource based on company_id.
+    
+    Args:
+        user: The current user object (must have .uid, .role)
+        resource_company_id: The company_id attached to the resource
+        allow_admin: Whether to allow system_admins to bypass check
+    
+    Returns:
+        True if access is allowed, raises HTTPException otherwise
+    """
+    if allow_admin and user.role == 'system_admin':
+        return True
+
+    employer = get_employer_minimal(user.uid)
+    if not employer:
+        logger.warning(f"Access denied. User not found in employer table: {user.uid}")
+        abort(403, "You don't have permission to access this resource")
+
+    if employer['company_id'] != resource_company_id:
+        logger.warning(
+            f"Company access denied: user {user.uid} (company {employer['company_id']}) "
+            f"vs resource (company {resource_company_id})"
+        )
+        abort(403, "You don't have permission to access this resource")
+
+    return True
+
+
+def company_access_required(allow_admin=True):
+    def decorator(view_func):
+        @wraps(view_func)
+        async def wrapper(*args, **kwargs):
+            job_id = kwargs.get('job_id')
+            if not job_id:
+                abort(400, "Job ID missing in request")
+
+            user = g.current_user
+            job_dict = get_job_minimal(job_id)
+            if not job_dict:
+                logger.warning(f"Job not found: {job_id}")
+                abort(404, "Job not found")
+
+            company_access_control(user, job_dict["company_id"], allow_admin=allow_admin)
+
+            return await view_func(*args, **kwargs)
+        return wrapper
+    return decorator
+
 
 async def get_user_details(uid: str) -> User | None:
     """Query the database for a user by UID."""
