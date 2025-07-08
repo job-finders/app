@@ -17,11 +17,6 @@ from src.utils.route_helpers import get_controller
 
 
 
-# Constants (could be moved to config)
-MIN_PAGE = 1
-MAX_PAGE_SIZE = 100
-DEFAULT_PAGE = 1
-DEFAULT_PAGE_SIZE = 25
 
 async def parse_pagination_params() -> Tuple[int, int]:
     """
@@ -31,6 +26,12 @@ async def parse_pagination_params() -> Tuple[int, int]:
     Returns:
         Tuple[int, int]: (page, page_size)
     """
+    # Constants (could be moved to config)
+    MIN_PAGE = 1
+    MAX_PAGE_SIZE = 100
+    DEFAULT_PAGE = 1
+    DEFAULT_PAGE_SIZE = 25
+
     # Advanced parsing with type safety
     try:
         page = int(request.args.get('page', DEFAULT_PAGE))
