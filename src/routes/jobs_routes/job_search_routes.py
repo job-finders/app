@@ -15,39 +15,35 @@ from src.routes.utils import gone
 from src.utils.route_helpers import get_controller
 
 
+MIN_PAGE = 1
+MAX_PAGE_SIZE = 100
+DEFAULT_PAGE = 1
+DEFAULT_PAGE_SIZE = 25
 
 
-
-async def parse_pagination_params() -> Tuple[int, int]:
-    """
-    Parses and validates page/page_size parameters from request
-    with robust error handling and boundary enforcement
-    
-    Returns:
-        Tuple[int, int]: (page, page_size)
-    """
-    # Constants (could be moved to config)
-    MIN_PAGE = 1
-    MAX_PAGE_SIZE = 100
-    DEFAULT_PAGE = 1
-    DEFAULT_PAGE_SIZE = 25
-
-    # Advanced parsing with type safety
+async def parse_pagination_params(
+    default_page: int = DEFAULT_PAGE,
+    default_size: int = DEFAULT_PAGE_SIZE,
+    max_size: int = MAX_PAGE_SIZE
+) -> Tuple[int, int]:
+    """Flexible version with customizable defaults"""
     try:
-        page = int(request.args.get('page', DEFAULT_PAGE))
+        page = request.args.get('page', default=default_page, type=int)
+        
     except (TypeError, ValueError):
-        page = DEFAULT_PAGE
+        page = default_page
     
     try:
-        page_size = int(request.args.get('page_size', DEFAULT_PAGE_SIZE))
+        page_size = request.args.get('page_size', default=default_size, type=int)
+        
     except (TypeError, ValueError):
-        page_size = DEFAULT_PAGE_SIZE
+        page_size = default_size
 
-    # Defensive boundary enforcement
     page = max(page, MIN_PAGE)
-    page_size = max(min(page_size, MAX_PAGE_SIZE), 1)  # Clamp between 1-100
+    page_size = max(min(page_size, max_size), 1)
     
     return page, page_size
+
 
 
 def generate_mock_jobs(keyword: str, count: int = 5) -> list[dict]:
