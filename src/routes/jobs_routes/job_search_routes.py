@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from typing import TypedDict, List
+from typing import TypedDict, List, Tuple
 
 from flask import Blueprint, render_template, request
 
@@ -13,6 +13,40 @@ from src.database.models.users import User
 from src.routes import flask_error_handler
 from src.routes.utils import gone
 from src.utils.route_helpers import get_controller
+
+
+
+
+# Constants (could be moved to config)
+MIN_PAGE = 1
+MAX_PAGE_SIZE = 100
+DEFAULT_PAGE = 1
+DEFAULT_PAGE_SIZE = 25
+
+async def parse_pagination_params() -> Tuple[int, int]:
+    """
+    Parses and validates page/page_size parameters from request
+    with robust error handling and boundary enforcement
+    
+    Returns:
+        Tuple[int, int]: (page, page_size)
+    """
+    # Advanced parsing with type safety
+    try:
+        page = int(request.args.get('page', DEFAULT_PAGE))
+    except (TypeError, ValueError):
+        page = DEFAULT_PAGE
+    
+    try:
+        page_size = int(request.args.get('page_size', DEFAULT_PAGE_SIZE))
+    except (TypeError, ValueError):
+        page_size = DEFAULT_PAGE_SIZE
+
+    # Defensive boundary enforcement
+    page = max(page, MIN_PAGE)
+    page_size = max(min(page_size, MAX_PAGE_SIZE), 1)  # Clamp between 1-100
+    
+    return page, page_size
 
 
 def generate_mock_jobs(keyword: str, count: int = 5) -> list[dict]:
@@ -116,10 +150,9 @@ async def list_jobs(user: User):
     """
     job_search_controller = get_controller('jobs_search')
     
-    # obtaining page arguments
-    page: int = int(request.args.get('page', 1))
-    page_size: int = int(request.args.get('page_size', 25))
-    
+    # Advanced parsing with type conversion and validation
+    page, page_size = await parse_pagination_params()
+   
     search_result = await job_search_controller.get_all_jobs(page=page, page_size=page_size)
     jobs = search_result.get('jobs', [])
 
@@ -163,8 +196,7 @@ async def search_jobs(user: User):
 
     keyword = request.args.get('keyword', '')
     
-    page: int = int(request.args.get('page', 1))
-    page_size: int = int(request.args.get('page_size', 25))
+    page, page_size = await parse_pagination_params()
 
     
     search_result = await job_search_controller.search_jobs(keyword=keyword, page=page, page_size=page_size)
@@ -242,8 +274,7 @@ async def category_jobs(user: User, category: str):
     """
     
 
-    page: int = int(request.args.get('page', 1))
-    page_size: int = int(request.args.get('page_size', 25))
+    page, page_size = await parse_pagination_params()
 
     job_search_controller = get_controller('jobs_search')
     search_result = await job_search_controller.search_jobs_by_category(category=category, page=page, page_size=page_size)
@@ -335,13 +366,13 @@ async def job_details(user: User, job_id: str):
 async def jobs_by_location(user: User, location: str):
     """Search jobs by location.
     """
-    page: int = int(request.args.get('page', 1))
-    page_size = int(request.args.get('page_size', 25))
+
+    page, page_size = await parse_pagination_params()
 
     # Stub: await jobs_controller.search_by_location(location, page)
     job_search_controller = get_controller('jobs_search')
     search_result = await job_search_controller.get_jobs_by_location(location=location, page=page, page_size=page_size)
-    
+
     context = {
         'current_user': user,
         'jobs': search_result.get('jobs', []),
@@ -368,9 +399,11 @@ async def jobs_by_type(user: User, job_type: str):
     Returns:
         HTML page rendering the filtered jobs.
     """
-    page = int(request.args.get('page', 1))
+    
+    page, page_size = await parse_pagination_params()
+
     job_search_controller = get_controller('jobs_search')
-    search_result: dict = await job_search_controller.search_by_type(job_type=job_type, page=page)
+    search_result: dict = await job_search_controller.search_by_type(job_type=job_type, page=page, page_size=page_size)
 
     context : JobSearchContext = {
         'current_user': user,
@@ -399,9 +432,11 @@ async def featured_jobs(user: User):
     Returns:
         HTML page rendering featured job listings.
     """
-    page = int(request.args.get('page', 1))
+
+    page, page_size = await parse_pagination_params()
+
     job_search_controller = get_controller('jobs_search')
-    search_result = await job_search_controller.get_featured_jobs(page=page)
+    search_result = await job_search_controller.get_featured_jobs(page=page, page_size=page_size)
 
     context: JobSearchContext = {
         'current_user': user,
@@ -430,9 +465,10 @@ async def recent_jobs(user: User):
     Returns:
         HTML template with the most recent jobs.
     """
-    page = int(request.args.get('page', 1))
+    page, page_size = await parse_pagination_params()
+
     job_search_controller = get_controller('jobs_search')
-    search_result = await job_search_controller.get_recent_jobs(page=page)
+    search_result = await job_search_controller.get_recent_jobs(page=page, page_size=page_size)
 
     context: JobSearchContext = {
         'current_user': user,
@@ -463,7 +499,9 @@ async def jobs_by_salary_range(user: User):
     Returns:
         Rendered HTML with filtered job listings.
     """
-    page = int(request.args.get('page', 1))
+    
+    page, page_size = await parse_pagination_params()
+
     min_salary = request.args.get('min', type=int)
     max_salary = request.args.get('max', type=int)
     unit = request.args.get('unit', 'yearly').lower()
@@ -475,6 +513,7 @@ async def jobs_by_salary_range(user: User):
         min_salary=min_salary,
         max_salary=max_salary,
         page=page,
+        page_size=page_size,
         unit=unit
     )
     context: JobSearchContext = {
@@ -511,9 +550,12 @@ async def jobs_by_company(user: User, company_slug: str):
         :param company_slug:
         :param user:
     """
-    page = int(request.args.get('page', 1))
+    
+    page, page_size = await parse_pagination_params()
+
     job_search_controller = get_controller('jobs_search')
-    search_result = await job_search_controller.search_by_company(company_slug=company_slug, page=page)
+    search_result = await job_search_controller.search_by_company(company_slug=company_slug, page=page, page_size=page_size)
+
     context: JobSearchContext = {
         'current_user': user,
         'jobs': search_result.get('jobs', []),
@@ -539,10 +581,13 @@ async def jobs_by_title(user: User):
             page_size=page_size,
             total_pages=total_pages)    
     """
-    page = int(request.args.get('page', 1))
+    
+    page, page_size = await parse_pagination_params()
+
     title = request.args.get('q', '')
     job_search_controller = get_controller('jobs_search')
-    result = await job_search_controller.get_jobs_by_title(title=title,page=page)
+    result = await job_search_controller.get_jobs_by_title(title=title,page=page, page_size=page_size)
+
 
     context: JobSearchContext = {
         'current_user': user,
@@ -572,12 +617,13 @@ async def jobs_by_qualification(user: User):
                 total_pages=total_pages)
     """
 
-    page = int(request.args.get('page', 1))
+    page, page_size = await parse_pagination_params()
+
     qualification = request.args.get('q', '')
     types = request.args.getlist('event_type') or None
     job_search_controller = get_controller('jobs_search')
     result = await job_search_controller.get_jobs_by_qualification(qualification=qualification,
-    qualification_types=types,page=page)
+    qualification_types=types,page=page, page_size=page_size)
 
     context : JobSearchContext = {
         'current_user': user,
