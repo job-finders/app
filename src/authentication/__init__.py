@@ -303,13 +303,47 @@ def require_billing_role_from_trial(route_function):
     
     return wrapper
 
-"""
-@route.get("/feature")
-@roles_required("admin", "manager")  # Sets g.user
-@require_billing_role_from_trial    # Requires g.user
-@cached                             # Can now use g.user in cache keys
-async def premium_feature(user: User):
-    # user comes from roles_required decorator
-    # g.user is also available
-    return render_template(...)
-"""
+
+BILLING_TIERS = {
+    "trial": 0,
+    "basic": 1,
+    "pro": 2,
+    "enterprise": 3
+}
+
+def require_billing_role(minimum: str = "trial"):
+    """
+    Requires the company billing plan to meet or exceed a minimum tier.
+    Billing tiers: trial < basic < pro < enterprise
+    """
+    def decorator(route_function):
+        @wraps(route_function)
+        async def wrapper(*args, **kwargs):
+            g.user = await resolve_user_from_jwt_cookie()
+
+            if not g.user:
+                flash("Please log in to access this page", "danger")
+                return redirect(url_for("auth.login"))
+
+            try:
+                billing = await asyncio.to_thread(get_current_company_subscription, uid=g.user.uid)
+            except Exception as e:
+                auth_logger.error(f"Billing check failed: {str(e)}")
+                flash("Error retrieving billing data", "danger")
+                return redirect(url_for("company.get_dashboard"))
+
+            if not billing:
+                flash("Billing profile not found", "danger")
+                return redirect(url_for("company.get_dashboard"))
+
+            user_plan = billing.plan.lower() if billing.plan else "trial"
+            user_plan_level = BILLING_TIERS.get(user_plan, 0)
+            required_plan_level = BILLING_TIERS.get(minimum, 0)
+
+            if user_plan_level < required_plan_level:
+                flash(f"Access requires at least {minimum} subscription", "danger")
+                return redirect(url_for("company.get_dashboard"))
+
+            return await route_function(*args, **kwargs)
+        return wrapper
+    return decorator

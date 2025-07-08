@@ -338,6 +338,7 @@ async def view_employer_profile(user: User):
 @flask_error_handler
 @employer_login
 @company_access_required
+@require_billing_role
 async def manage_jobs(user: User):
     """Job post management (mirrors ATS tool pattern)"""
 
@@ -381,6 +382,7 @@ async def manage_jobs(user: User):
 @flask_error_handler
 @employer_login
 @company_access_required
+@require_billing_role
 async def candidate_management(user: User):
     """Candidate shortlisting (extends ATS functionality)"""
 
@@ -415,6 +417,7 @@ async def candidate_management(user: User):
 @flask_error_handler
 @employer_login
 @company_access_required
+@require_billing_role
 async def application_analytics(user: User):
     """Hiring analytics dashboard (integrates with ATS reports)"""
 
@@ -921,6 +924,7 @@ async def save_settings(user: User):
 @flask_error_handler
 @employer_login
 @company_access_required
+@require_billing_role
 async def employers_list(user: User):
     """
     List all employers associated with the company
@@ -949,6 +953,7 @@ async def employers_list(user: User):
 @flask_error_handler
 @login_required
 @company_access_required
+@require_billing_role
 async def get_dashboard(user: User):
     company_controller = get_controller('company')
     employer = await company_controller.get_employer_by_uid(user.uid)
