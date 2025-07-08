@@ -1,7 +1,8 @@
 import re
 import asyncio
 from functools import wraps, lru_cache
-from flask import request, redirect, url_for, flash, g
+from typing import Optional, Callable, Any
+from flask import request, redirect, url_for, flash, g, abort, current_app
 
 
 
@@ -14,15 +15,80 @@ from src.logger import init_logger
 from src.database.models.users import User
 from src.database.sql import Session
 from src.database.sql.users import UserORM
-
+from src.database.sql.jobs import JobORM
+from src.database.sql.employer import EmployerORM
+from src.routes.utils import get_controller
+# src/authentication/authorization.py
 
 auth_logger = init_logger('auth_logger')
-
 # UUID validation to avoid unnecessary DB hits
 UUID_REGEX = re.compile(r'^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$', re.I)
 
 def is_valid_uid(uid: str | None) -> bool:
     return bool(uid and UUID_REGEX.fullmatch(uid))
+
+
+def get_minimal(model, key_field: str, key_value: str, fields: list[str], cache_prefix: str) -> Optional[dict[str, Any]]:
+    cache_key = f"{cache_prefix}:{key_value}:{':'.join(fields)}"
+    if cached := cache.get(cache_key):
+        return cached
+
+    with Session() as session:
+        query = session.query(*[getattr(model, f) for f in fields])
+        result = query.filter(getattr(model, key_field) == key_value).first()
+        if not result:
+            return None
+
+        result_dict = dict(zip(fields, result))
+        cache.set(cache_key, result_dict, timeout=300)
+        return result_dict
+
+
+def get_job_minimal(job_id: str, fields: list[str] = ['company_id', 'status']) -> Optional[dict[str, Any]]:
+    return get_minimal(JobsORM, 'job_id', job_id, fields, 'job_min')
+
+
+def get_employer_minimal(uid: str, fields: list[str] = ['company_id', 'employer_id']) -> Optional[dict[str, Any]]:
+    return get_minimal(EmployerORM, 'user_uid', uid, fields, 'employer_min')
+
+def employer_job_access_required(allow_admin=True):
+    """sumary_line
+        implementation of employer job access controll 
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    
+    def decorator(view_func):
+        @wraps(view_func)
+        async def wrapper(*args, **kwargs):
+            job_id = kwargs.get('job_id')
+            if not job_id:
+                abort(400, "Job ID missing in request")
+
+            user = g.current_user
+
+            if allow_admin and user.role == Role.SYSTEM_ADMIN.value:
+                return await view_func(*args, **kwargs)
+
+            employer_dict = get_employer_minimal(user.uid)
+            job_dict = get_job_minimal(job_id)
+
+            if not job_dict:
+                logger.warning(f"Job not found: {job_id}")
+                abort(404, "Job not found")
+
+            if employer_dict["company_id"] != job_dict["company_id"]:
+                logger.warning(
+                    f"Unauthorized job access attempt: "
+                    f"User {user.uid} tried to access job {job_id} "
+                    f"(Company: {employer_dict.get('company_id')} vs Job: {job_dict.get('company_id')})"
+                )
+                abort(403, "You don't have permission to access this job")
+
+            return await view_func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 async def get_user_details(uid: str) -> User | None:

@@ -16,12 +16,11 @@ from src.controllers.controller import error_handler
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import (Job, JobApplication, SavedJob, JobStatistics, StatusCounts,
                                             ApplicationMetrics, ApplicationFunnelStats, BulkImportResult,
-                                            TalentPoolReport, JobApplicationDashboard, ATSReport,
+                                            TalentPoolReport, JobApplicationDashboard, ATSReport,EditableJobFields,
                                             JobApplicationStatusEnum, JobApprovalStatusEnum, JobStatusEnum)
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.sql.company import CompanyORM
-from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, JobApprovalRequestORM,
-                                       ATSReportORM)
+from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, JobApprovalRequestORM,ATSReportORM)
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.resume import JobSeekerCVORM
 from src.database.sql.users import UserORM
@@ -42,8 +41,12 @@ class JobsWorkflowController(Controllers):
     def init_app(self, app: Flask):
         super().init_app(app=app)
 
+
+    # Add caching for frequent job ownership checks
     @error_handler
-    async def update_job(self, job_id: str, updated_job: Job) -> Job| None:
+
+    @error_handler
+    async def update_job(self, job_id: str, updated_job: JobEditableFields) -> Job| None:
         """Updates the job matching the job_id"""
         if not (isinstance(job_id, str) and job_id.strip()):
             return None
@@ -64,6 +67,25 @@ class JobsWorkflowController(Controllers):
             job_orm.updated_time = datetime.now(timezone.utc)
 
             return Job(**job_orm.to_dict()) if job_orm else None
+
+    @error_handler    
+    async def archive_job_listing(self, job_id: str) -> Job | None:
+        """Archive job listing """
+        if not (isinstance(job_id, str) and job_id.strip()):
+            return None
+
+        with self.get_session() as session:
+            job_orm = session.get(JobsORM, job_id)
+
+            if not job_orm:
+                return None
+
+            # Set expiration date to yesterday
+            job_orm.status = JobStatusEnum.ARCHIVED.value
+            job_orm.expiration_date = datetime.now(timezone.utc).date() - timedelta(days=1)
+            job_orm.updated_at = datetime.now(timezone.utc)
+
+            return Job(**job_orm.to_dict())
 
     @error_handler
     async def de_activate_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:

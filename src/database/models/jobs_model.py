@@ -639,6 +639,178 @@ class Job(BaseModel):
 
     model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
+class JobEditableFields(BaseModel):
+    """Model defining fields that can be updated by an employer"""
+    # Job Details
+    title: Optional[str] = Field(
+        default=None, 
+        min_length=5, 
+        max_length=255,
+        description="Job title"
+    )
+    description: Optional[str] = Field(
+        default=None,
+        description="Detailed job description"
+    )
+    position_type: Optional[str] = Field(
+        default=None,
+        pattern="FULL_TIME|PART_TIME|CONTRACT",
+        description="Type of employment"
+    )
+    remote_policy: Optional[str] = Field(
+        default=None,
+        pattern="ONSITE|HYBRID|REMOTE",
+        description="Remote work policy"
+    )
+    
+    # Category - Only allow updating the ID, not the relationship
+    category_id: Optional[str] = Field(
+        default=None,
+        description="ID of the job category"
+    )
+    
+    # Compensation
+    salary_min: Optional[float] = Field(
+        default=None,
+        ge=0,
+        description="Minimum salary offered"
+    )
+    salary_max: Optional[float] = Field(
+        default=None,
+        ge=0,
+        description="Maximum salary offered"
+    )
+    salary_currency: Optional[str] = Field(
+        default=None,
+        min_length=3,
+        max_length=3,
+        description="Currency code for salary"
+    )
+    salary_confidential: Optional[bool] = Field(
+        default=None,
+        description="Whether salary is confidential"
+    )
+    
+    # Location
+    city: Optional[str] = Field(
+        default=None,
+        min_length=2,
+        max_length=100,
+        description="Job location city"
+    )
+    province: Optional[str] = Field(
+        default=None,
+        min_length=2,
+        max_length=100,
+        description="Job location province/state"
+    )
+    country: Optional[str] = Field(
+        default=None,
+        min_length=2,
+        max_length=100,
+        description="Job location country"
+    )
+    
+    # Timeline
+    expires_at: Optional[AwareDatetime] = Field(
+        default=None,
+        description="When the job listing expires"
+    )
+    application_deadline: Optional[AwareDatetime] = Field(
+        default=None,
+        description="Deadline for applications"
+    )
+    
+    # Requirements
+    experience_level: Optional[str] = Field(
+        default=None,
+        pattern="ENTRY|MID|SENIOR",
+        description="Required experience level"
+    )
+    education_requirements: Optional[Dict] = Field(
+        default=None,
+        description="Required education qualifications"
+    )
+    required_skills: Optional[List[str]] = Field(
+        default=None,
+        description="List of required skills"
+    )
+    preferred_skills: Optional[List[str]] = Field(
+        default=None,
+        description="List of preferred skills"
+    )
+    required_documents: Optional[List[str]] = Field(
+        default=None,
+        description="Documents required for application"
+    )
+    required_questionnaire: Optional[List[str]] = Field(
+        default=None,
+        description="IDs of required questionnaires"
+    )
+    
+    # Application Process
+    application_url: Optional[str] = Field(
+        default=None,
+        description="URL for external applications"
+    )
+    application_instructions: Optional[str] = Field(
+        default=None,
+        min_length=10,
+        description="Instructions for applying"
+    )
+    
+    # Metadata
+    summary: Optional[str] = Field(
+        default=None,
+        description="Short summary of the job"
+    )
+    seo_description: Optional[str] = Field(
+        default=None,
+        description="SEO-optimized description"
+    )
+    
+    # Status Management
+    status: Optional[str] = Field(
+        default=None,
+        pattern="draft|pending|active|closed|archived",
+        description="Current status of the job listing"
+    )
+    
+    @model_validator(mode='after')
+    def validate_dates(self) -> 'JobEditableFields':
+        """Ensure dates are logical and within acceptable ranges"""
+        now = utc_time()
+        max_future = now + timedelta(days=365)  # 1 year max future
+        
+        if self.expires_at and self.expires_at < now:
+            raise ValueError("expires_at must be in the future")
+            
+        if self.expires_at and self.expires_at > max_future:
+            raise ValueError("expires_at cannot be more than 1 year in the future")
+            
+        if self.application_deadline and self.application_deadline < now:
+            raise ValueError("application_deadline must be in the future")
+            
+        if (self.expires_at and self.application_deadline and 
+            self.application_deadline > self.expires_at):
+            raise ValueError("application_deadline cannot be after expires_at")
+            
+        return self
+
+    @model_validator(mode='after')
+    def validate_salary(self) -> 'JobEditableFields':
+        """Ensure salary range is logical"""
+        if self.salary_min is not None and self.salary_max is not None:
+            if self.salary_min > self.salary_max:
+                raise ValueError("salary_min cannot be greater than salary_max")
+                
+        return self
+
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        extra='forbid'  # Prevent unexpected fields
+    )
+
 
 class SavedJob(BaseModel):
     """

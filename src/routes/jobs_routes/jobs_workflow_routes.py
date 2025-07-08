@@ -2,8 +2,8 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
-from src.authentication import employer_login, system_admin_login, jobseeker_login
-from src.database.models.jobs_model import Job, JobApplication
+from src.authentication import employer_login, system_admin_login, jobseeker_login, employer_job_access_required
+from src.database.models.jobs_model import Job, JobApplication, JobEditableFields
 from src.database.models.users import User
 # from src.firewall.rate_limiting import rate_limit
 from src.routes import flask_error_handler
@@ -68,21 +68,26 @@ async def create_job(user: User):
 @jobs_workflow_route.get("/<string:job_id>/edit")
 @flask_error_handler
 @employer_login
+@employer_job_access_required
 async def show_edit_form(user: User, job_id: str):
     """
     This route is used to render the form for editing an existing none live job post.
         Render form to edit an existing job.
     """
-    jobs_workflow_controller = get_controller('jobs_workflow')
-    job = await jobs_workflow_controller.get_job_for_edit(job_id)
+    
+    job_search_controller = get_controller('jobs_search')
+    job = await job_search_controller.get_job_by_id(job_id)
+
     if not job:
         flash("Job not found.", "warning")
         return redirect(url_for("jobs.list_jobs"))
+
     return render_template("jobs_workflow/edit.html", current_user=user, job=job)
 
 @jobs_workflow_route.post("/<string:job_id>/edit")
 @flask_error_handler
 @employer_login
+@employer_job_access_required
 async def edit_job(user: User, job_id: str):
     """
     Once the Job is submitted to the Database, through the create_job method,
@@ -92,8 +97,11 @@ async def edit_job(user: User, job_id: str):
     
     """
     data = request.form.to_dict()
+    updated_job = JobEditableFields.from_dict(data)
+
     jobs_workflow_controller = get_controller('jobs_workflow')
-    updated = await jobs_workflow_controller.update_job(job_id, data, editor=user)
+    updated = await jobs_workflow_controller.update_job(job_id=job_id, updated_job=updated_job)
+
     if not updated:
         flash("Failed to update job.", "danger")
         return redirect(url_for("jobs_workflow.show_edit_form", job_id=job_id))
@@ -104,6 +112,7 @@ async def edit_job(user: User, job_id: str):
 @jobs_workflow_route.get("/<string:job_id>/archive")
 @flask_error_handler
 @employer_login
+@employer_job_access_required
 async def archive_job(user: User, job_id: str):
     """
         This route is used to archive a job post, making it no longer active.
@@ -118,7 +127,9 @@ async def archive_job(user: User, job_id: str):
     
     """
     jobs_workflow_controller = get_controller('jobs_workflow')
-    job = await jobs_workflow_controller.archive_job_listing(job_id)
+
+    job = await jobs_workflow_controller.archive_job_listing(job_id=job_id)
+
     if not job:
         flash("Job not found or could not be archived.", "danger")
     else:
@@ -129,6 +140,7 @@ async def archive_job(user: User, job_id: str):
 @jobs_workflow_route.get("/<string:job_id>/feature")
 @flask_error_handler
 @employer_login
+@employer_job_access_required
 async def feature_job(user: User, job_id: str):
     """
     This route is used to feature a job post, making it more visible on the platform.
