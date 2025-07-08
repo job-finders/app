@@ -66,8 +66,8 @@ class JobCategoryORM(Base):
             "slug": self.slug,
             "description": self.description,
             "seo_description": self.seo_description,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
-            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc).isoformat() if self.updated_at else None,
             # Include computed statistics
             "total_jobs": self.total_jobs,
             "active_jobs": self.active_jobs,
@@ -281,8 +281,8 @@ class JobsORM(Base):
             "province": self.province,
             "country": self.country,
             "geo_location": self.geo_location,
-            "posted_at": self.posted_at.replace(tzinfo=timezone.utc) if self.posted_at else None,
-            "expires_at": self.expires_at.replace(tzinfo=timezone.utc) if self.expires_at else None,
+            "posted_at": self.posted_at.replace(tzinfo=timezone.utc).isoformat() if self.posted_at else None,
+            "expires_at": self.expires_at.replace(tzinfo=timezone.utc).isoformat() if self.expires_at else None,
             "application_deadline": self.application_deadline.replace(
                 tzinfo=timezone.utc) if self.application_deadline else None,
             "experience_level": self.experience_level,
@@ -297,8 +297,8 @@ class JobsORM(Base):
             "application_count": self.application_count,
             "status": self.status,
             "is_featured": self.is_featured,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
-            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc).isoformat() if self.updated_at else None,
             "location": self.location,
             "is_active": self.is_active,
 
@@ -357,7 +357,7 @@ class SavedJobORM(Base):
             "user_id": self.user_id,
             "job_id": self.job_id,
             "job": self.job.to_dict() if self.job and include_relationship else None,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None
         }
 
 class JobApplicationORM(Base):
@@ -404,9 +404,9 @@ class JobApplicationORM(Base):
             "job": self.job.to_dict() if self.job else None,  # Include job details
             "ats_report_id": self.ats_report_id,
             "cv_id": self.cv_id,
-            "applied_date": self.applied_date.replace(tzinfo=timezone.utc) if self.applied_date else None,
+            "applied_date": self.applied_date.replace(tzinfo=timezone.utc).isoformat() if self.applied_date else None,
             "cover_letter": self.cover_letter,
-            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc).isoformat() if self.updated_at else None,
             "method": self.method,
             "notes": self.notes,
             "required_documents": self.required_documents,
@@ -474,7 +474,7 @@ class ATSReportORM(Base):
             "matched_keywords": self.matched_keywords,
             "missing_keywords": self.missing_keywords,
             "feedback": self.feedback,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
             "job_application": self.job_application if include_relationships and self.job_application else None
         }
 
@@ -546,12 +546,12 @@ class JobApprovalRequestORM(Base):
             "request_id": self.request_id,
             "job_id": self.job_id,
             "token": self.token,
-            "token_expires": self.token_expires.replace(tzinfo=timezone.utc) if self.token_expires else None,
-            "requested_at": self.requested_at.replace(tzinfo=timezone.utc) if self.requested_at else None,
+            "token_expires": self.token_expires.replace(tzinfo=timezone.utc).isoformat() if self.token_expires else None,
+            "requested_at": self.requested_at.replace(tzinfo=timezone.utc).isoformat() if self.requested_at else None,
             "requested_by": self.requested_by,
             "approvers": self.approvers,
             "status": self.status,
-            "decision_at": self.decision_at.replace(tzinfo=timezone.utc) if self.decision_at else None,
+            "decision_at": self.decision_at.replace(tzinfo=timezone.utc).isoformat() if self.decision_at else None,
             "decision_by": self.decision_by,
             "feedback": self.feedback,
             "job": self.job.to_dict() if include_relationship and self.job else None
@@ -583,7 +583,7 @@ class ApplicationDashboardORM(Base):
         return {
             "dashboard_id": self.dashboard_id,
             "company_id": self.company_id,
-            "snapshot_date": self.snapshot_date.replace(tzinfo=timezone.utc) if self.snapshot_date else None,
+            "snapshot_date": self.snapshot_date.replace(tzinfo=timezone.utc).isoformat() if self.snapshot_date else None,
             "data": self.data,
             "metrics": self.metrics
         }
@@ -646,8 +646,8 @@ class ImportJobBatchORM(Base):
         return {
             "batch_id": self.batch_id,
             "company_id": self.company_id,
-            "started_at": self.started_at.replace(tzinfo=timezone.utc) if self.started_at else None,
-            "completed_at": self.completed_at.replace(tzinfo=timezone.utc) if self.completed_at else None,
+            "started_at": self.started_at.replace(tzinfo=timezone.utc).isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.replace(tzinfo=timezone.utc).isoformat() if self.completed_at else None,
             "status": self.status,
             "summary": self.summary
         }

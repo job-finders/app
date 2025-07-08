@@ -45,6 +45,6 @@ class UserORM(Base):
             "password_hash": self.password_hash,
             "role": self.role,
             "is_active": self.is_active,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
-            "last_login": self.last_login.replace(tzinfo=timezone.utc) if self.last_login else None
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
+            "last_login": self.last_login.replace(tzinfo=timezone.utc).isoformat() if self.last_login else None
         }

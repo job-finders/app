@@ -83,7 +83,7 @@ class JobSeekerProfileORM(Base):
             "email": self.email,
             "receive_deadline_reminders": self.receive_deadline_reminders,
             "reminder_days_before": self.reminder_days_before,
-            "last_reminded_at": self.last_reminded_at.replace(tzinfo=timezone.utc) if self.last_reminded_at else None,
+            "last_reminded_at": self.last_reminded_at.replace(tzinfo=timezone.utc).isoformat() if self.last_reminded_at else None,
             "alerts_enabled": self.alerts_enabled,
             "receive_company_updates" : self.receive_company_updates,
 
@@ -101,7 +101,7 @@ class JobSeekerProfileORM(Base):
             "availability": self.availability,
             "visibility": self.visibility,
             "profile_completion": int(self.profile_completion),
-            "last_updated": self.last_updated.replace(tzinfo=timezone.utc) if self.last_updated else None,
+            "last_updated": self.last_updated.replace(tzinfo=timezone.utc).isoformat() if self.last_updated else None,
             "applications": [application.to_dict() for application in self.applications] if include_relationship else [],
             "interested_companies": [company.to_dict() for company in self.interested_companies] if include_relationship and self.interested_companies else [],
             "following_companies": [company_follow.to_dict() for company_follow in self.following_companies] if include_relationship and self.self.following_companies else []

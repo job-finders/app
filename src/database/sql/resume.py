@@ -66,7 +66,7 @@ class JobSeekerCVORM(Base):
             "website": self.website,
             "linkedin": self.linkedin,
             "github": self.github,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
             "experience": [exp.to_dict() for exp in self.experience] if include_relationship and self.experience else [],
             "education": [edu.to_dict() for edu in self.education] if include_relationship and self.education else [],
             "certifications": [cert.to_dict() for cert in self.certifications] if include_relationship and self.certifications else [],

@@ -4,6 +4,13 @@ from src.database.sql import Base, engine
 
 
 class ConfigurationORM(Base):
+    """sumary_line
+        This is a database table model for storing configurations for system administration.
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    
     __tablename__ = 'configurations'
 
     id = Column(Integer, primary_key=True, autoincrement=True)

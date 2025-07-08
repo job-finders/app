@@ -69,8 +69,8 @@ class BillingPlanORM(Base):
             "allow_priority_support": self.allow_priority_support,
             "show_branding": self.show_branding,
             "sort_order": self.sort_order,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
-            "updated_at": self.updated_at.replace(tzinfo=timezone.utc) if self.updated_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.replace(tzinfo=timezone.utc).isoformat() if self.updated_at else None,
             "invoices": [invoice.to_dict() for invoice in
                          self.invoices] if include_relationships and self.invoices else [],
             "billing_profiles": [profile.to_dict() for profile in self.billing_profiles
@@ -170,8 +170,8 @@ class InvoiceORM(Base):
             "amount": float(self.amount),
             "currency": self.currency,
             "due_date": self.due_date if self.due_date else None,
-            "paid_at": self.paid_at.replace(tzinfo=timezone.utc) if self.paid_at else None,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
+            "paid_at": self.paid_at.replace(tzinfo=timezone.utc).isoformat() if self.paid_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
             "billing_profile": self.billing_profile.to_dict() if include_relationships and self.billing_profile else None,
             "billing_plan": self.billing_plan.to_dict() if include_relationships and self.billing_plan else None
         }
