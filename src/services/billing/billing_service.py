@@ -9,7 +9,7 @@ from src.database.models.billing import CompanyBillingProfile, BillingPlan
 from src.database.sql.billing_sql import CompanyBillingProfileORM, BillingPlanORM
 from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType
 from src.utils.route_helpers import get_service
-
+from enum import Enum
 
 class BillingTiersEnum(Enum):
     Trial = "Trial"

@@ -2,7 +2,10 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
-from src.authentication import employer_login, system_admin_login, jobseeker_login, employer_job_access_required
+from src.authentication import (employer_login, system_admin_login, jobseeker_login, employer_job_access_required,
+                                require_billing_role)
+
+from src.services.billing.billing_service import BillingTiersEnum
 from src.database.models.jobs_model import Job, JobApplication, JobEditableFields
 from src.database.models.users import User
 # from src.firewall.rate_limiting import rate_limit
@@ -146,7 +149,7 @@ async def archive_job(user: User, job_id: str):
 @flask_error_handler
 @employer_login
 @employer_job_access_required
-@require_billing_role(role="pro")
+@require_billing_role(minimum=BillingTiersEnum.Growth.value)
 async def feature_job(user: User, job_id: str):
     """
     This route is used to feature a job post, making it more visible on the platform.

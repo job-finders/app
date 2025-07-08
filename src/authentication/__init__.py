@@ -4,21 +4,16 @@ from functools import wraps, lru_cache
 from typing import Optional, Callable, Any
 from flask import request, redirect, url_for, flash, g, abort, current_app
 
-
-from src.database.sql.billing_sql import CompanyBillingProfileORM
+from src.database import UserORM, JobsORM, EmployerORM, CompanyBillingProfileORM
 from src.database.models.billing import CompanyBillingProfile
-from src.database.sql.employer import EmployerORM
-from src.authentication.jwt_helper import decode_jwt
-from src.database.models import Role
-from src.logger import init_logger
 from src.database.models.users import User
-from src.database.sql import Session
-from src.database.sql.users import UserORM
-from src.database.sql.jobs import JobORM
-from src.database.sql.employer import EmployerORM
-from src.routes.utils import get_controller
-# src/authentication/authorization.py
+from src.database.models import Role
 
+
+from src.authentication.jwt_helper import decode_jwt
+from src.routes.utils import get_controller
+from src.database.sql import Session
+from src.logger import init_logger
 auth_logger = init_logger('auth_logger')
 # UUID validation to avoid unnecessary DB hits
 UUID_REGEX = re.compile(r'^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$', re.I)

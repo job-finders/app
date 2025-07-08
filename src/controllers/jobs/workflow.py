@@ -16,7 +16,7 @@ from src.controllers.controller import error_handler
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import (Job, JobApplication, SavedJob, JobStatistics, StatusCounts,
                                             ApplicationMetrics, ApplicationFunnelStats, BulkImportResult,
-                                            TalentPoolReport, JobApplicationDashboard, ATSReport,EditableJobFields,
+                                            TalentPoolReport, JobApplicationDashboard, ATSReport,JobEditableFields,
                                             JobApplicationStatusEnum, JobApprovalStatusEnum, JobStatusEnum)
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.sql.company import CompanyORM

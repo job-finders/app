@@ -9,7 +9,7 @@ from pydantic import ValidationError, HttpUrl
 from werkzeug.utils import secure_filename
 
 from src.routes import flask_error_handler
-from src.authentication import login_required, employer_login, company_access_required
+from src.authentication import login_required, employer_login, company_access_required, require_billing_role
 from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate, CompanyCIPC, \
     CompanyVerificationDocument, CompanySettings, AllowableCompanyVerificationDocumentsEnum, DirectorDetails
 from src.database.models.employer_models import Employer

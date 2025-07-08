@@ -3,6 +3,7 @@ import uuid
 from collections import Counter
 from datetime import date, timedelta, datetime
 from enum import Enum
+from joblib.externals.loky.process_executor import TerminatedWorkerError
 from typing import Optional, Any
 
 from pydantic import BaseModel, Field, computed_field, ConfigDict, model_validator, AwareDatetime
@@ -628,8 +629,6 @@ class Job(BaseModel):
             'updated_at': utc_time(),
             'applications': [],
             'saved_hobs': [],
-
-
         }
 
         # Add any additional fields passed via kwargs
@@ -727,23 +726,23 @@ class JobEditableFields(BaseModel):
         pattern="ENTRY|MID|SENIOR",
         description="Required experience level"
     )
-    education_requirements: Optional[Dict] = Field(
+    education_requirements: Optional[dict] = Field(
         default=None,
         description="Required education qualifications"
     )
-    required_skills: Optional[List[str]] = Field(
+    required_skills: Optional[list[str]] = Field(
         default=None,
         description="List of required skills"
     )
-    preferred_skills: Optional[List[str]] = Field(
+    preferred_skills: Optional[list[str]] = Field(
         default=None,
         description="List of preferred skills"
     )
-    required_documents: Optional[List[str]] = Field(
+    required_documents: Optional[list[str]] = Field(
         default=None,
         description="Documents required for application"
     )
-    required_questionnaire: Optional[List[str]] = Field(
+    required_questionnaire: Optional[list[str]] = Field(
         default=None,
         description="IDs of required questionnaires"
     )
