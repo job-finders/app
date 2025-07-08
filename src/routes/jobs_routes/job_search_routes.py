@@ -112,12 +112,17 @@ async def list_jobs(user: User):
         HTML template rendering the job listings.
 
     Example:
-        GET /jobs?page=2
+        GET /browse-jobs?page=2
     """
-    page: int = int(request.args.get('page', 1))
     job_search_controller = get_controller('jobs_search')
-    search_result = await job_search_controller.get_all_jobs(page=page)
+    
+    # obtaining page arguments
+    page: int = int(request.args.get('page', 1))
+    page_size: int = int(request.args.get('page_size', 25))
+    
+    search_result = await job_search_controller.get_all_jobs(page=page, page_size=page_size)
     jobs = search_result.get('jobs', [])
+
     if not jobs:
         jobs = generate_mock_jobs("Software Development")
 
@@ -153,10 +158,16 @@ async def search_jobs(user: User):
     Example:
         GET /jobs/search?keyword=engineer&page=1
     """
-    keyword = request.args.get('search_term', '')
-    page = int(request.args.get('page', 1))
+
     job_search_controller = get_controller('jobs_search')
-    search_result = await job_search_controller.search_jobs(keyword=keyword, page=page)
+
+    keyword = request.args.get('keyword', '')
+    
+    page: int = int(request.args.get('page', 1))
+    page_size: int = int(request.args.get('page_size', 25))
+
+    
+    search_result = await job_search_controller.search_jobs(keyword=keyword, page=page, page_size=page_size)
 
     jobs = search_result.get('jobs', [])
     total_jobs = search_result.get('total_jobs', 0)
@@ -229,9 +240,13 @@ async def category_jobs(user: User, category: str):
     Example:
         GET /jobs/category/engineering?page=1
     """
-    page = int(request.args.get('page', 1))
+    
+
+    page: int = int(request.args.get('page', 1))
+    page_size: int = int(request.args.get('page_size', 25))
+
     job_search_controller = get_controller('jobs_search')
-    search_result = await job_search_controller.search_jobs_by_category(category=category, page=page)
+    search_result = await job_search_controller.search_jobs_by_category(category=category, page=page, page_size=page_size)
 
     context: JobSearchContext = {
         'current_user': user,
@@ -320,10 +335,13 @@ async def job_details(user: User, job_id: str):
 async def jobs_by_location(user: User, location: str):
     """Search jobs by location.
     """
-    page = int(request.args.get('page', 1))
+    page: int = int(request.args.get('page', 1))
+    page_size = int(request.args.get('page_size', 25))
+
     # Stub: await jobs_controller.search_by_location(location, page)
     job_search_controller = get_controller('jobs_search')
-    search_result = await job_search_controller.get_jobs_by_location(location=location, page=page)
+    search_result = await job_search_controller.get_jobs_by_location(location=location, page=page, page_size=page_size)
+    
     context = {
         'current_user': user,
         'jobs': search_result.get('jobs', []),
