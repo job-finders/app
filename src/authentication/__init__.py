@@ -5,7 +5,6 @@ from typing import Optional, Callable, Any
 from flask import request, redirect, url_for, flash, g, abort, current_app
 
 
-
 from src.database.sql.billing_sql import CompanyBillingProfileORM
 from src.database.models.billing import CompanyBillingProfile
 from src.database.sql.employer import EmployerORM
@@ -124,6 +123,13 @@ def company_access_control(user, resource_company_id: str, allow_admin=True) -> 
 
 
 def company_access_required(allow_admin=True):
+    """sumary_line
+        allows access to a view function only if the user has access to the company.
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    
     def decorator(view_func):
         @wraps(view_func)
         async def wrapper(*args, **kwargs):

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for
 
-from src.authentication import employer_login
+from src.authentication import employer_login,company_access_required
 from src.database.models.users import User
 from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller, get_service
@@ -23,6 +23,7 @@ async def payfast_ipn():
 @billing_route.get("/dashboard")
 @flask_error_handler
 @employer_login
+@company_access_required
 async def get_dashboard(user: User):
     """
 
@@ -64,6 +65,7 @@ async def get_dashboard(user: User):
 @billing_route.get("/subscribe/<string:plan_slug>")
 @flask_error_handler
 @employer_login
+@company_access_required
 async def subscribe(user: User, plan_slug: str):
     """
     :param plan_slug:

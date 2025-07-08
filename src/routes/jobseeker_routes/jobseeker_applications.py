@@ -3,7 +3,7 @@ import asyncio
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from pydantic import ValidationError
 
-from src.authentication import jobseeker_login
+from src.authentication import jobseeker_login, valid_uid
 from src.database.models.jobs_model import JobApplication, Job, ATSReport
 from src.database.models.resume import JobSeekerCV
 from src.database.models.users import User

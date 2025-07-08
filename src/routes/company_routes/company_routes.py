@@ -361,8 +361,7 @@ async def manage_jobs(user: User):
         jobs:list[Job] = await company_controller.get_company_jobs(company_id=company_id)
         company_data = await company_controller.get_company_by_id(company_id=company_id)
         today = datetime.now(timezone.utc).date().isoformat()
-        context = dict(current_user=user, employer_profile=_employer_profile, company=company_data, jobs=jobs,
-                       today=today)
+        context = dict(current_user=user, employer_profile=_employer_profile, company=company_data, jobs=jobs, today=today)
 
         return render_template("company/jobs.html", **context)
 
