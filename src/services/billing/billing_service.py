@@ -11,6 +11,23 @@ from src.services.billing.schemas_interfaces import BillingServiceInterface, Bil
 from src.utils.route_helpers import get_service
 
 
+class BillingTiersEnum(Enum):
+    Trial = "Trial"
+    Starter = "Starter"
+    Growth = "Growth"
+    Professional = "Professional"
+    Enterprise = "Enterprise"
+
+    @classmethod
+    def billing_iters(cls):
+        return {
+            "Trial": 0,
+            "Starter": 1,
+            "Growth": 2,
+            "Professional": 3,
+            "Enterprise": 4
+        }
+
 class BillingService(BillingServiceInterface):
     """
     Handles all billing plan management: subscription start, stop, trial logic, renewals, grace periods, etc.
@@ -92,7 +109,7 @@ class BillingService(BillingServiceInterface):
         standard_plans = [
             # Free Trial Plan
             BillingPlan(
-                name="Free Trial",
+                name=BillingTiersEnum.Trial.value,
                 description="14-day free trial to test all features",
                 price=Decimal("0.00"),
                 is_active=True,
@@ -108,7 +125,7 @@ class BillingService(BillingServiceInterface):
 
             # Starter Plan
             BillingPlan(
-                name="Starter",
+                name=BillingTiersEnum.Starter.value,
                 description="Perfect for small businesses and startups",
                 price=Decimal("299.00"),
                 is_active=True,
@@ -123,7 +140,7 @@ class BillingService(BillingServiceInterface):
 
             # Growth Plan
             BillingPlan(
-                name="Growth",
+                name=BillingTiersEnum.Growth.value,
                 description="Ideal for growing companies with multiple hiring needs",
                 price=Decimal("699.00"),
                 is_active=True,
@@ -138,7 +155,7 @@ class BillingService(BillingServiceInterface):
 
             # Professional Plan
             BillingPlan(
-                name="Professional",
+                name=BillingTiersEnum.Professional.value,
                 description="Advanced features for established businesses",
                 price=Decimal("1299.00"),
                 is_active=True,
@@ -153,7 +170,7 @@ class BillingService(BillingServiceInterface):
 
             # Enterprise Plan
             BillingPlan(
-                name="Enterprise",
+                name=BillingTiersEnum.Enterprise.value,
                 description="Unlimited access for large organizations",
                 price=Decimal("2999.00"),
                 is_active=True,
@@ -187,7 +204,7 @@ class BillingService(BillingServiceInterface):
 
             return saved_plans
 
-    async def _look_up_plan(self, plan_id: str) -> CompanyBillingProfile | None:
+    async def _look_up_plan(self, plan_id: str) -> BillingPlan | None:
         """Returns the billing plan details for a given plan_id"""
         if not (isinstance(plan_id, str) and plan_id.strip()):
             self.logger.error("Cannot Look Up Plan as Plan ID is Invalid")
@@ -202,7 +219,7 @@ class BillingService(BillingServiceInterface):
             self.logger.info(f"Billing Plan Found : {billing_plan}")
             return billing_plan
 
-    async def _all_billing_plans(self):
+    async def _all_billing_plans(self) -> list[BillingPlan]:
         """returns all billing plans"""
         with self.session_factory() as session:
             billing_plams_orm_list = session.query(BillingPlanORM).all()

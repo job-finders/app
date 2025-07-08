@@ -305,13 +305,15 @@ def require_billing_role_from_trial(route_function):
 
 
 BILLING_TIERS = {
-    "trial": 0,
-    "basic": 1,
-    "pro": 2,
-    "enterprise": 3
+    "Trial": 0,
+    "Starter": 1,
+    "Growth": 2,
+    "Professional": 3,
+    "Enterprise": 4
 }
 
-def require_billing_role(minimum: str = "trial"):
+
+def require_billing_role(minimum: str = "Trial"):
     """
     Requires the company billing plan to meet or exceed a minimum tier.
     Billing tiers: trial < basic < pro < enterprise

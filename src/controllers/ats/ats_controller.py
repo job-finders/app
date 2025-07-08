@@ -26,7 +26,6 @@ class ATSToolController(Controllers):
         self.industry_keywords = self._load_industry_keywords()
         self.required_sections = ["experience", "education", "skills"]
 
-
     def init_app(self, app: Flask):
         super().init_app(app=app)
 
@@ -34,7 +33,7 @@ class ATSToolController(Controllers):
     # ─── Public API ───────────────────────────────────────────────────────────
 
     @error_handler
-    async def handle_ats_match(self, request: Request) -> Dict:
+    async def handle_ats_match(self, request: Request) -> dict[str, float | list[str]]:
         """Endpoint: upload resume + job description → match score"""
         uploaded = request.files.get("resume")
         job_desc = request.form.get("job_description", "")
@@ -110,7 +109,7 @@ class ATSToolController(Controllers):
     @error_handler
     async def calculate_match_score(
         self, resume_keywords: List[str], job_keywords: List[str]
-    ) -> Dict[str, object]:
+    ) -> Dict[str, float | list[str]]:
         job_set = set(job_keywords[:100])
         res_set = set(resume_keywords[:100])
         matched = job_set & res_set
@@ -298,7 +297,7 @@ class ATSToolController(Controllers):
             f"with skills {', '.join(job.required_skills[:3])}."
         )
         response = await self._call_ai_api(
-            prompt=prompt, api_key=config.get("api_key"), model=config.get("model", "gpt-4")
+            prompt=prompt, api_key=config.get("api_key"), model=config.get("model", "deepseek-r1:free")
         )
         # Extract JSON blob
         match = re.search(r"\{.*\}", response, re.DOTALL)
@@ -315,8 +314,8 @@ class ATSToolController(Controllers):
 
     def _basic_salary_recommendation(self, job: Job) -> dict:
         # 1) config-driven override
-        if job.category:
-            key = f"salary_range:{job.category.lower()}"
+        if job.category.name:
+            key = f"salary_range:{job.category.name.lower()}"
             with self.get_session() as s:
                 cfg = s.query(ConfigurationORM).filter_by(type=key).first()
             if cfg:
@@ -353,11 +352,12 @@ class ATSToolController(Controllers):
         feedback = await self._generate_human_readable_feedback(
             match, self._analyze_sections(cv), await self._analyze_action_verbs(self._combine_cv_text(cv))
         )
+        # noinspection PyTypeChecker
         return ATSReport(
             ats_report_id=str(uuid.uuid4()),
             job_id=job_id,
             cv_id=cv.cv_id,
-            score=match["score"],
+            score=float(match["score"]),
             matched_keywords=match["matched_keywords"],
             missing_keywords=match["missing_keywords"],
             feedback=feedback,
