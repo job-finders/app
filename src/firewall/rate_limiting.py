@@ -64,9 +64,9 @@ def get_user_aware_key():
     2. If the user is anonymous, it falls back to their real IP address.
     """
     # Assumes your auth decorator (e.g., @roles_required) sets g.user
-    if hasattr(g, 'user') and g.user and isinstance(g.user, dict):
+    if hasattr(g, 'user') and g.user:
         # Use a stable identifier. A primary key like 'id' is best.
-        user_identifier = g.user.get('id') or g.user.get('username')
+        user_identifier = g.user.uid or g.user.email
         if user_identifier:
             return f"user:{user_identifier}"
     

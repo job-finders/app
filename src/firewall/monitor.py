@@ -91,11 +91,11 @@ def scan_for_threats(context: str, input_str: str):
 
 def log_threat(threat_type: str, context: str, payload: str):
     """Log security threats"""
-    user_id = getattr(g, 'user_id', 'anonymous')
+    uid = getattr(g.user, 'uid', 'anonymous') if hasattr(g, 'user') and g.user else 'anonymous'    
     ip = request.remote_addr
 
     security_logger.warning(
         f"{threat_type} attempt detected - "
-        f"User: {user_id}, IP: {ip}, "
+        f"uid: {uid}, IP: {ip}, "
         f"Context: {context}, Payload: {payload[:100]}"
     )

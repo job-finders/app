@@ -22,13 +22,13 @@ def log_security_event(request, response):
 
     event = {
         'timestamp': datetime.now(timezone.utc).isoformat(),
-        'user_id': getattr(g, 'user_id', 'anonymous'),
+        'uid': getattr(g.user, 'uid', 'anonymous') if hasattr(g, 'user') and g.user else 'anonymous',
         'ip': request.remote_addr,
         'method': request.method,
         'path': request.path,
         'status': response.status_code,
         'user_agent': request.headers.get('User-Agent'),
-        'sensitive': bool('password' in request_data or 'token' in request_data)
+        'sensitive': any(k in request_data for k in ('password', 'token')) if request_data else False
     }
 
     if 400 <= response.status_code < 600:

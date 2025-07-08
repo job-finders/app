@@ -137,7 +137,7 @@ def company_access_required(allow_admin=True):
             if not job_id:
                 abort(400, "Job ID missing in request")
 
-            user = g.current_user
+            user = g.user
             job_dict = get_job_minimal(job_id)
             if not job_dict:
                 logger.warning(f"Job not found: {job_id}")
