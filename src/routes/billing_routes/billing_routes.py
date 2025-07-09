@@ -23,7 +23,6 @@ async def payfast_ipn():
 @billing_route.get("/dashboard")
 @flask_error_handler
 @employer_login
-@company_access_required
 async def get_dashboard(user: User):
     """
 
@@ -65,7 +64,6 @@ async def get_dashboard(user: User):
 @billing_route.get("/subscribe/<string:plan_slug>")
 @flask_error_handler
 @employer_login
-@company_access_required
 async def subscribe(user: User, plan_slug: str):
     """
     :param plan_slug:

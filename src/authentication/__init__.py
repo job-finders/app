@@ -4,6 +4,9 @@ from functools import wraps, lru_cache
 from typing import Optional, Callable, Any
 from flask import request, redirect, url_for, flash, g, abort, current_app
 
+from sqlalchemy import func
+from sqlalchemy.orm import joinedload
+
 from src.database import UserORM, JobsORM, EmployerORM, CompanyBillingProfileORM
 from src.database.models.billing import CompanyBillingProfile
 from src.database.models.users import User
@@ -257,11 +260,11 @@ def get_current_company_subscription(uid: str):
             auth_logger.info(f"Employer profile not found for: {uid}")
             return None
         company_id = employer_orm.company_id
-        subscription_orm = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).first()
+        subscription_orm = session.query(CompanyBillingProfileORM).filter_by(company_id=company_id).options(joinedload(CompanyBillingProfileORM.billing_plan)).first()
         if not subscription_orm:
             auth_logger.info(f"Company billing profile not found for: {uid}")
             return None
-        return CompanyBillingProfile(**subscription_orm.to_dict())
+        return CompanyBillingProfile(**subscription_orm.to_dict(include_relationships=True))
 
 def require_billing_role_from_trial(route_function):
     """Validate if billing role is trial or above."""
@@ -333,7 +336,7 @@ def require_billing_role(minimum: str = "Trial"):
                 flash("Billing profile not found", "danger")
                 return redirect(url_for("company.get_dashboard"))
 
-            user_plan = billing.plan.lower() if billing.plan else "trial"
+            user_plan = billing.billing_plan.name.lower() if billing.billing_plan else None
             user_plan_level = BILLING_TIERS.get(user_plan, 0)
             required_plan_level = BILLING_TIERS.get(minimum, 0)
 

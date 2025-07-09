@@ -17,7 +17,7 @@ jobs_workflow_route = Blueprint("jobs_workflow", __name__, url_prefix="/dashboar
 @jobs_workflow_route.get("/create")
 @flask_error_handler
 @employer_login
-@require_billing_role
+@require_billing_role()
 async def show_create_form(user: User):
     """
     This route is used to render the form for creating a new job post.
@@ -34,7 +34,7 @@ async def show_create_form(user: User):
 @jobs_workflow_route.post("/create")
 @flask_error_handler
 @employer_login
-@require_billing_role
+@require_billing_role()
 async def create_job(user: User):
     """
         The Job Submission Workflow started at the Agent Routes - where a partial Job Definition was created.
@@ -73,8 +73,8 @@ async def create_job(user: User):
 @jobs_workflow_route.get("/<string:job_id>/edit")
 @flask_error_handler
 @employer_login
-@employer_job_access_required
-@require_billing_role
+@employer_job_access_required()
+@require_billing_role()
 async def show_edit_form(user: User, job_id: str):
     """
     This route is used to render the form for editing an existing none live job post.
@@ -93,8 +93,8 @@ async def show_edit_form(user: User, job_id: str):
 @jobs_workflow_route.post("/<string:job_id>/edit")
 @flask_error_handler
 @employer_login
-@employer_job_access_required
-@require_billing_role
+@employer_job_access_required()
+@require_billing_role()
 async def edit_job(user: User, job_id: str):
     """
     Once the Job is submitted to the Database, through the create_job method,
@@ -119,8 +119,8 @@ async def edit_job(user: User, job_id: str):
 @jobs_workflow_route.get("/<string:job_id>/archive")
 @flask_error_handler
 @employer_login
-@employer_job_access_required
-@require_billing_role
+@employer_job_access_required()
+@require_billing_role()
 async def archive_job(user: User, job_id: str):
     """
         This route is used to archive a job post, making it no longer active.
@@ -148,7 +148,7 @@ async def archive_job(user: User, job_id: str):
 @jobs_workflow_route.get("/<string:job_id>/feature")
 @flask_error_handler
 @employer_login
-@employer_job_access_required
+@employer_job_access_required()
 @require_billing_role(minimum=BillingTiersEnum.Growth.value)
 async def feature_job(user: User, job_id: str):
     """
