@@ -22,6 +22,9 @@
   <div class="card shadow-sm">
     <div class="card-header bg-light">
       <h2 class="mb-0 text-info"><i class="ti-briefcase mr-2"></i>Create Job Posting</h2>
+      <div>
+        <span>Create your Job Posts with AI Enhancements</span>
+      </div>
     </div>
     <div class="card-body">
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -36,7 +39,7 @@
       {% endwith %}
 
       <form method="post" action="{{ url_for('jobs_workflow.create_job') }}">
-        {{ csrf_token() }}
+        
 
         <div class="section-header"><h5>Basic Details</h5></div>
         <div class="form-group">
@@ -47,13 +50,6 @@
         <div class="form-group">
           <label class="font-weight-bold">Description *</label>
           <textarea name="description" class="form-control" rows="6" required>{{ form_data.description if form_data }}</textarea>
-        </div>
-
-        <!-- Enhance Job Post Button -->
-        <div class="text-right mb-4">
-          <button type="button" class="btn btn-outline-success" data-toggle="modal" data-target="#enhanceModal" id="trigger-enhance">
-            <i class="ti-magic"></i> Enhance Job Post
-          </button>
         </div>
 
         <div class="row">
@@ -101,7 +97,6 @@
             </div>
           </div>
         </div>
-
         <div class="row">
           <div class="col-md-4">
             <div class="form-group">
@@ -131,12 +126,24 @@
           <input type="date" name="application_deadline" class="form-control"
                  value="{{ form_data.application_deadline if form_data }}">
         </div>
-
-        <div class="text-right mt-4">
+        <!-- Enhance Job Post Button -->
+      <!-- Buttons Container -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- Left-aligned Button -->
+        <div>
+          <button type="button" class="btn btn-outline-success btn-lg" data-toggle="modal" data-target="#enhanceModal" id="trigger-enhance">
+            <i class="ti-magic"></i> Enhance Job Post - With AI
+          </button>
+        </div>
+        
+        <!-- Right-aligned Button -->
+        <div>
           <button type="submit" class="btn btn-primary btn-lg">
             <i class="ti-save mr-2"></i>Create Job
           </button>
         </div>
+      </div>
+
       </form>
     </div>
   </div>

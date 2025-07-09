@@ -29,7 +29,8 @@ async def show_create_form(user: User):
         Render form to create a new job.
     
     """
-    return render_template("jobs_workflow/create.html", current_user=user)
+    context = dict(current_user=user, form_data={})
+    return render_template("jobs_workflow/create.html", **context)
 
 @jobs_workflow_route.post("/create")
 @flask_error_handler
