@@ -145,12 +145,19 @@ class JobsWorkflowController(Controllers):
             try:
                 job_orm = JobsORM(**job.model_dump(
                     exclude={'applications', "saved_jobs", "category", "ats_reports", "approval_request",
-                             "version_history", "company"}))
+                             "version_history", "company", "reviewed_applications_count",
+                             "in_progress_applications", "job_ats_score", "job_ats_match_rate",
+                             "job_common_missing_keywords", "job_most_matched_keywords",
+                             "job_ats_feedback_snippets", "job_ats_score_distribution",
+                             "readability_is_ok", "job_completeness_score", "external_link_count",
+                             "job_quality_score", "spam_severity_score", "is_spammy_job", "job_keyword_listing",
+                             "salary", "total_applications", "is_active", "location", "posted_by", "ats_description"}))
             except Exception as e:
                 self.logger.error(str(e))
                 return None
 
             session.add(job_orm)
+            session.commit()
             self.logger.info(f"now added job to session : {job_orm.to_dict()}")
             session.refresh(job_orm)  # Get ID and other defaults
             return Job(**job_orm.to_dict())

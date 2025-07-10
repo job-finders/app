@@ -103,10 +103,12 @@ class CompanyORM(Base):
             "verification_status": self.verification_status,
             "ip_address": self.ip_address,
 
-            "jobs": [job.to_dict(include_relationships=False) for job in self.jobs] if self.jobs and include_relationships else [],
-            "saved_candidates": [candidate.to_dict(include_relationships=False) for candidate in self.saved_candidates] if include_relationships else [],
-            "employers": [employer.to_dict(include_relationships=False) for employer in self.employers] if include_relationships else [],
-            "followers": [follower.to_dict(include_relationships=False) for follower in self.followers] if include_relationships and self.followers else [],
+            "jobs": [job.to_dict() for job in self.jobs] if self.jobs and include_relationships else [],
+            "saved_candidates": [candidate.to_dict() for candidate in
+                                 self.saved_candidates] if include_relationships else [],
+            "employers": [employer.to_dict() for employer in self.employers] if include_relationships else [],
+            "followers": [follower.to_dict() for follower in
+                          self.followers] if include_relationships and self.followers else [],
 
         }
 

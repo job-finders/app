@@ -103,7 +103,7 @@
                   <i class="ti-location-pin"></i> {{ job.location }}
                 </span>
                 <span class="text-muted mr-3">
-                  <i class="ti-time"></i> {{ job.posted_at|datetimeformat }}
+                  <i class="ti-time"></i> {{ job.posted_at }}
                 </span>
               </div>
 
@@ -112,7 +112,7 @@
                   <span class="salary-confidential">Salary Confidential</span>
                 {% else %}
                   <span class="text-success font-weight-bold">
-                    {{ job.salary_currency }} {{ job.salary_min|comma }} - {{ job.salary_max|comma }}
+                    {{ job.salary_currency }} {{ job.salary_min }} - {{ job.salary_max }}
                   </span>
                 {% endif %}
                 <span class="mx-3">|</span>
@@ -256,7 +256,7 @@
               {% if job.application_deadline %}
               <div class="text-right mt-2">
                 <small class="text-muted">
-                  Closes: {{ job.application_deadline|datetimeformat('short') }}
+                    Closes: {{ job.application_deadline }}
                 </small>
               </div>
               {% endif %}
