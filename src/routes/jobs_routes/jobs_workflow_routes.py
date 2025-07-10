@@ -1,7 +1,12 @@
 # src/routes/jobs_workflow.py
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
+from pydantic import ValidationError
 
+from src.controllers.company import CompanyController
+from src.logger import init_logger
+from src.controllers.agents import EmployerAgentsController
+from src.controllers.jobs import JobsWorkflowController
 from src.authentication import (employer_login, system_admin_login, jobseeker_login, employer_job_access_required,
                                 require_billing_role)
 
@@ -13,6 +18,8 @@ from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
 
 jobs_workflow_route = Blueprint("jobs_workflow", __name__, url_prefix="/dashboard/jobs")
+workflow_logger = init_logger("workflow-route")
+
 
 @jobs_workflow_route.get("/create")
 @flask_error_handler
@@ -25,12 +32,42 @@ async def show_create_form(user: User):
     will call agents to create a full job definition.
     Upon form submission, the job will be created in the database.
     through the create_job method.
-
         Render form to create a new job.
-    
     """
     context = dict(current_user=user, form_data={})
     return render_template("jobs_workflow/create.html", **context)
+
+
+@jobs_workflow_route.post("/save-job-draft")
+@flask_error_handler
+@employer_login
+@require_billing_role()
+async def save_job_draft(user: User):
+    """
+        this will save a job draft based on user input
+    :param user:
+    :return:
+    """
+    try:
+        job_draft_data = JobEditableFields(**request.form)
+    except ValidationError as e:
+        workflow_logger.error(str(e))
+        return redirect("company.manage_jobs")
+
+    job_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
+    company_controller: CompanyController = get_controller('company')
+    employer = await company_controller.get_employer_by_uid(user_id=user.uid)
+    if not employer:
+        workflow_logger.info(f"Employer : {employer}")
+
+    draft_job = Job(**job_draft_data.model_dump())
+    draft_job.company_id = employer.company_id
+    draft_job.employer_id = employer.employer_id
+
+    draft_job = await job_workflow_controller.post_job_employer(employer=employer, job_data=draft_job)
+    flash(message="created job draft to finish creating your job please click on the draft and then proceed",
+          category="success")
+    return redirect(url_for("company.manage_jobs"))
 
 @jobs_workflow_route.post("/create")
 @flask_error_handler
@@ -51,18 +88,20 @@ async def create_job(user: User):
         :param user:
         :return:
     """
+
     data = request.form.to_dict()
     try:
         # This MEthod works correctly.
         #    Will Ensure company can post jobs - will check if employer profile is verified, 
         #    and if company profile is verified.
         company_controller = get_controller('company')
+        job_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
+        employer_agents_controller: EmployerAgentsController = get_controller("employer_agents")
 
         job_data = await company_controller.post_job(user_uid=user.user_id, job_data=data)
-
-        employer_agents_controller = get_controller('employer_agents')
         # async def create_job_summary(self, user_id: str, job_id: str) -> JobSummaryOutput:
-        job: Job = await employer_agents_controller.create_job_summary(user_id=user.user_id, job_id=job_data.job_id)
+        # NOTE: Job Summary is saved automatically by this method.
+        job_summary = await employer_agents_controller.create_job_summary(user_id=user.user_id, job_id=job_data.job_id)
 
     except ValueError as e:
         flash(str(e), "danger")

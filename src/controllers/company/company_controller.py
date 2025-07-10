@@ -242,6 +242,7 @@ class CompanyController(Controllers):
         """
         if not (isinstance(user_id, str) and user_id.strip()):
             return None
+
         with self.get_session() as session:
             self.logger.info(f"Inside get_employer by uid : {user_id}")
             employer_orm = session.query(EmployerORM).filter_by(user_uid=user_id).first()
@@ -270,8 +271,6 @@ class CompanyController(Controllers):
         """Retrieve company jobs with optional status filtering"""
         if not (isinstance(company_id, str) and company_id.strip()):
             return []
-        if not (isinstance(status, str) and status.strip()):
-            return []
 
         with self.get_session() as session:
             # Get company with jobs relationship
@@ -285,6 +284,8 @@ class CompanyController(Controllers):
                 return []
             # Apply status filter if provided
             jobs = company.jobs
+            self.logger.info(f"Company DATA : {company.name}")
+            self.logger.info(f"COMPANY JOBS : {jobs}")
             if status:
                 jobs = [job for job in jobs if job.status.casefold() == status.value.casefold()]
             return [Job(**job.to_dict()) for job in jobs] if jobs else []

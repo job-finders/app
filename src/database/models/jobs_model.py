@@ -1,7 +1,7 @@
 import re
 import uuid
 from collections import Counter
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 from enum import Enum
 from joblib.externals.loky.process_executor import TerminatedWorkerError
 from typing import Optional, Any
@@ -194,13 +194,13 @@ class Job(BaseModel):
     salary_min: Optional[float] = Field(ge=0, default=None)
     salary_max: Optional[float] = Field(ge=0, default=None)
     salary_currency: str = Field(default="ZAR", min_length=3, max_length=3)
-    salary_confidential: Optional[bool] = False
+    salary_confidential: Optional[bool] = Field(default=False)
 
     # Location
     city: str = Field(min_length=2, max_length=100)
     province: str = Field(min_length=2, max_length=100)
     country: str = Field(min_length=2, max_length=100)
-    geo_location: Optional[str] = None
+    geo_location: Optional[str] = Field(default=None)
 
     # Timeline
     posted_at: AwareDatetime = Field(default_factory=lambda: utc_time())
@@ -208,16 +208,16 @@ class Job(BaseModel):
     application_deadline: Optional[AwareDatetime] = Field(default=None)
 
     # Requirements
-    experience_level: str = Field(pattern="ENTRY|MID|SENIOR")
-    education_requirements: Optional[dict] = Field(default=None)
-    required_skills: list[str] = Field(default_factory=list)
-    preferred_skills: list[str] = Field(default_factory=list)
-    required_documents: list[str] = Field(default_factory=list)
-    required_questionnaire: list[str]
+    experience_level: str = Field(default="ENTRY", pattern="ENTRY|MID|SENIOR")
+    education_requirements: Optional[dict] = Field(default_factory=dict)
+    required_skills: Optional[list[str]] = Field(default_factory=list)
+    preferred_skills: Optional[list[str]] = Field(default_factory=list)
+    required_documents: Optional[list[str]] = Field(default_factory=list)
+    required_questionnaire: Optional[list[str]] = Field(default_factory=list)
 
     # Application Process
     application_url: Optional[str] = Field(default=None)
-    application_instructions: str = Field(min_length=10)
+    application_instructions: Optional[str] = Field(min_length=10)
 
     # Statistics
     view_count: int = Field(ge=0, default=0)
@@ -225,7 +225,7 @@ class Job(BaseModel):
 
     # Status
     status: str = Field(default=JobStatusEnum.DRAFT.value, pattern="draft|pending|active|closed|archived")
-    is_featured: Optional[bool] = False
+    is_featured: Optional[bool] = Field(default=False)
 
     # Audit
     created_at: Optional[AwareDatetime] = Field(default=None)
@@ -432,9 +432,9 @@ class Job(BaseModel):
             quality_bonus += 3
         if self.salary_min and self.salary_max:
             quality_bonus += 3
-        if len(self.required_skills) >= 3:
+        if self.required_skills and (len(self.required_skills) >= 3):
             quality_bonus += 3
-        if self.application_url or "email" in self.application_instructions.lower():
+        if self.application_instructions and (self.application_url or "email" in self.application_instructions.lower()):
             quality_bonus += 3
 
         # --- SPAM PENALTY ---
@@ -652,12 +652,12 @@ class JobEditableFields(BaseModel):
         description="Detailed job description"
     )
     position_type: Optional[str] = Field(
-        default=None,
+        default="FULL_TIME",
         pattern="FULL_TIME|PART_TIME|CONTRACT",
         description="Type of employment"
     )
     remote_policy: Optional[str] = Field(
-        default=None,
+        default="ONSITE",
         pattern="ONSITE|HYBRID|REMOTE",
         description="Remote work policy"
     )
@@ -709,41 +709,39 @@ class JobEditableFields(BaseModel):
         max_length=100,
         description="Job location country"
     )
-    
     # Timeline
-    expires_at: Optional[AwareDatetime] = Field(
+    expires_at: Optional[datetime] = Field(
         default=None,
         description="When the job listing expires"
     )
-    application_deadline: Optional[AwareDatetime] = Field(
+    application_deadline: Optional[datetime] = Field(
         default=None,
         description="Deadline for applications"
     )
-    
     # Requirements
     experience_level: Optional[str] = Field(
-        default=None,
+        default="ENTRY",
         pattern="ENTRY|MID|SENIOR",
         description="Required experience level"
     )
     education_requirements: Optional[dict] = Field(
-        default=None,
+        default_factory=dict,
         description="Required education qualifications"
     )
     required_skills: Optional[list[str]] = Field(
-        default=None,
+        default_factory=list,
         description="List of required skills"
     )
     preferred_skills: Optional[list[str]] = Field(
-        default=None,
+        default_factory=list,
         description="List of preferred skills"
     )
     required_documents: Optional[list[str]] = Field(
-        default=None,
+        default_factory=list,
         description="Documents required for application"
     )
     required_questionnaire: Optional[list[str]] = Field(
-        default=None,
+        default_factory=list,
         description="IDs of required questionnaires"
     )
     
@@ -780,7 +778,9 @@ class JobEditableFields(BaseModel):
         """Ensure dates are logical and within acceptable ranges"""
         now = utc_time()
         max_future = now + timedelta(days=365)  # 1 year max future
-        
+        self.expires_at = self.expires_at.replace(tzinfo=timezone.utc)
+        self.application_deadline = self.application_deadline.replace(tzinfo=timezone.utc)
+
         if self.expires_at and self.expires_at < now:
             raise ValueError("expires_at must be in the future")
             
@@ -807,7 +807,7 @@ class JobEditableFields(BaseModel):
 
     model_config = ConfigDict(
         str_strip_whitespace=True,
-        extra='forbid'  # Prevent unexpected fields
+        extra='ignore'  # Prevent unexpected fields
     )
 
 

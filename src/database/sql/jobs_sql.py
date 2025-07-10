@@ -196,13 +196,13 @@ class JobsORM(Base):
 
     # Requirements
     experience_level = Column(String(50), index=True)  # ENTRY, MID, SENIOR
-    education_requirements = Column(JSON)  # {"degree": "BSc", "field": "Computer Science"}
-    required_skills = Column(JSON)  # ["Python", "AWS"]
-    preferred_skills = Column(JSON)  # ["Docker", "Kubernetes"]
+    education_requirements = Column(JSON, default={})  # {"degree": "BSc", "field": "Computer Science"}
+    required_skills = Column(JSON, default=[])  # ["Python", "AWS"]
+    preferred_skills = Column(JSON, default=[])  # ["Docker", "Kubernetes"]
 
     # REQUIRED DOCUMENTATIONS AND QUESTIONAIRE
     required_documents = Column(JSON, default=[])
-    required_questionnaire = Column(JSON)
+    required_questionnaire = Column(JSON, default=[])
 
     # Application Process
     application_url = Column(String(255))

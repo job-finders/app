@@ -139,34 +139,34 @@ class EnhanceJobPostAgent(BaseAgent):
         ]
 
         return f"""
-Create a complete, professional job post based on the following partial information:
-
-{"\n".join(context)}
-
-Generate a comprehensive job post including:
-1. An attractive, clear job title (5-255 characters)
-2. Detailed job description with responsibilities and expectations
-3. Position event_type (FULL_TIME, PART_TIME, or CONTRACT)
-4. Remote work policy (ONSITE, HYBRID, or REMOTE)
-5. Competitive salary range as numbers (min and max)
-6. Salary currency (3-letter code, default to ZAR)
-7. Location details (city, province, country)
-8. Experience level (ENTRY, MID, or SENIOR)
-9. Comprehensive list of required skills
-10. List of preferred skills
-11. Suggested education requirements as key-value pairs
-12. Clear application instructions (min 10 characters)
-13. Application deadline (30 days from now in ISO format)
-14. Expiration date (60 days from now in ISO format)
-
-Additional guidelines:
-- Salary should be competitive for the role and location
-- Application instructions should include how to apply
-- Education requirements should be realistic for the role
-- Use South African context when location is unspecified
-
-Output MUST be in valid JSON format matching the specified schema.
-"""
+        Create a complete, professional job post based on the following partial information:
+        
+        {"\n".join(context)}
+        
+        Generate a comprehensive job post including:
+        1. An attractive, clear job title (5-255 characters)
+        2. Detailed job description with responsibilities and expectations
+        3. Position event_type (FULL_TIME, PART_TIME, or CONTRACT)
+        4. Remote work policy (ONSITE, HYBRID, or REMOTE)
+        5. Competitive salary range as numbers (min and max)
+        6. Salary currency (3-letter code, default to ZAR)
+        7. Location details (city, province, country)
+        8. Experience level (ENTRY, MID, or SENIOR)
+        9. Comprehensive list of required skills
+        10. List of preferred skills
+        11. Suggested education requirements as key-value pairs
+        12. Clear application instructions (min 10 characters)
+        13. Application deadline (30 days from now in ISO format)
+        14. Expiration date (60 days from now in ISO format)
+        
+        Additional guidelines:
+        - Salary should be competitive for the role and location
+        - Application instructions should include how to apply
+        - Education requirements should be realistic for the role
+        - Use South African context when location is unspecified
+        
+        Output MUST be in valid JSON format matching the specified schema.
+        """
 
     def output_model(self):
         return EnhanceJobPostOutput

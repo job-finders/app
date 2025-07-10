@@ -8,8 +8,9 @@ from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError, HttpUrl
 from werkzeug.utils import secure_filename
 
-from src.routes import flask_error_handler
-from src.authentication import login_required, employer_login, company_access_required, require_billing_role
+from src.authentication import login_required, employer_login, require_billing_role
+from src.controllers.agents import EmployerAgentsController
+from src.controllers.jobs import JobsWorkflowController
 from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate, CompanyCIPC, \
     CompanyVerificationDocument, CompanySettings, AllowableCompanyVerificationDocumentsEnum, DirectorDetails
 from src.database.models.employer_models import Employer
@@ -17,11 +18,10 @@ from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
 from src.database.models.resume import JobSeekerCV, SavedCV
 from src.database.models.users import User
 from src.logger import init_logger
-
+from src.routes import flask_error_handler
+from src.services.billing.billing_service import BillingTiersEnum
 from src.utils.file_uploads import save_company_logo, save_verification_file
 from src.utils.route_helpers import get_controller
-
-from src.services.billing.billing_service import BillingTiersEnum
 
 company_bp = Blueprint('company', __name__, url_prefix='/dashboard/company')
 
@@ -343,7 +343,11 @@ async def manage_jobs(user: User):
         flash(message="You are not associated with any company please create a company in order to continue",
         category="danger")
         return redirect(url_for('company.view_employer_profile'))
+
     company_controller = get_controller('company')
+    job_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
+    employer_agent_controller: EmployerAgentsController = get_controller("employer_agents")
+
     _employer_profile: Employer = await company_controller.get_employer_by_uid(user_id=user.uid)
     if not _employer_profile:
         flash("Please create your employer profile before posting or viewing jobs", "danger")
@@ -352,10 +356,10 @@ async def manage_jobs(user: User):
     # if not (_employer_profile.is_valid and _employer_profile.is_verified):
     #     flash("Please verify your employer profile before posting or viewing jobs", "danger")
     #     return redirect(url_for('company.view_employer_profile'))
-
     if request.method == "GET":
         # get methods allows employer to view jobs
         company_id=_employer_profile.company_id
+        logger.info(f"MANAGE JOBS : COMPANY ID : {company_id}")
         jobs:list[Job] = await company_controller.get_company_jobs(company_id=company_id)
         company_data = await company_controller.get_company_by_id(company_id=company_id)
         today = datetime.now(timezone.utc).date().isoformat()
@@ -363,17 +367,8 @@ async def manage_jobs(user: User):
 
         return render_template("company/jobs.html", **context)
 
-    # POST - Create new jobs for employers
-    try:
-        job_data = Job(**request.form)
-    except ValidationError as e:
-        logger.error(str(e))
-        flash(message='please complete fully the job post form')
-        return redirect(url_for('company.manage_jobs'))
+    return redirect(url_for("jobs_workflow.show_create_form"))
 
-    job:Job = await company_controller.post_job(user_uid=user.uid, job_data=job_data)
-    flash("Job created successfully", "success")
-    return redirect(url_for("company.manage_jobs"))
 
 @company_bp.route("/candidates", methods=["GET", "POST"])
 @flask_error_handler

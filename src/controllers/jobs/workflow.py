@@ -46,11 +46,11 @@ class JobsWorkflowController(Controllers):
     @error_handler
 
     @error_handler
-    async def update_job(self, job_id: str, updated_job: JobEditableFields) -> Job| None:
+    async def update_job(self, job_id: str, updated_job: JobEditableFields | Job) -> Job | None:
         """Updates the job matching the job_id"""
         if not (isinstance(job_id, str) and job_id.strip()):
             return None
-        if not isinstance(updated_job, Job):
+        if not isinstance(updated_job, (Job, JobEditableFields)):
             return None
 
         with self.get_session() as session:
@@ -97,13 +97,6 @@ class JobsWorkflowController(Controllers):
         self.logger.info(f"Updating Job_ID: {job_id} Job Approval Status to {JobApprovalStatusEnum.CLOSED.value}")
         self.logger.info(f"The Reviewer : {reviewer_id} Arrived at this Review : {validation_result}")
         return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.CLOSED.value, reviewer_id=reviewer_id)
-        self.logger.info("Called Activate job listing")
-        if not(isinstance(job_id, str) and job_id.strip()):
-            return None
-        if not(isinstance(reviewer_id, str) and reviewer_id.strip()):
-            return None
-
-        return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.CLOSED.value,reviewer_id=reviewer_id)
 
     @error_handler
     async def activate_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
@@ -116,10 +109,6 @@ class JobsWorkflowController(Controllers):
         self.logger.info(f"The Reviewer : {reviewer_id} Arrived at this Review : {validation_result}")
         return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.ACTIVE.value,
         reviewer_id=reviewer_id,validation_result=validation_result)
-        return await self.update_approval_status(job_id=job_id,
-                                                 decision=JobStatusEnum.ACTIVE.value,
-                                                 reviewer_id=reviewer_id,
-                                                 validation_result=validation_result)
 
     @error_handler
     async def reject_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
@@ -135,41 +124,58 @@ class JobsWorkflowController(Controllers):
 
 
     @error_handler
-    async def _create_job(self, job: Job) -> Job | None:
+    async def _create_job(self, job: JobEditableFields | Job) -> Job | None:
         """Create new job listing"""
-        if not isinstance(job, Job):            
-            self.logger.info(F"Malformed Job Variabled when creating a job")
+        if not isinstance(job, (Job, JobEditableFields)):
+            self.logger.info(F"Malformed Job Variable when creating a job")
             return None
 
         self.logger.info(f"Will now create the following job : {job.title}")
         with self.get_session() as session:
-            # Convert Pydantic model to ORM-compatible dict
+            # Convert Pydantic model to ORM-compatible dic
+            # t
+            self.logger.info("Will Run Database lookup")
             job_existing = session.query(JobsORM).filter_by(job_id=job.job_id).first()
-            if job_existing:
+            self.logger.info("will now check if job Exist")
+
+            if isinstance(job_existing, JobsORM):
                 return None
-            job_orm = JobsORM(**job.model_dump())
+
+            self.logger.info(f"Will now dump model : {job}")
+            try:
+                job_orm = JobsORM(**job.model_dump(
+                    exclude={'applications', "saved_jobs", "category", "ats_reports", "approval_request",
+                             "version_history", "company"}))
+            except Exception as e:
+                self.logger.error(str(e))
+                return None
+
             session.add(job_orm)
+            self.logger.info(f"now added job to session : {job_orm.to_dict()}")
+            session.refresh(job_orm)  # Get ID and other defaults
             return Job(**job_orm.to_dict())
 
     # In JobsController
     @error_handler
-    async def post_job_employer(self, employer: Employer, job_data: Job) -> Job | None:
-        """sumary_line
+    async def post_job_employer(self, employer: Employer, job_data: Job | JobEditableFields) -> Job | None:
+        """
+            This create a job draft post for a specific employer
             Perform Extra Employer Based Checks 
         Keyword arguments:
         argument -- description
         Return: return_description
         """
-        if not (isinstance(job_data, Job) and isinstance(employer, Employer)):
+        if not (isinstance(job_data, (Job, JobEditableFields)) and isinstance(employer, Employer)):
             return None
         
         self.logger.info(f"Employee : {employer.employer_id} Started creating the Job Titled : {job_data.title}")
 
-        if not employer.is_verified:
-            self.logger.info(f"Employer : {employer.employer_id} is not verified")
-            return None
+        # if not employer.is_verified:
+        #     self.logger.info(f"Employer : {employer.employer_id} is not verified")
+        #     return None
 
-        return await self._create_job(job_data | {"employer_id": employer.employer_id})
+        job_data.employer_id = employer.employer_id
+        return await self._create_job(job=job_data)
 
     @error_handler
     async def validate_job_post(self, job: Job) -> dict:
