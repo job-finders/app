@@ -1,58 +1,77 @@
-import requests
+from typing import Dict, Any, List, Optional
 import socket
-import openai
-from typing import Dict
+from pydantic import BaseModel
+from src.services.http_service import HttpRequestService
+from src.agents.openrouter_client import call_openrouter
 
-# === CONFIG ===
-OPENAI_API_KEY = "sk-..."  # Replace with actual API key
-openai.api_key = OPENAI_API_KEY
+
+class WebsiteVerificationResult(BaseModel):
+    verified: bool
+    confidence_score: float
+    reason: str
 
 
 class WebsiteVerifier:
-    """sumary_line
-        TODO - should use the http-service to fetch the website content
-        TODO - should use the open_router service to evaluate the content
-    Keyword arguments:
-    argument -- description
-    Return: return_description
     """
-    
-    def __init__(self):
-        self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "Mozilla/5.0"})
+    Asynchronous service to verify the professionalism and legitimacy of a website.
 
-    def verify(self, url: str) -> Dict:
-        """sumary_line
+    - Checks DNS reachability.
+    - Fetches homepage HTML using async HTTP service.
+    - Evaluates content via OpenRouter AI model.
+    """
 
-            Call this method to verify a website's legitimacy and professionalism.
+    def __init__(self, http_service: Optional[HttpRequestService] = None):
+        self.http_service = http_service or HttpRequestService()
 
-        Keyword arguments:
-        argument -- description
-        Return: return_description
+    async def verify(self, url: str) -> Dict[str, Any]:
         """
-        
-        # Step 1: Basic domain check
+        Asynchronously verify a website using HTTP and AI-based evaluation.
+
+        Args:
+            url (str): Full website URL.
+
+        Returns:
+            Dict[str, Any]: {
+                verified: bool,
+                confidence_score: float,
+                reason: str
+            }
+        """
         if not self._is_domain_reachable(url):
-            return {
-                "verified": False,
-                "confidence_score": 0.0,
-                "reason": "Domain is unreachable or invalid."
-            }
+            return WebsiteVerificationResult(
+                verified=False,
+                confidence_score=0.0,
+                reason="Domain is unreachable or invalid."
+            ).dict()
 
-        # Step 2: Fetch homepage content
         try:
-            html = self._fetch_website_content(url)
-        except Exception:
-            return {
-                "verified": False,
-                "confidence_score": 0.0,
-                "reason": "Website failed to load or timed out."
-            }
+            html = await self._fetch_website_content(url)
+        except Exception as e:
+            return WebsiteVerificationResult(
+                verified=False,
+                confidence_score=0.0,
+                reason=f"Website failed to load: {str(e)}"
+            ).dict()
 
-        # Step 3: AI-based content verification
-        return self._evaluate_with_ai(url, html)
+        try:
+            return await self._evaluate_with_ai(url, html)
+        except Exception as e:
+            return WebsiteVerificationResult(
+                verified=False,
+                confidence_score=0.0,
+                reason=f"AI evaluation failed: {str(e)}"
+            ).dict()
 
     def _is_domain_reachable(self, url: str) -> bool:
+        """
+        Check DNS resolution for the domain in the URL.
+
+        Args:
+            url (str): Website URL
+
+        Returns:
+            bool: True if domain resolves
+        """
         try:
             domain = url.split("//")[-1].split("/")[0]
             socket.gethostbyname(domain)
@@ -60,42 +79,77 @@ class WebsiteVerifier:
         except socket.error:
             return False
 
-    def _fetch_website_content(self, url: str) -> str:
-        response = self.session.get(url, timeout=6)
-        response.raise_for_status()
-        return response.text[:8000]  # Limit to 8K chars for AI prompt
+    async def _fetch_website_content(self, url: str) -> str:
+        """
+        Asynchronously fetch HTML content using HttpRequestService.
 
-    def _evaluate_with_ai(self, url: str, html: str) -> Dict:
-        prompt = f"""
-                    You are an AI verifier reviewing a website for professionalism and credibility.
+        Args:
+            url (str): Website URL
 
-                    Evaluate the following homepage HTML and return whether this appears to be a legitimate, professional website that clearly represents a real person, company, or project.
+        Returns:
+            str: Truncated HTML (max 8000 chars)
+        """
+        response = await self.http_service.async_get(url)
+        return response.text[:8000]
 
-                    Respond in JSON format like this:
-                    {{
-                    "verified": true/false,
-                    "confidence_score": float between 0.0 and 1.0,
-                    "reason": "Brief explanation"
-                    }}
+    async def _evaluate_with_ai(self, url: str, html: str) -> Dict[str, Any]:
+        """
+        Run the AI model to verify the content of the website.
 
-                    Website URL: {url}
-                    Homepage HTML sample:
-                    {html}
+        Args:
+            url (str): The website URL
+            html (str): Homepage HTML sample
+
+        Returns:
+            Dict[str, Any]: AI-evaluated verification response
+        """
+        messages: List[Dict[str, str]] = [
+            {
+                "role": "system",
+                "content": "You are an AI verifier that checks websites for legitimacy and professionalism."
+            },
+            {
+                "role": "user",
+                "content": self._build_prompt(url, html)
+            }
+        ]
+
+        result: WebsiteVerificationResult = await call_openrouter(
+            messages=messages,
+            output_model=WebsiteVerificationResult,
+            model="deepseek-chat",
+            temperature=0.5,
+            max_tokens=800
+        )
+
+        return result.dict()
+
+    def _build_prompt(self, url: str, html: str) -> str:
+        """
+        Construct the full user prompt for the AI.
+
+        Args:
+            url (str): Website URL
+            html (str): HTML content of homepage
+
+        Returns:
+            str: Prompt string
+        """
+        return f"""
+                Evaluate the following website HTML to determine if it is a professional, legitimate, and credible site.
+
+                Respond strictly in JSON using the following structure:
+                {{
+                "verified": true or false,
+                "confidence_score": float between 0.0 and 1.0,
+                "reason": "brief explanation"
+                }}
+
+                Website URL: {url}
+                HTML:
+                ```html
+                {html}
+                ```
+                Ensure the response is valid JSON and does not contain any additional text.
                 """
 
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[{"role": "system", "content": "You are a website verification AI."},
-                          {"role": "user", "content": prompt}],
-                max_tokens=150,
-                temperature=0.5
-            )
-            result = response.choices[0].message.content.strip()
-            return eval(result)  # Convert string to dict
-        except Exception as e:
-            return {
-                "verified": False,
-                "confidence_score": 0.0,
-                "reason": f"AI evaluation failed: {str(e)}"
-            }
