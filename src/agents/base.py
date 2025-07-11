@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from enum import Enum
 import asyncio
 from datetime import datetime, timedelta
+from src.memory.agent_memory import AgentMemoryStore
 
 class ModelType(Enum):
     # Primary DeepSeek models (cost-effective)
@@ -208,48 +209,6 @@ class BaseAgent(ABC):
         
         return selected_model
 
-    async def run(self, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> BaseModel:
-        try:
-            user_prompt = self.prompt(*args, **kwargs)
-            system_prompt = self.system_prompt()
-            
-            # Select model with usage limits
-            selected_model = await self.check_usage_and_select_model(
-                user_prompt, user_role, task_type, *args, **kwargs
-            )
-            
-            # Record usage
-            if not self.usage_tracker.record_usage():
-                raise Exception("Usage limit exceeded during execution")
-            
-            self.memory.add_entry("user", user_prompt)
-            memory_history = self.memory.get_history()
-            messages = [{"role": "system", "content": system_prompt}] + memory_history
-
-            output = await call_openrouter(
-                messages=messages,
-                output_model=self.output_model(),
-                model=selected_model.value
-            )
-
-            self.memory.add_entry("assistant", output.json())
-            return output
-            
-        except Exception as e:
-            # Handle rate limiting, model errors, etc.
-            if "limit exceeded" in str(e).lower():
-                # Try with fallback model
-                fallback_model = self.get_fallback_model(ModelType.DEEPSEEK_CHAT)
-                output = await call_openrouter(
-                    messages=messages,
-                    output_model=self.output_model(),
-                    model=fallback_model.value
-                )
-                self.memory.add_entry("assistant", output.json())
-                return output
-            else:
-                raise e
-
     def get_usage_info(self) -> Dict[str, Any]:
         """Get current usage statistics"""
         daily_usage = self.usage_tracker.get_current_usage("daily")
@@ -265,3 +224,155 @@ class BaseAgent(ABC):
             "daily_remaining": limits["daily_limit"] - daily_usage,
             "monthly_remaining": limits["monthly_limit"] - monthly_usage
         }
+
+
+    async def run(self, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> BaseModel:
+        try:
+            user_prompt = self.prompt(*args, **kwargs)
+            system_prompt = self.system_prompt()
+            
+            # Select model with usage limits
+            selected_model = await self.check_usage_and_select_model(
+                user_prompt, user_role, task_type, *args, **kwargs
+            )
+            
+            # Record usage
+            if not self.usage_tracker.record_usage():
+                raise Exception("Usage limit exceeded during execution")
+            
+            # Add user message to memory with protection option
+            protect_user_msg = kwargs.get('protect_user_message', False)
+            user_entry_id = self.memory.add_entry("user", user_prompt, protect=protect_user_msg)
+            
+            # Get memory in chat format with optional limit
+            memory_limit = kwargs.get('memory_limit', None)
+            chat_messages = self.memory.get_chat_messages(limit=memory_limit)
+            
+            # Build final message structure
+            messages = [{"role": "system", "content": system_prompt}] + chat_messages
+
+            # Make API call with enhanced client
+            output = await openrouter_client.structured_completion(
+                messages=messages,
+                output_model=self.output_model(),
+                model=selected_model.value,
+                temperature=kwargs.get('temperature', 0.7),
+                max_tokens=kwargs.get('max_tokens', 1024)
+            )
+
+            # Add assistant response to memory
+            protect_response = kwargs.get('protect_response', False)
+            assistant_entry_id = self.memory.add_entry(
+                "assistant", 
+                output.model_dump_json(), 
+                protect=protect_response
+            )
+            
+            # Store entry IDs for potential future reference
+            self._last_interaction = {
+                "user_entry_id": user_entry_id,
+                "assistant_entry_id": assistant_entry_id,
+                "timestamp": time.time()
+            }
+            
+            return output
+            
+        except Exception as e:
+            # Enhanced error handling with memory context
+            error_context = {
+                "error": str(e),
+                "model": selected_model.value if 'selected_model' in locals() else "unknown",
+                "memory_stats": self.memory.get_memory_stats(),
+                "user_prompt_preview": user_prompt[:100] + "..." if len(user_prompt) > 100 else user_prompt
+            }
+            
+            # Handle rate limiting and model errors
+            if "limit exceeded" in str(e).lower():
+                try:
+                    # Try with fallback model
+                    fallback_model = self.get_fallback_model(ModelType.DEEPSEEK_CHAT)
+                    
+                    # Use same messages from above if available
+                    if 'messages' not in locals():
+                        chat_messages = self.memory.get_chat_messages(limit=memory_limit)
+                        messages = [{"role": "system", "content": system_prompt}] + chat_messages
+                    
+                    output = await openrouter_client.structured_completion(
+                        messages=messages,
+                        output_model=self.output_model(),
+                        model=fallback_model.value,
+                        temperature=kwargs.get('temperature', 0.7),
+                        max_tokens=kwargs.get('max_tokens', 1024)
+                    )
+                    
+                    # Add fallback response to memory with note
+                    fallback_response = output.model_dump_json()
+                    assistant_entry_id = self.memory.add_entry(
+                        "assistant", 
+                        f"[FALLBACK_MODEL:{fallback_model.value}] {fallback_response}",
+                        protect=kwargs.get('protect_response', False)
+                    )
+                    
+                    self._last_interaction = {
+                        "user_entry_id": user_entry_id,
+                        "assistant_entry_id": assistant_entry_id,
+                        "fallback_used": True,
+                        "timestamp": time.time()
+                    }
+                    
+                    return output
+                    
+                except Exception as fallback_error:
+                    # Log both original and fallback errors
+                    error_context["fallback_error"] = str(fallback_error)
+                    self._log_error(error_context)
+                    raise fallback_error
+            else:
+                self._log_error(error_context)
+                raise e
+
+    # Additional helper methods for the agent class
+
+    def delete_memory_entry(self, entry_id: str) -> bool:
+        """Delete a specific memory entry."""
+        return self.memory.delete_entry(entry_id)
+
+    def delete_memory_entries(self, entry_ids: List[str]) -> Dict[str, bool]:
+        """Delete multiple memory entries."""
+        return self.memory.delete_entries(entry_ids)
+
+    def protect_memory_entry(self, entry_id: str) -> bool:
+        """Protect a memory entry from automatic cleanup."""
+        return self.memory.protect_entry(entry_id)
+
+    def get_memory_stats(self) -> Dict[str, int]:
+        """Get memory usage statistics."""
+        return self.memory.get_memory_stats()
+
+    def clear_memory(self, keep_protected: bool = False):
+        """Clear agent memory with option to keep protected entries."""
+        self.memory.clear(keep_protected=keep_protected)
+
+    def set_memory_capacity(self, max_entries: int):
+        """Update memory capacity."""
+        self.memory.set_max_entries(max_entries)
+
+    def get_last_interaction(self) -> Dict:
+        """Get details of the last interaction."""
+        return getattr(self, '_last_interaction', {})
+
+    def protect_last_interaction(self) -> Dict[str, bool]:
+        """Protect the last user/assistant interaction."""
+        if hasattr(self, '_last_interaction'):
+            results = {}
+            if 'user_entry_id' in self._last_interaction:
+                results['user'] = self.memory.protect_entry(self._last_interaction['user_entry_id'])
+            if 'assistant_entry_id' in self._last_interaction:
+                results['assistant'] = self.memory.protect_entry(self._last_interaction['assistant_entry_id'])
+            return results
+        return {}
+
+    def _log_error(self, error_context: Dict):
+        """Log error with enhanced context."""
+        # Implement your logging logic here
+        print(f"Agent Error: {error_context}")  # Replace with proper logging
