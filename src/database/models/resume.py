@@ -268,4 +268,113 @@ class JobSeekerCV(BaseModel):
         match_count = sum(1 for phrase in boilerplate_phrases if phrase in lower)
         return match_count >= 2
 
+    @property
+    def resume_completion_percentage(self) -> int:
+        score = 0
+        max_score = 0
+
+        def add_score(condition: bool, weight: float):
+            nonlocal score, max_score
+            max_score += weight
+            if condition:
+                score += weight
+
+        # 🔹 Header Info
+        add_score(bool(getattr(self, "professional_title", None)), 5)
+        summary = getattr(self, "summary", "")
+        add_score(bool(summary and summary.strip()), 5)
+        add_score(bool(getattr(self, "location", None)), 2)
+        add_score(bool(getattr(self, "phone", None)), 2)
+        contact_fields = [getattr(self, "website", None), getattr(self, "linkedin", None), getattr(self, "github", None)]
+        add_score(any(contact_fields), 3)
+
+        # 🔹 Skills
+        skills = getattr(self, "skills", []) or []
+        add_score(bool(skills), 8)
+
+        # 🔹 Experience
+        experience = getattr(self, "experience", []) or []
+        add_score(bool(experience), 12)
+        has_descriptions = all(
+            isinstance(e.description, str) and len(e.description.strip()) > 30
+            for e in experience if e and hasattr(e, "description")
+        )
+        add_score(has_descriptions, 3)
+
+        # 🔹 Education
+        education = getattr(self, "education", []) or []
+        add_score(bool(education), 10)
+
+        # 🔹 Projects
+        projects = getattr(self, "projects", []) or []
+        add_score(bool(projects), 4)
+        project_has_tech = any(getattr(p, "technologies", []) for p in projects)
+        add_score(project_has_tech, 1)
+
+        # 🔹 Certifications / Awards / Languages / Publications
+        add_score(bool(getattr(self, "certifications", []) or []), 2)
+        add_score(bool(getattr(self, "awards", []) or []), 1)
+        add_score(bool(getattr(self, "languages", []) or []), 1)
+        add_score(bool(getattr(self, "publications", []) or []), 1)
+
+        # 🔹 Media / Branding
+        add_score(bool(getattr(self, "resume_file_url", None)), 3)
+        add_score(bool(getattr(self, "profile_image_url", None)), 2)
+        add_score(bool(getattr(self, "portfolio_links", []) or []), 2)
+
+        # 🔹 Custom Sections
+        add_score(bool(getattr(self, "custom_sections", []) or []), 2)
+
+        percent = int((score / max_score) * 100) if max_score else 0
+        return min(percent, 100)
+
+
+
+    @property
+    def trust_score(self) -> int:
+        score = 0
+        max_score = 100
+
+        def is_filled(x):
+            return bool(x and str(x).strip())
+
+        # ---- Completeness (30 pts) ----
+        if is_filled(self.professional_title): score += 5
+        if is_filled(self.summary): score += 5
+        if self.skills: score += 5
+        if self.experience: score += 5
+        if self.education: score += 5
+        if self.certifications: score += 2.5
+        if self.languages: score += 2.5
+
+        # ---- Consistency & Boilerplate Check (20 pts) ----
+        if not self.resume_has_boilerplate: score += 10
+        try:
+            for exp in self.experience:
+                if exp.end_date and exp.end_date < exp.start_date:
+                    break
+            else:
+                score += 10
+        except Exception:
+            pass
+
+        # ---- Verifiability (20 pts) ----
+        if self.linkedin: score += 5
+        if self.github: score += 5
+        if self.website: score += 5
+        if self.phone: score += 2.5
+        if self.resume_file_url: score += 2.5
+
+        # ---- Evidence/Assets (20 pts) ----
+        if self.portfolio_links: score += 10
+        if self.profile_image_url: score += 5
+        if self.projects: score += 5
+
+        # ---- Depth (10 pts) ----
+        if any(p.description for p in self.projects or []): score += 5
+        if any(e.description for e in self.experience or []): score += 5
+
+        return min(int(score), 100)
+
+
     model_config = ConfigDict(from_attributes=True)
