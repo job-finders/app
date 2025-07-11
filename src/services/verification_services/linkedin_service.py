@@ -1,116 +1,140 @@
-import requests
 import logging
-from typing import Dict
+from typing import Dict, Optional, List
+from pydantic import BaseModel
 
-# Optional: Use OpenAI if you're piping into GPT
-import openai
+import httpx
+from src.agents.openrouter_client import call_openrouter
 
-# === CONFIG ===
+# Config
 LINKEDIN_CLIENT_ID = "your_client_id"
 LINKEDIN_CLIENT_SECRET = "your_client_secret"
 LINKEDIN_REDIRECT_URI = "https://yourapp.com/oauth/linkedin/callback"
 
-OPENAI_API_KEY = "sk-..."  # Only if you're using OpenAI for the AI model
-openai.api_key = OPENAI_API_KEY
 
-# === SERVICE ===
+class LinkedInProfile(BaseModel):
+    first_name: Optional[str]
+    last_name: Optional[str]
+    headline: Optional[str]
+    email: Optional[str]
+
+
+class LinkedInVerificationResult(BaseModel):
+    verified: bool
+    confidence_score: float
+    reason: str
+
 
 class LinkedInVerifier:
+    """
+    Asynchronous LinkedIn verification service.
+    - OAuth2 token exchange
+    - Fetch user profile & email
+    - Evaluate using AI model
+    """
+
     def __init__(self):
         self.token_url = "https://www.linkedin.com/oauth/v2/accessToken"
         self.profile_url = "https://api.linkedin.com/v2/me"
-        self.email_url = "https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))"
+        self.email_url = (
+            "https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))"
+        )
 
-    def exchange_code_for_token(self, code: str) -> str:
-        response = requests.post(self.token_url, data={
+    async def exchange_code_for_token(self, code: str) -> str:
+        data = {
             "grant_type": "authorization_code",
             "code": code,
             "redirect_uri": LINKEDIN_REDIRECT_URI,
             "client_id": LINKEDIN_CLIENT_ID,
-            "client_secret": LINKEDIN_CLIENT_SECRET
-        })
-        response.raise_for_status()
-        return response.json().get("access_token")
-
-    def fetch_linkedin_profile(self, token: str) -> Dict:
-        headers = {"Authorization": f"Bearer {token}"}
-
-        profile_resp = requests.get(self.profile_url, headers=headers)
-        email_resp = requests.get(self.email_url, headers=headers)
-
-        profile = profile_resp.json()
-        email = email_resp.json().get("elements", [{}])[0].get("handle~", {}).get("emailAddress")
-
-        return {
-            "first_name": profile.get("localizedFirstName"),
-            "last_name": profile.get("localizedLastName"),
-            "headline": profile.get("headline", {}).get("localized", {}).get("en_US", "N/A"),
-            "email": email
+            "client_secret": LINKEDIN_CLIENT_SECRET,
         }
+        async with httpx.AsyncClient() as client:
+            response = await client.post(self.token_url, data=data)
+            response.raise_for_status()
+            return response.json().get("access_token")
 
-    def verify_with_ai(self, profile_data: Dict) -> Dict:
-        prompt = self._build_verification_prompt(profile_data)
+    async def fetch_linkedin_profile(self, token: str) -> LinkedInProfile:
+        headers = {"Authorization": f"Bearer {token}"}
+        async with httpx.AsyncClient() as client:
+            profile_resp = await client.get(self.profile_url, headers=headers)
+            email_resp = await client.get(self.email_url, headers=headers)
 
-        # You can replace this with your own LLM call or API
-        response = openai.ChatCompletion.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a professional LinkedIn profile evaluator."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.2
+        profile_data = profile_resp.json()
+        email_data = email_resp.json()
+        email = email_data.get("elements", [{}])[0].get("handle~", {}).get("emailAddress")
+
+        return LinkedInProfile(
+            first_name=profile_data.get("localizedFirstName"),
+            last_name=profile_data.get("localizedLastName"),
+            headline=profile_data.get("headline", {}).get("localized", {}).get("en_US"),
+            email=email,
         )
 
-        ai_output = response.choices[0].message.content
-        return self._parse_ai_response(ai_output)
+    async def verify_with_ai(self, profile: LinkedInProfile) -> LinkedInVerificationResult:
+        messages: List[Dict[str, str]] = [
+            {
+                "role": "system",
+                "content": "You are a professional LinkedIn profile evaluator.",
+            },
+            {
+                "role": "user",
+                "content": self._build_verification_prompt(profile),
+            },
+        ]
 
-    def _build_verification_prompt(self, profile: Dict) -> str:
+        result: LinkedInVerificationResult = await call_openrouter(
+            messages=messages,
+            output_model=LinkedInVerificationResult,
+            model="deepseek-chat",
+            temperature=0.2,
+            max_tokens=512,
+        )
+
+        return result
+
+    def _build_verification_prompt(self, profile: LinkedInProfile) -> str:
         return f"""
-You're an AI assistant verifying LinkedIn profiles.
+                You're an AI assistant verifying LinkedIn profiles.
 
-Profile details:
-- First Name: {profile.get('first_name')}
-- Last Name: {profile.get('last_name')}
-- Headline: {profile.get('headline')}
-- Email: {profile.get('email')}
+                Profile details:
+                - First Name: {profile.first_name}
+                - Last Name: {profile.last_name}
+                - Headline: {profile.headline}
+                - Email: {profile.email}
 
-Evaluate if this LinkedIn profile appears authentic and relevant for a professional user. Return a JSON with:
+                Evaluate if this LinkedIn profile appears authentic and relevant for a professional user. Return a JSON with:
 
-- verified: true | false
-- confidence_score: float (0.0 - 1.0)
-- reason: short explanation
+                - verified: true | false
+                - confidence_score: float (0.0 - 1.0)
+                - reason: short explanation
 
-Only return JSON.
+                Only return JSON.
 
-If the profile is incomplete or suspicious (no headline, fake name, etc.), return verified: false with reasoning.
-"""
+                If the profile is incomplete or suspicious (e.g. no headline, fake name, etc.), return verified: false with reasoning.
+                """
 
-    def _parse_ai_response(self, text: str) -> Dict:
+    async def run_verification(self, code: str) -> Dict:
+        """
+        Exchange auth code, fetch profile, and return verification.
+
+        Args:
+            code (str): LinkedIn OAuth2 code
+
+        Returns:
+            Dict: Profile data + AI verification result or error
+        """
         try:
-            import json
-            return json.loads(text.strip())
-        except Exception:
-            logging.warning("Could not parse AI response.")
-            return {
-                "verified": False,
-                "confidence_score": 0.0,
-                "reason": "AI response was malformed or missing."
-            }
-
-    def run_verification(self, code: str) -> Dict:
-        try:
-            token = self.exchange_code_for_token(code)
-            profile = self.fetch_linkedin_profile(token)
-            result = self.verify_with_ai(profile)
+            token = await self.exchange_code_for_token(code)
+            profile = await self.fetch_linkedin_profile(token)
+            result = await self.verify_with_ai(profile)
 
             return {
-                "profile": profile,
-                "verification": result
+                "profile": profile.dict(),
+                "verification": result.dict(),
             }
 
         except Exception as e:
             logging.exception("LinkedIn verification failed.")
             return {
                 "error": str(e),
-                "verified": False
+                "verified": False,
             }

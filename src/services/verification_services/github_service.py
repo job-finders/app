@@ -1,86 +1,146 @@
-import requests
-from typing import Optional, Dict, Any
-from datetime import datetime
-import openai  # Assuming OpenAI GPT model for AI analysis
+import logging
+from typing import List, Dict, Optional
+
+from pydantic import BaseModel
+import httpx
+
+from src.agents.openrouter_client import call_openrouter
 
 GITHUB_API_URL = "https://api.github.com"
-OPENAI_API_KEY = "your_openai_api_key"
-
-openai.api_key = OPENAI_API_KEY
 
 
-class GitHubVerificationService:
+class GitHubProfile(BaseModel):
+    login: str
+    bio: Optional[str]
+    html_url: Optional[str]
+    public_repos: int
+    followers: int
+
+
+class GitHubRepo(BaseModel):
+    name: str
+    language: Optional[str]
+    stargazers_count: int
+    forks_count: int
+    pushed_at: Optional[str]
+
+
+class GitHubVerificationResult(BaseModel):
+    verified: bool
+    confidence_score: float
+    explanation: str
+
+
+class GitHubVerifier:
     def __init__(self, github_token: str):
-        self.github_token = github_token
         self.headers = {
-            "Authorization": f"token {self.github_token}",
-            "Accept": "application/vnd.github.v3+json",
+            "Authorization": f"token {github_token}",
+            "Accept": "application/vnd.github+json",
         }
 
-    def get_user_profile(self, username: str) -> Optional[Dict[str, Any]]:
+    async def fetch_user_profile(self, username: str) -> Optional[GitHubProfile]:
         url = f"{GITHUB_API_URL}/users/{username}"
-        resp = requests.get(url, headers=self.headers)
-        if resp.status_code == 200:
-            return resp.json()
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers=self.headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                return GitHubProfile(
+                    login=data["login"],
+                    bio=data.get("bio"),
+                    html_url=data.get("html_url"),
+                    public_repos=data.get("public_repos", 0),
+                    followers=data.get("followers", 0),
+                )
         return None
 
-    def get_user_repos(self, username: str) -> Optional[list]:
-        url = f"{GITHUB_API_URL}/users/{username}/repos?per_page=100"
-        resp = requests.get(url, headers=self.headers)
-        if resp.status_code == 200:
-            return resp.json()
-        return None
+    async def fetch_user_repos(self, username: str) -> List[GitHubRepo]:
+        url = f"{GITHUB_API_URL}/users/{username}/repos?per_page=100&sort=updated"
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers=self.headers)
+            if resp.status_code == 200:
+                return [
+                    GitHubRepo(
+                        name=repo["name"],
+                        language=repo.get("language"),
+                        stargazers_count=repo.get("stargazers_count", 0),
+                        forks_count=repo.get("forks_count", 0),
+                        pushed_at=repo.get("pushed_at"),
+                    )
+                    for repo in resp.json()
+                ]
+        return []
 
-    def analyze_profile_with_ai(self, profile: dict, repos: list) -> Dict[str, Any]:
-        # Construct a prompt with profile and repo summaries
-        repo_names = [repo['name'] for repo in repos[:5]]
-        repo_langs = list({repo.get('language') for repo in repos if repo.get('language')})
-        bio = profile.get('bio', '')
-        public_repos = profile.get('public_repos', 0)
-        followers = profile.get('followers', 0)
+    async def verify_with_ai(self, profile: GitHubProfile, repos: List[GitHubRepo]) -> GitHubVerificationResult:
+        top_repos = sorted(repos, key=lambda r: r.stargazers_count, reverse=True)[:5]
+        repo_summaries = [
+            f"{r.name} (Lang: {r.language or 'N/A'}, Stars: {r.stargazers_count}, Last Push: {r.pushed_at or 'N/A'})"
+            for r in top_repos
+        ]
+        languages = sorted({r.language for r in repos if r.language})
 
-        prompt = (
-            f"Analyze this GitHub user profile for authenticity and activity.\n"
-            f"Bio: {bio}\n"
-            f"Public repos (sample): {repo_names}\n"
-            f"Languages used: {repo_langs}\n"
-            f"Public repos count: {public_repos}\n"
-            f"Followers: {followers}\n\n"
-            "Is this profile likely to be genuine and active? Rate confidence from 0 to 1 and explain briefly."
-        )
+        prompt = self._build_prompt(profile, repo_summaries, languages)
 
-        completion = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=100,
+        result: GitHubVerificationResult = await call_openrouter(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an AI evaluating GitHub profile authenticity and activity.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            output_model=GitHubVerificationResult,
+            model="gpt-4o",
             temperature=0.3,
+            max_tokens=500,
         )
 
-        response = completion.choices[0].message['content'].strip()
-        # Here you would parse the AI response more robustly; simplified:
-        confidence = 0.5  # fallback
-        explanation = response
-        # parse confidence if formatted properly...
+        return result
 
-        return {
-            "confidence_score": confidence,
-            "explanation": explanation,
-        }
+    def _build_prompt(
+        self, profile: GitHubProfile, repo_summaries: List[str], languages: List[str]
+    ) -> str:
+        return f"""
+            Analyze the following GitHub user profile for authenticity and active usage.
 
-    def verify_github(self, username: str) -> Dict[str, Any]:
-        profile = self.get_user_profile(username)
-        if not profile:
-            return {"verified": False, "reason": "GitHub user not found"}
+            Profile:
+            - Username: {profile.login}
+            - Bio: {profile.bio or 'N/A'}
+            - Public Repos: {profile.public_repos}
+            - Followers: {profile.followers}
 
-        repos = self.get_user_repos(username) or []
+            Top Repositories:
+            {chr(10).join(repo_summaries) or 'None'}
 
-        ai_analysis = self.analyze_profile_with_ai(profile, repos)
+            Languages Used: {", ".join(languages) or 'N/A'}
 
-        verified = ai_analysis.get("confidence_score", 0) > 0.7  # threshold
-        return {
-            "verified": verified,
-            "github_profile_url": profile.get("html_url"),
-            "public_repos": profile.get("public_repos"),
-            "followers": profile.get("followers"),
-            "ai_analysis": ai_analysis,
-        }
+            Return a JSON object:
+            - verified: true | false
+            - confidence_score: float (0.0 - 1.0)
+            - explanation: short reasoning
+
+            Only return valid JSON.
+            """
+
+    async def run_verification(self, username: str) -> Dict:
+        try:
+            profile = await self.fetch_user_profile(username)
+            if not profile:
+                return {"verified": False, "reason": "GitHub user not found"}
+
+            repos = await self.fetch_user_repos(username)
+            result = await self.verify_with_ai(profile, repos)
+
+            return {
+                "verified": result.verified,
+                "github_profile_url": profile.html_url,
+                "public_repos": profile.public_repos,
+                "followers": profile.followers,
+                "ai_analysis": result.dict(),
+            }
+
+        except Exception as e:
+            logging.exception("GitHub verification failed.")
+            return {
+                "error": str(e),
+                "verified": False,
+            }
