@@ -7,6 +7,7 @@ from flask import request, redirect, url_for, flash, g, abort, current_app
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
+from src.cache.cache_redis import cache
 from src.database import UserORM, JobsORM, EmployerORM, CompanyBillingProfileORM
 from src.database.models.billing import CompanyBillingProfile
 from src.database.models.users import User
@@ -37,7 +38,7 @@ def get_minimal(model, key_field: str, key_value: str, fields: list[str], cache_
             return None
 
         result_dict = dict(zip(fields, result))
-        cache.set(cache_key, result_dict, timeout=300)
+        cache.set(cache_key, result_dict, ttl=300)
         return result_dict
 
 
@@ -63,7 +64,7 @@ def employer_job_access_required(allow_admin=True):
             if not job_id:
                 abort(400, "Job ID missing in request")
 
-            user = g.current_user
+            user = g.user
 
             if allow_admin and user.role == Role.SYSTEM_ADMIN.value:
                 return await view_func(*args, **kwargs)
@@ -72,11 +73,11 @@ def employer_job_access_required(allow_admin=True):
             job_dict = get_job_minimal(job_id)
 
             if not job_dict:
-                logger.warning(f"Job not found: {job_id}")
+                auth_logger.warning(f"Job not found: {job_id}")
                 abort(404, "Job not found")
 
             if employer_dict["company_id"] != job_dict["company_id"]:
-                logger.warning(
+                auth_logger.warning(
                     f"Unauthorized job access attempt: "
                     f"User {user.uid} tried to access job {job_id} "
                     f"(Company: {employer_dict.get('company_id')} vs Job: {job_dict.get('company_id')})"
@@ -107,11 +108,11 @@ def company_access_control(user, resource_company_id: str, allow_admin=True) -> 
 
     employer = get_employer_minimal(user.uid)
     if not employer:
-        logger.warning(f"Access denied. User not found in employer table: {user.uid}")
+        auth_logger.warning(f"Access denied. User not found in employer table: {user.uid}")
         abort(403, "You don't have permission to access this resource")
 
     if employer['company_id'] != resource_company_id:
-        logger.warning(
+        auth_logger.warning(
             f"Company access denied: user {user.uid} (company {employer['company_id']}) "
             f"vs resource (company {resource_company_id})"
         )
@@ -138,7 +139,7 @@ def company_access_required(allow_admin=True):
             user = g.user
             job_dict = get_job_minimal(job_id)
             if not job_dict:
-                logger.warning(f"Job not found: {job_id}")
+                auth_logger.warning(f"Job not found: {job_id}")
                 abort(404, "Job not found")
 
             company_access_control(user, job_dict["company_id"], allow_admin=allow_admin)

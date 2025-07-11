@@ -11,7 +11,7 @@ from src.authentication import (employer_login, system_admin_login, jobseeker_lo
                                 require_billing_role)
 
 from src.services.billing.billing_service import BillingTiersEnum
-from src.database.models.jobs_model import Job, JobApplication, JobEditableFields
+from src.database.models.jobs_model import Job, JobApplication, JobEditableFields, ApplicationFunnelStats
 from src.database.models.users import User
 # from src.firewall.rate_limiting import rate_limit
 from src.routes import flask_error_handler
@@ -107,7 +107,7 @@ async def create_job(user: User):
         flash(str(e), "danger")
         return render_template("jobs_workflow/create.html", current_user=user, form_data=data)
     flash("Job created successfully!", "success")
-    return redirect(url_for("jobs.job_details", job_id=job.job_id))
+    return redirect(url_for("jobs.job_details", job_id=job_data.job_id))
 
 
 @jobs_workflow_route.get("/<string:job_id>/edit")
@@ -248,7 +248,7 @@ async def reject_job(user: User, approval_token: str):
 @jobseeker_login
 async def submit_application(user: User, job_id: str):
     """
-    The workflow for submitting a job application. started at the agents routes, where a candidate 
+    The workflow for submitting a job application. started at the agents routes, where a candidate
     drafted the initial cover letter and check their compatibility to the job post.
 
     This route is designed to be used by candidates and is typically
@@ -266,3 +266,61 @@ async def submit_application(user: User, job_id: str):
         return redirect(url_for("jobs.job_details", job_id=job_id))
     flash("Application submitted! Good luck.", "success")
     return redirect(url_for("jobs.job_details", job_id=job_id))
+
+
+@jobs_workflow_route.get("/<string:job_id>/insights")
+@employer_login
+@require_billing_role()
+@employer_job_access_required()
+@flask_error_handler
+async def job_insights(user: User, job_id: str):
+    """
+        will retrieve job complete details so job insights and stats can be viewed
+    :param job_id:
+    :param user:
+    :return:
+    """
+    jobs_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
+    job_details: Job = await jobs_workflow_controller.get_job_details(job_id=job_id)
+    application_funnel_stats: ApplicationFunnelStats = await jobs_workflow_controller.get_application_funnel_stats(
+        job_id=job_id)
+    context = dict(current_user=user, job=job_details, application_funnel_stats=application_funnel_stats)
+
+    return render_template('jobs_workflow/job_metrics.html', **context)
+
+
+@jobs_workflow_route.get("/<string:job_id>/view-applications")
+@employer_login
+@require_billing_role()
+@employer_job_access_required()
+@flask_error_handler
+async def view_job_applications(user: User, job_id: str):
+    """
+    View detailed job applications and funnel stats for a specific job.
+
+    :param user: Authenticated employer user
+    :param job_id: The job posting ID to fetch applications for
+    :return: Rendered HTML page with job application data and funnel stats
+    """
+    jobs_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
+
+    # Fetch application funnel stats (may return None)
+    job_applications_details = await jobs_workflow_controller.get_application_funnel_stats(job_id=job_id)
+    if job_applications_details is None:
+        # Fallback empty funnel stats (all zeroed)
+        job_applications_details = ApplicationFunnelStats(
+            views=0, started=0, completed=0, qualified=0,
+            interviewed=0, hired=0, rejected=0, conversion_rate=0.0
+        )
+
+    # Fetch list of job applications (may be empty list)
+    job, job_applications_list = await jobs_workflow_controller.get_job_applications(job_id=job_id) or []
+    context = dict(
+        job=job,
+        job_id=job_id,
+        stats=job_applications_details,
+        job_applications=job_applications_list,
+        current_user=user
+    )
+    # Render template with all required context
+    return render_template("jobs_workflow/job_applications.html", **context)

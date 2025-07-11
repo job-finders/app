@@ -138,3 +138,4 @@ def cached(ttl: Optional[int] = None):
 # Instantiate Global Cache
 # ------------------------------
 route_cache = RedisCache(prefix="jobfinders_route_cache:")
+cache = RedisCache(prefix="jobfinders_cache:", default_ttl=60 * 60, host="localhost", port=6379, db=0)

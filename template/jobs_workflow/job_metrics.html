@@ -1,0 +1,140 @@
+{% extends "company/layout/page.html" %}
+
+{% block title %}{{ job.title or "Untitled Job" }}{% endblock %}
+
+{% block styles %}
+    <style>
+        .sticky-metrics {
+            position: sticky;
+            top: 1rem;
+            z-index: 100;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container my-4">
+        <div class="row g-4">
+
+            <!-- Main Job Content -->
+            <div class="col-lg-8">
+                <div class="mb-4">
+                    <h1 class="display-6 fw-bold">{{ job.title or "Untitled Job" }}</h1>
+                    <div class="text-muted">
+                        Posted on {{ job.created_at.strftime('%B %d, %Y') if job.created_at else "Unknown date" }}
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Description</h5>
+                        <p class="card-text">{{ job.description or "No description provided." }}</p>
+                    </div>
+                </div>
+
+                {% if job.responsibilities %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Responsibilities</h5>
+                            <ul>
+                                {% for item in job.responsibilities %}
+                                    <li>{{ item }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if job.requirements %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Requirements</h5>
+                            <ul>
+                                {% for item in job.requirements %}
+                                    <li>{{ item }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if job.salary_range %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Salary</h5>
+                            <p class="card-text">{{ job.salary_range }}</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar Metrics -->
+            <div class="col-lg-4">
+                <div class="sticky-metrics">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">Job Insights</div>
+                        <div class="card-body">
+
+                            {% macro metric(label, value, color='secondary', unit='') %}
+                                <div class="mb-3">
+                                    <div class="text-muted small">{{ label }}</div>
+                                    {% if value is not none %}
+                                        <div class="fw-bold text-{{ color }}">{{ value }}{{ unit }}</div>
+                                    {% else %}
+                                        <div class="text-muted">N/A</div>
+                                    {% endif %}
+                                </div>
+                            {% endmacro %}
+
+                            {{ metric('Total Applications', job.total_applications_count, 'info') }}
+                            {{ metric('In Progress', job.in_progress_applications, 'warning') }}
+                            {{ metric('Reviewed', job.reviewed_applications_count, 'success') }}
+                            {{ metric('Avg ATS Score', job.job_ats_score, 'primary') }}
+                            {{ metric('Match Rate', job.job_ats_match_rate, 'indigo', '%') }}
+                            {{ metric('Completeness', job.job_completeness_score, 'success', '/10') }}
+                            {{ metric('Quality Score', job.job_quality_score, 'primary') }}
+                            {{ metric('Spam Severity', job.spam_severity_score, 'danger') }}
+                            {{ metric('External Links', job.external_link_count, 'dark') }}
+
+                            <div class="mb-3">\
+                                <div class="text-muted small">Readable?</div>
+                                {% if job.readability_is_ok is not none %}
+                                    <div class="fw-bold text-{{ 'success' if job.readability_is_ok else 'danger' }}">
+                                        {{ 'Yes' if job.readability_is_ok else 'No' }}
+                                    </div>
+                                {% else %}
+                                    <div class="text-muted">N/A</div>
+                                {% endif %}
+                            </div>
+
+                            {% if job.job_common_missing_keywords %}
+                                <div class="mb-3">
+                                    <div class="text-muted small">Top Missing Keywords</div>
+                                    <div>
+                                        {% for kw in job.job_common_missing_keywords[:5] %}
+                                            <span class="badge bg-danger-subtle text-danger me-1">{{ kw }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if job.job_most_matched_keywords %}
+                                <div class="mb-3">
+                                    <div class="text-muted small">Top Matched Keywords</div>
+                                    <div>
+                                        {% for kw in job.job_most_matched_keywords[:5] %}
+                                            <span class="badge bg-success-subtle text-success me-1">{{ kw }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}

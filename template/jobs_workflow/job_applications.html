@@ -1,0 +1,212 @@
+{% extends "company/layout/page.html" %}
+
+{% block title %}{{ job.title or "Untitled Job" }}{% endblock %}
+
+
+{% block content %}
+    <div class="container mt-4">
+
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-8 col-md-7 col-12">
+                    <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center mb-2">
+                        <h4 class="mb-0 mr-sm-3">{{ job.title }}</h4>
+                        <span class="badge status-badge {% if job.status == 'active' %}badge-success{% elif job.status == 'draft' %}badge-warning{% elif job.status == 'closed' %}badge-danger{% else %}badge-secondary{% endif %}">
+                    {{ job.status|upper }}
+                  </span>
+                    </div>
+                    <div class="mb-2 text-muted">
+                        <i class="ti-location-pin"></i> {{ job.location }}
+                        <span class="mx-2">|</span>
+                        <i class="ti-time"></i> {{ job.posted_at }}
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center">
+                        {% if job.salary_confidential %}
+                            <span class="salary-confidential">Salary Confidential</span>
+                        {% else %}
+                            <span class="text-success font-weight-bold">{{ job.salary_currency }} {{ job.salary_min }} - {{ job.salary_max }}</span>
+                        {% endif %}
+                        <span class="mx-2">|</span>
+                        <span class="text-primary">{{ job.position_type|replace('_', ' ')|title }}</span>
+                        <span class="mx-2">|</span>
+                        <span class="text-info">{{ job.remote_policy|title }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ⚠️ Check if stats is available -->
+        {% if stats %}
+            <div class="mb-4">
+                <h4 class="mb-0 mr-sm-3">Applications Funnel Metrics</h4>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>👀 <strong>Views</strong></span>
+                        <span class="fw-bold">{{ stats.views or 0 }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>📝 <strong>Started</strong></span>
+                        <span class="fw-bold">{{ stats.started or 0 }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>✅ <strong>Completed</strong></span>
+                        <span class="fw-bold">{{ stats.completed or 0 }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>🎓 <strong>Qualified</strong></span>
+                        <span class="fw-bold">{{ stats.qualified or 0 }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>🎤 <strong>Interviewed</strong></span>
+                        <span class="fw-bold">{{ stats.interviewed or 0 }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>🏆 <strong>Hired</strong></span>
+                        <span class="fw-bold">{{ stats.hired or 0 }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>❌ <strong>Rejected</strong></span>
+                        <span class="fw-bold">{{ stats.rejected or 0 }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>📈 <strong>Conversion Rate</strong></span>
+                        <span class="fw-bold">{{ stats.conversion_rate or 0 }}%</span>
+                    </li>
+                </ul>
+            </div>
+        {% else %}
+            <div class="alert alert-warning" role="alert">
+                🚫 Funnel statistics are currently unavailable for this job posting.
+            </div>
+        {% endif %}
+
+
+        <!-- 🔍 AI Tools & Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Job Applications</h4>
+            <div>
+                <button class="btn btn-outline-primary btn-sm me-2" onclick="runAISmartShortlist()">🤖 AI Shortlist
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="refreshTable()">🔄 Refresh</button>
+            </div>
+        </div>
+
+        {% if job_applications and job_applications|length > 0 %}
+            <!-- 📋 Applications Table -->
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Status</th>
+                        <th>Applied</th>
+                        <th>ATS Score</th>
+                        <th>Readiness</th>
+                        <th>Notes</th>
+                        <th>AI Tools</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for app in job_applications %}
+                        {% set profile = app.jobseeker_profile or {} %}
+                        <tr class="{% if app.application_stage == 'hired' %}table-success
+                            {% elif app.application_stage == 'rejected' %}table-danger
+                            {% elif app.application_stage == 'shortlisted' %}table-warning{% endif %}">
+                            <td>
+                                <strong>{{ profile.full_name or "Unknown" }}</strong><br>
+                                <small>{{ profile.email or "N/A" }}</small>
+                            </td>
+                            <td>{{ app.application_stage or "N/A" }}</td>
+                            <td>
+                                {{ app.applied_date.strftime('%Y-%m-%d') if app.applied_date else "—" }}
+                            </td>
+                            <td>
+                                {% if app.ats_report and app.ats_report.validation_score is not none %}
+                                    <span class="badge bg-info">{{ app.ats_report.validation_score }}%</span>
+                                    {% if app.ats_report.validation_score < 50 %}
+                                        <span class="badge bg-danger">Risk</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">No Report</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if app.ats_report and app.ats_report.missing_requirements is not none %}
+                                    {% if app.ats_report.missing_requirements | length == 0 %}
+                                        <span class="badge bg-success">ATS Ready</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Incomplete</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if app.review_summary %}
+                                    {{ app.review_summary | truncate(80) }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-dark"
+                                        onclick="aiReview('{{ app.application_id }}')">🧠 Review
+                                </button>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    {% if app.application_stage not in ['hired', 'rejected'] %}
+                                        <button class="btn btn-outline-success"
+                                                onclick="advanceStage('{{ app.application_id }}')">⬆️ Next
+                                        </button>
+                                        <button class="btn btn-outline-danger"
+                                                onclick="rejectApp('{{ app.application_id }}')">❌ Reject
+                                        </button>
+                                    {% endif %}
+                                    {% if app.application_stage != 'hired' %}
+                                        <button class="btn btn-outline-primary"
+                                                onclick="markHired('{{ app.application_id }}')">🏆 Hire
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                📭 No applications have been submitted yet for this job.
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function runAISmartShortlist() {
+            alert("🧠 Running AI Shortlist... (hook this to backend)");
+        }
+
+        function refreshTable() {
+            location.reload();
+        }
+
+        function aiReview(applicationId) {
+            alert("🔍 AI reviewing application: " + applicationId);
+        }
+
+        function advanceStage(applicationId) {
+            alert("⏭️ Advancing stage for: " + applicationId);
+        }
+
+        function rejectApp(applicationId) {
+            if (confirm("❌ Reject this application?")) {
+                alert("Rejected: " + applicationId);
+            }
+        }
+
+        function markHired(applicationId) {
+            alert("🏆 Marked as hired: " + applicationId);
+        }
+    </script>
+{% endblock %}

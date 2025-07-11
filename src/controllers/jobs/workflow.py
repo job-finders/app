@@ -25,6 +25,10 @@ from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.resume import JobSeekerCVORM
 from src.database.sql.users import UserORM
 
+from sqlalchemy.orm import joinedload, subqueryload
+
+
+
 
 class JobsWorkflowController(Controllers):
     """sumary_line
@@ -43,7 +47,35 @@ class JobsWorkflowController(Controllers):
 
 
     # Add caching for frequent job ownership checks
+
     @error_handler
+    async def get_job_details(self, job_id: str) -> Job | None:
+        """
+        Returns complete job details with relationships.
+
+        :param job_id: The ID of the job to retrieve.
+        :return: A Job domain model or None if not found.
+        """
+        with self.get_session() as session:
+            job_details_orm = (
+                session.query(JobsORM)
+                .options(
+                    joinedload(JobsORM.company),  # company details
+                    joinedload(JobsORM.category),  # job category
+                    joinedload(JobsORM.approval_request),  # approval request info
+                    subqueryload(JobsORM.version_history),  # historical job versions
+                    subqueryload(JobsORM.applications),  # job applications
+                    subqueryload(JobsORM.interested_jobseekers),  # saved jobs (user interests)
+                    subqueryload(JobsORM.ats_reports),  # ATS insights
+                )
+                .filter(JobsORM.job_id == job_id)
+                .first()
+            )
+
+            if not job_details_orm:
+                return None
+
+            return Job(**job_details_orm.to_dict(include_relationship=True))
 
     @error_handler
     async def update_job(self, job_id: str, updated_job: JobEditableFields | Job) -> Job | None:
@@ -648,6 +680,38 @@ class JobsWorkflowController(Controllers):
                     result['missing'].append(f"Missing skills: {', '.join(missing_skills)}")
 
             return result
+
+    @error_handler
+    async def get_job_applications(self, job_id: str) -> tuple[Job, list[JobApplication]]:
+        """
+        Returns a detailed list of JobApplications with their relationships and calculated fields.
+        :param job_id: The ID of the job to retrieve applications for.
+        :return: List[JobApplication]
+        """
+        with self.get_session() as session:
+            job_applications_orm_list = (
+                session.query(JobApplicationORM)
+                .filter(JobApplicationORM.job_id == job_id)
+                .options(
+                    joinedload(JobApplicationORM.job),
+                    joinedload(JobApplicationORM.ats_report),
+                    joinedload(JobApplicationORM.jobseeker_profile)
+                )
+                .all()
+            )
+            job_orm = session.query(JobsORM).filter_by(job_id=job_id).first()
+            if not job_orm:
+                return None, None
+
+            job = Job(**job_orm.to_dict())
+            # Convert ORM objects into hydrated Pydantic models
+            job_applications = []
+            for orm_obj in job_applications_orm_list:
+                data = orm_obj.to_dict(include_relationships=True)
+                job_applications.append(JobApplication(**data))
+
+            return job, job_applications
+
 
     @error_handler
     async def get_application_funnel_stats(self, job_id: str) -> ApplicationFunnelStats:

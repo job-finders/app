@@ -24,6 +24,7 @@
     background-color: #e9ecef;
     border-radius: 10px;
     padding: 0.25rem 0.75rem;
+      font-size: 0.9rem;
   }
   .action-buttons .btn {
     opacity: 0.8;
@@ -31,6 +32,16 @@
   }
   .action-buttons .btn:hover {
     opacity: 1;
+  }
+
+  @media (max-width: 767.98px) {
+      .text-right {
+          text-align: left !important;
+      }
+
+      .action-buttons {
+          margin-top: 1rem;
+      }
   }
 </style>
 {% endblock %}
@@ -40,8 +51,8 @@
   <!-- Company Header -->
   <div class="card shadow-sm mb-4">
     <div class="card-header bg-light">
-      <div class="d-flex justify-content-between align-items-center">
-        <h2 class="font-weight-bold text-info mb-0">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+            <h2 class="font-weight-bold text-info mb-2 mb-md-0">
           <i class="ti-briefcase mr-2"></i>{{ company.name }}
         </h2>
         {% if not company.is_verified %}
@@ -53,18 +64,17 @@
     </div>
     <div class="card-body">
       <div class="row">
-        <div class="col-md-4">
+          <div class="col-md-4 col-12 mb-3 mb-md-0">
           <p><strong>Industry:</strong> {{ company.industry }}</p>
           <p><strong>Website:</strong>
             <a href="{{ company.website }}" target="_blank" class="text-break">{{ company.website }}</a>
           </p>
         </div>
-        <div class="col-md-4">
-          <p><strong>Location:</strong></p>
-          <p>{{ company.city }}, {{ company.province }}<br>{{ company.country }}</p>
+          <div class="col-md-4 col-12 mb-3 mb-md-0">
+              <p><strong>Location:</strong><br>{{ company.city }}, {{ company.province }}<br>{{ company.country }}</p>
         </div>
-        <div class="col-md-4 text-right">
-          <button class="btn btn-primary" data-toggle="modal" data-target="#newJobModal">
+          <div class="col-md-4 col-12 text-md-right">
+              <button class="btn btn-primary w-100 w-md-auto" data-toggle="modal" data-target="#newJobModal">
               <i class="ti-plus mr-2"></i>Create Job Draft
           </button>
         </div>
@@ -76,366 +86,100 @@
   <div class="card shadow-sm">
     <div class="card-header bg-light">
       <h3 class="font-weight-bold text-info mb-0">
-        <i class="ti-list mr-2"></i>Active Job Posts ({{ jobs|length }})
+          <i class="ti-list mr-2"></i>Jobs Manager ({{ jobs|length }})
       </h3>
     </div>
-
     <div class="card-body">
-      {% for job in jobs %}
-      <div class="job-card card mb-3">
-        <div class="card-body">
-          <div class="row">
-            <!-- Main Job Info -->
-            <div class="col-md-8">
-              <div class="d-flex align-items-center mb-2">
-                <h4 class="mb-0 mr-3">{{ job.title }}</h4>
-                <span class="badge
-                  {% if job.status == 'active' %}badge-success
-                  {% elif job.status == 'draft' %}badge-warning
-                  {% elif job.status == 'closed' %}badge-danger
-                  {% else %}badge-secondary{% endif %} status-badge">
-                  {{ job.status|upper }}
-                </span>
-              </div>
-
-              <div class="mb-2">
-                <span class="text-muted mr-3">
-                  <i class="ti-location-pin"></i> {{ job.location }}
-                </span>
-                <span class="text-muted mr-3">
-                  <i class="ti-time"></i> {{ job.posted_at }}
-                </span>
-              </div>
-
-              <div class="d-flex align-items-center">
-                {% if job.salary_confidential %}
-                  <span class="salary-confidential">Salary Confidential</span>
-                {% else %}
-                  <span class="text-success font-weight-bold">
-                    {{ job.salary_currency }} {{ job.salary_min }} - {{ job.salary_max }}
+        {% if jobs %}
+            {% for job in jobs %}
+                <div class="job-card card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-8 col-md-7 col-12">
+                                <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center mb-2">
+                                    <h4 class="mb-0 mr-sm-3">{{ job.title }}</h4>
+                                    <span class="badge status-badge {% if job.status == 'active' %}badge-success{% elif job.status == 'draft' %}badge-warning{% elif job.status == 'closed' %}badge-danger{% else %}badge-secondary{% endif %}">
+                    {{ job.status|upper }}
                   </span>
-                {% endif %}
-                <span class="mx-3">|</span>
-                <span class="text-primary">{{ job.position_type|replace('_', ' ')|title }}</span>
-                <span class="mx-3">|</span>
-                <span class="text-info">{{ job.remote_policy|title }}</span>
-              </div>
-            </div>
-
-            <!-- Stats & Actions -->
-            <div class="col-md-4">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="stats-badge">
-                  <i class="ti-eye"></i> {{ job.view_count }} views
+                                </div>
+                                <div class="mb-2 text-muted">
+                  <i class="ti-location-pin"></i> {{ job.location }}
+                                    <span class="mx-2">|</span>
+                  <i class="ti-time"></i> {{ job.posted_at }}
+                                </div>
+                                <div class="d-flex flex-wrap align-items-center">
+                                    {% if job.salary_confidential %}
+                                        <span class="salary-confidential">Salary Confidential</span>
+                                    {% else %}
+                                        <span class="text-success font-weight-bold">{{ job.salary_currency }} {{ job.salary_min }} - {{ job.salary_max }}</span>
+                                    {% endif %}
+                                    <span class="mx-2">|</span>
+                                    <span class="text-primary">{{ job.position_type|replace('_', ' ')|title }}</span>
+                                    <span class="mx-2">|</span>
+                                    <span class="text-info">{{ job.remote_policy|title }}</span>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-5 col-12 mt-3 mt-md-0">
+                                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center">
+                                    <div class="stats-badge mb-2 mb-sm-0">
+                                        <i class="ti-eye"></i> {{ job.view_count }} views
+                                    </div>
+                                    <div class="stats-badge">
+                                        <i class="ti-user"></i> {{ job.application_count }} apps
+                                    </div>
+                                </div>
+                                <div class="action-buttons d-flex flex-wrap justify-content-end mt-3">
+                                    <a href="#" class="btn btn-sm btn-outline-secondary mr-2 mb-2" data-toggle="tooltip"
+                                       title="Edit">
+                                        <i class="ti-pencil"></i>
+                                    </a>
+                                    <a href="{{ url_for("jobs_workflow.view_job_applications", job_id=job.job_id) }}"
+                                       class="btn btn-sm btn-outline-info mr-2 mb-2" data-toggle="tooltip"
+                                       title="View Applicants">
+                                        <i class="ti-list"></i>
+                                    </a>
+                                    <a href="{{ url_for('jobs_workflow.job_insights', job_id=job.job_id) }}"
+                                       class="btn btn-sm btn-outline-primary mr-2 mb-2" data-toggle="tooltip"
+                                       title="Insights">
+                                        <i class="ti-dashboard"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-outline-success mr-2 mb-2" data-toggle="tooltip"
+                                       title="Duplicate">
+                                        <i class="ti-files"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-outline-danger mb-2" data-toggle="tooltip"
+                                       title="Delete">
+                                        <i class="ti-trash"></i>
+                                    </a>
+                                </div>
+                                {% if job.application_deadline %}
+                                    <div class="text-right mt-2">
+                                        <small class="text-muted">Closes: {{ job.application_deadline }}</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="stats-badge">
-                  <i class="ti-user"></i> {{ job.application_count }} apps
-                </div>
-              </div>
-
-                <div class="card border-0 shadow-sm mb-4">
-                  <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Job Quality Insights</h5>
-                      <span class="badge bg-{% if job.is_active %}success{% else %}secondary{% endif %}">
-                          {% if job.is_active %}Active{% else %}Not Active{% endif %}
-                        </span>
-                  </div>
-                  <div class="card-body">
-                    <div class="row mb-3">
-                      <div class="col-md-4 mb-2">
-                        <strong>Quality Score:</strong>
-                        <div class="progress" style="height: 20px;">
-                          <div class="progress-bar bg-info" role="progressbar" style="width: {{ job.job_quality_score }}%;" aria-valuenow="{{ job.job_quality_score }}" aria-valuemin="0" aria-valuemax="100">
-                            {{ job.job_quality_score }}%
-                          </div>
-                        </div>
-                      </div>
-                        <div class="col-md-4 mb-2">
-                            <strong>Completeness:</strong>
-                            <span class="badge bg-{% if job.job_completeness_score >= 7 %}success{% else %}warning{% endif %}">
-                            {{ job.job_completeness_score }}/10
-                          </span>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <strong>Readability:</strong>
-                            <span class="badge bg-{% if job.readability_is_ok %}success{% else %}danger{% endif %}">
-                            {% if job.readability_is_ok %}Good{% else %}Needs Work{% endif %}
-                          </span>
-                        </div>
-
-                    </div>
-
-                      <div class="row mb-3">
-                          <div class="col-md-6">
-                              <strong>ATS Match Rate:</strong>
-                              <span>{{ job.job_ats_match_rate | default(0) }}%</span>
-                              <div class="small text-muted">Candidates scoring above 60</div>
-                          </div>
-                          <div class="col-md-6">
-                              <strong>Top Missing Keywords:</strong>
-                              <ul class="list-inline mb-0">
-                                  {% for kw in job.job_common_missing_keywords %}
-                                      <li class="list-inline-item badge bg-secondary">{{ kw }}</li>
-                                  {% endfor %}
-                              </ul>
-                          </div>
-                      </div>
-
-                  </div>
-                    <div class="mb-3">
-                      <strong>Spam Score:</strong>
-                        <span class="badge bg-{% if job.spam_severity_score >= 6 %}danger{% else %}secondary{% endif %}">
-                        {{ job.spam_severity_score }}/10
-                      </span>
-                      {% if job.is_spammy_job %}
-                        <div class="alert alert-warning mt-2">
-                          This job post may be flagged as spam due to excessive promotional language.
-                        </div>
-                      {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                      <strong>ATS Feedback Snippets:</strong>
-                      <ul class="list-group list-group-flush">
-                        {% for feedback in job.job_ats_feedback_snippets %}
-                          <li class="list-group-item">{{ feedback }}</li>
-                        {% endfor %}
-                      </ul>
-                    </div>
-
-                    {% if not job.is_active %}
-                      <div class="alert alert-danger mt-4">
-                        <strong>Job Not Activated:</strong> This job has not gone live because of one or more quality issues.
-                        <ul class="mb-0 mt-2">
-                          {% if job.job_quality_score < 60 %}
-                            <li>Quality score is below acceptable threshold.</li>
-                          {% endif %}
-                          {% if job.spam_severity_score >= 6 %}
-                            <li>Potential spam indicators detected.</li>
-                          {% endif %}
-                          {% if not job.readability_is_ok %}
-                            <li>Readability of the job description is too low.</li>
-                          {% endif %}
-                        </ul>
-                      </div>
-                    {% endif %}
-
-                    <div class="mt-3 d-flex gap-2">
-                      <button class="btn btn-outline-primary">
-                        Improve Job Post
-                      </button>
-                      <button class="btn btn-outline-secondary">
-                        Edit Details
-                      </button>
-                      <button class="btn btn-outline-dark">
-                        Request Manual Review
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-              <div class="action-buttons text-right">
-                <a href="#" class="btn btn-sm btn-outline-secondary"
-                   data-toggle="tooltip" title="Edit">
-                  <i class="ti-pencil"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-outline-info"
-                   data-toggle="tooltip" title="View Applicants">
-                  <i class="ti-list"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-outline-success"
-                   data-toggle="tooltip" title="Duplicate">
-                  <i class="ti-files"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-outline-danger"
-                   data-toggle="tooltip" title="Delete">
-                  <i class="ti-trash"></i>
-                </a>
-              </div>
-
-              {% if job.application_deadline %}
-              <div class="text-right mt-2">
-                <small class="text-muted">
-                    Closes: {{ job.application_deadline }}
-                </small>
-              </div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
+            {% endfor %}
       {% else %}
-      <div class="alert alert-info">
-        <i class="ti-info-alt mr-2"></i>No active job posts found
-      </div>
-      {% endfor %}
+            <div class="alert alert-info">
+                <i class="ti-info-alt mr-2"></i>No active job posts found
+            </div>
+        {% endif %}
     </div>
   </div>
 </div>
 
-<!-- New Job Modal -->
-<div class="modal fade" id="newJobModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-        <form method="POST" action="{{ url_for("jobs_workflow.save_job_draft") }}">
-            {# {{ csrf_token() }} #}
-
-            <div class="modal-header bg-light border-bottom">
-                <h5 class="modal-title text-primary font-weight-bold">
-                    <i class="ti-plus mr-2"></i> Create Job Post
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-
-            <div class="modal-body">
-                <!-- Core Job Details -->
-                <div class="mb-4">
-                    <h6 class="text-muted font-weight-bold mb-3">Job Information</h6>
-                    <div class="form-group">
-                        <label for="title">Job Title *</label>
-                        <input type="text" id="title" name="title" class="form-control" required minlength="5"
-                               maxlength="255">
-                    </div>
-
-              <div class="form-group">
-                  <label for="description">Description *</label>
-                  <textarea id="description" name="description" class="form-control" rows="6" required></textarea>
-              </div>
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label for="position_type">Position Type *</label>
-                            <select id="position_type" name="position_type" class="form-control" required>
-                                <option value="FULL_TIME">Full Time</option>
-                                <option value="PART_TIME">Part Time</option>
-                                <option value="CONTRACT">Contract</option>
-                            </select>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="remote_policy">Remote Policy *</label>
-                            <select id="remote_policy" name="remote_policy" class="form-control" required>
-                                <option value="ONSITE">Onsite</option>
-                                <option value="HYBRID">Hybrid</option>
-                                <option value="REMOTE">Remote</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Salary Details -->
-                <div class="mb-4">
-                    <h6 class="text-muted font-weight-bold mb-3">Salary & Compensation</h6>
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            <label for="salary_min">Min Salary</label>
-                            <input type="number" id="salary_min" name="salary_min" class="form-control" min="0">
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label for="salary_max">Max Salary</label>
-                            <input type="number" id="salary_max" name="salary_max" class="form-control" min="0">
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label for="salary_currency">Currency *</label>
-                            <input type="text" id="salary_currency" name="salary_currency" class="form-control"
-                                   value="ZAR" required maxlength="3">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Location Details -->
-                <div class="mb-4">
-                    <h6 class="text-muted font-weight-bold mb-3">Location</h6>
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            <label for="city">City *</label>
-                            <input type="text" id="city" name="city" class="form-control" required>
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label for="province">Province *</label>
-                            <input type="text" id="province" name="province" class="form-control" required>
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label for="country">Country *</label>
-                            <input type="text" id="country" name="country" class="form-control" required>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Timeline -->
-                <div class="mb-4">
-                    <h6 class="text-muted font-weight-bold mb-3">Timeline</h6>
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label for="application_deadline">Application Deadline</label>
-                            <input type="date" id="application_deadline" name="application_deadline"
-                                   class="form-control" min="{{ today }}">
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="expires_at">Expiration Date *</label>
-                            <input type="date" id="expires_at" name="expires_at" class="form-control" required
-                                   min="{{ today }}">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Status -->
-                <div class="form-group mb-0">
-                    <h6 class="text-muted font-weight-bold mb-3">Status</h6>
-                    <label for="status">Initial Status *</label>
-                    <select id="status" name="status" class="form-control" required>
-                        <option value="draft">Draft</option>
-                        <option value="active">Active</option>
-                    </select>
-                </div>
-            </div>
-            {#      <div class="form-group">#}
-            {#        <div class="section-header"><h5>Enhance with AI</h5></div>#}
-            {#        <div class="form-group form-check mb-2">#}
-            {#            <label class="form-check-label font-weight-bold text-primary text-xl-center" for="useAgent">Use AI Agent#}
-            {#                <input class="form-control" type="checkbox" name="use_ai_agent" id="use_ai_agent" />#}
-            {#            </label>#}
-            {#        </div>#}
-            {#      </div>#}
-
-
-            <div class="modal-footer bg-light border-top">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary"> Next</button>
-            </div>
-        </form>
-
-
-    </div>
-  </div>
-</div>
+    <!-- Job Modal remains unchanged -->
+    {{ super() }}
 {% endblock %}
 
 {% block scripts %}
+    {{ super() }}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize tooltips
-  $('[data-toggle="tooltip"]').tooltip();
-
-  // Form validation for modal
-  $('#newJobModal form').on('submit', function(e) {
-    const required = document.querySelectorAll('#newJobModal [required]');
-    let isValid = true;
-
-    required.forEach(field => {
-      if (!field.value.trim()) {
-        isValid = false;
-        field.classList.add('is-invalid');
-      } else {
-        field.classList.remove('is-invalid');
-      }
+    document.addEventListener('DOMContentLoaded', function () {
+        $('[data-toggle="tooltip"]').tooltip();
     });
-
-    if (!isValid) {
-      e.preventDefault();
-      alert('Please fill in all required fields');
-    }
-  });
-});
 </script>
 {% endblock %}
