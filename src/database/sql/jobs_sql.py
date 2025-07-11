@@ -305,7 +305,8 @@ class JobsORM(Base):
             "category": self.category.to_dict(include_jobs=False) if self.category and include_relationship else None,
             "company": self.company.to_dict() if self.company and include_relationship else None,
             "applications": [application.to_dict() for application in self.applications] if include_relationship else [],
-            "saved_jobs": [_job.to_dict for _job in self.saved_jobs] if include_relationship else []
+            "interested_jobseekers": [_interest.to_dict() for _interest in
+                                      self.interested_jobseekers] if include_relationship else []
         }
 
     def generate_and_set_slug(self):
@@ -340,7 +341,7 @@ class SavedJobORM(Base):
     
     __tablename__ = 'saved_jobs'
     saved_job_id = Column(String(ID_LEN), primary_key=True, index=True)
-    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_id'), index=True)
+    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_uid'), index=True)
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)
 
     created_at = Column(DateTime(timezone=True), default=utc_time)
@@ -365,9 +366,9 @@ class SavedJobORM(Base):
             "saved_job_id" : self.saved_job_id,
             "user_id": self.user_id,
             "job_id": self.job_id,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
             "job": self.job.to_dict() if self.job and include_relationship else None,
-            "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationship else None,
-            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None
+            "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationship else None
         }
 
 class JobApplicationORM(Base):

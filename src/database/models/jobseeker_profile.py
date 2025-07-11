@@ -77,6 +77,8 @@ class JobSeekerProfile(BaseModel):
     resumes_list: Optional[List['JobSeekerCV']] = Field(default_factory=list)
     saved_jobs: Optional[List['SavedJob']] = Field(default_factory=list)
 
+    model_config = ConfigDict(from_attributes=True)
+
     # --- Validators ---
     @field_validator("job_titles_of_interest", "industries_of_interest", "locations_of_interest", "freelance_skills", mode="before")
     def strip_empty_list_items(cls, v):
@@ -222,47 +224,51 @@ class JobSeekerProfile(BaseModel):
     def all_hints(self) -> List[Hint]:
         hints: List[Hint] = []
 
-        def hint(msg, ctx="Profile", pri=HintPriority.MEDIUM):
-            hints.append(Hint(message=msg, context=ctx, priority=pri))
+        def hint(msg: str, context: str = "Profile", pri: HintPriority = HintPriority.MEDIUM):
+            hints.append(Hint(message=msg, context=context, priority=pri))
 
         # Profile fields
-        if not self.bio: hint("Add a short bio to help employers understand your background.")
-        if not self.profile_image_url: hint("Upload a profile picture to increase trust.", pri=HintPriority.LOW)
-        if not self.phone: hint("Add your phone number so employers can contact you easily.")
-        if not self.location: hint("Specify your current or preferred location.")
+        if not self.bio: hint(msg="Add a short bio to help employers understand your background.")
+        if not self.profile_image_url: hint(msg="Upload a profile picture to increase trust.", pri=HintPriority.LOW)
+        if not self.phone: hint(msg="Add your phone number so employers can contact you easily.")
+        if not self.location: hint(msg="Specify your current or preferred location.")
         if not (self.linkedin or self.github or self.website):
-            hint("Add at least one social link (LinkedIn, GitHub, or personal website).")
+            hint(msg="Add at least one social link (LinkedIn, GitHub, or personal website).")
 
         # Job prefs
-        if not self.job_titles_of_interest: hint("Add at least one job title you're interested in.", pri=HintPriority.HIGH)
-        if not self.industries_of_interest: hint("Specify your industries of interest.")
-        if not self.locations_of_interest: hint("Add preferred job locations.")
-        if not self.resumes_list: hint("Upload your resume to attract more employers.", pri=HintPriority.HIGH)
+        if not self.job_titles_of_interest: hint(msg="Add at least one job title you're interested in.",
+                                                 pri=HintPriority.HIGH)
+        if not self.industries_of_interest: hint(msg="Specify your industries of interest.")
+        if not self.locations_of_interest: hint(msg="Add preferred job locations.")
+        if not self.resumes_list: hint(msg="Upload your resume to attract more employers.", pri=HintPriority.HIGH)
 
         # Freelancing
         if self.is_freelancer:
-            if not self.freelance_skills: hint("List your freelance skills.", ctx="Freelancing")
-            if not self.hourly_rate: hint("Set your hourly rate.", ctx="Freelancing")
+            if not self.freelance_skills: hint(msg="List your freelance skills.", context="Freelancing")
+            if not self.hourly_rate: hint(msg="Set your hourly rate.", context="Freelancing")
             if not (self.freelance_availability or self.freelance_experience):
-                hint("Add freelance availability or a short summary of your experience.", ctx="Freelancing")
+                hint(msg="Add freelance availability or a short summary of your experience.", context="Freelancing")
 
         # Applications
         for app in self.applications or []:
             job_title = app.job.title if app.job else "Unnamed Job"
             ctx = f"Application: {job_title}"
             if app.ats_risk:
-                hint(f"The application to '{job_title}' has a low ATS score.", ctx, HintPriority.HIGH)
+                hint(msg=f"The application to '{job_title}' has a low ATS score.", context=ctx, pri=HintPriority.HIGH)
             if app.missing_keywords:
                 keywords = ', '.join(app.missing_keywords[:5]) + ("..." if len(app.missing_keywords) > 5 else "")
-                hint(f"Missing important keywords for '{job_title}': {keywords}", ctx, HintPriority.HIGH)
+                hint(msg=f"Missing important keywords for '{job_title}': {keywords}", context=ctx,
+                     pri=HintPriority.HIGH)
             if app.needs_action:
-                hint(f"'{job_title}' application is incomplete. Add missing documents.", ctx, HintPriority.HIGH)
+                hint(msg=f"'{job_title}' application is incomplete. Add missing documents.", context=ctx,
+                     pri=HintPriority.HIGH)
             if app.is_under_review and app.ats_score and app.ats_score < 70:
-                hint(f"'{job_title}' is under review but ATS score is low.", ctx, HintPriority.MEDIUM)
+                hint(msg=f"'{job_title}' is under review but ATS score is low.", context=ctx, pri=HintPriority.MEDIUM)
 
         # Engagement
-        if not self.saved_jobs: hint("Save jobs you're interested in.", ctx="Engagement", pri=HintPriority.LOW)
-        if not self.applications: hint("You haven’t applied to any jobs yet. Start applying!", ctx="Engagement", pri=HintPriority.HIGH)
+        if not self.saved_jobs: hint(msg="Save jobs you're interested in.", context="Engagement", pri=HintPriority.LOW)
+        if not self.applications: hint(msg="You haven’t applied to any jobs yet. Start applying!", context="Engagement",
+                                       pri=HintPriority.HIGH)
 
         return sorted(hints, key=lambda h: h.priority.value)
 
@@ -278,4 +284,36 @@ class JobSeekerProfile(BaseModel):
     def job_application_hints(self) -> List[Hint]:
         return [h for h in self.all_hints if h.context.startswith("Application:")]
 
-    model_config = ConfigDict(from_attributes=True)
+    @property
+    def trust_score(self) -> float:
+        score, max_score = 0, 0
+
+        def add(condition: bool, weight: float):
+            nonlocal score, max_score
+            max_score += weight
+            if condition:
+                score += weight
+
+        # Email/Phone Verification
+        add(self.verified_email, 2)
+        add(self.verified_phone, 1)
+
+        # Socials
+        add(bool(self.linkedin), 1)
+        add(self.verified_linkedin, 1)
+
+        # GitHub
+        add(bool(self.github), 1)
+        add(self.verified_github, 1)
+
+        # GitHub trust from AI (scaled 0–1)
+        if self.github_verification_score is not None:
+            score += self.github_verification_score * 3
+            max_score += 3
+        else:
+            max_score += 3
+
+        # Resume as a trust signal
+        add(bool(self.resumes_list), 1)
+
+        return round((score / max_score) * 100, 2) if max_score else 0.0

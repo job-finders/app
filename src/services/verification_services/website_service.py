@@ -62,7 +62,8 @@ class WebsiteVerifier:
                 reason=f"AI evaluation failed: {str(e)}"
             ).dict()
 
-    def _is_domain_reachable(self, url: str) -> bool:
+    @staticmethod
+    def _is_domain_reachable(url: str) -> bool:
         """
         Check DNS resolution for the domain in the URL.
 
@@ -114,6 +115,7 @@ class WebsiteVerifier:
             }
         ]
 
+        # noinspection PyTypeChecker
         result: WebsiteVerificationResult = await call_openrouter(
             messages=messages,
             output_model=WebsiteVerificationResult,

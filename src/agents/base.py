@@ -1,10 +1,15 @@
-from typing import Type, Optional, Dict, Any
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
+from datetime import datetime
+import time
 from enum import Enum
-import asyncio
-from datetime import datetime, timedelta
-from src.memory.agent_memory import AgentMemoryStore
+from typing import Type, Dict, Any
+from pydantic import BaseModel
+
+from src.agents.openrouter_client import openrouter_client
+from src.config import config_instance
+
+from src.agents.memory import AgentMemoryStore
+
 
 class ModelType(Enum):
     # Primary DeepSeek models (cost-effective)
@@ -56,8 +61,8 @@ class UsageTracker:
         limits = self.tier.value
         return (daily_usage < limits["daily_limit"] and 
                 monthly_usage < limits["monthly_limit"])
-    
-    def record_usage(self) -> None:
+
+    def record_usage(self) -> bool:
         if self.check_limit():
             self.increment_usage("daily")
             self.increment_usage("monthly")
@@ -71,6 +76,11 @@ class BaseAgent(ABC):
         self.memory = AgentMemoryStore(user_id, agent_name=self.name)
         self.usage_tracker = UsageTracker(user_id, usage_tier)
         self.hashnode_token = config_instance().HASHNODE_TOKEN
+        self._last_interaction = {}
+
+    @abstractmethod
+    def system_prompt(self):
+        ...
 
     @abstractmethod
     def prompt(self, *args, **kwargs) -> str:
@@ -80,7 +90,8 @@ class BaseAgent(ABC):
     def output_model(self) -> Type[BaseModel]:
         ...
 
-    def select_model(self, user_prompt: str, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> ModelType:
+    @staticmethod
+    def select_model(user_prompt: str, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> ModelType:
         prompt_lower = user_prompt.lower()
         
         # Role-specific routing - primarily DeepSeek
@@ -189,7 +200,8 @@ class BaseAgent(ABC):
         # Default to most cost-effective model
         return ModelType.DEEPSEEK_CHAT
 
-    def get_fallback_model(self, selected_model: ModelType) -> ModelType:
+    @staticmethod
+    def get_fallback_model(selected_model: ModelType) -> ModelType:
         """Get cheaper fallback model when usage limits are exceeded"""
         if selected_model in [ModelType.DEEPSEEK_REASONER, ModelType.DEEPSEEK_V3]:
             return ModelType.DEEPSEEK_CHAT
@@ -227,30 +239,31 @@ class BaseAgent(ABC):
 
 
     async def run(self, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> BaseModel:
-        try:
-            user_prompt = self.prompt(*args, **kwargs)
-            system_prompt = self.system_prompt()
-            
-            # Select model with usage limits
-            selected_model = await self.check_usage_and_select_model(
-                user_prompt, user_role, task_type, *args, **kwargs
-            )
-            
-            # Record usage
-            if not self.usage_tracker.record_usage():
-                raise Exception("Usage limit exceeded during execution")
-            
-            # Add user message to memory with protection option
-            protect_user_msg = kwargs.get('protect_user_message', False)
-            user_entry_id = self.memory.add_entry("user", user_prompt, protect=protect_user_msg)
-            
-            # Get memory in chat format with optional limit
-            memory_limit = kwargs.get('memory_limit', None)
-            chat_messages = self.memory.get_chat_messages(limit=memory_limit)
-            
-            # Build final message structure
-            messages = [{"role": "system", "content": system_prompt}] + chat_messages
 
+        user_prompt = self.prompt(*args, **kwargs)
+        system_prompt = self.system_prompt()
+
+        # Select model with usage limits
+        selected_model = await self.check_usage_and_select_model(
+            user_prompt, user_role, task_type, *args, **kwargs
+        )
+
+        # Record usage
+        if not self.usage_tracker.record_usage():
+            raise Exception("Usage limit exceeded during execution")
+
+        # Add user message to memory with protection option
+        protect_user_msg = kwargs.get('protect_user_message', False)
+        user_entry_id = self.memory.add_entry("user", user_prompt, protect=protect_user_msg)
+
+        # Get memory in chat format with optional limit
+        memory_limit = kwargs.get('memory_limit', None)
+        chat_messages = self.memory.get_chat_messages(limit=memory_limit)
+
+        # Build final message structure
+        messages = [{"role": "system", "content": system_prompt}] + chat_messages
+
+        try:
             # Make API call with enhanced client
             output = await openrouter_client.structured_completion(
                 messages=messages,
@@ -337,7 +350,7 @@ class BaseAgent(ABC):
         """Delete a specific memory entry."""
         return self.memory.delete_entry(entry_id)
 
-    def delete_memory_entries(self, entry_ids: List[str]) -> Dict[str, bool]:
+    def delete_memory_entries(self, entry_ids: list[str]) -> dict[str, bool]:
         """Delete multiple memory entries."""
         return self.memory.delete_entries(entry_ids)
 

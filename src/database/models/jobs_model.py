@@ -3,7 +3,6 @@ import uuid
 from collections import Counter
 from datetime import date, timedelta, datetime, timezone
 from enum import Enum
-from joblib.externals.loky.process_executor import TerminatedWorkerError
 from typing import Optional, Any
 
 from pydantic import BaseModel, Field, computed_field, ConfigDict, model_validator, AwareDatetime
@@ -11,11 +10,11 @@ from textstat.backend.metrics import flesch_reading_ease
 
 from src.agents.employer import EnhanceJobPostOutput
 from src.database.constants import utc_time
-from src.database.models.company_models import Company
-
+from src.database.models.company_models import Company, SavedCandidates, CompanyFollowing
+from src.database.models.jobseeker_profile import JobSeekerProfile
+from src.database.models.resume import JobSeekerCV
 from src.database.models.employer_models import Employer
-# NOTE : DO NOT REMOVE EMPLOYER IMPORT
-# from textstat import flesch_reading_ease
+
 
 def format_reference(ref: str) -> str:
     """Sample reference formatter - implement your logic"""

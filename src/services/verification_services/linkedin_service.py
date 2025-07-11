@@ -81,6 +81,7 @@ class LinkedInVerifier:
             },
         ]
 
+        # noinspection PyTypeChecker
         result: LinkedInVerificationResult = await call_openrouter(
             messages=messages,
             output_model=LinkedInVerificationResult,
@@ -91,7 +92,8 @@ class LinkedInVerifier:
 
         return result
 
-    def _build_verification_prompt(self, profile: LinkedInProfile) -> str:
+    @staticmethod
+    def _build_verification_prompt(profile: LinkedInProfile) -> str:
         return f"""
                 You're an AI assistant verifying LinkedIn profiles.
 

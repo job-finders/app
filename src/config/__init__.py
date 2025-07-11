@@ -88,6 +88,7 @@ class Settings(BaseSettings):
     JWT_SECRETS: JwtSecrets = Field(default_factory=JwtSecrets)
     PAYFAST_SETTINGS: PayfastSettings = Field(default_factory=PayfastSettings)
     SECRET_KEY: str = Field(..., alias="SECRET_KEY")
+    OPENROUTER_API_KEY: str = Field(..., alias="OPENROUTER_API_KEY")
 
     model_config = SettingsConfigDict(
         env_file=".env.developer",

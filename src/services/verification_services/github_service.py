@@ -80,6 +80,7 @@ class GitHubVerifier:
 
         prompt = self._build_prompt(profile, repo_summaries, languages)
 
+        # noinspection PyTypeChecker
         result: GitHubVerificationResult = await call_openrouter(
             messages=[
                 {
@@ -96,8 +97,9 @@ class GitHubVerifier:
 
         return result
 
+    @staticmethod
     def _build_prompt(
-        self, profile: GitHubProfile, repo_summaries: List[str], languages: List[str]
+            profile: GitHubProfile, repo_summaries: List[str], languages: List[str]
     ) -> str:
         return f"""
             Analyze the following GitHub user profile for authenticity and active usage.

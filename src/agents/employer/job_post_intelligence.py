@@ -4,7 +4,6 @@ from typing import Type, Optional, List, Dict
 
 from pydantic import BaseModel, Field, field_validator
 
-# from src.database.models import Job
 from src.agents.base import BaseAgent
 
 
