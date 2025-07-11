@@ -56,6 +56,9 @@ class JobSeekerProfileORM(Base):
     following_companies = relationship("CompanyFollowingORM", back_populates="jobseeker_follower")
 
     resumes_list = relationship("JobSeekerCVORM", back_populates="jobseeker_profile", cascade="all, delete-orphan")
+    
+    # This Holds the list of jobs that the Job Seeker has saved for later
+    saved_jobs = relationship("SavedJobORM", back_populates="jobseeker_profile", cascade="all, delete-orphan")
 
     @classmethod
     def create_if_not_table(cls):
@@ -104,5 +107,6 @@ class JobSeekerProfileORM(Base):
             "last_updated": self.last_updated.replace(tzinfo=timezone.utc).isoformat() if self.last_updated else None,
             "applications": [application.to_dict() for application in self.applications] if include_relationship else [],
             "interested_companies": [company.to_dict() for company in self.interested_companies] if include_relationship and self.interested_companies else [],
-            "following_companies": [company_follow.to_dict() for company_follow in self.following_companies] if include_relationship and self.self.following_companies else []
+            "following_companies": [company_follow.to_dict() for company_follow in self.following_companies] if include_relationship and self.self.following_companies else [],
+            "saved_jobs": [job.to_dict() for job in self.saved_jobs] if include_relationship and self.saved_jobs else [],
         }

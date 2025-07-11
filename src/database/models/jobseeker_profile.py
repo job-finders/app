@@ -62,6 +62,9 @@ class JobSeekerProfile(BaseModel):
     ip_address: Optional[str] = Field(default=None, description="Last known IP address of the job) seeker")
     device_finger_print: Optional[str] = Field(default=None, description="Device fingerprint for security checks")
 
+    # TODO SavedJobs should be linked here.
+    saved_jobs: Optional[List['SavedJob']] = Field(default_factory=list, description="List of jobs saved by the job seeker")
+
     # --- Validators ---
     @field_validator("job_titles_of_interest", "industries_of_interest", "locations_of_interest", "freelance_skills", mode="before")
     def remove_empty_items(cls, v):
@@ -74,12 +77,110 @@ class JobSeekerProfile(BaseModel):
         if v and not v.strip():
             raise ValueError("Availability cannot be blank")
         return v
+    
+    @property
+    def total_saved_jobs(self) -> int:
+        """
+        Returns the total number of jobs saved by the job seeker.
+        """
+        return len(self.saved_jobs) if self.saved_jobs else 0
+
+    @property
+    def total_applications(self) -> int:
+        """
+        Returns the total number of job applications submitted by the job seeker.
+        """
+        return len(self.applications) if self.applications else 0
+
+    @property
+    def profile_completion_percentage(self) -> int:
+        score = 0
+        max_score = 0
+
+        def add_score(condition: bool, weight: float):
+            nonlocal score, max_score
+            max_score += weight
+            if condition:
+                score += weight
+
+        # Basic Info
+        add_score(bool(self.first_name), 1.66)
+        add_score(bool(self.last_name), 1.66)
+        add_score(bool(self.email), 1.66)
+        add_score(bool(self.bio), 5)
+        add_score(bool(self.profile_image_url), 3)
+
+        # Contact / Social
+        add_score(bool(self.phone), 2)
+        add_score(bool(self.location), 2)
+        add_score(bool(self.linkedin or self.github or self.website), 3)
+
+        # Preferences
+        add_score(bool(self.job_titles_of_interest), 3)
+        add_score(bool(self.industries_of_interest), 3)
+        add_score(bool(self.locations_of_interest), 3)
+
+        # Resume
+        add_score(bool(self.resumes_list), 5)
+
+        # Freelance (optional)
+        if self.is_freelancer:
+            add_score(bool(self.freelance_skills), 2)
+            add_score(bool(self.hourly_rate), 1.5)
+            add_score(bool(self.freelance_availability or self.freelance_experience), 1.5)
+
+        percent = int((score / max_score) * 100) if max_score else 0
+        return min(percent, 100)
+
+    @property
+    def profile_completion_hints(self) -> List[str]:
+        hints = []
+
+        if not self.bio:
+            hints.append("Add a short bio to help employers understand your background.")
+        if not self.profile_image_url:
+            hints.append("Upload a profile picture to increase trust.")
+        if not self.phone:
+            hints.append("Add your phone number so employers can contact you easily.")
+        if not self.location:
+            hints.append("Specify your current location or preferred location.")
+        if not (self.linkedin or self.github or self.website):
+            hints.append("Add at least one social link (LinkedIn, GitHub, or personal website).")
+        if not self.job_titles_of_interest:
+            hints.append("Add at least one job title you're interested in.")
+        if not self.industries_of_interest:
+            hints.append("Specify your industries of interest.")
+        if not self.locations_of_interest:
+            hints.append("Add preferred job locations.")
+        if not self.resumes_list:
+            hints.append("Upload your resume to attract more employers.")
+
+        if self.is_freelancer:
+            if not self.freelance_skills:
+                hints.append("List your freelance skills.")
+            if not self.hourly_rate:
+                hints.append("Set your hourly rate for freelance work.")
+            if not (self.freelance_availability or self.freelance_experience):
+                hints.append("Add freelance availability or a short summary of your experience.")
+
+        return hints
+
+
+    @property
+    def is_profile_complete(self) -> bool:
+        """
+            Determines if the job seeker's profile is complete based on profile completion percentage.
+            complete profiles can be used to apply for jobs and receive recommendations.
+        """
+        return self.profile_completion_percentage >= 80
+
+
     @property
     def can_send_job_recommendations(self) -> bool:
         """
             Determines if the job seeker can receive job recommendations based on their profile settings.
         """
-        return self.alerts_enabled and self.receive_company_updates
+        return self.alerts_enabled and self.receive_company_updates and self.is_profile_complete
 
     @property
     def detect_burst_applications(self) -> bool:

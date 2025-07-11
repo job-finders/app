@@ -226,7 +226,7 @@ class JobsORM(Base):
 
     # Relationships
     applications = relationship("JobApplicationORM", back_populates="job")
-    saved_jobs = relationship("SavedJobORM", back_populates="job")
+    interested_jobseekers = relationship("SavedJobORM", back_populates="job")
     category = relationship("JobCategoryORM", back_populates="jobs")
     ats_reports = relationship("ATSReportORM", back_populates="job")
 
@@ -331,14 +331,23 @@ class JobVersionHistoryORM(Base):
     modified_at = Column(DateTime(timezone=True), default=utc_time)
 
 class SavedJobORM(Base):
+    """sumary_line
+        JobSeekers will save jobs they are interested in for later reference. using this Model.
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    
     __tablename__ = 'saved_jobs'
-    saved_job_id = Column(String(ID_LEN), primary_key=True)
-    user_id = Column(String(ID_LEN), index=True)
+    saved_job_id = Column(String(ID_LEN), primary_key=True, index=True)
+    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_id'), index=True)
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)
 
     created_at = Column(DateTime(timezone=True), default=utc_time)
 
-    job = relationship("JobsORM", back_populates="saved_jobs")
+    job = relationship("JobsORM", back_populates="interested_jobseekers")
+    jobseeker_profile = relationship("JobSeekerProfileORM", back_populates="saved_jobs")
+
 
     @classmethod
     def create_if_not_table(cls):
@@ -357,6 +366,7 @@ class SavedJobORM(Base):
             "user_id": self.user_id,
             "job_id": self.job_id,
             "job": self.job.to_dict() if self.job and include_relationship else None,
+            "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationship else None,
             "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None
         }
 

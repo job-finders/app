@@ -235,7 +235,10 @@ class Job(BaseModel):
     seo_description: Optional[str] = Field(default=None, description="SEO description for job post")
 
     applications: list['JobApplication'] = Field(default_factory=list)
-    saved_jobs: list['SavedJob'] = Field(default_factory=list)
+
+    # NOTE: this points to jobseekers interested in this job - through the savedJobs Class
+    interested_jobseekers: list['SavedJob'] = Field(default_factory=list)
+
     ats_reports: list['ATSReport'] = Field(default_factory=list, description="List of ATS reports for this job")
 
 
@@ -261,6 +264,14 @@ class Job(BaseModel):
                                 JobApplicationStatusEnum.SHORTLISTED.value]
         return sum(1 for app in self.applications if app.application_stage in in_progress_statuses)
 
+    @computed_field(return_type=int)
+    @property
+    def total_applications_count(self) -> int:
+        """
+            Will Count the total number of applications for this job
+        :return:
+        """
+        return len(self.applications)
 
 
     @computed_field(return_type=Optional[int])
@@ -276,6 +287,7 @@ class Job(BaseModel):
         total_score = sum(report.score for report in self.ats_reports)
         avg_score = total_score / len(self.ats_reports)
         return int(round(avg_score, 2))
+
 
     @computed_field
     @property
@@ -820,6 +832,9 @@ class SavedJob(BaseModel):
     job_id: str
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
 
+    job : Optional[Job] = Field(default=None, description="Job related to this saved job")
+    jobseeker_profile: Optional['JobSeekerProfile'] = Field(default=None, description="Job Seeker related to this saved job")
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -831,8 +846,7 @@ class ATSReport(BaseModel):
     matched_keywords: list[str] = Field(default_factory=list, description="list of matched keywords found in CV")
     missing_keywords: list[str] = Field(default_factory=list, description="list of important keywords not found in CV")
     feedback: str = Field(..., description="Feedback based on the ATS evaluation")
-    created_at: AwareDatetime = Field(default_factory=lambda: utc_time(),
-                                      description="Timestamp when the report was generated")
+    created_at: AwareDatetime = Field(default_factory=lambda: utc_time(), description="Timestamp when the report was generated")
     job_application: Optional['JobApplication'] = Field(default=None, description="Job Applications related to this ATS Report if Any")
     job: Optional[Job] = Field(default=None, description="Job related to this ATS Report if Any")
 
