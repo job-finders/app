@@ -5,6 +5,18 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict, Awa
 from src.database.constants import utc_time
 from src.utils.route_helpers import get_controller
 
+from enum import Enum
+
+class HintPriority(str, Enum):
+    HIGH = "High"
+    MEDIUM = "Medium"
+    LOW = "Low"
+
+class Hint(BaseModel):
+    message: str
+    priority: HintPriority = HintPriority.MEDIUM
+    context: Optional[str] = None  # e.g. "Profile", "ATS", "Application: Job Title"
+
 
 # noinspection PyUnresolvedReferences
 class JobSeekerProfile(BaseModel):
@@ -45,8 +57,7 @@ class JobSeekerProfile(BaseModel):
     freelance_availability: Optional[str] = Field(default=None, description="e.g., '10 hrs/week', 'Evenings only'")
 
     # Settings
-    visibility: bool = Field(default=True, description="Visible to employers and clients")
-    profile_completion: Optional[int] = 0
+    visibility: bool = Field(default=True, description="Visible to employers and clients")    
     last_updated: AwareDatetime = Field(default_factory=lambda: utc_time())
 
     # List of job applications submitted by the Job Seeker
@@ -132,39 +143,6 @@ class JobSeekerProfile(BaseModel):
         percent = int((score / max_score) * 100) if max_score else 0
         return min(percent, 100)
 
-    @property
-    def profile_completion_hints(self) -> List[str]:
-        hints = []
-
-        if not self.bio:
-            hints.append("Add a short bio to help employers understand your background.")
-        if not self.profile_image_url:
-            hints.append("Upload a profile picture to increase trust.")
-        if not self.phone:
-            hints.append("Add your phone number so employers can contact you easily.")
-        if not self.location:
-            hints.append("Specify your current location or preferred location.")
-        if not (self.linkedin or self.github or self.website):
-            hints.append("Add at least one social link (LinkedIn, GitHub, or personal website).")
-        if not self.job_titles_of_interest:
-            hints.append("Add at least one job title you're interested in.")
-        if not self.industries_of_interest:
-            hints.append("Specify your industries of interest.")
-        if not self.locations_of_interest:
-            hints.append("Add preferred job locations.")
-        if not self.resumes_list:
-            hints.append("Upload your resume to attract more employers.")
-
-        if self.is_freelancer:
-            if not self.freelance_skills:
-                hints.append("List your freelance skills.")
-            if not self.hourly_rate:
-                hints.append("Set your hourly rate for freelance work.")
-            if not (self.freelance_availability or self.freelance_experience):
-                hints.append("Add freelance availability or a short summary of your experience.")
-
-        return hints
-
 
     @property
     def is_profile_complete(self) -> bool:
@@ -218,4 +196,249 @@ class JobSeekerProfile(BaseModel):
                 return True
         return False
 
+
     model_config = ConfigDict(from_attributes=True)
+
+    @property
+    def shortlisted_applications(self) -> List[JobApplication]:
+        return [app for app in self.applications or [] if app.is_shortlisted]
+
+    @property
+    def under_review_applications(self) -> List[JobApplication]:
+        return [app for app in self.applications or [] if app.is_under_review]
+
+    @property
+    def recent_applications(self) -> List[JobApplication]:
+        return [app for app in self.applications or [] if app.is_recent_application()]
+
+    @property
+    def applications_needing_action(self) -> List[JobApplication]:
+        return [app for app in self.applications or [] if app.needs_action]
+
+    @property
+    def successful_applications(self) -> List[JobApplication]:
+        return [app for app in self.applications or [] if app.is_successful]
+
+    @property
+    def rejected_applications(self) -> List[JobApplication]:
+        return [app for app in self.applications or [] if app.is_rejected]
+
+    @property
+    def active_applications(self) -> List[JobApplication]:
+        return [app for app in self.applications or [] if app.is_active]
+
+    @property
+    def application_stats(self) -> dict:
+        stats = {
+            "total": len(self.applications or []),
+            "applied": 0,
+            "under_review": 0,
+            "interviewing": 0,
+            "shortlisted": 0,
+            "offer_extended": 0,
+            "hired": 0,
+            "rejected": 0,
+            "withdrawn": 0
+        }
+        for app in self.applications or []:
+            status = app.application_stage.lower().replace(" ", "_")
+            if status in stats:
+                stats[status] += 1
+        return stats
+
+
+    @property
+    def ats_optimized_applications(self) -> List[JobApplication]:
+        return [app for app in self.applications or [] if app.is_ats_ready]
+
+    @property
+    def ats_risky_applications(self) -> List[JobApplication]:
+        return [app for app in self.applications or [] if app.ats_risk]
+
+    @property
+    def applications_with_missing_keywords(self) -> dict[str, list[str]]:
+        """
+        Returns a mapping of job titles to their missing keywords.
+        Useful for tooltips or user nudges.
+        """
+        result = {}
+        for app in self.applications or []:
+            if app.has_ats_report and app.missing_keywords:
+                job_title = app.job.title if app.job else f"Job {app.job_id}"
+                result[job_title] = app.missing_keywords
+        return result
+
+
+    @property
+    def all_hints(self) -> List[Hint]:
+        """sumary_line
+            Profile Hint Engine. 
+        Keyword arguments:
+        argument -- description
+        Return: return_description
+        """
+        
+        hints: List[Hint] = []
+
+        # --- Profile Completion Hints ---
+        if not self.bio:
+            hints.append(Hint(
+                message="Add a short bio to help employers understand your background.",
+                priority=HintPriority.MEDIUM,
+                context="Profile"
+            ))
+        if not self.profile_image_url:
+            hints.append(Hint(
+                message="Upload a profile picture to increase trust.",
+                priority=HintPriority.LOW,
+                context="Profile"
+            ))
+        if not self.phone:
+            hints.append(Hint(
+                message="Add your phone number so employers can contact you easily.",
+                priority=HintPriority.MEDIUM,
+                context="Profile"
+            ))
+        if not self.location:
+            hints.append(Hint(
+                message="Specify your current location or preferred location.",
+                priority=HintPriority.MEDIUM,
+                context="Profile"
+            ))
+        if not (self.linkedin or self.github or self.website):
+            hints.append(Hint(
+                message="Add at least one social link (LinkedIn, GitHub, or personal website).",
+                priority=HintPriority.MEDIUM,
+                context="Profile"
+            ))
+        if not self.job_titles_of_interest:
+            hints.append(Hint(
+                message="Add at least one job title you're interested in.",
+                priority=HintPriority.HIGH,
+                context="Profile"
+            ))
+        if not self.industries_of_interest:
+            hints.append(Hint(
+                message="Specify your industries of interest.",
+                priority=HintPriority.MEDIUM,
+                context="Profile"
+            ))
+        if not self.locations_of_interest:
+            hints.append(Hint(
+                message="Add preferred job locations.",
+                priority=HintPriority.MEDIUM,
+                context="Profile"
+            ))
+        if not self.resumes_list:
+            hints.append(Hint(
+                message="Upload your resume to attract more employers.",
+                priority=HintPriority.HIGH,
+                context="Profile"
+            ))
+
+        if self.is_freelancer:
+            if not self.freelance_skills:
+                hints.append(Hint(
+                    message="List your freelance skills.",
+                    priority=HintPriority.MEDIUM,
+                    context="Freelancing"
+                ))
+            if not self.hourly_rate:
+                hints.append(Hint(
+                    message="Set your hourly rate for freelance work.",
+                    priority=HintPriority.MEDIUM,
+                    context="Freelancing"
+                ))
+            if not (self.freelance_availability or self.freelance_experience):
+                hints.append(Hint(
+                    message="Add freelance availability or a short summary of your experience.",
+                    priority=HintPriority.MEDIUM,
+                    context="Freelancing"
+                ))
+
+        # --- Application-Based Hints ---
+        for app in self.applications or []:
+            job_title = app.job.title if app.job else "Unnamed Job"
+            app_ctx = f"Application: {job_title}"
+
+            if app.ats_risk:
+                hints.append(Hint(
+                    message=f"The application to '{job_title}' has a low ATS score or is missing keywords.",
+                    priority=HintPriority.HIGH,
+                    context=app_ctx
+                ))
+
+            if app.missing_keywords:
+                keyword_hint = ', '.join(app.missing_keywords[:5])
+                if len(app.missing_keywords) > 5:
+                    keyword_hint += '...'
+                hints.append(Hint(
+                    message=f"Missing important keywords in your resume for '{job_title}': {keyword_hint}",
+                    priority=HintPriority.HIGH,
+                    context=app_ctx
+                ))
+
+            if app.needs_action:
+                hints.append(Hint(
+                    message=f"'{job_title}' application is incomplete. Add a cover letter or missing documents.",
+                    priority=HintPriority.HIGH,
+                    context=app_ctx
+                ))
+
+            if app.is_under_review and app.ats_score and app.ats_score < 70:
+                hints.append(Hint(
+                    message=f"'{job_title}' is under review but ATS score is low. Consider optimizing your resume.",
+                    priority=HintPriority.MEDIUM,
+                    context=app_ctx
+                ))
+
+        # --- General Engagement Hints ---
+        if len(self.saved_jobs or []) == 0:
+            hints.append(Hint(
+                message="Save jobs you're interested in to revisit them easily.",
+                priority=HintPriority.LOW,
+                context="Engagement"
+            ))
+
+        if len(self.applications or []) == 0:
+            hints.append(Hint(
+                message="You haven’t applied to any jobs yet. Start applying to get traction.",
+                priority=HintPriority.HIGH,
+                context="Engagement"
+            ))
+
+        return sorted(hints, key=lambda h: h.priority.value)
+
+
+    @property
+    def high_priority_hints(self) -> List[Hint]:
+        """sumary_line
+            Returns high priority hints for the job seeker profile.
+        Keyword arguments:
+        argument -- description
+        Return: return_description
+        """
+        
+        return [hint for hint in self.all_hints if hint.priority == HintPriority.HIGH]
+
+    @property
+    def profile_hints(self) -> List[Hint]:
+        """sumary_line
+            Returns hints specifically related to the job seeker profile.
+        Keyword arguments:
+        argument -- description
+        Return: return_description
+        """
+        
+        return [hint for hint in self.all_hints if hint.context == "Profile"]
+
+    @property
+    def job_application_hints(self) -> List[Hint]:
+        """sumary_line
+            Returns hints specifically related to job applications.
+        Keyword arguments:
+        argument -- description
+        Return: return_description
+        """
+        
+        return [hint for hint in self.all_hints if hint.context.startswith("Application:")]

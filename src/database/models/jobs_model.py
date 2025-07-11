@@ -894,13 +894,89 @@ class JobApplication(BaseModel):
     review_summary: Optional[str] = Field(default=None)
     ats_report: Optional[ATSReport] = Field(default=None)
 
-    def is_recent_application(self):
-        recent_cut_off_date = utc_time() - timedelta(days=7)
-        return self.applied_date > recent_cut_off_date
 
     model_config = ConfigDict(from_attributes=True)
 
+    @property
+    def is_recent_application(self):
+        recent_cut_off_date = utc_time() - timedelta(days=7)
+        return self.applied_date > recent_cut_off_date
         
+    @property
+    def is_shortlisted(self) -> bool:
+        return self.application_stage == JobApplicationStatusEnum.SHORTLISTED.value
+
+    @property
+    def is_under_review(self) -> bool:
+        return self.application_stage == JobApplicationStatusEnum.UNDER_REVIEW.value
+
+    @property
+    def is_successful(self) -> bool:
+        return self.application_stage in {
+            JobApplicationStatusEnum.HIRED.value,
+            JobApplicationStatusEnum.OFFER_EXTENDED.value
+        }
+
+    @property
+    def is_rejected(self) -> bool:
+        return self.application_stage == JobApplicationStatusEnum.REJECTED.value
+
+    @property
+    def is_active(self) -> bool:
+        return self.application_stage not in {
+            JobApplicationStatusEnum.REJECTED.value,
+            JobApplicationStatusEnum.WITHDRAWN.value,
+            JobApplicationStatusEnum.HIRED.value
+        }
+
+    @property
+    def needs_action(self) -> bool:
+        return bool(
+            self.missing_requirements or 
+            ('cover_letter' in self.required_documents and not self.cover_letter)
+        )
+
+    # ATS Report related flags
+
+    @property
+    def has_ats_report(self) -> bool:
+        return self.ats_report is not None
+
+    @property
+    def ats_score(self) -> Optional[float]:
+        return self.ats_report.score if self.ats_report else None
+
+    @property
+    def ats_feedback(self) -> Optional[str]:
+        return self.ats_report.feedback if self.ats_report else None
+
+    @property
+    def missing_keywords(self) -> list[str]:
+        return self.ats_report.missing_keywords if self.ats_report else []
+
+    @property
+    def matched_keywords(self) -> list[str]:
+        return self.ats_report.matched_keywords if self.ats_report else []
+
+    @property
+    def is_ats_ready(self) -> bool:
+        """
+        Consider ATS ready if score >= 75 and there are minimal missing keywords.
+        You can tune this logic based on real-world insights.
+        """
+        if not self.ats_report:
+            return False
+        return self.ats_report.score >= 75 and len(self.ats_report.missing_keywords) <= 3
+
+    @property
+    def ats_risk(self) -> bool:
+        """
+        Flag applications with low ATS score or many missing keywords.
+        """
+        if not self.ats_report:
+            return False
+        return self.ats_report.score < 50 or len(self.ats_report.missing_keywords) > 5
+
 
 # Pydantic Models
 class StatusCounts(BaseModel):
