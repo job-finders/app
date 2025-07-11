@@ -2,19 +2,19 @@ from typing import Type, Optional, Dict, Any
 from abc import ABC, abstractmethod
 from pydantic import BaseModel
 from enum import Enum
+import asyncio
+from datetime import datetime, timedelta
 
 class ModelType(Enum):
-    GPT4 = "openai/gpt-4"
-    CLAUDE = "anthropic/claude-3-sonnet"
-    GEMINI = "google/gemini-pro"
-    LLAMA = "meta-llama/llama-3-70b"
-    
-    # DeepSeek models
-    DEEPSEEK_V3 = "deepseek/deepseek-v3"
+    # Primary DeepSeek models (cost-effective)
     DEEPSEEK_CHAT = "deepseek/deepseek-chat"
-    DEEPSEEK_CODER = "deepseek/deepseek-coder"
     DEEPSEEK_REASONER = "deepseek/deepseek-reasoner"
-
+    DEEPSEEK_V3 = "deepseek/deepseek-v3"
+    DEEPSEEK_CODER = "deepseek/deepseek-coder"
+    
+    # Fallback models (for when DeepSeek can't handle the task)
+    GPT4 = "openai/gpt-4"
+    CLAUDE = "anthropic/claude-3-haiku"  # Cheaper Claude variant
 
 class UserRole(Enum):
     JOB_SEEKER = "job_seeker"
@@ -23,14 +23,53 @@ class UserRole(Enum):
     RECRUITER = "recruiter"
     ADMIN = "admin"
 
+class UsageTier(Enum):
+    FREE = {"daily_limit": 10, "monthly_limit": 100}
+    BASIC = {"daily_limit": 50, "monthly_limit": 1000}
+    PREMIUM = {"daily_limit": 200, "monthly_limit": 5000}
+    ENTERPRISE = {"daily_limit": 1000, "monthly_limit": 25000}
+
+class UsageTracker:
+    def __init__(self, user_id: str, tier: UsageTier = UsageTier.FREE):
+        self.user_id = user_id
+        self.tier = tier
+        self.usage_data = {}  # Store in Redis/DB in production
+    
+    def get_usage_key(self, period: str) -> str:
+        today = datetime.now().strftime("%Y-%m-%d")
+        month = datetime.now().strftime("%Y-%m")
+        return f"{self.user_id}:{period}:{today if period == 'daily' else month}"
+    
+    def get_current_usage(self, period: str) -> int:
+        key = self.get_usage_key(period)
+        return self.usage_data.get(key, 0)
+    
+    def increment_usage(self, period: str) -> None:
+        key = self.get_usage_key(period)
+        self.usage_data[key] = self.usage_data.get(key, 0) + 1
+    
+    def check_limit(self) -> bool:
+        daily_usage = self.get_current_usage("daily")
+        monthly_usage = self.get_current_usage("monthly")
+        
+        limits = self.tier.value
+        return (daily_usage < limits["daily_limit"] and 
+                monthly_usage < limits["monthly_limit"])
+    
+    def record_usage(self) -> None:
+        if self.check_limit():
+            self.increment_usage("daily")
+            self.increment_usage("monthly")
+            return True
+        return False
 
 class BaseAgent(ABC):
-    def __init__(self, user_id: str, default_model: ModelType = ModelType.GPT4):
+    def __init__(self, user_id: str, usage_tier: UsageTier = UsageTier.FREE):
         self.user_id = user_id
         self.name = getattr(self, "name", self.__class__.__name__)
         self.memory = AgentMemoryStore(user_id, agent_name=self.name)
+        self.usage_tracker = UsageTracker(user_id, usage_tier)
         self.hashnode_token = config_instance().HASHNODE_TOKEN
-        self.default_model = default_model
 
     @abstractmethod
     def prompt(self, *args, **kwargs) -> str:
