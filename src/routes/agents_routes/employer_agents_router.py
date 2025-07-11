@@ -34,14 +34,15 @@ async def enhance_job_post(user: User):
 
     try:
         raw_data = request.get_json()
+        
         result: EnhanceJobPostOutput = await employer_agents_controller.enhance_job_post(
             user_id=user.id,
             input_data=raw_data
         )
+
         employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
-        job: Job = Job.create_from_enhanced_agent_output(agent_output=result,
-                                                         employer_id=employer_details.employer_id,
-                                                         company_id=employer_details.company_id)
+        job: Job = Job.create_from_enhanced_agent_output(agent_output=result,employer_id=employer_details.employer_id,
+        company_id=employer_details.company_id)
 
         # Consider doing this from a sub form called create Job with AI - The Form will call this endpoint
         # and it will return a Job Post Complete - Then having another Manual Job Creation Form.
