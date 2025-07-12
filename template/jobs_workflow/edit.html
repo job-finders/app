@@ -1,47 +1,330 @@
 {% extends "employers/layout/page.html" %}
-
 {% block title %}Edit Job Posting{% endblock %}
 
+{% block styles %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@icon/themify-icons@1/themify-icons.min.css">
+    <style>
+        :root {
+            --bs-body-font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #f5f7fb;
+        }
+
+        .card {
+            border: none;
+            border-radius: .75rem;
+            box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .05);
+        }
+
+        .sticky-lg {
+            position: sticky;
+            top: 1.5rem;
+            z-index: 1020;
+        }
+
+        @media (max-width: 991.98px) {
+            .sticky-lg {
+                position: static;
+            }
+        }
+
+        .ai-button {
+            transition: all .2s;
+        }
+
+        .ai-button:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-  <div class="card shadow-sm">
-    <div class="card-header bg-light">
-      <h2 class="mb-0 text-info"><i class="ti-pencil mr-2"></i>Edit Job</h2>
-    </div>
-    <div class="card-body">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for cat,msg in messages %}
-            <div class="alert alert-{{cat}} alert-dismissible fade show">
-              {{ msg }}
-              <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <div class="container-fluid py-4">
+        <form id="editForm" method="post" action="{{ url_for('jobs_workflow.edit_job', job_id=job.job_id) }}">
+            {# csrf_token() #}
+
+            <div class="row gx-4 gy-4">
+                <!--  MAIN FORM  -->
+                <div class="col-lg-8">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="fw-bold text-primary"><i class="ti-pencil me-2"></i>Edit Job</h2>
+
+                        <div class="d-flex gap-2">
+                            <!-- CALCULATE ATS -->
+                            <button id="calcAtsBtn" type="button" class="btn btn-outline-info btn-sm ai-button">
+                                <i class="ti-stats-up me-1"></i>Calculate ATS
+                            </button>
+                            <!-- AI ENHANCE -->
+                            <button id="aiEnhanceBtn" type="button" class="btn btn-outline-primary btn-sm ai-button">
+                                <i class="ti-magic me-1"></i>AI Enhance
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Core ---------------------------------------------------------------->
+                    <div class="card mb-4">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0 fw-semibold"><i class="ti-briefcase me-2"></i>Core Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Title *</label>
+                                <input type="text" name="title" class="form-control" required maxlength="255"
+                                       value="{{ job.title }}">
             </div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
 
-      <form method="post" action="{{ url_for('jobs_workflow.edit_job', job_id=job.job_id) }}">
-        {{ csrf_token() }}
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Description *</label>
+                                <textarea name="description" class="form-control" rows="6"
+                                          required>{{ job.description }}</textarea>
+                            </div>
 
-        <!-- same sections as create, but pre-populated with `job` fields -->
-        <div class="form-group">
-          <label class="font-weight-bold">Title *</label>
-          <input type="text" name="title" class="form-control" required
-                 value="{{ job.title }}">
-        </div>
-        <div class="form-group">
-          <label class="font-weight-bold">Description *</label>
-          <textarea name="description" class="form-control" rows="6">{{ job.description }}</textarea>
-        </div>
-        <!-- ... include all other form inputs, using job.xxx as value ... -->
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Position Type *</label>
+                                    <select name="position_type" class="form-control" required>
+                                        <option value="FULL_TIME"
+                                                {% if job.position_type=='FULL_TIME' %}selected{% endif %}>Full Time
+                                        </option>
+                                        <option value="PART_TIME"
+                                                {% if job.position_type=='PART_TIME' %}selected{% endif %}>Part Time
+                                        </option>
+                                        <option value="CONTRACT"
+                                                {% if job.position_type=='CONTRACT' %}selected{% endif %}>Contract
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Remote Policy *</label>
+                                    <select name="remote_policy" class="form-control" required>
+                                        <option value="ONSITE" {% if job.remote_policy=='ONSITE' %}selected{% endif %}>
+                                            Onsite
+                                        </option>
+                                        <option value="HYBRID" {% if job.remote_policy=='HYBRID' %}selected{% endif %}>
+                                            Hybrid
+                                        </option>
+                                        <option value="REMOTE" {% if job.remote_policy=='REMOTE' %}selected{% endif %}>
+                                            Remote
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        <div class="text-right mt-4">
-          <button type="submit" class="btn btn-primary btn-lg">
-            <i class="ti-save mr-2"></i>Save Changes
-          </button>
+                    <!-- Compensation ------------------------------------------------------>
+                    <div class="card mb-4">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0 fw-semibold"><i class="ti-money me-2"></i>Compensation</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Currency</label>
+                                    <input type="text" name="salary_currency" maxlength="3" class="form-control"
+                                           value="{{ job.salary_currency or 'ZAR' }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Min</label>
+                                    <input type="number" name="salary_min" min="0" class="form-control"
+                                           value="{{ job.salary_min or '' }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Max</label>
+                                    <input type="number" name="salary_max" min="0" class="form-control"
+                                           value="{{ job.salary_max or '' }}">
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="salary_confidential"
+                                               {% if job.salary_confidential %}checked{% endif %}>
+                                        <label class="form-check-label small">Confidential</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location ---------------------------------------------------------->
+                    <div class="card mb-4">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0 fw-semibold"><i class="ti-location-pin me-2"></i>Location</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4"><label class="form-label">City *</label><input type="text"
+                                                                                                     name="city"
+                                                                                                     class="form-control"
+                                                                                                     value="{{ job.city }}"
+                                                                                                     required></div>
+                                <div class="col-md-4"><label class="form-label">Province *</label><input type="text"
+                                                                                                         name="province"
+                                                                                                         class="form-control"
+                                                                                                         value="{{ job.province }}"
+                                                                                                         required></div>
+                                <div class="col-md-4"><label class="form-label">Country *</label><input type="text"
+                                                                                                        name="country"
+                                                                                                        class="form-control"
+                                                                                                        value="{{ job.country }}"
+                                                                                                        required></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline ---------------------------------------------------------->
+                    <div class="card mb-4">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0 fw-semibold"><i class="ti-calendar me-2"></i>Timeline</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Application Deadline</label>
+                                    <input type="date" name="application_deadline" class="form-control"
+                                           value="{{ job.application_deadline.date() if job.application_deadline else '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Expires *</label>
+                                    <input type="date" name="expires_at" class="form-control"
+                                           value="{{ job.expires_at.date() if job.expires_at else '' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Skills / Requirements --------------------------------------------->
+                    <div class="card mb-4">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0 fw-semibold"><i class="ti-list me-2"></i>Skills & Requirements</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="experience_level" class="form-label">Experience Level</label>
+                                <select id="experience_level" name="experience_level" class="form-control">
+                                    <option value="ENTRY" {% if job.experience_level=='ENTRY' %}selected{% endif %}>
+                                        Entry
+                                    </option>
+                                    <option value="MID" {% if job.experience_level=='MID' %}selected{% endif %}>Mid
+                                    </option>
+                                    <option value="SENIOR" {% if job.experience_level=='SENIOR' %}selected{% endif %}>
+                                        Senior
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Required Skills (comma separated)</label>
+                                <input type="text" name="required_skills" class="form-control"
+                                       value="{{ ','.join(job.required_skills or []) }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Preferred Skills (comma separated)</label>
+                                <input type="text" name="preferred_skills" class="form-control"
+                                       value="{{ ','.join(job.preferred_skills or []) }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Application Instructions</label>
+                                <textarea name="application_instructions" class="form-control"
+                                          rows="3">{{ job.application_instructions or '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit ------------------------------------------------------------>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="ti-save me-2"></i>Save Changes
+                        </button>
         </div>
       </form>
     </div>
-  </div>
-</div>
+
+    <!--  ATS SIDEBAR  -->
+    <div class="col-lg-4">
+        <div class="sticky-lg">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="ti-stats-up me-2"></i>Live ATS & Health</h6>
+                </div>
+                <div id="atsPanel" class="card-body">
+                    <!-- initial rendered metrics -->
+                    {% include 'jobs_workflow/_ats_metrics.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- AI Enhance Modal -->
+    <div class="modal fade" id="aiPromptModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">AI Enhance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">Optional prompt (max 500 chars)</label>
+                    <textarea id="userPrompt" class="form-control" rows="3" maxlength="500"
+                              placeholder="e.g. Make the tone more casual, add diversity statement…"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="doEnhanceBtn">Enhance</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // helper – build FormData from current form
+        function getFormData(extra = {}) {
+            const fd = new FormData(document.getElementById('editForm'));
+            Object.entries(extra).forEach(([k, v]) => fd.append(k, v));
+            return fd;
+        }
+
+        // 1. Calculate ATS
+        document.getElementById('calcAtsBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('calcAtsBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ti-reload spin"></i> Calculating…';
+            const res = await fetch('{{ url_for("jobs_workflow.calculate_ats", job_id=job.job_id) }}', {
+                method: 'POST',
+                body: getFormData()
+            });
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti-stats-up me-1"></i>Calculate ATS';
+            if (res.ok) {
+                document.getElementById('atsPanel').innerHTML = await res.text();
+            } else alert('Could not calculate ATS.');
+        });
+
+        // 2. AI Enhance
+        document.getElementById('aiEnhanceBtn').addEventListener('click', () => $('#aiPromptModal').modal('show'));
+        document.getElementById('doEnhanceBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('doEnhanceBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ti-reload spin"></i> Enhancing…';
+            const res = await fetch('{{ url_for("employer_agents.enhance_job_post") }}', {
+                method: 'POST',
+                body: getFormData({user_prompt: document.getElementById('userPrompt').value})
+            });
+            btn.disabled = false;
+            btn.innerHTML = 'Enhance';
+            $('#aiPromptModal').modal('hide');
+            if (res.ok) {
+                const data = await res.json();          // {title, description, …}
+                Object.keys(data).forEach(k => {
+                    const el = document.getElementsByName(k)[0];
+                    if (el) el.value = data[k];
+                });
+                // Re-calculate ATS after enhancement
+                document.getElementById('calcAtsBtn').click();
+            } else alert('Enhancement failed.');
+        });
+    </script>
 {% endblock %}

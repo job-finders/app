@@ -53,8 +53,8 @@ class EmployerAgentsController(Controllers):
         # App-specific initialization
         # self.cache.init_app(app)
 
-    @error_handler
-    async def enhance_job_post(self, user_id: str, input_data: dict) -> EnhanceJobPostOutput:
+    async def enhance_job_post(self, user_id: str, input_data: dict,
+                               user_prompt: str | None = None) -> EnhanceJobPostOutput:
         """
         Enhance a job post using AI by improving content, formatting, and SEO elements.
 
@@ -68,6 +68,9 @@ class EmployerAgentsController(Controllers):
 
         Raises:
             ValueError: If required fields are missing or agent fails.
+            :param user_id:
+            :param input_data:
+            :param user_prompt:
         """
 
         self.logger.info(f"Enhancing job post for user: {user_id}")
@@ -75,7 +78,11 @@ class EmployerAgentsController(Controllers):
 
         # Run the agent
         agent = EnhanceJobPostAgent(user_id=user_id)
+        if user_prompt:
+            agent.set_user_prompt(user_prompt=user_prompt)
+
         result = await agent.run(input_model=input_model)
+        self.logger.info(f"Agent response : {result}")
 
         # Set default expiration dates if not provided by agent
         if not result.expires_at:

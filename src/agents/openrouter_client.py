@@ -5,21 +5,25 @@ import json
 from src.config import config_instance
 
 class OpenRouterClient:
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, default_timeout: float = 30.0):
         self.api_key = api_key or config_instance().OPENROUTER_API_KEY
         self.base_url = "https://openrouter.ai/api/v1"
+
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
+        self._http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(default_timeout, read=default_timeout)
+        )
     
     async def chat_completion(
         self,
         messages: List[Dict[str, str]],
         model: str = "deepseek-chat",
         temperature: float = 0.7,
-        max_tokens: int = 1024,
-        stream: bool = False,
+            max_tokens: int = 2024,
+            stream: bool = True,
         **kwargs
     ) -> Dict[str, Any]:
         """Raw chat completion without parsing"""
@@ -31,15 +35,14 @@ class OpenRouterClient:
             "stream": stream,
             **kwargs
         }
-        
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.base_url}/chat/completions",
-                json=data,
-                headers=self.headers
-            )
-            response.raise_for_status()
-            return response.json()
+
+        response = await self._http_client.post(
+            f"{self.base_url}/chat/completions",
+            json=data,
+            headers=self.headers
+        )
+        response.raise_for_status()
+        return response.json()
     
     async def structured_completion(
         self,
@@ -65,6 +68,7 @@ class OpenRouterClient:
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
+            stream=True,
             **kwargs
         )
         

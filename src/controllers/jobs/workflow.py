@@ -20,7 +20,8 @@ from src.database.models.jobs_model import (Job, JobApplication, SavedJob, JobSt
                                             JobApplicationStatusEnum, JobApprovalStatusEnum, JobStatusEnum)
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.sql.company import CompanyORM
-from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, JobApprovalRequestORM,ATSReportORM)
+from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, JobApprovalRequestORM, ATSReportORM,
+                                       JobCategoryORM)
 from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.database.sql.resume import JobSeekerCVORM
 from src.database.sql.users import UserORM
@@ -94,6 +95,20 @@ class JobsWorkflowController(Controllers):
             for key, value in updated_job.model_dump(exclude_unset=True).items():
                 if key != "job_id" and hasattr(job_orm, key):
                     setattr(job_orm, key, value)
+
+            # noinspection DuplicatedCode
+            if job_orm and not job_orm.category_id:
+                category_fit = self._auto_categorize_job(title=job_orm.title, description=job_orm.description)
+                category = (
+                    session.query(JobCategoryORM)
+                    .filter(JobCategoryORM.name.ilike(category_fit))
+                    .first()
+                )
+                if category:  # 👈 safety
+                    job_orm.category_id = category.category_id
+                else:
+                    # fallback – create or log
+                    self.logger.info("Unable to select job Category allow user to Select Job Category")
 
             # Use UTC-aware datetime with proper timezone
             job_orm.updated_time = datetime.now(timezone.utc)
@@ -183,10 +198,24 @@ class JobsWorkflowController(Controllers):
                              "job_ats_feedback_snippets", "job_ats_score_distribution",
                              "readability_is_ok", "job_completeness_score", "external_link_count",
                              "job_quality_score", "spam_severity_score", "is_spammy_job", "job_keyword_listing",
-                             "salary", "total_applications", "is_active", "location", "posted_by", "ats_description"}))
+                             "salary", "total_applications", "is_active", "location", "posted_by", "ats_description",
+                             "total_applications_count"}))
             except Exception as e:
                 self.logger.error(str(e))
                 return None
+
+            if job_orm and not job_orm.category_id:
+                category_fit = self._auto_categorize_job(title=job_orm.title, description=job_orm.description)
+                category = (
+                    session.query(JobCategoryORM)
+                    .filter(JobCategoryORM.name.ilike(category_fit))
+                    .first()
+                )
+                if category:  # 👈 safety
+                    job_orm.category_id = category.category_id
+                else:
+                    # fallback – create or log
+                    self.logger.info("Unable to select job Category allow user to Select Job Category")
 
             session.add(job_orm)
             session.commit()
@@ -907,76 +936,10 @@ class JobsWorkflowController(Controllers):
         """Heuristically categorize a job based on title and description."""
         if not (isinstance(title, str) and title.strip()):
             return None
-        title = title.strip()
+        title = title.strip().lower()
         if not (isinstance(description, str) and description.strip()):
             return None
-        description = description.strip()
-
-        async def create_ai_prompt(title: str, description: str) -> str:
-            return f"""
-            You are a smart job categorization assistant.
-
-            Given a job title and job description, your task is to categorize the job into one of the following categories:
-
-            - information-technology
-            - office-admin
-            - agriculture
-            - engineering
-            - building-construction
-            - business-management
-            - cleaning-maintenance
-            - community-social-welfare
-            - education
-            - nursing
-            - finance
-            - programming
-
-            If the job does not clearly fit into any of the above, return "other".
-
-            Respond with only the category name (no explanations or extra text).
-
-            Here is the job:
-
-            Title: {title}
-            Description: {description}
-
-            What is the most appropriate category?
-                """.strip()
-
-        async def call_deepseek_api(prompt: str):
-            try:
-                headers = {
-                    "Authorization": f"Bearer {self.deepseek_api_key}",
-                    "Content-Type": "application/json"
-                }
-
-                payload = {
-                    "model": "deepseek-chat",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.2
-                }
-
-                response = requests.post(
-                    "https://api.deepseek.com/v1/chat/completions",
-                    headers=headers,
-                    json=payload
-                )
-
-                if response.status_code == 200:
-                    category = response.json()['choices'][0]['message']['content'].strip().lower()
-                    allowed_categories = [
-                        'information-technology', 'office-admin', 'agriculture',
-                        'engineering', 'building-construction', 'business-management',
-                        'cleaning-maintenance', 'community-social-welfare', 'education',
-                        'nursing', 'finance', 'programming', 'other'
-                    ]
-                    return category if category in allowed_categories else 'other'
-                else:
-                    self.logger.error(f"DeepSeek categorization failed: {response.text}")
-                    return 'other'
-            except RequestException as e:
-                self.logger.error(f"DeepSeek categorization error: {str(e)}")
-                return 'other'
+        description = description.strip().lower()
 
         category_keywords = {
             'information-technology': [
@@ -1038,12 +1001,7 @@ class JobsWorkflowController(Controllers):
                     scores[category] += combined_text.count(keyword)
 
         best_category = max(scores, key=scores.get)
-        category_fit = best_category if scores[best_category] > 0 else None
-        if not category_fit:
-            # TODO - could test if user is allowed to call this api
-            prompt = await create_ai_prompt(title=title, description=description)
-            category_fit = await call_deepseek_api(prompt=prompt)
-        return category_fit
+        return best_category if scores[best_category] > 0 else None
 
     # noinspection PyProtectedMember
     async def _get_salary_benchmark(self, category: str, location: str, experience: str) -> dict:

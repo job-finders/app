@@ -24,22 +24,27 @@ def _register_blueprints(app):
     from src.routes.company_routes import company_bp, company_search_routes
     from src.routes.billing_routes import billing_route
     from src.routes.admin_routes import system_admin_route
+    from src.routes.agents_routes.employer_agents_router import employer_agents_route
+    from src.routes.agents_routes.employee_agents_routes import employee_agents_route
+
 
     blueprints = [
         auth_route, home_route, jobs_workflow_route, jobs_search_route,
         seo_route, blog_route, users_route, jobseeker_route,
         jobseeker_profiles_bp, resume_routes, jobseeker_applications_route,
-        cron_route, ats_tool_route, company_bp, company_search_routes, billing_route, system_admin_route
+        cron_route, ats_tool_route, company_bp, company_search_routes, billing_route, system_admin_route,
+        employee_agents_route, employer_agents_route
     ]
     for blueprint in blueprints:
         app.register_blueprint(blueprint)
 
 def _register_template_filters(app):
     """Register Jinja2 template filters"""
-    from src.utils import format_title, format_description, intcomma, datetimeformat, current_year
+    from src.utils import format_title, format_description, intcomma, datetimeformat, current_year, number_format
     app.jinja_env.filters['title'] = format_title
     app.jinja_env.filters['description'] = format_description
     app.jinja_env.filters['intcomma'] = intcomma
+    app.jinja_env.filters['number_format'] = number_format
     app.jinja_env.filters['datetimeformat'] = datetimeformat
     app.jinja_env.filters['current_year'] = current_year
 

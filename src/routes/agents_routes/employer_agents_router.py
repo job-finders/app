@@ -9,6 +9,7 @@ from src.authentication import login_required, employer_login
 from src.database.models.users import User
 from src.logger import init_logger
 from src.utils.route_helpers import get_controller
+from src.utils import split_csv, parse_date_to_aware
 
 employer_agents_route = Blueprint('employer_agents', __name__, url_prefix='/agents/employer/v1')
 agents_logger = init_logger("agents_tool")
@@ -33,12 +34,28 @@ async def enhance_job_post(user: User):
     company_controller = get_controller('company')
 
     try:
-        raw_data = request.get_json()
-        
-        result: EnhanceJobPostOutput = await employer_agents_controller.enhance_job_post(
-            user_id=user.id,
-            input_data=raw_data
+        form = request.form
+        user_prompt = form.get('user_prompt', '')
+        expires_at = parse_date_to_aware(form['expires_at']) if form.get('expires_at') else None
+        application_deadline = parse_date_to_aware(form['application_deadline']) if form.get(
+            'application_deadline') else None
+
+        # prepare dict
+        payload = {k: v for k, v in form.items() if
+                   k not in {'expires_at', 'application_deadline', 'required_skills', 'preferred_skills'}}
+        # noinspection PyTypeChecker
+        payload.update(
+            expires_at=expires_at,
+            application_deadline=application_deadline,
+            required_skills=split_csv(form.get('required_skills', '')),
+            preferred_skills=split_csv(form.get('preferred_skills', ''))
         )
+        agents_logger.info(f"Enhancing job post with payload: {payload} and user prompt: {user_prompt}")
+
+        result: EnhanceJobPostOutput = await employer_agents_controller.enhance_job_post(
+            user_id=user.uid,
+            user_prompt=user_prompt,
+            input_data=payload)
 
         employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
         job: Job = Job.create_from_enhanced_agent_output(agent_output=result,employer_id=employer_details.employer_id,

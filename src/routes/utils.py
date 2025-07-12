@@ -1,6 +1,6 @@
 import math
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -388,3 +388,9 @@ def get_client_ip(_request) -> str:
     else:
         ip = _request.remote_addr
     return ip
+
+
+def to_aware(dt_str: str | None) -> datetime | None:
+    if dt_str is None:
+        return None
+    return datetime.fromisoformat(dt_str).replace(tzinfo=timezone.utc)

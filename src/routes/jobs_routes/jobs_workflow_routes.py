@@ -1,6 +1,6 @@
 # src/routes/jobs_workflow.py
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from pydantic import ValidationError
 
 from src.controllers.company import CompanyController
@@ -56,6 +56,8 @@ async def save_job_draft(user: User):
 
     job_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
     company_controller: CompanyController = get_controller('company')
+    employer_agents_controller: EmployerAgentsController = get_controller("employer_agents")
+
     employer = await company_controller.get_employer_by_uid(user_id=user.uid)
     if not employer:
         workflow_logger.info(f"Employer : {employer}")
@@ -65,6 +67,7 @@ async def save_job_draft(user: User):
     draft_job.employer_id = employer.employer_id
 
     draft_job = await job_workflow_controller.post_job_employer(employer=employer, job_data=draft_job)
+
     flash(message="created job draft to finish creating your job please click on the draft and then proceed",
           category="success")
     return redirect(url_for("company.manage_jobs"))
@@ -91,7 +94,7 @@ async def create_job(user: User):
 
     data = request.form.to_dict()
     try:
-        # This MEthod works correctly.
+        # This Method works correctly.
         #    Will Ensure company can post jobs - will check if employer profile is verified, 
         #    and if company profile is verified.
         company_controller = get_controller('company')
@@ -120,9 +123,9 @@ async def show_edit_form(user: User, job_id: str):
     This route is used to render the form for editing an existing none live job post.
         Render form to edit an existing job.
     """
-    
-    job_search_controller = get_controller('jobs_search')
-    job = await job_search_controller.get_job_by_id(job_id)
+
+    job_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
+    job: Job = await job_workflow_controller.get_job_details(job_id=job_id)
 
     if not job:
         flash("Job not found.", "warning")
@@ -141,19 +144,36 @@ async def edit_job(user: User, job_id: str):
     but before it is approved, the job can be edited by the employer or admin.
     through this endpoint, 
         Handle submission of job updates.
-    
     """
     data = request.form.to_dict()
-    updated_job = JobEditableFields.from_dict(data)
+    job_details: JobEditableFields = JobEditableFields(**data)
 
-    jobs_workflow_controller = get_controller('jobs_workflow')
-    updated = await jobs_workflow_controller.update_job(job_id=job_id, updated_job=updated_job)
+    jobs_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
+    updated_job: Job = await jobs_workflow_controller.update_job(job_id=job_id, updated_job=job_details)
 
-    if not updated:
-        flash("Failed to update job.", "danger")
-        return redirect(url_for("jobs_workflow.show_edit_form", job_id=job_id))
-    flash("Job updated successfully.", "success")
-    return redirect(url_for("jobs.job_details", job_id=job_id))
+    if not updated_job:
+        message = "Failed to Update Job"
+    else:
+        message = f"Job {updated_job.title.title()} updated successfully."
+
+    flash(message, "success")
+    return redirect(url_for("jobs_workflow.show_edit_form", job_id=job_id))
+
+
+@jobs_workflow_route.post("/<string:job_id>/calculate-ats")
+@flask_error_handler
+@employer_login
+@employer_job_access_required()
+async def calculate_ats(user: User, job_id: str):
+    """
+    Receives form fields, returns rendered ATS sidebar (HTML fragment).
+    """
+    form = request.form
+    # Build temp Job from form, run ATS engine …
+    job_temp = Job(**{k: v for k, v in form.items() if k in Job.__fields__})
+    # compute industry score, keywords, etc.
+    return render_template('jobs_workflow/_ats_metrics.html', job=job_temp)
+
 
 
 @jobs_workflow_route.get("/<string:job_id>/archive")

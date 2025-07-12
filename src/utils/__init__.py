@@ -4,6 +4,8 @@ from datetime import date
 from bs4 import BeautifulSoup
 import os
 from pathlib import Path
+
+from pydantic import AwareDatetime
 from werkzeug.utils import secure_filename
 from datetime import datetime
 
@@ -231,3 +233,28 @@ def datetimeformat(value: datetime):
 
 def current_year() -> int:
     return datetime.now().year
+
+
+# utils/filters.py
+def number_format(value):
+    """
+    Jinja filter: 1234567 → '1 234 567'
+    """
+    if value is None:
+        return ""
+    try:
+        value = int(value)
+    except (ValueError, TypeError):
+        return str(value)
+    return f"{value:,.0f}".replace(",", " ")
+
+
+from datetime import datetime, timezone
+
+
+def parse_date_to_aware(date_str: str) -> AwareDatetime:
+    return datetime.fromisoformat(date_str).replace(tzinfo=timezone.utc)
+
+
+def split_csv(field: str) -> list[str]:
+    return [i.strip() for i in field.split(',') if i.strip()]

@@ -17,6 +17,9 @@ class ModelType(Enum):
     DEEPSEEK_REASONER = "deepseek/deepseek-reasoner"
     DEEPSEEK_V3 = "deepseek/deepseek-v3"
     DEEPSEEK_CODER = "deepseek/deepseek-coder"
+    DEEPSEEK_CHIMERA_FREE = "tngtech/deepseek-r1t2-chimera:free"
+    DEEPSEEK_R1_GWEN_FREE = "deepseek/deepseek-r1-0528-qwen3-8b:free"
+    DEEPSEEK_R1_528_FREE = "deepseek/deepseek-r1-0528:free"
     
     # Fallback models (for when DeepSeek can't handle the task)
     GPT4 = "openai/gpt-4"
@@ -93,7 +96,7 @@ class BaseAgent(ABC):
     @staticmethod
     def select_model(user_prompt: str, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> ModelType:
         prompt_lower = user_prompt.lower()
-        
+
         # Role-specific routing - primarily DeepSeek
         if user_role == UserRole.EMPLOYER:
             if any(word in prompt_lower for word in ["screening", "candidate evaluation", "shortlist"]):
@@ -204,8 +207,8 @@ class BaseAgent(ABC):
     def get_fallback_model(selected_model: ModelType) -> ModelType:
         """Get cheaper fallback model when usage limits are exceeded"""
         if selected_model in [ModelType.DEEPSEEK_REASONER, ModelType.DEEPSEEK_V3]:
-            return ModelType.DEEPSEEK_CHAT
-        return ModelType.DEEPSEEK_CHAT
+            return ModelType.DEEPSEEK_R1_528_FREE
+        return ModelType.DEEPSEEK_CHIMERA_FREE
 
     async def check_usage_and_select_model(self, user_prompt: str, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> ModelType:
         """Check usage limits and select appropriate model"""
@@ -295,7 +298,7 @@ class BaseAgent(ABC):
             error_context = {
                 "error": str(e),
                 "model": selected_model.value if 'selected_model' in locals() else "unknown",
-                "memory_stats": self.memory.get_memory_stats(),
+                "memory_stats": "",
                 "user_prompt_preview": user_prompt[:100] + "..." if len(user_prompt) > 100 else user_prompt
             }
             

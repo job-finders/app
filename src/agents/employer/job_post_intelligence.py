@@ -116,12 +116,17 @@ class EnhanceJobPostAgent(BaseAgent):
     """Agent that enhances partial job posts into complete, professional listings."""
     name = "enhance_job_post"
     description = "Creates complete, professional job posts from partial inputs"
+    user_prompt = None
 
     def system_prompt(self) -> str:
         return (
             "You are a professional job post generator for employers. "
             "Create complete, attractive job posts using ONLY the following JSON schema:"
         )
+
+    def set_user_prompt(self, user_prompt: str | None = None):
+        if user_prompt:
+            self.user_prompt = user_prompt
 
     def prompt(self, input_model: EnhanceJobPostInput) -> str:
         # Build context from input
@@ -163,7 +168,10 @@ class EnhanceJobPostAgent(BaseAgent):
         - Application instructions should include how to apply
         - Education requirements should be realistic for the role
         - Use South African context when location is unspecified
-
+        
+        User Prompt 
+            - {self.user_prompt if self.user_prompt else "No user prompt provided."}
+            
         Output MUST be in valid JSON format matching the specified schema.
     """
 

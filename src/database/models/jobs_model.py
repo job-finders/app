@@ -8,6 +8,7 @@ from typing import Optional, Any
 from pydantic import BaseModel, Field, computed_field, ConfigDict, model_validator, AwareDatetime
 from textstat.backend.metrics import flesch_reading_ease
 
+
 from src.agents.employer import EnhanceJobPostOutput
 from src.database.constants import utc_time
 from src.database.models.company_models import Company, SavedCandidates, CompanyFollowing
@@ -584,35 +585,27 @@ class Job(BaseModel):
             company_id: str,
             **kwargs
     ) -> 'Job':
-        """
-        Creates a Job instance from the EnhanceJobPostAgent output
+        from src.routes.utils import to_aware
 
-        Args:
-            agent_output: Output from the enhancement agent
-            employer_id: ID of the employer creating the job
-            company_id: ID of the company posting the job
-            kwargs: Additional job attributes not provided by the agent
-
-        Returns:
-            Job instance ready for database insertion
-        """
-        # Convert ISO strings to AwareDatetime objects
-        expires_at = datetime.fromisoformat(agent_output.expires_at) if agent_output.expires_at else None
-        application_deadline = AwareDatetime.fromisoformat(
-            agent_output.application_deadline) if agent_output.application_deadline else None
-
-        # Set default expiration if not provided
+        expires_at = to_aware(agent_output.expires_at)
+        application_deadline = to_aware(agent_output.application_deadline)
         if not expires_at:
             expires_at = utc_time() + timedelta(days=60)
 
-        # Create job data dictionary
         job_data = {
-            'job_ref': agent_output.job_ref,
+            # always generate a ref if the agent did not provide one
+            'job_ref': agent_output.job_ref or generate_job_ref(),
             'title': agent_output.title,
             'description': agent_output.description,
             'position_type': agent_output.position_type,
             'remote_policy': agent_output.remote_policy,
-            'category': agent_output.category,
+
+            # store only the category_id (string) instead of the full object
+            # TODO: We should run The Agent to Associate the Job with a Specific Category.
+            # 'category_id': agent_output.category_id or agent_output.category,
+            # or if you prefer the full object, ensure the agent returns a JobCategory instance:
+            # 'category': agent_output.category,
+
             'salary_min': agent_output.salary_min,
             'salary_max': agent_output.salary_max,
             'salary_currency': agent_output.salary_currency,
@@ -624,11 +617,11 @@ class Job(BaseModel):
             'expires_at': expires_at,
             'application_deadline': application_deadline,
             'experience_level': agent_output.experience_level,
-            'education_requirements': agent_output.education_requirements,
-            'required_skills': agent_output.required_skills,
-            'preferred_skills': agent_output.preferred_skills,
-            'required_documents': agent_output.required_documents,
-            'required_questionnaire': agent_output.required_questionnaire,
+            'education_requirements': agent_output.education_requirements or {},
+            'required_skills': agent_output.required_skills or [],
+            'preferred_skills': agent_output.preferred_skills or [],
+            'required_documents': agent_output.required_documents or [],
+            'required_questionnaire': agent_output.required_questionnaire or [],
             'application_url': agent_output.application_url,
             'application_instructions': agent_output.application_instructions,
             'status': agent_output.status,
@@ -639,12 +632,10 @@ class Job(BaseModel):
             'created_at': utc_time(),
             'updated_at': utc_time(),
             'applications': [],
-            'saved_hobs': [],
+            'saved_jobs': [],
         }
 
-        # Add any additional fields passed via kwargs
         job_data.update(kwargs)
-
         return cls(**job_data)
 
     model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
