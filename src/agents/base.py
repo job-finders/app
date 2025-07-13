@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Type, Dict, Any
 from pydantic import BaseModel
 
-from src.agents.openrouter_client import openrouter_client
+from src.agents.openrouter_client import OpenRouterClient
 from src.config import config_instance
 
 from src.agents.memory import AgentMemoryStore
@@ -79,7 +79,10 @@ class BaseAgent(ABC):
         self.memory = AgentMemoryStore(user_id, agent_name=self.name)
         self.usage_tracker = UsageTracker(user_id, usage_tier)
         self.hashnode_token = config_instance().HASHNODE_TOKEN
+        self.openrouter_client = OpenRouterClient()
+
         self._last_interaction = {}
+
 
     @abstractmethod
     def system_prompt(self):
@@ -267,8 +270,9 @@ class BaseAgent(ABC):
         messages = [{"role": "system", "content": system_prompt}] + chat_messages
 
         try:
+            self.openrouter_client.init_app()
             # Make API call with enhanced client
-            output = await openrouter_client.structured_completion(
+            output = await self.openrouter_client.structured_completion(
                 messages=messages,
                 output_model=self.output_model(),
                 model=selected_model.value,
@@ -305,49 +309,49 @@ class BaseAgent(ABC):
             # Handle rate limiting and model errors
             if "limit exceeded" in str(e).lower():
                 try:
-                    # Try with fallback model
-                    fallback_model = self.get_fallback_model(ModelType.DEEPSEEK_CHAT)
-                    
-                    # Use same messages from above if available
-                    if 'messages' not in locals():
-                        chat_messages = self.memory.get_chat_messages(limit=memory_limit)
-                        messages = [{"role": "system", "content": system_prompt}] + chat_messages
-                    
-                    output = await openrouter_client.structured_completion(
-                        messages=messages,
-                        output_model=self.output_model(),
-                        model=fallback_model.value,
-                        temperature=kwargs.get('temperature', 0.7),
-                        max_tokens=kwargs.get('max_tokens', 1024)
-                    )
-                    
-                    # Add fallback response to memory with note
-                    fallback_response = output.model_dump_json()
-                    assistant_entry_id = self.memory.add_entry(
-                        "assistant", 
-                        f"[FALLBACK_MODEL:{fallback_model.value}] {fallback_response}",
-                        protect=kwargs.get('protect_response', False)
-                    )
-                    
-                    self._last_interaction = {
-                        "user_entry_id": user_entry_id,
-                        "assistant_entry_id": assistant_entry_id,
-                        "fallback_used": True,
-                        "timestamp": time.time()
-                    }
-                    
-                    return output
-                    
-                except Exception as fallback_error:
+                    return await self.run_fallback_model(kwargs=kwargs, user_entry_id=user_entry_id,
+                                                         selected_model=selected_model,
+                                                         messages=messages)
+                except Exception as e:
                     # Log both original and fallback errors
+                    fallback_error = str(e)
                     error_context["fallback_error"] = str(fallback_error)
                     self._log_error(error_context)
                     raise fallback_error
+
             else:
                 self._log_error(error_context)
                 raise e
 
-    # Additional helper methods for the agent class
+    async def run_fallback_model(self, kwargs, user_entry_id: str, selected_model: ModelType, messages: list[str]):
+
+        # Will use a Fallback Model for the previous selected Model.
+        fallback_model = self.get_fallback_model(selected_model=selected_model)
+
+        output = await openrouter_client.structured_completion(
+            messages=messages,
+            output_model=self.output_model(),
+            model=fallback_model.value,
+            temperature=kwargs.get('temperature', 0.7),
+            max_tokens=kwargs.get('max_tokens', 1024)
+        )
+        print(output)
+        # Add fallback response to memory with note
+        fallback_response = output.model_dump_json()
+        assistant_entry_id = self.memory.add_entry(
+            "assistant",
+            f"[FALLBACK_MODEL:{fallback_model.value}] {fallback_response}",
+            protect=kwargs.get('protect_response', False)
+        )
+
+        self._last_interaction = {
+            "user_entry_id": user_entry_id,
+            "assistant_entry_id": assistant_entry_id,
+            "fallback_used": True,
+            "timestamp": time.time()
+        }
+
+        return output
 
     def delete_memory_entry(self, entry_id: str) -> bool:
         """Delete a specific memory entry."""

@@ -642,176 +642,166 @@ class Job(BaseModel):
 
 class JobEditableFields(BaseModel):
     """Model defining fields that can be updated by an employer"""
+
     # Job Details
     title: Optional[str] = Field(
-        default=None, 
-        min_length=5, 
-        max_length=255,
-        description="Job title"
+        default=None, min_length=5, max_length=255, description="Job title"
     )
-    description: Optional[str] = Field(
-        default=None,
-        description="Detailed job description"
-    )
+    description: Optional[str] = Field(default=None, description="Detailed job description")
     position_type: Optional[str] = Field(
         default="FULL_TIME",
         pattern="FULL_TIME|PART_TIME|CONTRACT",
-        description="Type of employment"
+        description="Type of employment",
     )
     remote_policy: Optional[str] = Field(
         default="ONSITE",
         pattern="ONSITE|HYBRID|REMOTE",
-        description="Remote work policy"
+        description="Remote work policy",
     )
-    
-    # Category - Only allow updating the ID, not the relationship
-    category_id: Optional[str] = Field(
-        default=None,
-        description="ID of the job category"
-    )
-    
+
+    # Category
+    category_id: Optional[str] = Field(default=None, description="ID of the job category")
+
     # Compensation
-    salary_min: Optional[float] = Field(
-        default=None,
-        ge=0,
-        description="Minimum salary offered"
-    )
-    salary_max: Optional[float] = Field(
-        default=None,
-        ge=0,
-        description="Maximum salary offered"
-    )
+    salary_min: Optional[float] = Field(default=None, ge=0, description="Minimum salary offered")
+    salary_max: Optional[float] = Field(default=None, ge=0, description="Maximum salary offered")
     salary_currency: Optional[str] = Field(
-        default=None,
-        min_length=3,
-        max_length=3,
-        description="Currency code for salary"
+        default=None, min_length=3, max_length=3, description="Currency code for salary"
     )
     salary_confidential: Optional[bool] = Field(
-        default=None,
-        description="Whether salary is confidential"
+        default=False, description="Whether salary is confidential"
     )
-    
+
     # Location
     city: Optional[str] = Field(
-        default=None,
-        min_length=2,
-        max_length=100,
-        description="Job location city"
+        default=None, min_length=2, max_length=100, description="Job location city"
     )
     province: Optional[str] = Field(
-        default=None,
-        min_length=2,
-        max_length=100,
-        description="Job location province/state"
+        default=None, min_length=2, max_length=100, description="Job location province/state"
     )
     country: Optional[str] = Field(
-        default=None,
-        min_length=2,
-        max_length=100,
-        description="Job location country"
+        default=None, min_length=2, max_length=100, description="Job location country"
     )
+
     # Timeline
     expires_at: Optional[datetime] = Field(
-        default=None,
-        description="When the job listing expires"
+        default=None, description="When the job listing expires"
     )
     application_deadline: Optional[datetime] = Field(
-        default=None,
-        description="Deadline for applications"
+        default=None, description="Deadline for applications"
     )
+
     # Requirements
     experience_level: Optional[str] = Field(
         default="ENTRY",
         pattern="ENTRY|MID|SENIOR",
-        description="Required experience level"
+        description="Required experience level",
     )
-    education_requirements: Optional[dict] = Field(
-        default_factory=dict,
-        description="Required education qualifications"
+
+    education_requirements: Optional[dict[str, str] | str] = Field(
+        default_factory=dict, description="Required education qualifications"
     )
-    required_skills: Optional[list[str]] = Field(
-        default_factory=list,
-        description="List of required skills"
+    # ---- lists that may now come in as None ----
+    required_skills: Optional[list[str] | str] = Field(
+        default_factory=list, description="list of required skills"
     )
-    preferred_skills: Optional[list[str]] = Field(
-        default_factory=list,
-        description="List of preferred skills"
+    preferred_skills: Optional[list[str] | str] = Field(
+        default_factory=list, description="list of preferred skills"
     )
-    required_documents: Optional[list[str]] = Field(
-        default_factory=list,
-        description="Documents required for application"
+    required_documents: Optional[list[str] | str] = Field(
+        default_factory=list, description="Documents required for application"
     )
-    required_questionnaire: Optional[list[str]] = Field(
-        default_factory=list,
-        description="IDs of required questionnaires"
+    required_questionnaire: Optional[list[str] | str] = Field(
+        default_factory=list, description="IDs of required questionnaires"
     )
-    
     # Application Process
     application_url: Optional[str] = Field(
-        default=None,
-        description="URL for external applications"
+        default=None, description="URL for external applications"
     )
     application_instructions: Optional[str] = Field(
-        default=None,
-        min_length=10,
+        default="We look forward to your application! Please submit your details and documents using the form provided. If you have any questions, feel free to contact us.",
         description="Instructions for applying"
     )
-    
     # Metadata
-    summary: Optional[str] = Field(
-        default=None,
-        description="Short summary of the job"
-    )
+    summary: Optional[str] = Field(default=None, description="Short summary of the job")
     seo_description: Optional[str] = Field(
-        default=None,
-        description="SEO-optimized description"
+        default=None, description="SEO-optimized description"
     )
-    
+
     # Status Management
     status: Optional[str] = Field(
         default=None,
         pattern="draft|pending|active|closed|archived",
-        description="Current status of the job listing"
+        description="Current status of the job listing",
     )
-    
-    @model_validator(mode='after')
-    def validate_dates(self) -> 'JobEditableFields':
+
+    # -------------- Validators --------------
+
+    @model_validator(mode="after")
+    def validate_dates(self) -> "JobEditableFields":
         """Ensure dates are logical and within acceptable ranges"""
         now = utc_time()
-        max_future = now + timedelta(days=365)  # 1 year max future
-        self.expires_at = self.expires_at.replace(tzinfo=timezone.utc)
-        self.application_deadline = self.application_deadline.replace(tzinfo=timezone.utc)
+        max_future = now + timedelta(days=365)
 
-        if self.expires_at and self.expires_at < now:
-            raise ValueError("expires_at must be in the future")
-            
-        if self.expires_at and self.expires_at > max_future:
-            raise ValueError("expires_at cannot be more than 1 year in the future")
-            
-        if self.application_deadline and self.application_deadline < now:
-            raise ValueError("application_deadline must be in the future")
-            
-        if (self.expires_at and self.application_deadline and 
-            self.application_deadline > self.expires_at):
-            raise ValueError("application_deadline cannot be after expires_at")
-            
+        if self.expires_at:
+            self.expires_at = self.expires_at.replace(tzinfo=timezone.utc)
+            if self.expires_at < now:
+                raise ValueError("expires_at must be in the future")
+            if self.expires_at > max_future:
+                raise ValueError("expires_at cannot be more than 1 year in the future")
+
+        if self.application_deadline:
+            self.application_deadline = self.application_deadline.replace(tzinfo=timezone.utc)
+            if self.application_deadline < now:
+                raise ValueError("application_deadline must be in the future")
+            if self.expires_at and self.application_deadline > self.expires_at:
+                raise ValueError("application_deadline cannot be after expires_at")
         return self
 
-    @model_validator(mode='after')
-    def validate_salary(self) -> 'JobEditableFields':
+    @model_validator(mode="after")
+    def validate_salary(self) -> "JobEditableFields":
         """Ensure salary range is logical"""
-        if self.salary_min is not None and self.salary_max is not None:
-            if self.salary_min > self.salary_max:
-                raise ValueError("salary_min cannot be greater than salary_max")
-                
+        if (
+                self.salary_min is not None
+                and self.salary_max is not None
+                and self.salary_min > self.salary_max
+        ):
+            raise ValueError("salary_min cannot be greater than salary_max")
         return self
 
-    model_config = ConfigDict(
-        str_strip_whitespace=True,
-        extra='ignore'  # Prevent unexpected fields
-    )
+    @model_validator(mode="after")
+    def normalize_lists_and_trim(self) -> "JobEditableFields":
+        """
+        - Treat empty string or comma-separated string as optional list input.
+        - Trim application_instructions.
+        - Keep `None` when the client explicitly sends `null`.
+        """
+        for field in (
+                "required_skills",
+                "preferred_skills",
+                "required_documents",
+                "required_questionnaire",
+        ):
+            raw = getattr(self, field)
+            if isinstance(raw, str):
+                # split on commas, drop empty parts
+                setattr(
+                    self,
+                    field,
+                    [part.strip() for part in raw.split(",") if part.strip()] or [],
+                )
+            elif not raw:
+                setattr(self, field, [])
+            # None stays None
 
+        if isinstance(self.application_instructions, str):
+            default_message: str = ("We look forward to your application! Please submit your details and documents "
+                                    "using the form provided. If you have any questions, feel free to contact us.")
+            self.application_instructions = self.application_instructions.strip() or default_message
+
+        return self
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
 
 class SavedJob(BaseModel):
     """
