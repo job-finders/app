@@ -1,3 +1,4 @@
+import json
 import re
 import uuid
 from collections import Counter
@@ -798,6 +799,31 @@ class JobEditableFields(BaseModel):
             default_message: str = ("We look forward to your application! Please submit your details and documents "
                                     "using the form provided. If you have any questions, feel free to contact us.")
             self.application_instructions = self.application_instructions.strip() or default_message
+
+        raw = self.education_requirements
+        if isinstance(raw, str):
+            # Accept either JSON string (object) or simple key:value pairs
+            # 1) Try JSON first
+            try:
+                parsed: dict[str, str] = json.loads(raw)
+                if not isinstance(parsed, dict):
+                    raise ValueError
+                # Trim keys & values
+                parsed = {k.strip(): v.strip() for k, v in parsed.items() if k.strip()}
+            except (json.JSONDecodeError, ValueError):
+                # 2) Fallback to comma-separated key:value
+                items = [part.strip() for part in raw.split(",") if part.strip()]
+                parsed = {}
+                for item in items:
+                    if ":" not in item:
+                        continue
+                    key, val = item.split(":", 1)
+                    key, val = key.strip(), val.strip()
+                    if key:
+                        parsed[key] = val
+            self.education_requirements = parsed or {}
+        elif not raw:
+            self.education_requirements = {}
 
         return self
 

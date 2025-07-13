@@ -164,6 +164,7 @@ class JobsWorkflowController(Controllers):
             job_orm.updated_time = datetime.now(timezone.utc)
             return Job(**job_orm.to_dict()) if job_orm else None
 
+    # noinspection DuplicatedCode
     @error_handler    
     async def archive_job_listing(self, job_id: str) -> Job | None:
         """Archive job listing """
@@ -183,6 +184,7 @@ class JobsWorkflowController(Controllers):
 
             return Job(**job_orm.to_dict())
 
+    # noinspection DuplicatedCode
     @error_handler
     async def de_activate_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
         """Mark job as inactive by setting expiration date to past"""
@@ -190,10 +192,12 @@ class JobsWorkflowController(Controllers):
             return None
         if not (isinstance(reviewer_id, str) and reviewer_id.strip()):
             return None
-        self.logger.info(f"Updating Job_ID: {job_id} Job Approval Status to {JobApprovalStatusEnum.CLOSED.value}")
+        self.logger.info(f"Updating Job_ID: {job_id} Job Approval Status to {JobApprovalStatusEnum.FLAGGED.value}")
         self.logger.info(f"The Reviewer : {reviewer_id} Arrived at this Review : {validation_result}")
-        return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.CLOSED.value, reviewer_id=reviewer_id)
+        return await self.update_approval_status(job_id=job_id, decision=JobApprovalStatusEnum.FLAGGED.value,
+                                                 reviewer_id=reviewer_id)
 
+    # noinspection DuplicatedCode
     @error_handler
     async def activate_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
         """Activate job listing by resetting expiration date"""
@@ -201,11 +205,12 @@ class JobsWorkflowController(Controllers):
             return None
         if not (isinstance(reviewer_id, str) and reviewer_id.strip()):
             return None
-        self.logger.info(f"Updating Job_ID: {job_id} Job Approval Status to {JobApprovalStatusEnum.ACTIVE.value}")
+        self.logger.info(f"Updating Job_ID: {job_id} Job Approval Status to {JobApprovalStatusEnum.APPROVED.value}")
         self.logger.info(f"The Reviewer : {reviewer_id} Arrived at this Review : {validation_result}")
-        return await self.update_approval_status(job_id=job_id, decision=JobStatusEnum.ACTIVE.value,
+        return await self.update_approval_status(job_id=job_id, decision=JobApprovalStatusEnum.APPROVED.value,
         reviewer_id=reviewer_id,validation_result=validation_result)
 
+    # noinspection DuplicatedCode
     @error_handler
     async def reject_job_listing(self, job_id: str, reviewer_id: str, validation_result: Optional[dict] = None) -> Job | None:
         """This will mark the job in question as rejected"""
@@ -364,7 +369,7 @@ class JobsWorkflowController(Controllers):
         return validation_result
 
     @error_handler
-    async def add_job_posting_workflow(self, job: Job) -> Job:
+    async def add_job_posting_workflow(self, job: Job) -> Job | None:
         """Complete job submission workflow"""
         if not isinstance(job, Job):            
             self.logger.info(f"Malformed Job Instance when adding job - to job post workflow")
@@ -547,6 +552,7 @@ class JobsWorkflowController(Controllers):
             category_counts = dict(session.query(JobsORM.category,func.count(JobsORM.job_id)).group_by(JobsORM.category).all())
             recent_jobs = (session.query(func.count(JobsORM.job_id)).filter(JobsORM.posted_at >= datetime.now(timezone.utc) - timedelta(days=30)).scalar() or 0)
 
+            # noinspection PyTypeChecker
             return JobStatistics(
                 total_jobs=stats.total_jobs,
                 status_counts=StatusCounts(
@@ -635,7 +641,7 @@ class JobsWorkflowController(Controllers):
                 return None
 
     @error_handler
-    async def withdraw_job_application(self, application_id: str) -> bool:
+    async def withdraw_job_application(self, application_id: str) -> bool | None:
         """
         Withdraws a job application by updating its status and withdrawal timestamp
         Args:
@@ -760,7 +766,7 @@ class JobsWorkflowController(Controllers):
             return result
 
     @error_handler
-    async def get_job_applications(self, job_id: str) -> tuple[Job, list[JobApplication]]:
+    async def get_job_applications(self, job_id: str) -> tuple[Optional[Job], Optional[list[JobApplication]]]:
         """
         Returns a detailed list of JobApplications with their relationships and calculated fields.
         :param job_id: The ID of the job to retrieve applications for.
@@ -792,7 +798,7 @@ class JobsWorkflowController(Controllers):
 
 
     @error_handler
-    async def get_application_funnel_stats(self, job_id: str) -> ApplicationFunnelStats:
+    async def get_application_funnel_stats(self, job_id: str) -> ApplicationFunnelStats | None:
         """
         Retrieve key hiring pipeline metrics for a specific job post.
 
@@ -1165,7 +1171,7 @@ class JobsWorkflowController(Controllers):
 
 
     @error_handler
-    async def get_company_analytics_dashboard(self, company_id: str) -> JobApplicationDashboard:
+    async def get_company_analytics_dashboard(self, company_id: str) -> Optional[JobApplicationDashboard]:
         """Employer dashboard with advanced hiring analytics
         This dashboard can be shown to the Employer.
         """
@@ -1595,7 +1601,7 @@ class JobsWorkflowController(Controllers):
 
 
     @error_handler
-    async def find_potential_duplicates(self, job: Job) -> list[Job]:
+    async def find_potential_duplicates(self, job: Job) -> list[Job] | None:
         """Advanced duplicate detection using multiple criteria"""
         self.logger.info("Started Find potential Job Duplicates detection")
         if not isinstance(job, Job):

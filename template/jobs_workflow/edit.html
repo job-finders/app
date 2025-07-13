@@ -1,4 +1,4 @@
-{% extends "employers/layout/page.html" %}
+{% extends "company/layout/page.html" %}
 {% block title %}Edit Job Posting{% endblock %}
 
 {% block styles %}
@@ -32,6 +32,16 @@
         .ai-button:hover {
             transform: translateY(-2px);
         }
+
+        .pill-hover {
+            transition: background-color 0.15s ease;
+        }
+
+        .pill-hover:hover {
+            background-color: var(--bs-primary) !important;
+            color: #ee2200 !important;
+        }
+
     </style>
 {% endblock %}
 
@@ -65,20 +75,21 @@
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Title *</label>
+                                <label class="form-label fw-semibold font-weight-bold">Title *</label>
                                 <input type="text" name="title" class="form-control" required maxlength="255"
                                        value="{{ job.title }}">
             </div>
 
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Description *</label>
+                                <label class="form-label fw-semibold font-weight-bold">Description *</label>
                                 <textarea name="description" class="form-control" rows="6"
+                                          style="min-height: 120px; resize: vertical;"
                                           required>{{ job.description }}</textarea>
                             </div>
 
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Position Type *</label>
+                                    <label class="form-label fw-semibold font-weight-bold">Position Type *</label>
                                     <select name="position_type" class="form-control" required>
                                         <option value="FULL_TIME"
                                                 {% if job.position_type=='FULL_TIME' %}selected{% endif %}>Full Time
@@ -92,7 +103,7 @@
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Remote Policy *</label>
+                                    <label class="form-label fw-semibold font-weight-bold">Remote Policy *</label>
                                     <select name="remote_policy" class="form-control" required>
                                         <option value="ONSITE" {% if job.remote_policy=='ONSITE' %}selected{% endif %}>
                                             Onsite
@@ -117,17 +128,17 @@
                         <div class="card-body">
                             <div class="row g-3">
                                 <div class="col-md-3">
-                                    <label class="form-label">Currency</label>
+                                    <label class="form-label font-weight-bold">Currency</label>
                                     <input type="text" name="salary_currency" maxlength="3" class="form-control"
                                            value="{{ job.salary_currency or 'ZAR' }}">
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label">Min</label>
+                                    <label class="form-label font-weight-bold">Min</label>
                                     <input type="number" name="salary_min" min="0" class="form-control"
                                            value="{{ job.salary_min or '' }}">
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label">Max</label>
+                                    <label class="form-label font-weight-bold">Max</label>
                                     <input type="number" name="salary_max" min="0" class="form-control"
                                            value="{{ job.salary_max or '' }}">
                                 </div>
@@ -135,7 +146,7 @@
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" name="salary_confidential"
                                                {% if job.salary_confidential %}checked{% endif %}>
-                                        <label class="form-check-label small">Confidential</label>
+                                        <label class="form-check-label small font-weight-bold">Confidential</label>
                                     </div>
                                 </div>
                             </div>
@@ -149,17 +160,20 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
-                                <div class="col-md-4"><label class="form-label">City *</label><input type="text"
+                                <div class="col-md-4"><label class="form-label font-weight-bold">City *</label><input
+                                        type="text"
                                                                                                      name="city"
                                                                                                      class="form-control"
                                                                                                      value="{{ job.city }}"
                                                                                                      required></div>
-                                <div class="col-md-4"><label class="form-label">Province *</label><input type="text"
+                                <div class="col-md-4"><label class="form-label font-weight-bold">Province
+                                    *</label><input type="text"
                                                                                                          name="province"
                                                                                                          class="form-control"
                                                                                                          value="{{ job.province }}"
                                                                                                          required></div>
-                                <div class="col-md-4"><label class="form-label">Country *</label><input type="text"
+                                <div class="col-md-4"><label class="form-label font-weight-bold">Country *</label><input
+                                        type="text"
                                                                                                         name="country"
                                                                                                         class="form-control"
                                                                                                         value="{{ job.country }}"
@@ -176,12 +190,12 @@
                         <div class="card-body">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label">Application Deadline</label>
+                                    <label class="form-label font-weight-bold">Application Deadline</label>
                                     <input type="date" name="application_deadline" class="form-control"
                                            value="{{ job.application_deadline.date() if job.application_deadline else '' }}">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Expires *</label>
+                                    <label class="form-label font-weight-bold">Expires *</label>
                                     <input type="date" name="expires_at" class="form-control"
                                            value="{{ job.expires_at.date() if job.expires_at else '' }}">
                                 </div>
@@ -192,12 +206,17 @@
                     <!-- Skills / Requirements --------------------------------------------->
                     <div class="card mb-4">
                         <div class="card-header bg-white">
-                            <h5 class="mb-0 fw-semibold"><i class="ti-list me-2"></i>Skills & Requirements</h5>
+                            <h5 class="mb-0 fw-semibold">
+                                <i class="ti-list me-2"></i> Skills & Requirements
+                            </h5>
                         </div>
+
                         <div class="card-body">
+                            <!-- Experience Level -->
                             <div class="mb-3">
-                                <label for="experience_level" class="form-label">Experience Level</label>
-                                <select id="experience_level" name="experience_level" class="form-control">
+                                <label for="experience_level" class="form-label text-info fw-bold">Experience
+                                    Level</label>
+                                <select class="form-control" id="experience_level" name="experience_level">
                                     <option value="ENTRY" {% if job.experience_level=='ENTRY' %}selected{% endif %}>
                                         Entry
                                     </option>
@@ -209,29 +228,78 @@
                                 </select>
                             </div>
 
+                            <!-- Educational Requirements -->
                             <div class="mb-3">
-                                <label class="form-label">Required Skills (comma separated)</label>
-                                <input type="text" name="required_skills" class="form-control"
-                                       value="{{ ','.join(job.required_skills or []) }}">
+                                <label class="form-label fw-bold text-warning">Educational Requirements</label>
+                                <input type="text"
+                                       class="form-control js-list-input"
+                                       data-list-id="education-list"
+                                       data-json-id="education-json"
+                                       placeholder="Type key:value and hit Enter (e.g. Diploma:Marketing)">
+                                <div id="education-list" class="mt-2 d-flex flex-wrap gap-1"></div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Preferred Skills (comma separated)</label>
-                                <input type="text" name="preferred_skills" class="form-control"
-                                       value="{{ ','.join(job.preferred_skills or []) }}">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Application Instructions</label>
-                                <textarea name="application_instructions" class="form-control"
-                                          rows="3">{{ job.application_instructions or '' }}</textarea>
-                            </div>
-                        </div>
-                    </div>
 
+                            <!-- Required Skills -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-success">Required Skills</label>
+                                <input type="text"
+                                       class="form-control js-list-input"
+                                       data-list-id="required-skills-list"
+                                       data-json-id="required-skills-json"
+                                       placeholder="Type skill and hit Enter">
+                                <div id="required-skills-list" class="mt-2 d-flex flex-wrap gap-1"></div>
+                            </div>
+
+                            <!-- Preferred Skills -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-primary">Preferred Skills</label>
+                                <input type="text"
+                                       class="form-control js-list-input"
+                                       data-list-id="preferred-skills-list"
+                                       data-json-id="preferred-skills-json"
+                                       placeholder="Type skill and hit Enter">
+                                <div id="preferred-skills-list" class="mt-2 d-flex flex-wrap gap-1"></div>
+                            </div>
+                            <!-- Application Instructions -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-danger">Application Instructions</label>
+                                <textarea class="form-control" name="application_instructions"
+                                          rows="5"
+                                          style="min-height:120px; resize:vertical;">{{ job.application_instructions or '' }}</textarea>
+                        </div>
+                        </div>
+
+
+                        <!-- Education: dict → JSON -->
+                        <input type="hidden"
+                               name="education_requirements"
+                               id="education-json"
+                               value='{{ (job.education_requirements or {}) | tojson | forceescape }}'>
+
+                        <!-- Required skills: list → JSON -->
+                        <input type="hidden"
+                               name="required_skills"
+                               id="required-skills-json"
+                               value='{{ (job.required_skills or []) | tojson | forceescape }}'>
+
+                        <!-- Preferred skills: list → JSON -->
+                        <input type="hidden"
+                               name="preferred_skills"
+                               id="preferred-skills-json"
+                               value='{{ (job.preferred_skills or []) | tojson | forceescape }}'>
+
+                    </div>
                     <!-- Submit ------------------------------------------------------------>
                     <div class="text-end">
-                        <button type="submit" class="btn btn-primary btn-lg"><i class="ti-save me-2"></i>Save Changes
+                        <button type="submit" class="btn btn-primary btn-flat btn-lg">
+                            <i class="ti-save me-2"></i>Update Job
                         </button>
-        </div>
+
+                        <a href="{{ url_for('company.manage_jobs') }}" type="submit"
+                           class="btn btn-default btn-flat btn-lg">
+                            <i class="ti-close me-2"></i>Cancel
+                        </a>
+                    </div>
       </form>
     </div>
 
@@ -272,6 +340,80 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const containers = [
+                {id: 'education-list', jsonId: 'education-json', isDict: true},
+                {id: 'required-skills-list', jsonId: 'required-skills-json', isDict: false},
+                {id: 'preferred-skills-list', jsonId: 'preferred-skills-json', isDict: false}
+            ];
+
+            /* ----------  init pills from hidden JSON  ---------- */
+            containers.forEach(c => {
+                const raw = document.getElementById(c.jsonId).value || (c.isDict ? '{}' : '[]');
+                const data = JSON.parse(raw);
+
+                const items = c.isDict ? Object.entries(data).map(([k, v]) => `${k}:${v}`) : data;
+                items.forEach(text => addPill(c.id, text));
+            });
+
+            /* ----------  wire text inputs  ---------- */
+            document.querySelectorAll('.js-list-input').forEach(input => {
+                const containerId = input.dataset.listId;
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' && input.value.trim()) {
+                        e.preventDefault();
+                        addPill(containerId, input.value.trim());
+                        input.value = '';
+                        syncJson(containerId);
+                    }
+                });
+            });
+
+            /* ----------  create pill  ---------- */
+            function addPill(containerId, text) {
+                const container = document.getElementById(containerId);
+                const exists = [...container.children].some(
+                    p => p.textContent.trim().toLowerCase() === text.toLowerCase()
+                );
+                if (exists) return;
+
+                const pill = document.createElement('span');
+                pill.className = 'badge bg-secondary me-1 mb-1 fs-6 pill-hover';
+                pill.style.cursor = 'pointer';
+                pill.textContent = text;
+
+                pill.addEventListener('click', () => {
+                    pill.remove();
+                    syncJson(containerId);
+                });
+
+                container.appendChild(pill);
+            }
+
+            /* ----------  write back to hidden JSON input  ---------- */
+            function syncJson(containerId) {
+                const cfg = containers.find(c => c.id === containerId);
+                const pills = [...document.getElementById(containerId).children]
+                    .map(p => p.textContent.trim());
+
+                let json;
+                if (cfg.isDict) {
+                    json = {};
+                    pills.forEach(p => {
+                        const [k, ...rest] = p.split(':');
+                        json[k.trim()] = rest.join(':').trim();
+                    });
+                } else {
+                    json = pills;
+                }
+                document.getElementById(cfg.jsonId).value = JSON.stringify(json);
+            }
+        });
+    </script>
 
     <script>
         // helper – build FormData from current form
@@ -308,7 +450,7 @@
                 body: getFormData({user_prompt: document.getElementById('userPrompt').value})
             });
             btn.disabled = false;
-            btn.innerHTML = 'Enhance';
+            btn.innerHTML = 'Enhancing....';
             $('#aiPromptModal').modal('hide');
             if (res.ok) {
                 const data = await res.json();          // {title, description, …}
@@ -321,4 +463,5 @@
             } else alert('Enhancement failed.');
         });
     </script>
+
 {% endblock %}

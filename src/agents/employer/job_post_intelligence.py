@@ -6,131 +6,262 @@ from pydantic import BaseModel, Field, field_validator
 
 from src.agents.base import BaseAgent
 
+from typing import List, Optional, Dict
+from pydantic import BaseModel, Field, field_validator
+from enum import Enum
 
+
+# ------------------------------------------------------------------
+# Enumerations (used for clarity and validation)
+# ------------------------------------------------------------------
+class PositionType(str, Enum):
+    """Legal values for the *position_type* field."""
+    FULL_TIME = "FULL_TIME"
+    PART_TIME = "PART_TIME"
+    CONTRACT = "CONTRACT"
+
+
+class RemotePolicy(str, Enum):
+    """Legal values for the *remote_policy* field."""
+    ONSITE = "ONSITE"
+    HYBRID = "HYBRID"
+    REMOTE = "REMOTE"
+
+
+class ExperienceLevel(str, Enum):
+    """Legal values for the *experience_level* field."""
+    ENTRY = "ENTRY"
+    MID = "MID"
+    SENIOR = "SENIOR"
+
+
+# ------------------------------------------------------------------
+# INPUT  – partial or incomplete job post submitted by the user
+# ------------------------------------------------------------------
 class EnhanceJobPostInput(BaseModel):
     """
-    Input model for job post enhancement agent.
-    Contains partial information about a job post that needs enhancement.
+    Represents the **partial** or **draft** data that a recruiter / HR system
+    already has for a job post.
+    All fields are optional **except** `title` and `description`, which must be
+    provided (even if they are rough).
+
+    The agent will use this sparse information to generate a **complete,
+    polished, market-competitive job listing** that conforms to
+    `EnhanceJobPostOutput`.
+
+    Field notes
+    -----------
+    - salary_* values must be expressed in the currency given by
+      `salary_currency` (default = ZAR).
+    - Currency codes must be the 3-letter ISO-4217 form (e.g. ZAR, USD, EUR).
+    - Lists such as `required_skills` may be empty or incomplete; the agent
+      will expand and refine them.
     """
-    title: str = Field(..., min_length=5, description="Job title (can be partial or basic)")
-    description: str = Field(..., description="Job description (can be incomplete)")
-    position_type: Optional[str] = Field(
-        None,
-        description="Type of position (FULL_TIME, PART_TIME, CONTRACT)",
-        pattern="FULL_TIME|PART_TIME|CONTRACT"
+
+    title: str = Field(
+        ...,
+        min_length=5,
+        description="Job title as currently known (can be a fragment or placeholder)."
     )
-    remote_policy: Optional[str] = Field(
-        None,
-        description="Remote work policy (ONSITE, HYBRID, REMOTE)",
-        pattern="ONSITE|HYBRID|REMOTE"
+    description: str = Field(
+        ...,
+        description="Free-text description of the role. May be incomplete or informal."
     )
-    salary_min: Optional[float] = Field(None, ge=0, description="Minimum salary in local currency")
-    salary_max: Optional[float] = Field(None, ge=0, description="Maximum salary in local currency")
-    salary_currency: Optional[str] = Field("ZAR", description="Currency code (3 characters)")
-    city: Optional[str] = Field(None, description="Job city location")
-    province: Optional[str] = Field(None, description="Job province/state location")
-    country: Optional[str] = Field(None, description="Job country location")
-    experience_level: Optional[str] = Field(
+    position_type: Optional[PositionType] = Field(
         None,
-        description="Experience level (ENTRY, MID, SENIOR)",
-        pattern="ENTRY|MID|SENIOR"
+        description="Employment arrangement."
     )
-    required_skills: Optional[List[str]] = Field([], description="List of required skills")
-    preferred_skills: Optional[List[str]] = Field([], description="List of preferred skills")
+    remote_policy: Optional[RemotePolicy] = Field(
+        None,
+        description="Where the employee is expected to work from."
+    )
+    salary_min: Optional[float] = Field(
+        None,
+        ge=0,
+        description="Minimum gross annual (or monthly) salary expressed in `salary_currency`."
+    )
+    salary_max: Optional[float] = Field(
+        None,
+        ge=0,
+        description="Maximum gross annual (or monthly) salary expressed in `salary_currency`."
+    )
+    salary_currency: Optional[str] = Field(
+        "ZAR",
+        description="3-letter ISO-4217 currency code. Defaults to South African Rand (ZAR)."
+    )
+    city: Optional[str] = Field(None, description="Primary workplace city.")
+    province: Optional[str] = Field(None, description="State / Province.")
+    country: Optional[str] = Field(None, description="Country (ISO-3166 name or code).")
+    experience_level: Optional[ExperienceLevel] = Field(
+        None,
+        description="Seniority expectation for applicants."
+    )
+    required_skills: Optional[List[str]] = Field(
+        default_factory=list,
+        description="Skills that are currently considered mandatory. May be expanded."
+    )
+    preferred_skills: Optional[List[str]] = Field(
+        default_factory=list,
+        description="Skills that are currently considered nice-to-have. May be expanded."
+    )
 
     @field_validator("salary_currency")
     @classmethod
     def validate_currency(cls, v: str) -> str:
+        """
+        Ensures the currency code is exactly 3 uppercase characters.
+        """
         if v and len(v) != 3:
-            raise ValueError("Currency code must be 3 characters")
+            raise ValueError("Currency code must be exactly 3 characters (ISO-4217).")
         return v.upper()
 
 
+# ------------------------------------------------------------------
+# OUTPUT – fully-fledged, publication-ready job post
+# ------------------------------------------------------------------
 class EnhanceJobPostOutput(BaseModel):
     """
-    Enhanced job post output model that directly maps to the Job ORM model.
-    Contains a complete, professionally enhanced job post ready for conversion.
+    Final, **complete** job post returned by the agent.
+    All core fields are **mandatory** so that downstream consumers
+    (job boards, applicant tracking systems, etc.) can rely on consistent data.
+
+    The agent guarantees:
+    - Competitive salary range researched for the role and location.
+    - A crisp, human-readable description and title.
+    - A realistic set of required/preferred skills and education expectations.
+    - All salary figures are in South African Rands (ZAR) unless otherwise
+      instructed.
     """
-    # Core Identification
-    job_ref: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4())[:8].upper())
 
-    # Job Details
-    title: str = Field(..., min_length=5, max_length=255, description="Enhanced job title")
-    description: str = Field(..., description="Detailed job description")
-    position_type: str = Field(
+    # ── Job Identity -------------------------------------------------
+    title: str = Field(
         ...,
-        description="Position event_type (FULL_TIME, PART_TIME, CONTRACT)",
-        pattern="FULL_TIME|PART_TIME|CONTRACT"
+        min_length=5,
+        max_length=255,
+        description="Polished, market-standard job title (no internal codes)."
     )
-    remote_policy: str = Field(
+    description: str = Field(
         ...,
-        description="Remote work policy (ONSITE, HYBRID, REMOTE)",
-        pattern="ONSITE|HYBRID|REMOTE"
+        description="Full-length, engaging description covering responsibilities, "
+                    "day-to-day tasks, growth opportunities, and company culture."
     )
-    category: Optional[str] = Field(None, description="Job category")
 
-    # Compensation
-    salary_min: float = Field(..., ge=0, description="Competitive minimum salary")
-    salary_max: float = Field(..., ge=0, description="Competitive maximum salary")
-    salary_currency: str = Field("ZAR", min_length=3, max_length=3, description="Currency code")
-    salary_confidential: bool = Field(False, description="Salary confidentiality flag")
-
-    # Location
-    city: str = Field(..., min_length=2, max_length=100, description="Job city")
-    province: str = Field(..., min_length=2, max_length=100, description="Job province/state")
-    country: str = Field(..., min_length=2, max_length=100, description="Job country")
-    geo_location: Optional[str] = Field(None, description="Geolocation coordinates")
-
-    # Timeline
-    expires_at: Optional[str] = Field(None, description="Job expiration date (ISO format)")
-    application_deadline: Optional[str] = Field(None, description="Application deadline (ISO format)")
-
-    # Requirements
-    experience_level: str = Field(
+    # ── Compensation -------------------------------------------------
+    salary_min: float = Field(
         ...,
-        description="Experience level (ENTRY, MID, SENIOR)",
-        pattern="ENTRY|MID|SENIOR"
+        ge=0,
+        description="Competitive minimum gross annual salary in ZAR."
     )
-    education_requirements: Optional[Dict[str, str]] = Field(
-        {},
-        description="Education requirements as key-value pairs"
+    salary_max: float = Field(
+        ...,
+        ge=0,
+        description="Competitive maximum gross annual salary in ZAR."
     )
-    required_skills: List[str] = Field(..., description="List of required skills")
-    preferred_skills: List[str] = Field([], description="List of preferred skills")
-    required_documents: List[str] = Field([], description="List of required documents")
-    required_questionnaire: List[str] = Field([], description="List of required questionnaire IDs")
+    salary_currency: str = Field(
+        "ZAR",
+        min_length=3,
+        max_length=3,
+        description="Currency of salary. Always 'ZAR' unless explicitly requested otherwise."
+    )
 
-    # Application Process
-    application_url: Optional[str] = Field(None, description="Application URL")
-    application_instructions: str = Field(..., min_length=10, description="Application instructions")
-
-    # Status
-    status: str = Field("draft", pattern="draft|pending|active|closed|archived")
-    is_featured: bool = Field(False, description="Featured job flag")
+    # ── Requirements -------------------------------------------------
+    experience_level: ExperienceLevel = Field(
+        ...,
+        description="Seniority level as enumerated."
+    )
+    education_requirements: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Key-value mapping of education expectations. "
+                    "Example: {'Diploma': 'Marketing or related field', "
+                    "'Certification': 'Google Ads preferred'}."
+    )
+    required_skills: List[str] = Field(
+        ...,
+        description="Concise list of non-negotiable technical and soft skills."
+    )
+    preferred_skills: List[str] = Field(
+        default_factory=list,
+        description="Additional skills that would give a candidate an edge."
+    )
+    required_documents: List[str] = Field(
+        default_factory=list,
+        description="List of documents applicants must upload (CV, cover letter, "
+                    "portfolio, etc.)."
+    )
+    required_questionnaire: List[str] = Field(
+        default_factory=list,
+        description="IDs of questionnaires or screening tests that must be completed."
+    )
 
     class Config:
         from_attributes = True
 
 
+# ------------------------------------------------------------------
+# AGENT – LLM-powered job-post enhancer
+# ------------------------------------------------------------------
 class EnhanceJobPostAgent(BaseAgent):
-    """Agent that enhances partial job posts into complete, professional listings."""
-    name = "enhance_job_post"
-    description = "Creates complete, professional job posts from partial inputs"
-    user_prompt = None
+    """
+    LangChain-compatible agent that converts **incomplete** or **rough** job
+    post data into **complete, attractive, and market-ready listings**.
+
+    Responsibilities
+    ----------------
+    1. Accepts `EnhanceJobPostInput` (sparse data).
+    2. Generates a fully populated `EnhanceJobPostOutput`.
+    3. Ensures salary ranges are competitive for the role and location.
+    4. Expands skill lists and crafts clear, inclusive descriptions.
+    5. Returns structured JSON that can be posted directly to job boards.
+
+    Usage example
+    -------------
+        agent = EnhanceJobPostAgent()
+        partial_data = EnhanceJobPostInput(
+            title="Python dev",
+            description="Need someone who knows Django",
+            city="Cape Town"
+        )
+        final_post = agent.run(partial_data)
+    """
+
+    name: str = "enhance_job_post"
+    description: str = (
+        "Transforms partial or informal job posts into complete, professional, "
+        "and market-competitive South-African job listings."
+    )
+    user_prompt: Optional[str] = None
 
     def system_prompt(self) -> str:
+        """
+        Static system-level instructions that are always injected at the top
+        of the LLM prompt.  Emphasises JSON schema compliance and South-African
+        salary norms.
+        """
         return (
-            "You are a professional job post generator for employers. "
-            "Create complete, attractive job posts using ONLY the following JSON schema:"
+            "You are a South-African talent acquisition specialist. "
+            "Your sole task is to generate polished, inclusive, and realistic "
+            "job posts in **valid JSON** matching the `EnhanceJobPostOutput` schema. "
+            "All salaries must be expressed in **South African Rands (ZAR)**."
         )
 
-    def set_user_prompt(self, user_prompt: str | None = None):
-        if user_prompt:
-            self.user_prompt = user_prompt
+    def set_user_prompt(self, user_prompt: Optional[str] = None) -> None:
+        """
+        Allows the caller to inject an additional free-text prompt that will be
+        appended to the generation instructions (e.g. “Focus on diversity hiring”).
+        """
+        self.user_prompt = user_prompt
 
     def prompt(self, input_model: EnhanceJobPostInput) -> str:
-        # Build context from input
-        context = [
+        """
+        Constructs the full prompt sent to the LLM.
+
+        Combines:
+        - The system prompt
+        - The raw candidate data (formatted as human-readable bullet points)
+        - Any caller-supplied `user_prompt`
+        - Explicit JSON schema constraints
+        """
+        context_lines = [
             f"Title: {input_model.title}",
             f"Description: {input_model.description}",
             f"Position Type: {input_model.position_type or 'Not specified'}",
@@ -143,41 +274,31 @@ class EnhanceJobPostAgent(BaseAgent):
         ]
 
         return f"""
-        Create a complete, professional job post based on the following partial information:
+Create a complete, professional job post based on the sparse information below.
 
-        {"\n".join(context)}
+{chr(10).join(context_lines)}
 
-        Generate a comprehensive job post including:
-        1. An attractive, clear job title (5-255 characters)
-        2. Detailed job description with responsibilities and expectations
-        3. Position event_type (FULL_TIME, PART_TIME, or CONTRACT)
-        4. Remote work policy (ONSITE, HYBRID, or REMOTE)
-        5. Competitive salary range as numbers (min and max)
-        6. Salary currency (3-letter code, default to ZAR)
-        7. Location details (city, province, country)
-        8. Experience level (ENTRY, MID, or SENIOR)
-        9. Comprehensive list of required skills
-        10. List of preferred skills
-        11. Suggested education requirements as key-value pairs
-        12. Clear application instructions (min 10 characters)
-        13. Application deadline (30 days from now in ISO format)
-        14. Expiration date (60 days from now in ISO format)
+Requirements for the generated post:
+    1. Title must be market-standard and between 5-255 characters.
+    2. Description must be engaging, inclusive, and cover key responsibilities, KPIs, and growth opportunities.
+    3. Salary range must be **competitive for South Africa** in **ZAR only**.
+    4. Experience level must be exactly one of: ENTRY, MID, SENIOR.
+    5. Required skills list must be non-empty and realistic.
+    6. Preferred skills list may be empty but must be exhaustive.
+    7. Education requirements should be provided as key-value pairs (e.g. {{ "Diploma": "Information Technology" }}).
+    8. Output must be **valid JSON** conforming to the `EnhanceJobPostOutput` schema.
 
-        Additional guidelines:
-        - Salary should be competitive for the role and location
-        - Application instructions should include how to apply
-        - Education requirements should be realistic for the role
-        - Use South African context when location is unspecified
-        
-        User Prompt 
-            - {self.user_prompt if self.user_prompt else "No user prompt provided."}
-            
-        Output MUST be in valid JSON format matching the specified schema.
-    """
+Additional instructions from caller:
+    - {self.user_prompt or "No additional instructions."}
 
-    def output_model(self):
+Return **only** the JSON object.
+"""
+
+    def output_model(self) -> type[EnhanceJobPostOutput]:
+        """
+        Returns the Pydantic model that the LLM response should be parsed into.
+        """
         return EnhanceJobPostOutput
-
 
 # Job Post Insights Models
 class JobPostInsights(BaseModel):
