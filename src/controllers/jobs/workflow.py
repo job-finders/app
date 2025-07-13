@@ -11,13 +11,14 @@ from requests import RequestException
 from sqlalchemy import select, func, and_, case
 from sqlalchemy.orm import joinedload
 
+from src.controllers.jobs.auto_categorizer import AutoCategorizer
 from src.controllers.controller import Controllers
 from src.controllers.controller import error_handler
 from src.database.models.employer_models import Employer
 from src.database.models.jobs_model import (Job, JobApplication, SavedJob, JobStatistics, StatusCounts,
                                             ApplicationMetrics, ApplicationFunnelStats, BulkImportResult,
-                                            TalentPoolReport, JobApplicationDashboard, ATSReport,JobEditableFields,
-                                            JobApplicationStatusEnum, JobApprovalStatusEnum, JobStatusEnum)
+                                            TalentPoolReport, JobApplicationDashboard, ATSReport, JobEditableFields,
+                                            JobApplicationStatusEnum, JobApprovalStatusEnum, JobStatusEnum, JobCategory)
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.sql.company import CompanyORM
 from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, JobApprovalRequestORM, ATSReportORM,
@@ -38,8 +39,6 @@ class JobsWorkflowController(Controllers):
     argument -- description
     Return: return_description
     """
-    
-    
     def __init__(self, factory):
         super().__init__(factory)
 
@@ -72,11 +71,52 @@ class JobsWorkflowController(Controllers):
                 .filter(JobsORM.job_id == job_id)
                 .first()
             )
-
             if not job_details_orm:
                 return None
-
             return Job(**job_details_orm.to_dict(include_relationship=True))
+
+    @error_handler
+    async def _ensure_category(
+            self, session, *, category_name: str
+    ) -> str | None:
+        """
+        Creates the category if it does not yet exist and returns its ID.
+        If creation fails, returns None so the caller can handle the fallback.
+        """
+        if not category_name:
+            return None
+
+        # Normalize name
+        category_name = category_name.strip().lower()
+
+        # Double-check race condition inside the same session
+        existing = (
+            session.query(JobCategoryORM)
+            .filter(JobCategoryORM.name == category_name)
+            .first()
+        )
+        if existing:
+            return existing.category_id
+
+        try:
+            from src.utils.route_helpers import get_controller
+            employer_agent_controller = get_controller('employer_agents')
+            agent_response = await employer_agent_controller.describe_job_category(job_category=category_name)
+
+            new_category_model = JobCategory(name=category_name, description=agent_response.description,
+                                             slug=agent_response.slug,
+                                             seo_description=agent_response.seo_description)
+
+            new_category = JobCategoryORM(name=new_category_model.name, description=new_category_model.description,
+                                          seo_description=new_category_model.seo_description,
+                                          category_id=new_category_model.category_id)
+
+            session.add(new_category)
+            session.flush()  # Get the ID without committing yet
+            return new_category.category_id
+        except Exception as e:
+            self.logger.error(f"Failed to create category '{category_name}': {e}")
+            return None
 
     @error_handler
     async def update_job(self, job_id: str, updated_job: JobEditableFields | Job) -> Job | None:
@@ -90,29 +130,38 @@ class JobsWorkflowController(Controllers):
             job_orm = session.get(JobsORM, job_id)
             if not job_orm:
                 return None
-
+            self.logger.info(f"DEBUG: we found this Jobs {job_orm.to_dict()}")
             # Update all fields except job_id
             for key, value in updated_job.model_dump(exclude_unset=True).items():
                 if key != "job_id" and hasattr(job_orm, key):
                     setattr(job_orm, key, value)
 
-            # noinspection DuplicatedCode
             if job_orm and not job_orm.category_id:
-                category_fit = self._auto_categorize_job(title=job_orm.title, description=job_orm.description)
+                category_fit = await self._auto_categorize_job(
+                    title=job_orm.title, description=job_orm.description
+                )
+                self.logger.info(f"Auto-categorizer returned: {category_fit}")
+
                 category = (
                     session.query(JobCategoryORM)
-                    .filter(JobCategoryORM.name.ilike(category_fit))
+                    .filter(JobCategoryORM.name == category_fit)
                     .first()
                 )
-                if category:  # 👈 safety
+
+                if category:
                     job_orm.category_id = category.category_id
+                    self.logger.info(f"Category already exists: {category.name}")
                 else:
-                    # fallback – create or log
-                    self.logger.info("Unable to select job Category allow user to Select Job Category")
-
-            # Use UTC-aware datetime with proper timezone
+                    # 👇 Let the dedicated helper create it
+                    new_category_id = await self._ensure_category(
+                        session, category_name=category_fit
+                    )
+                    if new_category_id:
+                        job_orm.category_id = new_category_id
+                        self.logger.info(f"Created & assigned new category: {category_fit}")
+                    else:
+                        self.logger.warning("Could not create category – user must select one")
             job_orm.updated_time = datetime.now(timezone.utc)
-
             return Job(**job_orm.to_dict()) if job_orm else None
 
     @error_handler    
@@ -940,68 +989,12 @@ class JobsWorkflowController(Controllers):
         if not (isinstance(description, str) and description.strip()):
             return None
         description = description.strip().lower()
+        cat, conf = await AutoCategorizer.categorize(
+            "Senior Backend Software Engineer",
+            "We are looking for a backend engineer experienced in Python, microservices and AWS."
+        )
 
-        category_keywords = {
-            'information-technology': [
-                'it', 'software', 'network', 'cybersecurity', 'systems analyst',
-                'tech support', 'infrastructure', 'cloud', 'devops', 'data center'
-            ],
-            'office-admin': [
-                'admin', 'administrative', 'receptionist', 'office assistant',
-                'secretary', 'clerk', 'front desk', 'scheduler'
-            ],
-            'agriculture': [
-                'farm', 'agricultural', 'harvest', 'crop', 'irrigation',
-                'livestock', 'farming', 'agribusiness'
-            ],
-            'engineering': [
-                'engineer', 'mechanical', 'civil', 'electrical', 'technician',
-                'systems engineer', 'structural', 'design engineer'
-            ],
-            'building-construction': [
-                'builder', 'construction', 'foreman', 'plumber', 'electrician',
-                'contractor', 'site supervisor', 'carpenter', 'bricklayer'
-            ],
-            'business-management': [
-                'manager', 'executive', 'business development', 'operations',
-                'project manager', 'strategy', 'team lead'
-            ],
-            'cleaning-maintenance': [
-                'cleaner', 'janitor', 'custodian', 'maintenance', 'groundskeeper',
-                'housekeeping'
-            ],
-            'community-social-welfare': [
-                'social worker', 'community outreach', 'non-profit',
-                'ngo', 'welfare', 'care worker', 'humanitarian'
-            ],
-            'education': [
-                'teacher', 'educator', 'lecturer', 'instructor',
-                'trainer', 'school', 'professor', 'tutor'
-            ],
-            'nursing': [
-                'nurse', 'midwife', 'caregiver', 'rn', 'enrolled nurse',
-                'clinical assistant', 'healthcare assistant'
-            ],
-            'finance': [
-                'accountant', 'bookkeeper', 'auditor', 'finance', 'financial analyst',
-                'investment', 'bank', 'payroll'
-            ],
-            'programming': [
-                'developer', 'programmer', 'software engineer', 'python', 'java',
-                'backend', 'frontend', 'fullstack', 'api', 'coding'
-            ]
-        }
-
-        combined_text = f"{title} {description}".lower()
-        scores = {category: 0 for category in category_keywords.keys()}
-
-        for category, keywords in category_keywords.items():
-            for keyword in keywords:
-                if keyword in combined_text:
-                    scores[category] += combined_text.count(keyword)
-
-        best_category = max(scores, key=scores.get)
-        return best_category if scores[best_category] > 0 else None
+        return cat
 
     # noinspection PyProtectedMember
     async def _get_salary_benchmark(self, category: str, location: str, experience: str) -> dict:

@@ -201,7 +201,7 @@ class BaseAgent(ABC):
             return ModelType.DEEPSEEK_REASONER
         
         elif any(word in prompt_lower for word in ["code", "programming", "technical", "development"]):
-            return ModelType.DEEPSEEK_CODER
+            return ModelType.DEEPSEEK_CHAT
         
         # Default to most cost-effective model
         return ModelType.DEEPSEEK_CHAT

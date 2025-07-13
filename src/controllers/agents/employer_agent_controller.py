@@ -2,6 +2,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
+from src.agents.employer.job_post_intelligence import JobCategoryDefinitionAgent, JobCategoryNameInput, \
+    JobCategoryDefinitionOutput
 from src.agents.employer.candidate_benchmark import JobPostSummaryInput
 from src.agents.employer.document_verifications import DocumentVerificationInput, DocumentVerificationAgent, \
     DocumentVerificationOutPut
@@ -342,3 +344,25 @@ class EmployerAgentsController(Controllers):
         notes = "\n".join(notes_parts) if notes_parts else None
 
         return status, notes
+
+    @error_handler
+    async def describe_job_category(self, job_category: str, user_id: str = "system") -> JobCategoryDefinitionOutput:
+        """
+        Generate a description for a specific job category using AI.
+
+        Args:
+            user_id (str): ID of the user requesting the description.
+            job_category (str): The job category to describe.
+
+        Returns:
+            str: AI-generated description of the job category.
+        """
+
+        self.logger.info(f"Generating description for job category '{job_category}' for user {user_id}")
+        agent = JobCategoryDefinitionAgent(user_id=user_id)
+        input_model = JobCategoryNameInput(category_name=job_category)
+        output = await agent.run(input_model=input_model)
+
+        # Run the agent
+        # noinspection PyTypeChecker
+        return output

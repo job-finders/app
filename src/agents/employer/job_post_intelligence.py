@@ -260,3 +260,51 @@ class JobSummaryAgent(BaseAgent):
 
     def output_model(self) -> Type[BaseModel]:
         return JobSummaryOutput
+
+
+class JobCategoryNameInput(BaseModel):
+    category_name: str = Field(..., min_length=2, max_length=100, description="Raw category name to be defined")
+
+
+class JobCategoryDefinitionOutput(BaseModel):
+    __doc__ = "Ensure Job Category Definitions do not exceed the limits in characters"
+    description: str = Field(..., min_length=10, max_length=400)
+    slug: str = Field(..., min_length=2, max_length=60, pattern=r"^[a-z0-9-]+$")
+    seo_description: str = Field(..., min_length=50, max_length=255)
+
+
+class JobCategoryDefinitionAgent(BaseAgent):
+    __doc__ = (
+        "This agent takes a raw category name and produces a complete definition "
+        "ready for the JobCategory model."
+    )
+    name = "job_category_definition"
+    description = (
+        "Generates a human-friendly description, URL slug, and SEO meta description "
+        "for a new job-portal category."
+    )
+
+    def system_prompt(self) -> str:
+        return (
+            "You are a job-portal taxonomist and SEO specialist. "
+            "Given only a category name, you must:\n"
+            "1. Write a concise but informative description (≈ 40–80 words) explaining what jobs belong to this category.\n"
+            "2. Produce a clean, kebab-case slug suitable for URLs (max 60 chars).\n"
+            "3. Craft a 150–160 character SEO description optimized for search results.\n\n"
+            "Keep the tone professional and inclusive. "
+            "Return valid JSON only, no extra commentary."
+        )
+
+    def prompt(self, input_model: JobCategoryNameInput) -> str:
+        return (
+            f'Category name: "{input_model.category_name.strip()}"\n\n'
+            f"Respond in JSON:\n"
+            f'{{\n'
+            f'  "description": "<Human description>",\n'
+            f'  "slug": "<kebab-case-slug>",\n'
+            f'  "seo_description": "<SEO meta description>"\n'
+            f'}}'
+        )
+
+    def output_model(self) -> type[BaseModel]:
+        return JobCategoryDefinitionOutput
