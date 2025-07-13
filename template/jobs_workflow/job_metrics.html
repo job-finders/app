@@ -2,29 +2,27 @@
 {% block title %}{{ job.title or "Untitled Job" }}{% endblock %}
 
 {% block styles %}
+    <!-- only if you haven't got it -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@icon/themify-icons@1/themify-icons.min.css">
     <style>
         :root {
             --bs-body-font-family: 'Inter', sans-serif;
         }
-
         body {
             background: #f5f7fb;
         }
-
         .card {
             border: none;
             border-radius: .75rem;
             box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .05);
         }
-
         .sticky-lg {
             position: sticky;
             top: 1.5rem;
             z-index: 1020;
         }
-
         @media (max-width: 991.98px) {
             .sticky-lg {
                 position: static;
@@ -32,7 +30,6 @@
         }
     </style>
 {% endblock %}
-
 {% block content %}
     <div class="container-fluid py-4">
         <!-- Hero / Title Bar ----------------------------------------------------->
@@ -65,10 +62,13 @@
                 <!-- Description -->
                 <div class="card mb-4">
                     <div class="card-header bg-white">
-                        <h5 class="mb-0 fw-semibold"><i class="ti-align-justify me-2"></i>Description</h5>
+                        <h5 class="mb-0 fw-semibold">Job Details</h5>
                     </div>
                     <div class="card-body">
-                        <p class="mb-0">{{ job.description or "No description provided." }}</p>
+                        <!-- hidden raw markdown -->
+                        <textarea id="ats-md" class="d-none">{{ job.ats_description_display }}</textarea>
+                        <!-- rendered html -->
+                        <div id="ats-html" class="border rounded p-3 bg-light" style="min-height: 200px;"></div>
                     </div>
                 </div>
 
@@ -166,4 +166,14 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const md = document.getElementById('ats-md').value;
+            const html = marked.parse(md);           // convert markdown → html
+            document.getElementById('ats-html').innerHTML = html;
+        });
+    </script>
 {% endblock %}

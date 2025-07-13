@@ -3,6 +3,7 @@ import re
 import uuid
 from collections import Counter
 from datetime import date, timedelta, datetime, timezone
+from textwrap import indent
 from enum import Enum
 from typing import Optional, Any
 
@@ -577,6 +578,41 @@ class Job(BaseModel):
             f"Job Description: {self.description or ''}"
         ]
         return "\n".join(part for part in summary_parts if part.strip())
+
+    @property
+    def ats_description_display(self) -> str:
+        """
+        Markdown-ready, multi-line summary for ATS / employer display.
+        Every line that should stand alone ends with "  \n".
+        """
+        lines = [
+            f"**Job Title:** {self.title}  ",
+            f"**Company:** {self.company.name if self.company else 'N/A'}  ",
+            f"**Location:** {self.location}  ",
+            f"**Type / Remote:** {self.position_type} • {self.remote_policy}  ",
+            f"**Salary:** {self.salary}  ",
+            f"**Expires:** {self.expires_at.strftime('%d %b %Y') if self.expires_at else 'N/A'}  ",
+            f"**Experience:** {self.experience_level}  ",
+            "",
+            "**Required Skills:**",
+            "- " + ("\n- ".join(self.required_skills) if self.required_skills else "—"),
+            "",
+            "**Preferred Skills:**",
+            "- " + ("\n- ".join(self.preferred_skills) if self.preferred_skills else "—"),
+            "",
+            "",
+            "**Education Requirements:**",
+            *(["—"] if not self.education_requirements else
+              [f"- {k}: {v}" for k, v in self.education_requirements.items()]),
+            "",
+            "**Description:**",
+            self.description or "—",
+            "",
+            "",
+            "**Application Instructions:**",
+            self.application_instructions or "—",
+        ]
+        return "\n".join(lines)
 
     @classmethod
     def create_from_enhanced_agent_output(
