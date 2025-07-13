@@ -344,3 +344,31 @@ async def view_job_applications(user: User, job_id: str):
     )
     # Render template with all required context
     return render_template("jobs_workflow/job_applications.html", **context)
+
+
+@jobs_workflow_route.get("/<string:job_id>/update-status")
+@employer_login
+@require_billing_role()
+@employer_job_access_required()
+@flask_error_handler
+async def update_status(user: User):
+    """
+
+    :param user:
+    :return:
+    """
+    pass
+
+
+@jobs_workflow_route.get("/<string:job_id>/toggle-featured")
+@employer_login
+@require_billing_role()
+@employer_job_access_required()
+@flask_error_handler
+async def toggle_featured(user: User):
+    """
+
+    :param user:
+    :return:
+    """
+    pass

@@ -349,15 +349,12 @@ class EmployerAgentsController(Controllers):
     async def describe_job_category(self, job_category: str, user_id: str = "system") -> JobCategoryDefinitionOutput:
         """
         Generate a description for a specific job category using AI.
-
         Args:
             user_id (str): ID of the user requesting the description.
             job_category (str): The job category to describe.
-
         Returns:
             str: AI-generated description of the job category.
         """
-
         self.logger.info(f"Generating description for job category '{job_category}' for user {user_id}")
         agent = JobCategoryDefinitionAgent(user_id=user_id)
         input_model = JobCategoryNameInput(category_name=job_category)

@@ -266,7 +266,6 @@
                         </div>
                         </div>
 
-
                         <!-- Education: dict → JSON -->
                         <input type="hidden"
                                name="education_requirements"
@@ -312,8 +311,66 @@
                     {% include 'jobs_workflow/_ats_metrics.html' %}
                 </div>
             </div>
+
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="ti-dashboard me-2"></i>Job Dashboard</h6>
+                </div>
+
+                <div id="dashboardPanel" class="card-body">
+                    <!-- Status badge -->
+                    <div class="mb-3 mt-2">
+                  <span class="badge
+                    {% if job.status == 'draft' %}bg-secondary
+                    {% elif job.status == 'pending' %}bg-warning text-dark
+                    {% elif job.status == 'active' %}bg-success
+                    {% elif job.status == 'closed' %}bg-danger
+                    {% else %}bg-light text-dark{% endif %} fs-6">
+                    Job Status : {{ job.status.title() }}
+                  </span>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="btn-group-vertical w-100 gap-2">
+
+                        {% if job.status == 'draft' %}
+                            <button type="button" class="btn btn-outline-success"
+                                    onclick="updateJobStatus('{{ job.job_id }}', 'pending')">
+                                <i class="ti-upload me-1"></i>Submit for Review
+                            </button>
+                        {% elif job.status == 'pending' %}
+                            <small class="text-muted">Awaiting admin approval</small>
+                        {% elif job.status == 'active' %}
+                            <button type="button" class="btn btn-outline-warning"
+                                    onclick="updateJobStatus('{{ job.job_id }}', 'closed')">
+                                <i class="ti-close me-1"></i>Close Job
+                            </button>
+
+                            {% if not job.is_featured %}
+                                <button type="button" class="btn btn-outline-primary"
+                                        onclick="toggleFeatured('{{ job.job_id }}', true)">
+                                    <i class="ti-star me-1"></i>Feature Job
+                                </button>
+                            {% else %}
+                                <button type="button" class="btn btn-outline-secondary"
+                                        onclick="toggleFeatured('{{ job.job_id }}', false)">
+                                    <i class="ti-star me-1"></i>Remove Feature
+                                </button>
+                            {% endif %}
+                        {% elif job.status == 'closed' %}
+                            <button type="button" class="btn btn-outline-success"
+                                    onclick="updateJobStatus('{{ job.job_id }}', 'active')">
+                                <i class="ti-reload me-1"></i>Re-open Job
+                            </button>
+                        {% endif %}
+
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
+
     </div>
     </div>
 
@@ -459,6 +516,28 @@
                 document.getElementById('calcAtsBtn').click();
             } else alert('Enhancement failed.');
         });
+    </script>
+
+    <script>
+        /* Update job status */
+        async function updateJobStatus(jobId, newStatus) {
+            const res = await fetch(`{{ url_for("jobs_workflow.update_status", job_id="__ID__") }}`.replace("__ID__", jobId), {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({status: newStatus})
+            });
+            if (res.ok) location.reload(); else alert("Error updating status");
+        }
+
+        /* Toggle featured flag */
+        async function toggleFeatured(jobId, featured) {
+            const res = await fetch(`{{ url_for("jobs_workflow.toggle_featured", job_id="__ID__") }}`.replace("__ID__", jobId), {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({featured})
+            });
+            if (res.ok) location.reload(); else alert("Error toggling featured");
+        }
     </script>
 
 {% endblock %}
