@@ -9,10 +9,7 @@ from src.agents.employer.document_verifications import DocumentVerificationInput
     DocumentVerificationOutPut
 from src.agents.employer import JobPostIntelligenceAgent
 
-
-
 from src.database.models.agent_models import JobPostInsights
-
 from src.controllers.controller import Controllers, error_handler
 from src.agents.employer import (EnhanceJobPostOutput, EnhanceJobPostInput, EnhanceJobPostAgent, JobSummaryInput,
 JobSummaryAgent, JobSummaryOutput)

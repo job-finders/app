@@ -46,7 +46,6 @@
     <div class="container-fluid py-4">
         <form id="editForm" method="post" action="{{ url_for('jobs_workflow.edit_job', job_id=job.job_id) }}">
             {# csrf_token() #}
-
             <div class="row gx-4 gy-4">
                 <!--  MAIN FORM  -->
                 <div class="col-lg-8">
@@ -64,7 +63,6 @@
                             </button>
                         </div>
                     </div>
-
                     <!-- Core ---------------------------------------------------------------->
                     <div class="card mb-4">
                         <div class="card-header bg-white">
@@ -75,8 +73,7 @@
                                 <label class="form-label fw-semibold font-weight-bold">Title *</label>
                                 <input type="text" name="title" class="form-control" required maxlength="255"
                                        value="{{ job.title }}">
-            </div>
-
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold font-weight-bold">Description *</label>
                                 <textarea name="description" class="form-control" rows="6"
@@ -116,7 +113,6 @@
                             </div>
                         </div>
                     </div>
-
                     <!-- Compensation ------------------------------------------------------>
                     <div class="card mb-4">
                         <div class="card-header bg-white">
@@ -178,7 +174,6 @@
                             </div>
                         </div>
                     </div>
-
                     <!-- Timeline ---------------------------------------------------------->
                     <div class="card mb-4">
                         <div class="card-header bg-white">
@@ -199,7 +194,6 @@
                             </div>
                         </div>
                     </div>
-
                     <!-- Skills / Requirements --------------------------------------------->
                     <div class="card mb-4">
                         <div class="card-header bg-white">
@@ -207,7 +201,6 @@
                                 <i class="ti-list me-2"></i> Skills & Requirements
                             </h5>
                         </div>
-
                         <div class="card-body">
                             <!-- Experience Level -->
                             <div class="mb-3">
@@ -224,7 +217,6 @@
                                     </option>
                                 </select>
                             </div>
-
                             <!-- Educational Requirements -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-warning">Educational Requirements</label>
@@ -235,7 +227,6 @@
                                        placeholder="Type key:value and hit Enter (e.g. Diploma:Marketing)">
                                 <div id="education-list" class="mt-2 d-flex flex-wrap gap-1"></div>
                             </div>
-
                             <!-- Required Skills -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-success">Required Skills</label>
@@ -246,7 +237,6 @@
                                        placeholder="Type skill and hit Enter">
                                 <div id="required-skills-list" class="mt-2 d-flex flex-wrap gap-1"></div>
                             </div>
-
                             <!-- Preferred Skills -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-primary">Preferred Skills</label>
@@ -265,32 +255,27 @@
                                           style="min-height:120px; resize:vertical;">{{ job.application_instructions or '' }}</textarea>
                         </div>
                         </div>
-
                         <!-- Education: dict → JSON -->
                         <input type="hidden"
                                name="education_requirements"
                                id="education-json"
                                value='{{ (job.education_requirements or {}) | tojson | forceescape }}'>
-
                         <!-- Required skills: list → JSON -->
                         <input type="hidden"
                                name="required_skills"
                                id="required-skills-json"
                                value='{{ (job.required_skills or []) | tojson | forceescape }}'>
-
                         <!-- Preferred skills: list → JSON -->
                         <input type="hidden"
                                name="preferred_skills"
                                id="preferred-skills-json"
                                value='{{ (job.preferred_skills or []) | tojson | forceescape }}'>
-
                     </div>
                     <!-- Submit ------------------------------------------------------------>
                     <div class="text-end">
                         <button type="submit" class="btn btn-primary btn-flat btn-lg">
                             <i class="ti-save me-2"></i>Update Job
                         </button>
-
                         <a href="{{ url_for('company.manage_jobs') }}" type="submit"
                            class="btn btn-default btn-flat btn-lg">
                             <i class="ti-close me-2"></i>Cancel
@@ -299,9 +284,15 @@
       </form>
     </div>
 
-    <!--  ATS SIDEBAR  -->
+    <!--  ##########################################################################  -->
+    <!--  ##########################################################################  -->
+    <!--  SIDEBAR  -->
+    <!--  ##########################################################################  -->
+    <!--  ##########################################################################  -->
+
     <div class="col-lg-4">
         <div class="sticky-lg">
+            <!--  ##########################################################################  -->
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="ti-stats-up me-2"></i>Live ATS & Health</h6>
@@ -311,7 +302,7 @@
                     {% include 'jobs_workflow/_ats_metrics.html' %}
                 </div>
             </div>
-
+            <!--  ##########################################################################  -->
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="ti-dashboard me-2"></i>Job Dashboard</h6>
@@ -444,7 +435,6 @@
                     pill.remove();
                     syncJson(containerId);
                 });
-
                 container.appendChild(pill);
             }
 
@@ -467,9 +457,7 @@
                 document.getElementById(cfg.jsonId).value = JSON.stringify(json);
             }
         });
-    </script>
 
-    <script>
         // helper – build FormData from current form
         function getFormData(extra = {}) {
             const fd = new FormData(document.getElementById('editForm'));
@@ -516,9 +504,7 @@
                 document.getElementById('calcAtsBtn').click();
             } else alert('Enhancement failed.');
         });
-    </script>
 
-    <script>
         /* Update job status */
         async function updateJobStatus(jobId, newStatus) {
             const res = await fetch(`{{ url_for("jobs_workflow.update_status", job_id="__ID__") }}`.replace("__ID__", jobId), {
