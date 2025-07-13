@@ -2,7 +2,6 @@
 
 from typing import Type
 from pydantic import BaseModel
-
 from src.agents.base import BaseAgent
 from src.database.models.agent_models import CandidateBenchmarkReport
 

@@ -80,7 +80,7 @@ class BaseAgent(ABC):
         self.usage_tracker = UsageTracker(user_id, usage_tier)
         self.hashnode_token = config_instance().HASHNODE_TOKEN
         self.openrouter_client = OpenRouterClient()
-
+        self.logger = None
         self._last_interaction = {}
 
 
@@ -243,7 +243,6 @@ class BaseAgent(ABC):
             "monthly_remaining": limits["monthly_limit"] - monthly_usage
         }
 
-
     async def run(self, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> BaseModel:
 
         user_prompt = self.prompt(*args, **kwargs)
@@ -253,7 +252,6 @@ class BaseAgent(ABC):
         selected_model = await self.check_usage_and_select_model(
             user_prompt, user_role, task_type, *args, **kwargs
         )
-
         # Record usage
         if not self.usage_tracker.record_usage():
             raise Exception("Usage limit exceeded during execution")
@@ -279,7 +277,6 @@ class BaseAgent(ABC):
                 temperature=kwargs.get('temperature', 0.7),
                 max_tokens=kwargs.get('max_tokens', 1024)
             )
-
             # Add assistant response to memory
             protect_response = kwargs.get('protect_response', False)
             assistant_entry_id = self.memory.add_entry(
@@ -287,7 +284,6 @@ class BaseAgent(ABC):
                 output.model_dump_json(), 
                 protect=protect_response
             )
-            
             # Store entry IDs for potential future reference
             self._last_interaction = {
                 "user_entry_id": user_entry_id,
@@ -323,19 +319,23 @@ class BaseAgent(ABC):
                 self._log_error(error_context)
                 raise e
 
-    async def run_fallback_model(self, kwargs, user_entry_id: str, selected_model: ModelType, messages: list[str]):
+    async def run_fallback_model(self, kwargs, user_entry_id: str, selected_model: ModelType,
+                                 messages: list[dict[str, str]]):
 
         # Will use a Fallback Model for the previous selected Model.
         fallback_model = self.get_fallback_model(selected_model=selected_model)
 
-        output = await openrouter_client.structured_completion(
+        output = await self.openrouter_client.structured_completion(
             messages=messages,
             output_model=self.output_model(),
             model=fallback_model.value,
             temperature=kwargs.get('temperature', 0.7),
             max_tokens=kwargs.get('max_tokens', 1024)
         )
-        print(output)
+        error_context = dict(message=f"Fallback model Output: {output}",
+                             method="run_fallback_model")
+        self._log_error(error_context=error_context)
+
         # Add fallback response to memory with note
         fallback_response = output.model_dump_json()
         assistant_entry_id = self.memory.add_entry(
@@ -361,38 +361,15 @@ class BaseAgent(ABC):
         """Delete multiple memory entries."""
         return self.memory.delete_entries(entry_ids)
 
-    def protect_memory_entry(self, entry_id: str) -> bool:
-        """Protect a memory entry from automatic cleanup."""
-        return self.memory.protect_entry(entry_id)
-
-    def get_memory_stats(self) -> Dict[str, int]:
-        """Get memory usage statistics."""
-        return self.memory.get_memory_stats()
-
-    def clear_memory(self, keep_protected: bool = False):
-        """Clear agent memory with option to keep protected entries."""
-        self.memory.clear(keep_protected=keep_protected)
-
-    def set_memory_capacity(self, max_entries: int):
-        """Update memory capacity."""
-        self.memory.set_max_entries(max_entries)
-
     def get_last_interaction(self) -> Dict:
         """Get details of the last interaction."""
         return getattr(self, '_last_interaction', {})
 
-    def protect_last_interaction(self) -> Dict[str, bool]:
-        """Protect the last user/assistant interaction."""
-        if hasattr(self, '_last_interaction'):
-            results = {}
-            if 'user_entry_id' in self._last_interaction:
-                results['user'] = self.memory.protect_entry(self._last_interaction['user_entry_id'])
-            if 'assistant_entry_id' in self._last_interaction:
-                results['assistant'] = self.memory.protect_entry(self._last_interaction['assistant_entry_id'])
-            return results
-        return {}
-
-    def _log_error(self, error_context: Dict):
+    def _log_error(self, error_context: dict[str, str]):
         """Log error with enhanced context."""
         # Implement your logging logic here
-        print(f"Agent Error: {error_context}")  # Replace with proper logging
+        from src.utils.route_helpers import get_service
+        if not self.logger:
+            __logger_name: str = f"Debug Logger: {self.__class__.__name__.lower()} : "
+            self.logger = get_service('logger')()(__logger_name)
+        self.logger.info(error_context)
