@@ -1103,14 +1103,12 @@ class JobsWorkflowController(Controllers):
         """
         with self.get_session() as session:
             self.logger.info(f"Creating approval request for job {job_id}")
-
-            system_admin_orm_list = session.query(UserORM).filter_by(role=RolesEnum.SYSTEM_ADMIN.value).all()
+            system_admin = await self.get_system_admin()
             # TODO - consider creating system admin account if system admin account not found
-            if not system_admin_orm_list:
+            if not system_admin:
                 self.logger.error(f"No system admin users found for job approval request {job_id}")
                 return False
 
-            approvers = [User(**user.to_dict()) for user in system_admin_orm_list if user]
             draft_job_orm = session.query(JobsORM).get(job_id)
             draft = Job(**draft_job_orm.to_dict())
             # and will be legible for rechecking job to see if it meets requirements
@@ -1121,7 +1119,7 @@ class JobsWorkflowController(Controllers):
                 token=str(uuid.uuid4()),
                 token_expires=token_expiration,
                 requested_by=draft.company_id,
-                approvers=[u.user_id for u in approvers],
+                approvers=system_admin.uid,
                 status=JobApprovalStatusEnum.PENDING.value
             )
             session.add(approval_request)

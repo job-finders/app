@@ -81,7 +81,7 @@ class User(BaseModel):
     # noinspection PyMethodParameters
     @field_validator('role')
     def role_must_be_valid(cls, v):
-        allowed_roles = {'admin', 'employer', 'seeker'}
+        allowed_roles = {'admin', 'employer', 'seeker', 'system_admin'}
         if v not in allowed_roles:
             raise ValueError(f"Role must be one of {allowed_roles}")
         return v

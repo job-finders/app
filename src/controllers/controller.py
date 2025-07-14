@@ -6,9 +6,11 @@ from pydantic import ValidationError
 from sqlalchemy.exc import OperationalError, ProgrammingError, IntegrityError
 from sqlalchemy.exc import SQLAlchemyError
 
+from src.database import UserORM
+from src.database.models.users import RolesEnum, User
 from src.database.sql import Session
 from src.logger import init_logger
-
+from src.config import config_instance
 error_logger = init_logger("error_logger")
 
 class ControllerInitException(Exception):
@@ -45,6 +47,7 @@ class Controllers:
         self.sessions = []
         self.logger = init_logger(self.__class__.__name__)
         self.app: Flask | None = None
+        self.config = config_instance()
         self.deepseek_api_key: str | None  = None
         # Initialize sessions if session_maker is provided
         if session_maker:
@@ -65,6 +68,51 @@ class Controllers:
         session_maker = self.app.config.get('session_maker')
         session_limit = self.app.config.get('session_limit', self.session_limit)
         self.deepseek_api_key = self.app.config.get('DEEPSEEK_API_KEY')
+
+    async def get_system_admin(self) -> User:
+        """
+        Retrieve the system admin user.
+        This method checks if a system admin user exists and returns it.
+        If no admin user exists, it will return an empty result.
+        """
+        with self.get_session() as session:
+            admin_user_orm = session.query(UserORM).filter_by(role=RolesEnum.SYSTEM_ADMIN.value).first()
+            self.logger.info(f"Retrieved system admin user: {admin_user_orm}")
+            if not admin_user_orm:
+                self.logger.info("No system admin found, creating a new one.")
+                return await self.create_system_admin()
+
+            data = User(**admin_user_orm.to_dict()) if isinstance(admin_user_orm, UserORM) else None
+            self.logger.info(f"System admin user data: {data}")
+            return data
+
+    async def create_system_admin(self) -> User:
+        """
+        Create a system admin user if it does not exist.
+        This is a one-time setup method to ensure the system has an admin user.
+        """
+        with self.get_session() as session:
+            existing_admin = session.query(UserORM).filter_by(role=RolesEnum.SYSTEM_ADMIN.value).first()
+            if existing_admin:
+                return User(**existing_admin.to_dict())
+
+            # Create new admin user
+            admin_email = self.config.ADMIN_USERNAME
+            admin_password = self.config.ADMIN_PASSWORD
+            self.logger.info(f"Creating new system admin user. {admin_email} ")
+
+            user = User.create(name="System Admin", email=admin_email, password=admin_password,
+                               role=RolesEnum.SYSTEM_ADMIN.value, )
+
+            new_admin_orm = UserORM(uid=user.uid,
+                                    name=user.name,
+                                    email=user.email,
+                                    password_hash=user.password_hash,
+                                    role=RolesEnum.SYSTEM_ADMIN.value,
+                                    is_active=True)
+            session.add(new_admin_orm)
+            return user
+
 
     def close(self):
         """Release all resources including database sessions"""
