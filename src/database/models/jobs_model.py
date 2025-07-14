@@ -103,6 +103,14 @@ class JobStatusEnum(str, Enum):
     ARCHIVED = "archived"
     CLOSED = "closed"
 
+    @classmethod
+    def members_list(cls) -> list[str]:
+        """
+        Returns a list of all enum member values.
+        """
+        return [member.value for member in cls]
+
+
 def generate_job_ref() -> str:
     ts = utc_time().strftime('%Y%m%d%H%M%S')  # e.g., 20250529143000
     rand = uuid.uuid4().hex[:6].upper()              # e.g., B6FA9C

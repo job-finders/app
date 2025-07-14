@@ -117,10 +117,12 @@
 
                     <!-- Action Buttons (Visible on LG+) -->
                     <div class="d-none d-lg-flex gap-2">
-                        <a href="#" class="btn btn-sm btn-outline-success">
+
+                        <button class="btn btn-sm btn-outline-success" data-toggle="modal" data-target="#newJobModal">
                             <i class="bi bi-plus-circle me-1"></i>New Job
-                        </a>
-                        <a href="#" class="btn btn-sm btn-outline-primary">
+                        </button>
+
+                        <a href="{{ url_for("company.manage_jobs") }}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-list-task me-1"></i>All Jobs
                         </a>
                         <a href="#" class="btn btn-sm btn-outline-warning">
@@ -275,10 +277,7 @@
                     </div>
                 </div>
             </div>
-
-
         <!-- Insert after Performance Metrics card and before Recent Activity card -->
-
         <!-- Saved Candidates & Security Section -->
         <div class="row g-4 mb-4">
             <!-- Saved Candidates Card -->
@@ -496,5 +495,7 @@
     </div>
 
 </div>
+
+    {% include "company/components/new_job.html" %}
 
 {% endblock %}

@@ -169,6 +169,51 @@ class AdminController(Controllers):
     def init_app(self, app: Flask):
         super().init_app(app=app)
 
+    async def get_system_admin(self) -> AdminActionResult:
+        """
+        Retrieve the system admin user.
+        This method checks if a system admin user exists and returns it.
+        If no admin user exists, it will return an empty result.
+        """
+        with self.get_session() as session:
+            admin_user_orm = session.query(UserORM).filter_by(role=RolesEnum.SYSTEM_ADMIN.value).first()
+            self.logger.info(f"Retrieved system admin user: {admin_user_orm}")
+            if not admin_user_orm:
+                self.logger.info("No system admin found, creating a new one.")
+                return await self.create_system_admin()
+
+            data = User(**admin_user_orm.to_dict()) if isinstance(admin_user_orm, UserORM) else None
+            self.logger.info(f"System admin user data: {data}")
+            return AdminActionResult(success=isinstance(data, User), message="Successfully retrieved system admin",
+                                     data={"system_admin": data})
+
+    async def create_system_admin(self) -> AdminActionResult:
+        """
+        Create a system admin user if it does not exist.
+        This is a one-time setup method to ensure the system has an admin user.
+        """
+        with self.get_session() as session:
+            existing_admin = session.query(UserORM).filter_by(role=RolesEnum.SYSTEM_ADMIN.value).first()
+            if existing_admin:
+                return AdminActionResult(success=True, message="System admin already exists",
+                                         data=User(**existing_admin.to_dict()))
+
+            # Create new admin user
+            user = User.create(name="System Admin", email=self.app.config.get("SYSTEM_ADMIN_EMAIL"),
+                               password=self.app.config.get("SYSTEM_ADMIN_PASSWORD"))
+
+            new_admin_orm = UserORM(uid=user.uid,
+                                    name=user.name,
+                                    email=user.email,
+                                    password_hash=user.password_hash,
+                                    role=RolesEnum.SYSTEM_ADMIN.value,
+                                    is_active=True)
+            session.add(new_admin_orm)
+            session.refresh(new_admin_orm)
+            return AdminActionResult(success=True, message="System admin already exists",
+                                     data=User(**new_admin_orm.to_dict()))
+
+
     async def cleanup_old_approvals(self) -> AdminActionResult:
         """Cleanup job approvals older than 30 days"""
         try:

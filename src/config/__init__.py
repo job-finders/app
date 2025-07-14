@@ -89,6 +89,8 @@ class Settings(BaseSettings):
     PAYFAST_SETTINGS: PayfastSettings = Field(default_factory=PayfastSettings)
     SECRET_KEY: str = Field(..., alias="SECRET_KEY")
     OPENROUTER_API_KEY: str = Field(..., alias="OPENROUTER_API_KEY")
+    ADMIN_USERNAME: str = Field(..., alias="ADMIN_USERNAME")
+    ADMIN_PASSWORD: str = Field(..., alias="ADMIN_PASSWORD")
 
     model_config = SettingsConfigDict(
         env_file=".env.developer",

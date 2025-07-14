@@ -3,6 +3,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from pydantic import ValidationError
 
+
 from src.controllers.company import CompanyController
 from src.logger import init_logger
 from src.controllers.agents import EmployerAgentsController
@@ -11,7 +12,7 @@ from src.authentication import (employer_login, system_admin_login, jobseeker_lo
                                 require_billing_role)
 
 from src.services.billing.billing_service import BillingTiersEnum
-from src.database.models.jobs_model import Job, JobApplication, JobEditableFields, ApplicationFunnelStats
+from src.database.models.jobs_model import Job, JobApplication, JobEditableFields, ApplicationFunnelStats, JobStatusEnum
 from src.database.models.users import User
 # from src.firewall.rate_limiting import rate_limit
 from src.routes import flask_error_handler
@@ -346,18 +347,43 @@ async def view_job_applications(user: User, job_id: str):
     return render_template("jobs_workflow/job_applications.html", **context)
 
 
-@jobs_workflow_route.get("/<string:job_id>/update-status")
+@jobs_workflow_route.route("/<string:job_id>/update-status", methods=["POST"])
 @employer_login
 @require_billing_role()
 @employer_job_access_required()
 @flask_error_handler
-async def update_status(user: User):
+async def update_status(user: User, job_id: str):
     """
+    Change the status of an existing job.
 
-    :param user:
-    :return:
+    Payload   : {"status": "active" | "closed" | "draft" | "pending"}
+    Response  : 204 No Content on success
     """
-    pass
+    workflow_logger.info(f"Received request to update job {job_id} status")
+
+    data = request.get_json(silent=True)
+    workflow_logger.info(f"Updating job {job_id} status with data: {data}")
+
+    if not data or "status" not in data:
+        workflow_logger.error("Missing 'status' field in request data")
+        return jsonify(error="Missing JSON field 'status'"), 400
+
+    new_status = data["status"]
+    if new_status.casefold() not in JobStatusEnum.members_list():
+        workflow_logger.error(f"Invalid status value: {new_status}")
+        return jsonify(error="Invalid status value"), 400
+
+    jobs_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
+    if new_status.casefold() == JobStatusEnum.PENDING_APPROVAL.value:
+        # Employer Requesting to activate job
+        status_update_result = await jobs_workflow_controller.create_approval_request(job_id=job_id)
+        workflow_logger.info(f"Approval request created: {status_update_result}")
+
+    elif new_status.casefold() == JobStatusEnum.CLOSED.value:
+        # The User Intends to close this job
+        status_update_result = await jobs_workflow_controller.employer_close_job(job_id=job_id)
+        workflow_logger.info(f"Job activated: {status_update_result}")
+    return "", 204
 
 
 @jobs_workflow_route.get("/<string:job_id>/toggle-featured")

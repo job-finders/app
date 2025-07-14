@@ -8,9 +8,11 @@ from Levenshtein import ratio as levenstein_ratio
 from flask import Flask
 from pydantic import ValidationError
 from requests import RequestException
+from requests_cache import utcnow
 from sqlalchemy import select, func, and_, case
 from sqlalchemy.orm import joinedload
 
+from src.database.models.users import Roles, User, RolesEnum
 from src.controllers.jobs.auto_categorizer import AutoCategorizer
 from src.controllers.controller import Controllers
 from src.controllers.controller import error_handler
@@ -398,7 +400,7 @@ class JobsWorkflowController(Controllers):
                 draft_orm.salary_min = benchmark.get('25_percentile', draft_orm.salary_min)
                 draft_orm.salary_max = benchmark.get('75_percentile', draft_orm.salary_max)
 
-            self._create_approval_request(draft_orm)
+            self.create_approval_request(draft_orm)
 
             # Step 5: Approval check
             validation = await self.validate_job_post(Job(**draft_orm.to_dict()))
@@ -1095,80 +1097,56 @@ class JobsWorkflowController(Controllers):
 
         return max(1, count)
 
-
-    def _create_approval_request(self, draft_orm: JobsORM) -> None:
+    @error_handler
+    async def create_approval_request(self, job_id: str) -> bool:
         """
-            Initiate and manage the job post approval workflow by:
-            1. Identifying appropriate approvers
-            2. Generating secure approval links
-            3. Sending notification emails
-            4. Creating audit records
-            5. Setting up approval tracking
-
-            Parameters:
-                draft_orm (JobsORM): The job post draft requiring approval
-
-            Workflow:
-                1. Determine approval recipients based on:
-                   - Company hierarchy (if employer has internal approval flow)
-                   - System admins (for new/unverified companies)
-                   - Category moderators (for specialized job categories)
-                2. Generate unique approval token with expiration
-                3. Store approval request in database
-                4. Send email notifications with approval/rejection links
-                5. Update job post status to 'pending_approval'
-
-            Notifications Include:
-                - Direct approval/rejection links with JWT tokens
-                - Job post summary
-                - Submit timestamp
-                - Applicant statistics (for renewal posts)
-                - Approval deadline
-
-            Security:
-                - Uses time-limited JWT tokens for authorization
-                - Encodes company ID and job ID in token
-                - Stores hashed token version in database
-                - Automatic invalidation after:
-                  - Approval/rejection action
-                  - Token expiration (7 days)
-                  - Job post modification
-
-            Raises:
-                ApprovalWorkflowException: If critical failure in notification sending
         """
         with self.get_session() as session:
+            self.logger.info(f"Creating approval request for job {job_id}")
 
-            # 1. Identify approvers
-            approvers = session.query(UserORM).filter_by(role = "admin").all()
-            if not approvers:
-                raise ValueError("No eligible approvers found")
+            system_admin_orm_list = session.query(UserORM).filter_by(role=RolesEnum.SYSTEM_ADMIN.value).all()
+            # TODO - consider creating system admin account if system admin account not found
+            if not system_admin_orm_list:
+                self.logger.error(f"No system admin users found for job approval request {job_id}")
+                return False
 
-            # 2. Generate approval token
-            approval_token = str(uuid.uuid4())
-            token_expiration = datetime.now(timezone.utc) + timedelta(days=7)
-            draft = Job(**draft_orm.to_dict())
-            # 3. Create approval request record
-            # Once the Employer edits the job which was flagged the status will switch to pending
+            approvers = [User(**user.to_dict()) for user in system_admin_orm_list if user]
+            draft_job_orm = session.query(JobsORM).get(job_id)
+            draft = Job(**draft_job_orm.to_dict())
             # and will be legible for rechecking job to see if it meets requirements
+            token_expiration = utcnow() + timedelta(days=7)
+
             approval_request = JobApprovalRequestORM(
-                job_id=draft_orm.job_id,
-                token=approval_token,
+                job_id=draft.job_id,
+                token=str(uuid.uuid4()),
                 token_expires=token_expiration,
-                requested_by=draft.company.company_id,
+                requested_by=draft.company_id,
                 approvers=[u.user_id for u in approvers],
-                status=JobApprovalStatusEnum.FLAGGED.value
+                status=JobApprovalStatusEnum.PENDING.value
             )
             session.add(approval_request)
             # This means the employer needs to be aware of the reasons why their job was flagged
-            draft_orm.status = JobStatusEnum.NEEDS_ATTENTION.value
-            session.commit()
+            draft_job_orm.status = JobStatusEnum.PENDING_APPROVAL.value
+            draft_job_orm.updated_at = utcnow()
+            self.logger.info(f"Created approval request for job {draft.job_id} with token {approval_request.token}")
+            return True
 
-            self.logger.info(f"Sent approval request for job {draft_orm.job_id} to {len(approvers)} approvers")
+    async def employer_close_job(self, job_id: str) -> bool:
+        """Close a job posting by the employer"""
+        if not (isinstance(job_id, str) and job_id.strip()):
+            self.logger.error("Invalid Job ID when closing job")
+            return False
 
+        with self.get_session() as session:
+            job_orm = session.query(JobsORM).filter_by(job_id=job_id).first()
+            if not job_orm:
+                self.logger.error(f"Job {job_id} not found for closing")
+                return False
 
-        # EMPLOYER DASHBOARDS AND RELATED METHODS
-
+            # Update job status to closed
+            job_orm.status = JobStatusEnum.CLOSED.value
+            job_orm.updated_at = datetime.now(timezone.utc)
+            return True
 
     @error_handler
     async def get_company_analytics_dashboard(self, company_id: str) -> Optional[JobApplicationDashboard]:
