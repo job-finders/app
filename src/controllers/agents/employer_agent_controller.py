@@ -2,6 +2,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
+from src.database.constants import utc_time
+from src.routes.utils import to_aware
 from src.agents.employer.job_post_intelligence import JobCategoryDefinitionAgent, JobCategoryNameInput, \
     JobCategoryDefinitionOutput
 from src.agents.employer.candidate_benchmark import JobPostSummaryInput
@@ -84,11 +86,61 @@ class EmployerAgentsController(Controllers):
         self.logger.info(f"Agent response : {result}")
 
         # Set default expiration dates if not provided by agent
-        if not result.expires_at:
-            result.expires_at = (datetime.now(timezone.utc) + timedelta(days=60)).isoformat()
-        if not result.application_deadline:
-            result.application_deadline = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        # if not result.expires_at:
+        #     result.expires_at = (datetime.now(timezone.utc) + timedelta(days=60)).isoformat()
+        # if not result.application_deadline:
+        #     result.application_deadline = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
         return result
+
+    @staticmethod
+    async def update_enhance_existing_job(
+            agent_output: "EnhanceJobPostOutput",
+            job: Job,
+    ) -> Job:
+        """
+        Overwrite only the fields that the agent returned with non-empty values.
+
+        The method mutates the passed-in `job` object and also returns it
+        for convenience.
+        """
+
+        # ---- Helper: copy only when the agent provided a value --------
+        def copy_if_provided(value):
+            return value is not None and value != [] and value != {}
+
+        # ---- 1. Simple attribute overwrite ----------------------------
+        for field in (
+                "title",
+                "description",
+                "salary_min",
+                "salary_max",
+                "salary_currency",
+                "experience_level",
+                "education_requirements",
+                "required_skills",
+                "preferred_skills",
+                "required_documents",
+                "required_questionnaire",
+        ):
+            agent_value = getattr(agent_output, field, None)
+            if copy_if_provided(agent_value):
+                setattr(job, field, agent_value)
+
+        # ---- 2. Special date-time handling ---------------------------
+        expires_at = to_aware(getattr(agent_output, "expires_at", None))
+        if expires_at:
+            job.expires_at = expires_at
+
+        application_deadline = to_aware(
+            getattr(agent_output, "application_deadline", None)
+        )
+        if application_deadline:
+            job.application_deadline = application_deadline
+
+        # ---- 3. Update timestamp -------------------------------------
+        job.updated_at = utc_time()
+
+        return job
 
     @error_handler
     async def analyze_job_post(self, user_id: str, job_id: str) -> JobPostInsights:

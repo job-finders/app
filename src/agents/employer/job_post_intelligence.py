@@ -2,7 +2,7 @@
 import uuid
 from typing import Type, Optional, List, Dict
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from src.agents.base import BaseAgent
 
@@ -105,6 +105,8 @@ class EnhanceJobPostInput(BaseModel):
         description="Skills that are currently considered nice-to-have. May be expanded."
     )
 
+    model_config = ConfigDict(extra="ignore")
+
     @field_validator("salary_currency")
     @classmethod
     def validate_currency(cls, v: str) -> str:
@@ -114,7 +116,6 @@ class EnhanceJobPostInput(BaseModel):
         if v and len(v) != 3:
             raise ValueError("Currency code must be exactly 3 characters (ISO-4217).")
         return v.upper()
-
 
 # ------------------------------------------------------------------
 # OUTPUT – fully-fledged, publication-ready job post
@@ -132,7 +133,6 @@ class EnhanceJobPostOutput(BaseModel):
     - All salary figures are in South African Rands (ZAR) unless otherwise
       instructed.
     """
-
     # ── Job Identity -------------------------------------------------
     title: str = Field(
         ...,
@@ -193,9 +193,7 @@ class EnhanceJobPostOutput(BaseModel):
         description="IDs of questionnaires or screening tests that must be completed."
     )
 
-    class Config:
-        from_attributes = True
-
+    model_config = ConfigDict(extra="ignore")
 
 # ------------------------------------------------------------------
 # AGENT – LLM-powered job-post enhancer

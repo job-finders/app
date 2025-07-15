@@ -7,7 +7,7 @@ from textwrap import indent
 from enum import Enum
 from typing import Optional, Any
 
-from pydantic import BaseModel, Field, computed_field, ConfigDict, model_validator, AwareDatetime
+from pydantic import BaseModel, Field, computed_field, ConfigDict, model_validator, AwareDatetime, HttpUrl
 from textstat.backend.metrics import flesch_reading_ease
 
 
@@ -251,6 +251,52 @@ class Job(BaseModel):
 
     ats_reports: list['ATSReport'] = Field(default_factory=list, description="List of ATS reports for this job")
 
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_raw_form(cls, data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Convert the raw form / JSON payload into correct Python types.
+        Any un-parseable value becomes None so Pydantic will use the
+        field's default instead of raising.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        out = dict(data)
+
+        # 1. dates ---------------------------------------------------------
+        for dt_key in ("expires_at", "application_deadline"):
+            val = out.get(dt_key)
+            if isinstance(val, str) and val.strip() == "":
+                out[dt_key] = None
+            elif isinstance(val, str):
+                from src.routes.utils import to_aware
+                out[dt_key] = to_aware(val) or None
+
+        # 2. dict ----------------------------------------------------------
+        val = out.get("education_requirements")
+        if isinstance(val, str):
+            if val.strip() == "" or val == "[object Object]":
+                out["education_requirements"] = None
+            else:
+                import json
+                try:
+                    out["education_requirements"] = json.loads(val)
+                except json.JSONDecodeError:
+                    out["education_requirements"] = None
+
+        # 3. lists ---------------------------------------------------------
+        for list_key in ("required_skills", "preferred_skills"):
+            val = out.get(list_key)
+            if isinstance(val, str):
+                out[list_key] = [
+                                    s.strip()
+                                    for s in val.replace("\n", ",").split(",")
+                                    if s.strip()
+                                ] or None
+
+        return out
+
 
     @computed_field(return_type=int)
     @property
@@ -373,15 +419,15 @@ class Job(BaseModel):
     @property
     def readability_is_ok(self) -> bool:
         """Determines if the readability score of the job is acceptable.
-        Uses Flesch Reading Ease score - returns True if score >= 60 (standard readability)
+        Uses Flesch Reading Ease score – returns True if score ≥ 50
+        (anything 50–100 is considered readable for a general audience).
         """
         completeness_threshold = 6
         if self.job_completeness_score < completeness_threshold:
             return False
-        # noinspection PyBroadException
         try:
-            score = flesch_reading_ease(self.ats_description)
-            return score >= 60  # 60+ is considered standard readability
+            score = flesch_reading_ease(text=self.ats_description, lang="en")
+            return score >= 50
         except Exception as e:
             print(str(e))
             return False
@@ -445,7 +491,7 @@ class Job(BaseModel):
 
         # Readability bonus (0-15 points)
         readability_score = 15 if self.readability_is_ok else 0
-
+        print(f"READABILITY BONUS SCORE: {readability_score}")
         # Quality indicators bonus (up to 15 points)
         quality_bonus = 0
         if self.description and len(self.description.split()) > 100:
@@ -599,7 +645,7 @@ class Job(BaseModel):
             f"**Location:** {self.location}  ",
             f"**Type / Remote:** {self.position_type} • {self.remote_policy}  ",
             f"**Salary:** {self.salary}  ",
-            f"**Expires:** {self.expires_at.strftime('%d %b %Y') if self.expires_at else 'N/A'}  ",
+            f"**Expires:** {self.expires_at if self.expires_at else 'N/A'}  ",
             f"**Experience:** {self.experience_level}  ",
             "",
             "**Required Skills:**",
@@ -625,65 +671,88 @@ class Job(BaseModel):
     @classmethod
     def create_from_enhanced_agent_output(
             cls,
-            agent_output: 'EnhanceJobPostOutput',
+            agent_output: "EnhanceJobPostOutput",
             employer_id: str,
             company_id: str,
             **kwargs
-    ) -> 'Job':
+    ) -> "Job":
+        """
+        Build a Job instance from the enhancement agent output.
+
+        The agent is allowed to leave fields empty (None / [] / {}); only the
+        explicitly provided values are copied to the new Job record.
+        """
         from src.routes.utils import to_aware
 
-        expires_at = to_aware(agent_output.expires_at)
-        application_deadline = to_aware(agent_output.application_deadline)
+        # ------------------------------------------------------------------
+        # 1.  Core data that must always exist on a brand-new Job row
+        # ------------------------------------------------------------------
+        core = {
+            "employer_id": employer_id,
+            "company_id": company_id,
+            "created_at": utc_time(),
+            "updated_at": utc_time(),
+            "posted_at": utc_time(),
+        }
+
+        # ------------------------------------------------------------------
+        # 2.  Helper – copy only when the agent supplied something meaningful
+        # ------------------------------------------------------------------
+        def copy_if_provided(key: str, value):
+            """Return {key: value} if value is truthy, else {}."""
+            return {key: value} if value is not None and value != [] and value != {} else {}
+
+        # ------------------------------------------------------------------
+        # 3.  Map agent fields → Job fields (only when populated)
+        # ------------------------------------------------------------------
+        optional_updates = {
+            **copy_if_provided("title", agent_output.title),
+            **copy_if_provided("description", agent_output.description),
+            **copy_if_provided("salary_min", agent_output.salary_min),
+            **copy_if_provided("salary_max", agent_output.salary_max),
+            **copy_if_provided("salary_currency", agent_output.salary_currency),
+            **copy_if_provided("experience_level", agent_output.experience_level),
+            **copy_if_provided("education_requirements", agent_output.education_requirements),
+            **copy_if_provided("required_skills", agent_output.required_skills),
+            **copy_if_provided("preferred_skills", agent_output.preferred_skills),
+            **copy_if_provided("required_documents", agent_output.required_documents),
+            **copy_if_provided("required_questionnaire", agent_output.required_questionnaire),
+        }
+
+        # ------------------------------------------------------------------
+        # 4.  Date-time handling (special, because we compute defaults)
+        # ------------------------------------------------------------------
+        from src.routes.utils import to_aware
+
+        expires_at = to_aware(getattr(agent_output, "expires_at", None))
         if not expires_at:
             expires_at = utc_time() + timedelta(days=60)
 
-        job_data = {
-            # always generate a ref if the agent did not provide one
-            'job_ref': agent_output.job_ref or generate_job_ref(),
-            'title': agent_output.title,
-            'description': agent_output.description,
-            'position_type': agent_output.position_type,
-            'remote_policy': agent_output.remote_policy,
+        application_deadline = to_aware(getattr(agent_output, "application_deadline", None))
 
-            # store only the category_id (string) instead of the full object
-            # TODO: We should run The Agent to Associate the Job with a Specific Category.
-            # 'category_id': agent_output.category_id or agent_output.category,
-            # or if you prefer the full object, ensure the agent returns a JobCategory instance:
-            # 'category': agent_output.category,
+        optional_updates.update(
+            {
+                "expires_at": expires_at,
+                "application_deadline": application_deadline,
+            }
+        )
 
-            'salary_min': agent_output.salary_min,
-            'salary_max': agent_output.salary_max,
-            'salary_currency': agent_output.salary_currency,
-            'salary_confidential': agent_output.salary_confidential,
-            'city': agent_output.city,
-            'province': agent_output.province,
-            'country': agent_output.country,
-            'geo_location': agent_output.geo_location,
-            'expires_at': expires_at,
-            'application_deadline': application_deadline,
-            'experience_level': agent_output.experience_level,
-            'education_requirements': agent_output.education_requirements or {},
-            'required_skills': agent_output.required_skills or [],
-            'preferred_skills': agent_output.preferred_skills or [],
-            'required_documents': agent_output.required_documents or [],
-            'required_questionnaire': agent_output.required_questionnaire or [],
-            'application_url': agent_output.application_url,
-            'application_instructions': agent_output.application_instructions,
-            'status': agent_output.status,
-            'is_featured': agent_output.is_featured,
-            'employer_id': employer_id,
-            'company_id': company_id,
-            'posted_at': utc_time(),
-            'created_at': utc_time(),
-            'updated_at': utc_time(),
-            'applications': [],
-            'saved_jobs': [],
-        }
-
-        job_data.update(kwargs)
+        # ------------------------------------------------------------------
+        # 5.  Merge everything and let caller overrides win
+        # ------------------------------------------------------------------
+        job_data = {**core, **optional_updates, **kwargs}
         return cls(**job_data)
 
-    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
+    model_config = ConfigDict(
+        # automatically str() any HttpUrl, Decimal, datetime, etc.
+        json_encoders={
+            HttpUrl: str,
+        },
+        # optional: exclude unset/None fields from the response
+        exclude_unset=True,
+        str_strip_whitespace=True
+    )
+
 
 class JobEditableFields(BaseModel):
     """Model defining fields that can be updated by an employer"""

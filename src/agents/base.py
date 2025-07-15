@@ -261,11 +261,11 @@ class BaseAgent(ABC):
         user_entry_id = self.memory.add_entry("user", user_prompt, protect=protect_user_msg)
 
         # Get memory in chat format with optional limit
-        memory_limit = kwargs.get('memory_limit', None)
-        chat_messages = self.memory.get_chat_messages(limit=memory_limit)
+        # memory_limit = kwargs.get('memory_limit', None)
+        # chat_messages = self.memory.get_chat_messages(limit=memory_limit)
 
         # Build final message structure
-        messages = [{"role": "system", "content": system_prompt}] + chat_messages
+        messages = [{"role": "system", "content": system_prompt}]
 
         try:
             self.openrouter_client.init_app()

@@ -1,6 +1,11 @@
 # routes/agents.py
+import json
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
+from pydantic import HttpUrl
+
+from src.controllers.agents import EmployerAgentsController
+from src.controllers.jobs import JobsWorkflowController
 from src.routes import flask_error_handler
 from src.database.models import Job
 from src.database.models.agent_models import JobPostInsights
@@ -15,60 +20,65 @@ employer_agents_route = Blueprint('employer_agents', __name__, url_prefix='/agen
 agents_logger = init_logger("agents_tool")
 
 
-@employer_agents_route.route("/jobs/enhance-job-post", methods=["POST"])
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, HttpUrl):
+            return str(o)
+        return super().default(o)
+
+
+@employer_agents_route.route("/jobs/enhance-job-post/<string:job_id>", methods=["POST"])
 @flask_error_handler
 @employer_login
-async def enhance_job_post(user: User):
+async def enhance_job_post(user: User, job_id: str):
     """
-        partial_job_data = {
-            "title": "Python Developer",
-            "description": "Need developer for web applications",
-            "position_type": "FULL_TIME",
-            "city": "Cape Town",
-            "country": "South Africa",
-            "experience_level": "MID"}
-    :param user:
-    :return:
+    AI-enhance a job post while preserving all dates and user-education dict.
     """
-    employer_agents_controller = get_controller('employer_agents')
-    company_controller = get_controller('company')
+    employer_agents_controller: EmployerAgentsController = get_controller('employer_agents')
+    jobs_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
 
-    try:
-        form = request.form
-        user_prompt = form.get('user_prompt', '')
-        expires_at = parse_date_to_aware(form['expires_at']) if form.get('expires_at') else None
-        application_deadline = parse_date_to_aware(form['application_deadline']) if form.get(
-            'application_deadline') else None
+    form = request.form
+    user_prompt = form.get('user_prompt', '')
 
-        # prepare dict
-        payload = {k: v for k, v in form.items() if
-                   k not in {'expires_at', 'application_deadline', 'required_skills', 'preferred_skills'}}
-        # noinspection PyTypeChecker
-        payload.update(
-            expires_at=expires_at,
-            application_deadline=application_deadline,
-            required_skills=split_csv(form.get('required_skills', '')),
-            preferred_skills=split_csv(form.get('preferred_skills', ''))
-        )
-        agents_logger.info(f"Enhancing job post with payload: {payload} and user prompt: {user_prompt}")
+    # 1. keep original dates untouched
+    original_job = await jobs_workflow_controller.get_job_details(job_id=job_id)
 
-        result: EnhanceJobPostOutput = await employer_agents_controller.enhance_job_post(
-            user_id=user.uid,
-            user_prompt=user_prompt,
-            input_data=payload)
+    # 2. build partial payload exactly as the agent expects
+    payload = {
+        k: v
+        for k, v in form.items()
+        if k not in {'expires_at', 'application_deadline'}  # skip dates
+    }
 
-        employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
-        job: Job = Job.create_from_enhanced_agent_output(agent_output=result,employer_id=employer_details.employer_id,
-        company_id=employer_details.company_id)
+    # 3. parse arrays & dict so the agent sees proper Python types
+    payload.update(
+        required_skills=split_csv(form.get('required_skills', '')),
+        preferred_skills=split_csv(form.get('preferred_skills', '')),
+        education_requirements=json.loads(form.get('education_requirements', '{}')),
+    )
 
-        # Consider doing this from a sub form called create Job with AI - The Form will call this endpoint
-        # and it will return a Job Post Complete - Then having another Manual Job Creation Form.
-        return jsonify(job.model_dump()), 200
+    agents_logger.info(
+        f"Enhancing job post with payload: {payload} and user prompt: {user_prompt}"
+    )
 
-    except Exception as e:
-        agents_logger.exception("Job post enhancement failed")
-        return jsonify({"error": "Job post enhancement failed", "details": str(e)}), 500
+    # 4. run enhancement
+    agent_output: EnhanceJobPostOutput = await employer_agents_controller.enhance_job_post(
+        user_id=user.uid,
+        user_prompt=user_prompt,
+        input_data=payload,
+    )
 
+    # 5. re-apply original dates
+    updated_job = await employer_agents_controller.update_enhance_existing_job(
+        agent_output=agent_output,
+        job=original_job,
+    )
+
+    return Response(
+        updated_job.model_dump_json(exclude_unset=True),
+        mimetype="application/json",
+        status=200,
+    )
 
 # NEW AGENT ENDPOINT - Job Post Analysis
 @employer_agents_route.route("/jobs/analyze-job-post/<string:job_id>", methods=["POST"])

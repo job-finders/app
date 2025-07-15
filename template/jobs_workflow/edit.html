@@ -389,6 +389,45 @@
 
 {% block scripts %}
     <script>
+        /* --------------  shared helpers  -------------- */
+        function addPill(containerId, text) {
+            const container = document.getElementById(containerId);
+            const exists = [...container.children].some(
+                p => p.textContent.trim().toLowerCase() === text.toLowerCase()
+            );
+            if (exists) return;
+
+            const pill = document.createElement('span');
+            pill.className = 'badge bg-secondary me-1 mb-1 fs-6 pill-hover';
+            pill.style.cursor = 'pointer';
+            pill.textContent = text;
+            pill.addEventListener('click', () => {
+                pill.remove();
+                syncJson(containerId);
+            });
+            container.appendChild(pill);
+        }
+
+        function syncJson(containerId) {
+            const cfg = window.pillContainers.find(c => c.id === containerId);
+            const pills = [...document.getElementById(containerId).children]
+                .map(p => p.textContent.trim());
+
+            let json;
+            if (cfg.isDict) {
+                json = {};
+                pills.forEach(p => {
+                    const [k, ...rest] = p.split(':');
+                    json[k.trim()] = rest.join(':').trim();
+                });
+            } else {
+                json = pills;
+            }
+            document.getElementById(cfg.jsonId).value = JSON.stringify(json);
+        }
+    </script>
+
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
             const containers = [
                 {id: 'education-list', jsonId: 'education-json', isDict: true},
@@ -417,45 +456,6 @@
                     }
                 });
             });
-
-            /* ----------  create pill  ---------- */
-            function addPill(containerId, text) {
-                const container = document.getElementById(containerId);
-                const exists = [...container.children].some(
-                    p => p.textContent.trim().toLowerCase() === text.toLowerCase()
-                );
-                if (exists) return;
-
-                const pill = document.createElement('span');
-                pill.className = 'badge bg-secondary me-1 mb-1 fs-6 pill-hover';
-                pill.style.cursor = 'pointer';
-                pill.textContent = text;
-
-                pill.addEventListener('click', () => {
-                    pill.remove();
-                    syncJson(containerId);
-                });
-                container.appendChild(pill);
-            }
-
-            /* ----------  write back to hidden JSON input  ---------- */
-            function syncJson(containerId) {
-                const cfg = containers.find(c => c.id === containerId);
-                const pills = [...document.getElementById(containerId).children]
-                    .map(p => p.textContent.trim());
-
-                let json;
-                if (cfg.isDict) {
-                    json = {};
-                    pills.forEach(p => {
-                        const [k, ...rest] = p.split(':');
-                        json[k.trim()] = rest.join(':').trim();
-                    });
-                } else {
-                    json = pills;
-                }
-                document.getElementById(cfg.jsonId).value = JSON.stringify(json);
-            }
         });
 
         // helper – build FormData from current form
@@ -487,20 +487,45 @@
             const btn = document.getElementById('doEnhanceBtn');
             btn.disabled = true;
             btn.innerHTML = '<i class="ti-reload spin"></i> Enhancing…';
-            const res = await fetch('{{ url_for("employer_agents.enhance_job_post") }}', {
+            const res = await fetch('{{ url_for("employer_agents.enhance_job_post", job_id=job.job_id) }}', {
                 method: 'POST',
                 body: getFormData({user_prompt: document.getElementById('userPrompt').value})
             });
             btn.disabled = false;
             btn.innerHTML = 'Enhancing....';
             $('#aiPromptModal').modal('hide');
+            // inside the AI-enhance success handler (after fetch)
             if (res.ok) {
-                const data = await res.json();          // {title, description, …}
-                Object.keys(data).forEach(k => {
-                    const el = document.getElementsByName(k)[0];
-                    if (el) el.value = data[k];
+                const data = await res.json();   // EnhanceJobPostOutput
+
+                // 1. simple text fields
+                ['title', 'description', 'salary_min', 'salary_max', 'salary_currency',
+                    'experience_level', 'city', 'province', 'country',
+                    'application_deadline', 'expires_at', 'application_instructions']
+                    .forEach(k => {
+                        const el = document.querySelector(`[name="${k}"]`);
+                        if (el) el.value = data[k] ?? '';
                 });
-                // Re-calculate ATS after enhancement
+
+                // 2. array → pills
+                function refreshPills(listId, values) {
+                    const container = document.getElementById(listId);
+                    container.innerHTML = '';
+                    (values || []).forEach(v => addPill(listId, v));
+                    syncJson(listId);
+                }
+
+                refreshPills('required-skills-list', data.required_skills);
+                refreshPills('preferred-skills-list', data.preferred_skills);
+
+                // 3. dict → education pills
+                const eduEntries = Object.entries(data.education_requirements || {});
+                const eduContainer = document.getElementById('education-list');
+                eduContainer.innerHTML = '';
+                eduEntries.forEach(([k, v]) => addPill('education-list', `${k}:${v}`));
+                syncJson('education-list');
+
+                // 4. re-calculate ATS
                 document.getElementById('calcAtsBtn').click();
             } else alert('Enhancement failed.');
         });
