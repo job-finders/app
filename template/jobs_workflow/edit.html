@@ -412,7 +412,6 @@
             const cfg = window.pillContainers.find(c => c.id === containerId);
             const pills = [...document.getElementById(containerId).children]
                 .map(p => p.textContent.trim());
-
             let json;
             if (cfg.isDict) {
                 json = {};

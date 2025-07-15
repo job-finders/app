@@ -51,6 +51,7 @@ async def enhance_job_post(user: User, job_id: str):
     }
 
     # 3. parse arrays & dict so the agent sees proper Python types
+    # noinspection PyTypeChecker
     payload.update(
         required_skills=split_csv(form.get('required_skills', '')),
         preferred_skills=split_csv(form.get('preferred_skills', '')),
