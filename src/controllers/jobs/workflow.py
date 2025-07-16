@@ -341,7 +341,7 @@ class JobsWorkflowController(Controllers):
             validation_result['requires_approval'] = True
             validation_result['errors'].append("Job quality score too low - requires manual review")
 
-        elif job.job_quality_score < 70:
+        elif job.job_quality_score < 60:
             validation_result['warnings'].append("Low quality score may reduce job visibility")
 
         # Salary validation
@@ -360,11 +360,15 @@ class JobsWorkflowController(Controllers):
             if posted_last_month >= 10:  # Example limit
                 validation_result['requires_approval'] = True
                 validation_result['errors'].append("Employer posting limit reached")
-
+            
             # New employer approval requirement
             if job.company_id:
-                company = session.query(CompanyORM).get(job.company_id)
-                if company and company.creation_date > datetime.now(timezone.utc) - timedelta(days=30):
+                company_orm = session.query(CompanyORM).get(job.company_id)
+                
+                company = Company(**company_orm.to_dict()) if company_orm else None
+                # if company created in the last 30 days then request approval for 
+                # jobs or if company is not verified request manual verification for jobs
+                if company and (company.company_is_recent or not company.is_verified):
                     validation_result['requires_approval'] = True
 
         validation_result['valid'] = len(validation_result['errors']) == 0

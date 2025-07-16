@@ -68,6 +68,9 @@ class Company(BaseModel):
     is_verified: Optional[bool] = Field(default=False)
     time_verification_process_started: Optional[AwareDatetime] = Field(default=None)
     verification_status: str = Field(default=CompanyVerificationStatus.NOT_VERIFIED.value)
+    
+    created_at: datetime = Field(default_factory=utc_time, description="Company creation timestamp")
+    updated_at: Optional[AwareDatetime] = Field(default=None, description="Last update timestamp")
 
     # Relationships
     jobs: Optional[list['Job']] = Field(default_factory=list)  # Forward reference
@@ -100,6 +103,18 @@ class Company(BaseModel):
             application_stats_by_job[job.title] = _job_stat
 
         return application_stats_by_job
+
+    @property
+    def company_is_recent(self):
+        """sumary_line
+            returns true if the company was created within the last 30 days
+        Keyword arguments:
+        argument -- description
+        Return: return_description
+        """
+        if not self.time_verification_process_started:
+            return False
+        return (utc_time() - self.created_at).days <= 30
 
     @property
     def total_reviewed_count(self):

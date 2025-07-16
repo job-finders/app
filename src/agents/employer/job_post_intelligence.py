@@ -127,11 +127,10 @@ class EnhanceJobPostOutput(BaseModel):
     (job boards, applicant tracking systems, etc.) can rely on consistent data.
 
     The agent guarantees:
-    - Competitive salary range researched for the role and location.
-    - A crisp, human-readable description and title.
-    - A realistic set of required/preferred skills and education expectations.
-    - All salary figures are in South African Rands (ZAR) unless otherwise
-      instructed.
+        - Competitive salary range researched for the role and location.
+        - A crisp, human-readable description and title.
+        - A realistic set of required/preferred skills and education expectations.
+        - All salary figures are in South African Rands (ZAR) unless otherwise instructed.
     """
     # ── Job Identity -------------------------------------------------
     title: str = Field(
