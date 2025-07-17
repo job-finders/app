@@ -8,40 +8,47 @@
         :root {
             --bs-body-font-family: 'Inter', sans-serif;
         }
+
         body {
             background: #f5f7fb;
         }
+
         .card {
             border: none;
             border-radius: .75rem;
             box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .05);
         }
+
         .sticky-lg {
             position: sticky;
             top: 1.5rem;
             z-index: 1020;
         }
+
         @media (max-width: 991.98px) {
             .sticky-lg {
                 position: static;
             }
         }
+
         .ai-button {
             transition: all .2s;
         }
+
         .ai-button:hover {
             transform: translateY(-2px);
         }
+
         .pill-hover {
             transition: background-color 0.15s ease;
         }
+
         .pill-hover:hover {
             background-color: var(--bs-primary) !important;
             color: #ee2200 !important;
         }
     </style>
 {% endblock %}
-
 {% block content %}
     <div class="container-fluid py-4">
         <form id="editForm" method="post" action="{{ url_for('jobs_workflow.edit_job', job_id=job.job_id) }}">
@@ -145,7 +152,6 @@
                             </div>
                         </div>
                     </div>
-
                     <!-- Location ---------------------------------------------------------->
                     <div class="card mb-4">
                         <div class="card-header bg-white">
@@ -283,13 +289,11 @@
                     </div>
       </form>
     </div>
-
     <!--  ##########################################################################  -->
     <!--  ##########################################################################  -->
     <!--  SIDEBAR  -->
     <!--  ##########################################################################  -->
     <!--  ##########################################################################  -->
-
     <div class="col-lg-4">
         <div class="sticky-lg">
             <!--  ##########################################################################  -->
@@ -320,7 +324,6 @@
                     Job Status : {{ job.status.title() }}
                   </span>
                     </div>
-
                     <!-- Action buttons -->
                     <div class="btn-group-vertical w-100 gap-2">
 
@@ -336,7 +339,6 @@
                                     onclick="updateJobStatus('{{ job.job_id }}', 'closed')">
                                 <i class="ti-close me-1"></i>Close Job
                             </button>
-
                             {% if not job.is_featured %}
                                 <button type="button" class="btn btn-outline-primary"
                                         onclick="toggleFeatured('{{ job.job_id }}', true)">
@@ -361,7 +363,6 @@
 
         </div>
     </div>
-
     </div>
     </div>
 
@@ -396,7 +397,6 @@
                 p => p.textContent.trim().toLowerCase() === text.toLowerCase()
             );
             if (exists) return;
-
             const pill = document.createElement('span');
             pill.className = 'badge bg-secondary me-1 mb-1 fs-6 pill-hover';
             pill.style.cursor = 'pointer';
@@ -433,7 +433,6 @@
                 {id: 'required-skills-list', jsonId: 'required-skills-json', isDict: false},
                 {id: 'preferred-skills-list', jsonId: 'preferred-skills-json', isDict: false}
             ];
-
             /* ----------  init pills from hidden JSON  ---------- */
             containers.forEach(c => {
                 const raw = document.getElementById(c.jsonId).value || (c.isDict ? '{}' : '[]');

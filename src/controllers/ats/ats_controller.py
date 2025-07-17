@@ -58,7 +58,7 @@ class ATSToolController(Controllers):
                 return await self._generate_ai_cover_letter(job, cv, ai_config)
             except Exception:
                 self.logger.warning("AI cover letter failed, falling back")
-        return self._generate_basic_cover_letter(job, cv)
+        return await self._generate_basic_cover_letter(job, cv)
 
     async def recommend_salary(
         self, job: Job, use_ai: bool = False, ai_config: Optional[dict] = None

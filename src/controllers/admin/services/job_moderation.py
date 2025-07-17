@@ -157,7 +157,6 @@ class JobModerationService(AdminServiceInterface):
         """
         try:
             method_to_execute = self.__interface_map[action]
-
             if method_to_execute is None:
                 raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
 
@@ -198,7 +197,6 @@ class JobModerationService(AdminServiceInterface):
             if not jobs_needing_approval:
                 self.logger.info("There are no Jobs in Need of Approval/ Validation")
                 return AdminActionResult(success=True, message="No jobs pending approval.")
-
             # Apply the limit
             to = min(approval_batch_max, len(jobs_needing_approval))
             jobs_to_process = jobs_needing_approval[:to]

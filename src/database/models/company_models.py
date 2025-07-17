@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 from difflib import SequenceMatcher
 from enum import Enum
 from typing import Optional, List, Union
@@ -68,8 +68,8 @@ class Company(BaseModel):
     is_verified: Optional[bool] = Field(default=False)
     time_verification_process_started: Optional[AwareDatetime] = Field(default=None)
     verification_status: str = Field(default=CompanyVerificationStatus.NOT_VERIFIED.value)
-    
-    created_at: datetime = Field(default_factory=utc_time, description="Company creation timestamp")
+
+    created_at: Optional[AwareDatetime] = Field(default_factory=utc_time, description="Company creation timestamp")
     updated_at: Optional[AwareDatetime] = Field(default=None, description="Last update timestamp")
 
     # Relationships
