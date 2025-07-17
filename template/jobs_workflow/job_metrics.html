@@ -124,11 +124,14 @@
             </div>
 
             <!-- Sidebar Metrics ------------------------------------------------------>
+            <!-- This Job Metrics are based on live system data such as Resumes and Actual ATS Scores of Applications -->  
             <div class="col-lg-4">
                 <div class="sticky-lg">
                     <div class="card">
                         <div class="card-header bg-primary text-white">
                             <h6 class="mb-0"><i class="ti-bar-chart me-2"></i>Job Insights</h6>
+                            <span class="text-white-50 small">Metrics and statistics Based on Live Data</span>
+                            
                         </div>
                         <div class="card-body">
                             {% macro metric(label, value, color='secondary', unit='') %}
@@ -170,6 +173,7 @@
                             {% endif %}
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -184,4 +188,5 @@
             document.getElementById('ats-html').innerHTML = html;
         });
     </script>
+
 {% endblock %}
