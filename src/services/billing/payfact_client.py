@@ -13,9 +13,9 @@ class PayFastClient:
         self.passphrase = settings.PASS_PHRASE
         self.sandbox = settings.SANDBOX
 
-        self.return_url = "https://yourapp.com/payment/success"  # could be dynamic
-        self.cancel_url = "https://yourapp.com/payment/cancel"
-        self.notify_url = "https://yourapp.com/payment/ipn"
+        self.return_url = "https://jobfinders.site/payment/success"  # could be dynamic
+        self.cancel_url = "https://jobfinders.site/payment/cancel"
+        self.notify_url = "https://jobfinders.site/payment/ipn"
 
         self.logger = get_service("logger")()(self.__class__.__name__)
         self.base_url = (
