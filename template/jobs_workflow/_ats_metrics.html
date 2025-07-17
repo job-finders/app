@@ -1,3 +1,58 @@
-<div class="card">
-    <span>ATS Metric</span>
+{% macro card(report) %}
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0">
+      <i class="bi bi-cpu-fill me-2"></i>
+      AI-Enhanced ATS Report
+      <small class="float-end">Score {{ report.ai_enhanced_score }}/100</small>
+    </h5>
+  </div>
+
+  <div class="card-body">
+    <!-- Score breakdown -->
+    <h6>Score Breakdown</h6>
+    <div class="row mb-3 text-center">
+      {% for key, val in report.score_breakdown.model_dump(exclude={'total'}).items() %}
+        <div class="col">
+          <div class="fw-bold">{{ val }}</div>
+          <small class="text-muted">{{ key.replace('_',' ').title() }}</small>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Keywords -->
+    <h6>Top Missing Keywords</h6>
+    <div class="mb-3">
+      {% for kw in report.top_5_missing %}
+        <span class="badge bg-danger me-1">{{ kw }}</span>
+      {% endfor %}
+    </div>
+
+    <!-- AI Suggestions (collapsible) -->
+    <h6>
+      <button class="btn btn-sm btn-outline-primary" type="button"
+              data-bs-toggle="collapse" data-bs-target="#suggestions-{{ report.id }}">
+        ✨ AI Suggestions
+      </button>
+    </h6>
+    <div class="collapse mt-2" id="suggestions-{{ report.id }}">
+      {% for s in report.suggestions %}
+        <div class="border-start border-primary ps-3 mb-3">
+          <strong>{{ s.field.title() }}</strong>
+          <br>
+          <small class="text-muted">Impact: +{{ s.impact.estimated_score_increase }} pts</small>
+          {% if s.current %}
+            <div class="text-danger text-decoration-line-through">{{ s.current }}</div>
+          {% endif %}
+          <div class="text-success fw-bold">{{ s.recommended }}</div>
+          <em>{{ s.impact.reasoning }}</em>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card-footer text-muted small">
+    Built from {{ report.keyword_corpora | join(', ') }}
+  </div>
 </div>
+{% endmacro %}
