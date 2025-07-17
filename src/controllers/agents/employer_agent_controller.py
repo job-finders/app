@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
+from src.database import EmployerORM
 from src.database.constants import utc_time
 from src.routes.utils import to_aware
 from src.agents.employer.job_post_intelligence import JobCategoryDefinitionAgent, JobCategoryNameInput, \
@@ -126,16 +127,16 @@ class EmployerAgentsController(Controllers):
             if copy_if_provided(agent_value):
                 setattr(job, field, agent_value)
 
-        # ---- 2. Special date-time handling ---------------------------
-        expires_at = to_aware(getattr(agent_output, "expires_at", None))
-        if expires_at:
-            job.expires_at = expires_at
-
-        application_deadline = to_aware(
-            getattr(agent_output, "application_deadline", None)
-        )
-        if application_deadline:
-            job.application_deadline = application_deadline
+        # # ---- 2. Special date-time handling ---------------------------
+        # expires_at = to_aware(getattr(agent_output, "expires_at", None))
+        # if expires_at:
+        #     job.expires_at = expires_at
+        #
+        # application_deadline = to_aware(
+        #     getattr(agent_output, "application_deadline", None)
+        # )
+        # if application_deadline:
+        #     job.application_deadline = application_deadline
 
         # ---- 3. Update timestamp -------------------------------------
         job.updated_at = utc_time()
@@ -164,10 +165,13 @@ class EmployerAgentsController(Controllers):
         with self.get_session() as session:
             job_orm = session.get(JobsORM, job_id)
             if not job_orm:
-                raise ValueError(f"Job with ID {job_id} not found")
+                return None
+
             job = Job(**job_orm.to_dict())
             # Verify user has access to this job
-            if job.user_id != user_id:
+
+            employer_profile = session.query(EmployerORM).filter_by(user_uid=user_id).first()
+            if not employer_profile or employer_profile.company_id != job.company_id:
                 raise PermissionError("User not authorized to access this job")
 
             # Run the analysis agent

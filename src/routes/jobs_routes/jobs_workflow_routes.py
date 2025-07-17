@@ -1,4 +1,5 @@
 # src/routes/jobs_workflow.py
+import json
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from pydantic import ValidationError
@@ -131,8 +132,9 @@ async def show_edit_form(user: User, job_id: str):
     if not job:
         flash("Job not found.", "warning")
         return redirect(url_for("jobs.list_jobs"))
-
+    workflow_logger.info(f"Job details for editing: {job}")
     return render_template("jobs_workflow/edit.html", current_user=user, job=job)
+
 
 @jobs_workflow_route.post("/<string:job_id>/edit")
 @flask_error_handler
@@ -140,24 +142,22 @@ async def show_edit_form(user: User, job_id: str):
 @employer_job_access_required()
 @require_billing_role()
 async def edit_job(user: User, job_id: str):
-    """
-    Once the Job is submitted to the Database, through the create_job method,
-    but before it is approved, the job can be edited by the employer or admin.
-    through this endpoint, 
-        Handle submission of job updates.
-    """
-    data = request.form.to_dict()
-    job_details: JobEditableFields = JobEditableFields(**data)
+    form = request.form.to_dict()
 
-    jobs_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
-    updated_job: Job = await jobs_workflow_controller.update_job(job_id=job_id, updated_job=job_details)
+    # 1) convert JSON strings to Python objects
+    form["required_skills"] = json.loads(form.get("required_skills") or "[]")
+    form["preferred_skills"] = json.loads(form.get("preferred_skills") or "[]")
+    form["education_requirements"] = json.loads(form.get("education_requirements") or "{}")
+    workflow_logger.info(f"FORM DATA : {form}")
+    # 2) let Pydantic validate the rest
+    job_details = JobEditableFields(**form)
 
-    if not updated_job:
-        message = "Failed to Update Job"
-    else:
-        message = f"Job {updated_job.title.title()} updated successfully."
+    jobs_workflow_controller = get_controller("jobs_workflow")
+    updated_job = await jobs_workflow_controller.update_job(job_id=job_id,
+                                                            updated_job=job_details)
 
-    flash(message, "success")
+    flash("Job updated successfully." if updated_job else "Failed to update job",
+          "success" if updated_job else "warning")
     return redirect(url_for("jobs_workflow.show_edit_form", job_id=job_id))
 
 

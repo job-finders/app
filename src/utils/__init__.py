@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import AwareDatetime
 from werkzeug.utils import secure_filename
 from datetime import datetime
-
+from markupsafe import Markup
 # Define the base directory for user data (for profile images and other files)
 CURRENT_FILE = Path(__file__).resolve()
 USERDATA_DIR = CURRENT_FILE.parents[2] / "userdata"
@@ -258,3 +258,8 @@ def parse_date_to_aware(date_str: str) -> AwareDatetime:
 
 def split_csv(field: str) -> list[str]:
     return [i.strip() for i in field.split(',') if i.strip()]
+
+
+def icon(name):
+    # return the HTML for the requested icon
+    return Markup(f'<i class="bi bi-{name}"></i>')

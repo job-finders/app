@@ -10,11 +10,11 @@ from time import sleep
 # ----------- Redis Integration -----------
 import redis
 from flask import Flask
-from sqlalchemy import JSON, Column, String, ForeignKey, Integer, DateTime, Boolean
+from sqlalchemy import JSON, Column, String, ForeignKey, Integer, DateTime, Boolean, inspect
 
 from src.config import config_instance
 from src.database.constants import ID_LEN, utc_time
-from src.database.sql import Base
+from src.database.sql import Base, engine
 from src.logger import init_logger
 
 
@@ -27,6 +27,16 @@ class UserSearchActivityORM(Base):
     result_count = Column(Integer)
     timestamp = Column(DateTime(timezone=True), default=utc_time(), index=True)
 
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
+            cls.__table__.drop(bind=engine)
 
 class JobViewActivityORM(Base):
     __tablename__ = 'job_view_activities'
@@ -36,7 +46,19 @@ class JobViewActivityORM(Base):
     view_start = Column(DateTime(timezone=True))
     view_end = Column(DateTime(timezone=True))
     application_started = Column(Boolean, default=False)
-    duration = Column(Integer)  # Seconds
+    duration = Column(Integer)  # Second
+
+    # s
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
+            cls.__table__.drop(bind=engine)
 
 
 class ApplicationStepORM(Base):
@@ -45,6 +67,17 @@ class ApplicationStepORM(Base):
     application_id = Column(String(ID_LEN), ForeignKey('job_applications.application_id'), index=True)
     step_name = Column(String(50))
     timestamp = Column(DateTime(timezone=True), default=utc_time(), index=True)
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
+            cls.__table__.drop(bind=engine)
 
 # ----------- Data Retention -----------
 class ArchivedActivityORM(Base):
@@ -55,6 +88,17 @@ class ArchivedActivityORM(Base):
     activity_type = Column(String(20))
     data = Column(JSON)
     archived_at = Column(DateTime(timezone=True), default=utc_time())
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
+            cls.__table__.drop(bind=engine)
 
 #
 # # Create indexes

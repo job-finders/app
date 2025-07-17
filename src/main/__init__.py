@@ -40,14 +40,14 @@ def _register_blueprints(app):
 
 def _register_template_filters(app):
     """Register Jinja2 template filters"""
-    from src.utils import format_title, format_description, intcomma, datetimeformat, current_year, number_format
+    from src.utils import format_title, format_description, intcomma, datetimeformat, current_year, number_format, icon
     app.jinja_env.filters['title'] = format_title
     app.jinja_env.filters['description'] = format_description
     app.jinja_env.filters['intcomma'] = intcomma
     app.jinja_env.filters['number_format'] = number_format
     app.jinja_env.filters['datetimeformat'] = datetimeformat
     app.jinja_env.filters['current_year'] = current_year
-
+    app.jinja_env.globals['icon'] = icon
     @app.template_filter('round')
     def round_filter(value, precision=0):
         return round(value, precision)

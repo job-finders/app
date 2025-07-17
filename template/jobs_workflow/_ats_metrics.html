@@ -12,7 +12,7 @@
     <!-- Score breakdown -->
     <h6>Score Breakdown</h6>
     <div class="row mb-3 text-center">
-      {% for key, val in report.score_breakdown.model_dump(exclude={'total'}).items() %}
+        {% for key, val in report.score_breakdown.model_dump(exclude=['total']).items() %}
         <div class="col">
           <div class="fw-bold">{{ val }}</div>
           <small class="text-muted">{{ key.replace('_',' ').title() }}</small>

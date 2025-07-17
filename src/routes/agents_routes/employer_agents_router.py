@@ -92,11 +92,12 @@ async def analyze_job_post(user: User, job_id: str):
     :param job_id:
     :return:
     """
+    agents_logger.info(f"Analyzing job post for job_id: {job_id} by user: {user.uid}")
     employer_agents_controller = get_controller('employer_agents')
     try:
         # Call the agent directly through the controller
         result: JobPostInsights = await employer_agents_controller.analyze_job_post(
-            user_id=user.id,
+            user_id=user.uid,
             job_id=job_id
         )
         return jsonify(result.model_dump()), 200

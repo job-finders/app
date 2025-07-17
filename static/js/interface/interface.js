@@ -5,9 +5,9 @@ window.addEventListener("load", e => {
     const logout_link = document.getElementById('logout_link');
     const profile_link = document.getElementById('profile_link');
 
-    all_notifications_link.addEventListener('click', e => {
-        window.location.href = "/admin/notifications";
-    });
+    // all_notifications_link.addEventListener('click', e => {
+    //     window.location.href = "/admin/notifications";
+    // });
 
     login_link.addEventListener("click", e => {
         window.location.href = "/admin/login";

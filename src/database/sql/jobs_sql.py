@@ -331,6 +331,18 @@ class JobVersionHistoryORM(Base):
     modified_by = Column(String(ID_LEN), ForeignKey('users.uid'))
     modified_at = Column(DateTime(timezone=True), default=utc_time)
 
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    # noinspection PyUnresolvedReferences
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+
 class SavedJobORM(Base):
     """sumary_line
         JobSeekers will save jobs they are interested in for later reference. using this Model.

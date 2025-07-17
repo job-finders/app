@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from src.cache.cache_redis import cached
 from src.firewall.rate_limiting import rate_limit
 from src.authentication import user_details
-from src.database.models.notifications import CreateNotifications
+
 from src.database.models.seo import create_tags
 from src.database.models.users import User
 from src.logger import init_logger
@@ -159,29 +159,30 @@ async def linkedin_learning(user: User):
 @user_details
 async def email_me(user: User, search_term: str):
     """Process job notification email subscription."""
-    page = int(request.args.get('page', 1))
-    try:
-        notifications = CreateNotifications(**request.form)
-        notifications.topic = search_term
-        notifications_controller = get_service('notifications')
-        created_notification = await notifications_controller.create_notification_email(notification=notifications)
-        if not created_notification:
-            flash("There was a problem adding you to the email list; you may already be added or cannot be on more than one list at a time", "danger")
-            return redirect(url_for('home.get_home'), code=302)
-
-        await notifications_controller.send_notification_verification_email(notification=created_notification)
-    except ValidationError:
-        flash("There was a problem creating your email alert please try again later", "danger")
-        return redirect(url_for('home.get_home'), code=302)
-    except Exception:
-        flash("There was a problem creating your email alert please try again later", "danger")
-        return redirect(url_for('home.get_home'), code=302)
-
-    flash(f"Please check your email for our verification message so we can send you jobs about {format_title(search_term)}", "success")
-    response = await create_context(search_term=search_term, page=page)
-    if response is None:
-        return await not_found(search_term)
-    return response
+    pass
+    # page = int(request.args.get('page', 1))
+    # try:
+    #     notifications = CreateNotifications(**request.form)
+    #     notifications.topic = search_term
+    #     notifications_controller = get_service('notifications')
+    #     created_notification = await notifications_controller.create_notification_email(notification=notifications)
+    #     if not created_notification:
+    #         flash("There was a problem adding you to the email list; you may already be added or cannot be on more than one list at a time", "danger")
+    #         return redirect(url_for('home.get_home'), code=302)
+    #
+    #     await notifications_controller.send_notification_verification_email(notification=created_notification)
+    # except ValidationError:
+    #     flash("There was a problem creating your email alert please try again later", "danger")
+    #     return redirect(url_for('home.get_home'), code=302)
+    # except Exception:
+    #     flash("There was a problem creating your email alert please try again later", "danger")
+    #     return redirect(url_for('home.get_home'), code=302)
+    #
+    # flash(f"Please check your email for our verification message so we can send you jobs about {format_title(search_term)}", "success")
+    # response = await create_context(search_term=search_term, page=page)
+    # if response is None:
+    #     return await not_found(search_term)
+    # return response
 
 
 @home_route.get('/email-verification/<string:verification_id>')

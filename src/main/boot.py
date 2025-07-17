@@ -3,7 +3,6 @@ from src.database.sql import Base, engine
 def boot():
     try:
         # DirectorDetailsORM.delete_table()
-        # CompanyCIPCORM.delete_table()
         # InvoiceORM.delete_table()
         # BillingEventORM.delete_table()
         # CompanyBillingProfileORM.delete_table()
