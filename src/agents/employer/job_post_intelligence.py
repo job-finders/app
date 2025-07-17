@@ -1,6 +1,6 @@
 # agents/employer/job_post_intelligence.py
 import uuid
-from typing import Type, Optional, List, Dict
+from typing import Type, Optional, List, Dict, Literal
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
@@ -297,32 +297,73 @@ Return **only** the JSON object.
         """
         return EnhanceJobPostOutput
 
-# Job Post Insights Models
+
+# ---------- Schema -----------------------------------------------------------
+
 class JobPostInsights(BaseModel):
-    clarity_score: float
-    salary_benchmark: str
-    missing_information: List[str]
-    suggestions: List[str]
+    """Structured insights for a single job post."""
 
-    class Config:
-        from_attributes = True
+    clarity_score: float = Field(
+        ge=1,
+        le=10,
+        description="Clarity of the post on a 1–10 scale (10 = crystal clear).",
+    )
 
+    salary_benchmark: Literal[
+        "Below market",
+        "Lower-middle market",
+        "Middle market",
+        "Upper-middle market",
+        "Competitive",
+        "Highly competitive",
+    ] = Field(description="Pre-defined bucket indicating how the posted salary compares to market data.")
+
+    missing_information: List[str] = Field(
+        max_length=10,
+        description="Critical data points that are absent from the post (≤ 50 chars each).",
+    )
+
+    suggestions: List[str] = Field(
+        max_length=8,
+        description="Concise, actionable recommendations (≤ 120 chars each).",
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "clarity_score": 7.8,
+                "salary_benchmark": "Highly competitive",
+                "missing_information": ["Remote-work policy", "Equity %"],
+                "suggestions": ["Add explicit salary range to increase apply-rate by 30 %"],
+            }
+        }
+    }
+
+
+# ---------- Agent (unchanged signature) --------------------------------------
 
 class JobPostIntelligenceAgent(BaseAgent):
     __doc__ = "This Agent is used to Analyze Existing Job posts"
     name = "job_post_intelligence"
-    description = "Analyzes job post quality, clarity, and competitiveness based on salary, skills, and completeness."
+    description = (
+        "Analyzes job post quality, clarity, and competitiveness based on salary, skills, and completeness."
+    )
 
     def system_prompt(self) -> str:
         return (
-            "You are an expert in recruitment and job post optimization. "
-            "Your role is to analyze job posts for clarity, market competitiveness, and completeness. "
-            "Return structured insights, and suggest improvements where necessary."
+            "You are an expert in recruitment and job post optimisation. "
+            "Your role is to analyse job posts for clarity, market competitiveness and completeness. "
+            "Return structured insights, and suggest improvements where necessary. "
+            "Salary benchmarking must use ONLY the literal values: "
+            "'Below market', 'Lower-middle market', 'Middle market', "
+            "'Upper-middle market', 'Competitive', 'Highly competitive'. "
+            "Clarity score is a 1–10 float. "
+            "Keep every suggestion ≤ 120 characters and every missing-info bullet ≤ 50 characters."
         )
 
-    def prompt(self, input_model: 'Job') -> str:
+    def prompt(self, input_model: "Job") -> str:
         return (
-            f"Analyze the following job post:\n\n"
+            f"Analyse the following job post:\n\n"
             f"{input_model.ats_description.strip()}\n\n"
             f"Provide feedback on:\n"
             f"- Clarity\n"
@@ -335,9 +376,6 @@ class JobPostIntelligenceAgent(BaseAgent):
 
     def output_model(self) -> Type[BaseModel]:
         return JobPostInsights
-
-
-
 
 # Job Summary Models
 class JobSummaryInput(BaseModel):
