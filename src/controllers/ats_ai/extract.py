@@ -1,6 +1,6 @@
 from typing import List
 from .corpora import industry_taxonomy, peer_jobs, parsed_cvs
-from .models import KeywordSource
+from src.database.models.company_ats import KeywordSource
 
 
 def build_keyword_intelligence(job: Job) -> List[KeywordSource]:

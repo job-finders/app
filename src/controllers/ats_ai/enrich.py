@@ -1,6 +1,6 @@
 import openai
 from typing import List
-from .models import AIEnhancementSuggestion, SuggestionImpact
+from src.database.models.company_ats import AIEnhancementSuggestion, SuggestionImpact
 from .extract import build_keyword_intelligence
 
 SYSTEM_PROMPT = """
