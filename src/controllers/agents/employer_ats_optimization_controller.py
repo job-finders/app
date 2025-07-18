@@ -27,11 +27,22 @@ class EmployerATSOptimizationController(Controllers):
 
     @error_handler
     async def suggest_industry_keywords(self, job: Job) -> ATSOptimisationOutput:
-        """Given a Job Model, return ats keyword suggestions based on the job description and title. 
-        and industry standard job categories.
+        """
+            Given a Job Model, return ats keyword suggestions based on the job description and title. 
+            and industry standard job categories.
+
         """
 
-        agent = ATSOptimiseAgent()
+
+        agent = ATSKeywordSuggestionAgent(
+            tools=[
+                IndustryTaxonomyTool(),
+                PeerJobsTool(),
+                ParsedCVsTool(),
+            ],
+            fallback_threshold=5,  # default
+            )
+
         payload = ATSOptimisationInput(
             job_id=job.job_id,
             title=job.title,

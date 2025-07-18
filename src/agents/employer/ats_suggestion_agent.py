@@ -1,10 +1,13 @@
 from __future__ import annotations
 import math
 from typing import List, Optional
+from abc import ABC, abstractmethod
+
 from pydantic import BaseModel, Field
 from enum import Enum
 
 from src.models.base import utc_time
+from src.agents.employer.llm_keyword_miner import LLMKeywordMinerAgent, LLMKeywordMiningTool
 from .base import BaseAgent
 
 # ------------------------------------------------------------------
@@ -60,7 +63,6 @@ class ATSOptimisationOutput(BaseModel):
 # ------------------------------------------------------------------
 # Tool interfaces and default implementations
 # ------------------------------------------------------------------
-from abc import ABC, abstractmethod
 
 
 class KeywordTool(ABC):
@@ -95,26 +97,38 @@ class ParsedCVsTool(KeywordTool):
 # ------------------------------------------------------------------
 # Agent
 # ------------------------------------------------------------------
-class ATSOptimiseAgent(BaseAgent):
-    """
-        This agent generates AI-driven ATS optimisation suggestions for an existing Job record.
-        Helps improve job visibility and applicant matching by suggesting keyword enhancements.
-        Uses pluggable keyword tools for high-precision mining.
 
+class ATSKeywordSuggestionAgent(BaseAgent):
     """
+        This agent generates ATS optimisation suggestions based on job descriptions.
+        Helps enhance Job Visibility and candidate matching by suggesting missing keywords.
+        Keyword mining is done using a combination of classic tools and an LLM fallback.
+        
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    
     name: str = "ats_optimise"
     description: str = (
-        "Generates AI-driven ATS optimisation suggestions for an existing Job record. "
-        "Uses pluggable keyword tools for high-precision mining."
+        "Generates AI-driven ATS optimisation suggestions. "
+        "Falls back to an LLM keyword miner when classic sources are insufficient."
     )
 
-    def __init__(self, tools: Optional[List[KeywordTool]] = None):
+    def __init__(
+        self,
+        tools: Optional[List[KeywordTool]] = None,
+        fallback_threshold: int = 5,
+    ):
         super().__init__()
         self.tools: List[KeywordTool] = tools or [
             IndustryTaxonomyTool(),
             PeerJobsTool(),
             ParsedCVsTool(),
         ]
+        # Always add the LLM tool last; we decide at runtime whether to use it
+        self.llm_tool = LLMKeywordMiningTool(LLMKeywordMinerAgent())
+        self.fallback_threshold = fallback_threshold
 
     # ---------- Prompts ----------
     def system_prompt(self) -> str:
@@ -146,22 +160,33 @@ class ATSOptimiseAgent(BaseAgent):
 
     # ---------- Mining logic ----------
     def _mine_keywords(self, job: ATSOptimisationInput) -> List[KeywordSource]:
+        """sumary_line
+            Keyword mining logic that combines classic tools and LLM fallback.
+        Keyword arguments:
+        argument -- description
+        Return: return_description
         """
-        1. Pull raw keywords from every tool.
-        2. Merge + TF-IDF weighting.
-        3. Remove duplicates & already-present terms.
-        """
+        
         from collections import Counter
         import re
+        import math
 
-        # 1. Aggregate raw contributions
+        # 1. Classic tools
         corpus: List[Counter] = []
         for tool in self.tools:
             raw = tool.fetch(job)
-            counter = Counter({kw: freq for kw, freq in raw})
-            corpus.append(counter)
+            corpus.append(Counter({kw: f for kw, f in raw}))
 
-        # 2. Compute TF-IDF across tools (treat each tool as a 'document')
+        # 2. Determine if we need fallback
+        classic_keywords = set()
+        for c in corpus:
+            classic_keywords.update(c.keys())
+        if len(classic_keywords) < self.fallback_threshold:
+            # 3. Run LLM tool and append
+            llm_counter = Counter({kw: f for kw, f in self.llm_tool.fetch(job)})
+            corpus.append(llm_counter)
+
+        # 4. TF-IDF as before
         def _tf_idf(corpus: List[Counter]) -> Counter:
             df = Counter()
             for doc in corpus:
@@ -177,7 +202,7 @@ class ATSOptimiseAgent(BaseAgent):
 
         tf_idf_scores = _tf_idf(corpus)
 
-        # 3. Remove already-present terms
+        # 5. Remove already-present terms
         already = set(re.findall(r"\b\w+\b", " ".join([
             job.description,
             *job.required_skills,
@@ -188,9 +213,12 @@ class ATSOptimiseAgent(BaseAgent):
         for kw, score in tf_idf_scores.most_common():
             if kw.lower() in already:
                 continue
-            # Map back to source types
-            for tool in self.tools:
-                tool_counter = corpus[self.tools.index(tool)]
+            for tool in self.tools + [self.llm_tool]:
+                tool_counter = (
+                    corpus[self.tools.index(tool)]
+                    if tool in self.tools
+                    else corpus[-1]  # LLM
+                )
                 freq = tool_counter.get(kw, 0)
                 if freq:
                     mined.append(
