@@ -1,0 +1,277 @@
+
+
+
+        /* ---------- CSS variables ---------- */
+        :root {
+            --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --glass-bg: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.25);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            --glass-radius: 20px;
+        }
+
+        body {
+            background: #f5f7fb;
+            font-family: var(--font-family-sans);
+        }
+
+        /* ---------- Global card ---------- */
+        .card {
+            border: none;
+            border-radius: var(--glass-radius);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--glass-shadow);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: var(--glass-bg);
+            border-bottom: 1px solid var(--glass-border);
+            font-weight: 600;
+        }
+
+        /* ---------- Main form ---------- */
+        .main-form .card {
+            margin-bottom: 1.5rem;
+        }
+
+        .sticky-aside {
+            position: sticky;
+            top: 1.5rem;
+            z-index: 1020;
+        }
+
+        @media (max-width: 991.98px) {
+            .sticky-aside {
+                position: static;
+            }
+        }
+
+        /* ---------- Aside (modal-like) ---------- */
+        aside .card-header {
+            color: #fff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        aside .btn-group-vertical .btn {
+            border-radius: 50px;
+            margin-bottom: 0.5rem;
+        }
+
+        /* ---------- Pills ---------- */
+        .badge-pill {
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .badge-pill:hover {
+            background: var(--bs-primary) !important;
+            color: #fff !important;
+        }
+
+        /* global override inside the modal */
+        .suggestion-modal * {
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+        }
+
+
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+        }
+
+        .modal-title {
+            color: white;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .btn-close {
+            filter: brightness(0) invert(1);
+            opacity: 0.8;
+        }
+
+        .modal-body {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            color: white;
+        }
+
+        .form-label {
+            color: rgba(47, 36, 36, 0.9);
+            font-size: 0.95rem;
+            margin-bottom: 0.8rem;
+        }
+
+        #userPrompt {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            color: white;
+            padding: 1rem;
+            resize: vertical;
+            min-height: 120px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+
+        #userPrompt:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        #userPrompt::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .suggestions-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            margin-top: 1.5rem;
+            overflow: hidden;
+        }
+
+        .suggestions-header {
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 1.5rem;
+            color: black;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .suggestions-body {
+            padding: 1.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .suggestion-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .suggestion-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #ff5252, #ffc107);
+        }
+
+        .suggestions-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .modal-footer {
+            background: rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #5a67d8, #6b46c1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .character-count {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            text-align: right;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .modal-dialog {
+                margin: 1rem;
+            }
+
+            .modal-body {
+                padding: 1.5rem;
+            }
+
+            .suggestion-badge {
+                max-width: 150px;
+            }
+        }
+
+        /* Custom scrollbar */
+        .suggestions-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .suggestions-body::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .suggestions-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .suggestions-body::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
