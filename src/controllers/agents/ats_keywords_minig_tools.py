@@ -1,7 +1,7 @@
 
 import re
 from collections import Counter
-from src.utils import tokenizer
+from src.utils import tokenize
 from src.utils.route_tools import get_controller
 
 
@@ -22,49 +22,48 @@ class IndustryTaxonomyTool(KeywordTool):
 
 class PeerJobsTool(KeywordTool):
     """
-    High-level TASK list (AI-readable):
+    AI-readable TASK list (only `jobs_workflow` controller):
 
-    1.  Acquire controller
-        controller = get_controller("jobs_workflow")
+    1. Acquire controller
+        j_ctl = get_controller("jobs_workflow")
 
-    2.  Fetch similar jobs
-        similar_jobs = await controller.get_similar_jobs(job.id)
+    2. Fetch similar jobs
+        similar_jobs: list[Job] = await j_ctl.get_similar_jobs(job.id)
 
-    3.  Filter for success
-        Keep only jobs where
-            status == "filled" OR applications_count >= 30
-            AND average_ats_score >= 70   (from job model)
+    3. Compute success metrics via controller helpers
+        – applications_count  = job.total_applications
+        – hired_count         = await j_ctl.count_applications_by_stage(job.job_id, "hired")
+        – average_ats_score   = job.job_ats_score or 0
 
-    4.  Tokenize & aggregate
-        For every retained job → tokenize(title + description)
-        Flatten into a single Counter.
+    4. Keep only jobs where
+        (hired_count ≥ 1 OR applications_count ≥ 30)
+        AND average_ats_score ≥ 70
 
-    5.  Return top keywords
-        Return list[tuple[str, int]] sorted by descending frequency.
+    5. Tokenize & aggregate keywords
+        Use job.ats_description for rich, pre-formatted text.
+
+    6. Return list[tuple[str, int]] sorted by descending frequency.
     """
     source_type = KeywordSourceType.PEER_JOBS
 
     async def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
-        # --- 1 & 2 ---
-        controller = get_controller("jobs_workflow")
-        # Fetch similar jobs using the controller - ensure this is an async call and its implemented as needed here
-        similar_jobs = await controller.get_similar_jobs(job.id)
+        j_ctl = get_controller("jobs_workflow")
 
-        # --- 3 --- filter is based on hired and applications count and also ats score
-        successful_jobs = [
-            j for j in similar_jobs
-            if (j.status == "filled" or j.applications_count >= 30)
-            and j.average_ats_score >= 70
-        ]
+        similar_jobs: List[Job] = await j_ctl.get_similar_jobs(job.id)
 
-        # --- 4 --- tokenize and aggregate keywords
+        successful_jobs = []
+        for j in similar_jobs:
+            hired_count = await j_ctl.count_applications_by_stage(j.job_id, "hired")
+            apps_count  = j.total_applications
+            avg_score   = j.job_ats_score or 0
+
+            if (hired_count >= 1 or apps_count >= 30) and avg_score >= 70:
+                successful_jobs.append(j)
+
         counter = Counter()
         for j in successful_jobs:
-            text = f"{j.title} {j.description or ''}"
-            counter.update(tokenize(text))
+            counter.update(tokenize(j.ats_description))
 
-        # --- 5 --- return top keywords
-        # Return the most common keywords as a list of tuples (keyword, frequency)
         return counter.most_common()
 
 

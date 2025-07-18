@@ -126,6 +126,10 @@ class JobCategory(BaseModel):
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
     updated_at: Optional[AwareDatetime] = Field(default=None)
 
+    # NEW: lightweight taxonomy fields
+    canonical_skills: List[str] = Field(default_factory=list)   # ["Python", "Django", "PostgreSQL"]
+    skill_synonyms: Dict[str, List[str]] = Field(default_factory=dict)  # {"Python": ["py", "python3"]}
+    
     # Relationship
     jobs: list['Job'] = Field(default_factory=list)
 
@@ -567,7 +571,7 @@ class Job(BaseModel):
         for part in raw_parts:
             keywords.extend(tokenize(str(part)))
         return keywords
-        
+
     @computed_field(return_type=str)
     @property
     def salary(self) -> str:
