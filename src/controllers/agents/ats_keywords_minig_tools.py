@@ -1,14 +1,8 @@
 
 import re
 from collections import Counter
+from src.utils import tokenizer
 
-STOP_WORDS = {"a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "he",
-              "in", "is", "it", "its", "of", "on", "that", "the", "to", "was", "will", "with"}
-
-def tokenize(text: str) -> list[str]:
-    """Return lowercase tokens without stop-words."""
-    text = re.sub(r"[^\w\s]", " ", text.lower())
-    return [t for t in text.split() if t not in STOP_WORDS and len(t) > 2]
 
 
 class IndustryTaxonomyTool(KeywordTool):
