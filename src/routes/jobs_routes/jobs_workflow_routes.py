@@ -178,6 +178,7 @@ async def calculate_ats(user: User, job_id: str):
          the ATS is based on industry standards and job requirements.
          Receives form fields, returns rendered ATS sidebar (HTML fragment).
     """
+    workflow_logger.info(f"inside calculate ats : {job_id}")
     jobs_workflow_controller = get_controller("jobs_workflow")
     company_ats_controller = get_controller('employer_ats_optimization')
     job_details: Job = await jobs_workflow_controller.get_job_details(job_id=job_id)

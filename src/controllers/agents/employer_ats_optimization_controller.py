@@ -55,8 +55,8 @@ class EmployerATSOptimizationController(Controllers):
 
     @error_handler
     async def compile_ats_report(self, job: Job) -> AIATSReport:
+        self.logger.info(f"will now compile industry keywords")
         raw = await self.suggest_industry_keywords(job)
-
         matched = [
             KeywordSource(keyword=k.keyword, frequency=k.frequency,
                           source_type=k.source_type.value, weight=k.weight)

@@ -1,14 +1,12 @@
 <!-- AI-Enhanced ATS Report Card -->
-{% if report %}
-    {% set r = report|default(None) %}
-<div class="card shadow-sm mb-4">
-  <div class="card-header bg-primary text-white">
-    <h5 class="mb-0">
-      <i class="bi bi-cpu-fill me-2"></i>
+<div id="atsPanel" class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0 fw-semibold">
+            <i class="ti-stats-up me-2"></i>
       AI-Enhanced ATS Report
-        <small class="float-end">
-            Score {{ (r.ai_enhanced_score|default('?')) }}/100
-        </small>
+            <small class="float-end">
+                Score {{ (report.ai_enhanced_score|default('?')) }}/100
+            </small>
     </h5>
   </div>
 
@@ -16,7 +14,7 @@
     <!-- Score breakdown -->
     <h6>Score Breakdown</h6>
     <div class="row mb-3 text-center">
-        {% for key, val in (r.score_breakdown|default({})).items() %}
+        {% for key, val in (report.score_breakdown|default({})).items() %}
             {% if key != 'total' %}
                 <div class="col">
                     <div class="fw-bold">{{ val|default('0') }}</div>
@@ -29,7 +27,7 @@
     <!-- Keywords -->
     <h6>Top Missing Keywords</h6>
     <div class="mb-3">
-        {% for kw in (r.top_5_missing|default([])) %}
+        {% for kw in (report.top_5_missing|default([])) %}
             <span class="badge bg-danger me-1">{{ kw|default('') }}</span>
       {% endfor %}
     </div>
@@ -39,12 +37,12 @@
         <button class="btn btn-sm btn-outline-primary"
                 type="button"
                 data-bs-toggle="collapse"
-                data-bs-target="#suggestions-{{ r.id|default('none') }}">
+                data-bs-target="#suggestions-{{ report.id|default('none') }}">
         ✨ AI Suggestions
       </button>
     </h6>
-      <div class="collapse mt-2" id="suggestions-{{ r.id|default('none') }}">
-          {% for s in (r.suggestions|default([])) %}
+      <div class="collapse mt-2" id="suggestions-{{ report.id|default('none') }}">
+          {% for s in (report.suggestions|default([])) %}
               <div class="border-start border-primary ps-3 mb-3">
                   <strong>{{ (s.field|default('')).title() }}</strong>
                   <br>
@@ -62,12 +60,6 @@
   </div>
 
   <div class="card-footer text-muted small">
-      Built from {{ (r.keyword_corpora|default([])) | join(', ') }}
+      Built from {{ (report.keyword_corpora|default([])) | join(', ') }}
   </div>
 </div>
-{% else %}
-    <div class="alert alert-warning">
-        <i class="bi bi-exclamation-triangle-fill"></i>
-        No AI-Enhanced ATS Report available.
-    </div>
-{% endif %}

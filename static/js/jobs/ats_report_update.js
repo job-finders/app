@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('calcAtsBtn');
     const panel = document.getElementById('atsPanel');   // the card wrapper
+    const ats_endpoint_url = document.getElementById('ats_endpoint_url').value;
 
     if (!btn || !panel) return;
 
@@ -9,7 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.innerHTML = '<i class="spinner-border spinner-border-sm me-1"></i>Loading…';
 
         try {
-            const ats_endpoint_url = document.getElementById('ats_endpoint_url').value;
+
+            console.log('Whats My Browser Seeing : ', ats_endpoint_url);
             const res = await fetch(ats_endpoint_url, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'}

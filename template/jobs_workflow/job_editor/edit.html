@@ -15,7 +15,7 @@
                 <!--  MAIN FORM  -->
                 <div class="col-lg-8">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h2 class="fw-bold text-primary"><i class="ti-pencil me-2"></i>Edit Job</h2>
+                        <h2 class="fw-bold text-primary"><i class="ti-pencil me-2"></i>Job Editor</h2>
 
                         <div class="d-flex gap-2">
                             <!-- CALCULATE ATS -->
@@ -263,15 +263,10 @@
                 {% set JOB_ID = job.job_id %}
                 {% include 'jobs_workflow/job_editor/job_post_insights.html' %}
             </div>
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0"><i class="ti-stats-up me-2"></i>Live ATS & Health</h6>
-                </div>
-                <div id="atsPanel" class="card-body">
-                    <!-- initial rendered metrics -->
-                    {% include 'jobs_workflow/job_editor/_ats_metrics.html' %}
-                </div>
-            </div>
+
+            <!-- initial rendered metrics -->
+            {% include 'jobs_workflow/job_editor/_ats_metrics.html' %}
+
             <!--  ##########################################################################  -->
             {% include 'jobs_workflow/job_editor/job_dashboard.html' %}
         </div>
@@ -288,8 +283,10 @@
 
     {% include 'jobs_workflow/job_editor/ai_enhance_model.html' %}
 
-    <input type="hidden" id="endpointurl" value="{{ url_for('employer_agents.analyze_job_post', job_id=job.job_id) }}">
-    <input type="hidden" id="ats_endpoint_url" value="{{ url_for('jobs_workflow.calculate_ats', job_id=job.job_id) }}">
+    <input type="hidden" id="endpointurl"
+           value="{{ url_for('employer_agents.analyze_job_post', job_id=job.job_id) | tojson | safe }}">
+    <input type="hidden" id="ats_endpoint_url"
+           value="{{ url_for('jobs_workflow.calculate_ats', job_id=job.job_id) | tojson | safe }}">
 
 {% endblock %}
 
