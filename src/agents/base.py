@@ -99,7 +99,7 @@ class BaseAgent(ABC):
     @staticmethod
     def select_model(user_prompt: str, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> ModelType:
         prompt_lower = user_prompt.lower()
-
+        return ModelType.DEEPSEEK_R1_GWEN_FREE
         # Role-specific routing - primarily DeepSeek
         if user_role == UserRole.EMPLOYER:
             if any(word in prompt_lower for word in ["screening", "candidate evaluation", "shortlist"]):

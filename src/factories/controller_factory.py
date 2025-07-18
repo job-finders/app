@@ -154,7 +154,7 @@ class ControllerFactory:
         self.logger.info(f"Getting IndustryTaxonomyController")
         return self._get_controller('industry_taxonomy', IndustryTaxonomyController)
 
-    def get_employer_ats_optimization_tool(self) -> EmployerATSOptimizationController:
+    def get_employer_ats_optimization_tool_controller(self) -> EmployerATSOptimizationController:
         """Get EmployerATSOptimizationController instance"""
         self.logger.info(f"Getting EmployerATSOptimizationController")
         return self._get_controller('employer_ats_optimization', EmployerATSOptimizationController)

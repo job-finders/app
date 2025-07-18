@@ -132,8 +132,15 @@ async def show_edit_form(user: User, job_id: str):
     if not job:
         flash("Job not found.", "warning")
         return redirect(url_for("jobs.list_jobs"))
+
+    company_ats_controller = get_controller('employer_ats_optimization')
+    job_details: Job = await job_workflow_controller.get_job_details(job_id=job_id)
+    ats_report: AIATSReport = await company_ats_controller.compile_ats_report(job=job_details)
     workflow_logger.info(f"Job details for editing: {job}")
-    return render_template("jobs_workflow/job_editor/edit.html", current_user=user, job=job)
+    workflow_logger.info(f"ATS Report: {ats_report}")
+
+    context = dict(current_user=user, job=job, report=ats_report)
+    return render_template("jobs_workflow/job_editor/edit.html", **context)
 
 
 @jobs_workflow_route.post("/<string:job_id>/edit")
@@ -178,8 +185,7 @@ async def calculate_ats(user: User, job_id: str):
     if ats_report is None:
         return {}, 404
 
-    return ats_report.model_dump_json(), 200
-
+    return ats_report.model_dump(), 200
 
 
 @jobs_workflow_route.get("/<string:job_id>/archive")
