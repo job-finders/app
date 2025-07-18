@@ -148,7 +148,7 @@ class ControllerFactory:
         self.logger.info(f"Getting UserEngagementController")
         return self._get_controller('user_engagement', UserEngagementController)
 
-    def get_industrial_taxonomy_controller(self) -> IndustryTaxonomyController:
+    def get_industry_taxonomy_controller(self) -> IndustryTaxonomyController:
         """Get IndustryTaxonomyController instance"""
         
         self.logger.info(f"Getting IndustryTaxonomyController")

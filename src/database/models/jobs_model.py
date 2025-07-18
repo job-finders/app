@@ -991,6 +991,16 @@ class JobApplicationStatusEnum(Enum):
     REJECTED = "Rejected"
     WITHDRAWN = "Withdrawn"
 
+    @classmethod
+    def success_stages(self) -> list[str]:
+        """Return the stages that can be considered a successful outcome."""
+        return [
+            self.INTERVIEWING.value,
+            self.SHORTLISTED.value,
+            self.OFFER_EXTENDED.value,
+            self.HIRED.value,
+        ]
+
 class JobApplication(BaseModel):
     application_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str

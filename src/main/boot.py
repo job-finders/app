@@ -2,11 +2,16 @@ from src.database import *
 from src.database.sql import Base, engine
 def boot():
     try:
-        # DirectorDetailsORM.delete_table()
-        # InvoiceORM.delete_table()
-        # BillingEventORM.delete_table()
-        # CompanyBillingProfileORM.delete_table()
-        # BillingPlanORM.delete_table()
+        # JobViewActivityORM.delete_table()
+        # JobApprovalRequestORM.delete_table()
+        # ApplicationStepORM.delete_table()
+        # JobApplicationORM.delete_table()
+        # ATSReportORM.delete_table()
+        # SavedJobORM.delete_table()
+        # JobVersionHistoryORM.delete_table()
+        # JobsORM.delete_table()
+        # JobCategoryORM.delete_table()
+
         #
         # Drop all existing tables first
         print("Dropping all existing database tables...")

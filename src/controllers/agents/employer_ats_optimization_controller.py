@@ -22,22 +22,22 @@ class EmployerATSOptimizationController(Controllers):
         # App-specific initialization
         # self.cache.init_app(app)
 
-    @error_handler
+
     async def suggest_industry_keywords(self, job: Job) -> ATSOptimisationOutput:
         """
             Given a Job Model, return ats keyword suggestions based on the job description and title. 
             and industry standard job categories.
 
         """
-        agent = ATSKeywordSuggestionAgent(
-            tools=[
+        system_admin = await self.get_system_admin()
+        tools_list = [
                 IndustryTaxonomyTool(),
                 PeerJobsTool(),
                 ParsedCVsTool(),
-            ],
-            fallback_threshold=5,  # default
-            )
-
+        ]
+        self.logger.info("WE GOT HERE")
+        agent = ATSKeywordSuggestionAgent(user_id=system_admin.uid, tools=tools_list, fallback_threshold=5)
+        self.logger.info("after ATSKeyword Suggestion Initialization")
         payload = ATSOptimisationInput(
             job_id=job.job_id,
             title=job.title,
@@ -50,10 +50,9 @@ class EmployerATSOptimizationController(Controllers):
         )
         # TODO - keyword mining tools should be used to generate keywords then passed to the agent
         # noinspection PyTypeChecker
-        result: ATSOptimisationOutput = await agent.run(payload)
+        result: ATSOptimisationOutput = await agent.run(input_model=payload)
         return result
 
-    @error_handler
     async def compile_ats_report(self, job: Job) -> AIATSReport:
         self.logger.info(f"will now compile industry keywords")
         raw = await self.suggest_industry_keywords(job)

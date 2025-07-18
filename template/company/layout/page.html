@@ -9,27 +9,22 @@
     gtag('js', new Date());
     gtag('config', 'G-TD3XXFCQ46');
   </script>
-
   {% block css %}
     <link rel="preload" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
     <link href="https://unpkg.com/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet">
-
-      <link rel="preload" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+      <link rel="preload" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}" as="style"
+            onload="this.rel='stylesheet'" crossorigin>
     <link rel="preload" href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
-
     <link rel="preload" href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
     <link rel="preload" href="{{ url_for('static', filename='css/lib/bootstrap.min.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
-
     <link rel="preload" href="{{ url_for('static', filename='css/style.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
     <link rel="preload" href="{{ url_for('static', filename='css/jobfinder.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
     <noscript>
       <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}">
       <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}">
       <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/owl.theme.default.min.css') }}">
-
       <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/menubar/sidebar.css') }}">
       <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/bootstrap.min.css') }}">
-
       <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
       <link rel="stylesheet" href="{{ url_for('static', filename='css/jobfinder.css') }}">
     </noscript>
@@ -48,13 +43,11 @@
     <link rel="canonical" href="{{ seo.url | default(request.url) }}">
     <title>JobFinders - {% if seo %}{{ seo.title | default('JobFinders') }}{% else %}Page Not Found{% endif %}</title>
   {% endif %}
-
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="ir-site-verification-token" content="503288039">
   <meta name="theme-name" content="focus">
-
   {% if seo %}
     <meta name="description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">
     <meta name="keywords" content="{{ seo.keywords | default('jobs, careers, employment, jobfinders') }}">
@@ -68,12 +61,11 @@
     <meta name="twitter:image" content="{{ seo.image | default(url_for('static', filename='images/jobfinder.jpg', _external=True)) }}">
   {% endif %}
 
-
-
 {% block styles %}
     <!-- Page Specific Style Sheets -->
 {% endblock %}
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269" crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7134185943809269"
+            crossorigin="anonymous"></script>
 </head>
 <body class="sidebar-hide">
   {% include "company/layout/sidebar.html" %}
@@ -101,7 +93,6 @@
       {% include "layouts/footer.html" %}
     </div>
   </div>
-
   <script src="{{ url_for('static', filename='js/lib/jquery.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/lib/jquery.nanoscroller.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/lib/menubar/sidebar.js') }}" defer></script>
@@ -112,11 +103,9 @@
   <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/scripts.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/interface/interface.js') }}" defer></script>
-
   <!-- Cookie Consent -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js"></script>
-
   <script>
     window.addEventListener("load", function () {
       window.cookieconsent.initialise({
@@ -135,6 +124,5 @@
       });
     });
   </script>
-
 </body>
 </html>

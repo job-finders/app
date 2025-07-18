@@ -24,7 +24,21 @@ class JobCategoryORM(Base):
     created_at = Column(DateTime(timezone=True), default=utc_time)
     updated_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
 
+    canonical_skills = Column(JSON)
+    skill_synonyms = Column(JSON)
     jobs = relationship("JobsORM", back_populates="category")
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    # noinspection PyUnresolvedReferences
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
 
     # Computed statistics properties
     @hybrid_property
@@ -68,19 +82,22 @@ class JobCategoryORM(Base):
             "seo_description": self.seo_description,
             "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
             "updated_at": self.updated_at.replace(tzinfo=timezone.utc).isoformat() if self.updated_at else None,
-            # Include computed statistics
+            # computed statistics
             "total_jobs": self.total_jobs,
             "active_jobs": self.active_jobs,
             "featured_jobs": self.featured_jobs,
             "avg_salary_min": self.avg_salary_min,
-            "avg_salary_max": self.avg_salary_max
+            "avg_salary_max": self.avg_salary_max,
+            # optional JSON fields
+            "canonical_skills": self.canonical_skills or [],
+            "skill_synonyms": self.skill_synonyms or {},
         }
 
-        # Conditionally include job details
         if include_jobs:
-            data['jobs'] = [job_orm.to_dict() for job_orm in self.jobs]
+            data["jobs"] = [job.to_dict() for job in self.jobs]
 
         return data
+
 
 class JobsORM(Base):
     """

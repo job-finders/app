@@ -534,6 +534,30 @@ class JobsWorkflowController(Controllers):
             # Commit transaction
             return True
 
+    @error_handler
+    async def count_applications_by_stage(
+            self,
+            job_id: str,
+            success_stages: list[str] | None = None,
+    ) -> int:
+        """
+        Count how many applications for the given job are in any of the
+        supplied success stages.  If no stages are provided, use the enum default.
+        """
+        if success_stages is None:
+            success_stages = JobApplicationStatusEnum.success_stages()
+
+        with self.get_session() as session:
+            count = (
+                session.query(func.count(JobApplicationORM.application_id))
+                .filter(
+                    JobApplicationORM.job_id == job_id,
+                    JobApplicationORM.last_application_stage.in_(success_stages),
+                )
+                .scalar()
+            )
+        return count or 0
+
     # Updated Statistics Method
     @error_handler
     async def get_job_statistics(self) -> JobStatistics:

@@ -1,6 +1,8 @@
 
 from collections import Counter
 
+from src.controllers.controller import error_handler
+from src.database.models.jobs_model import JobApplicationStatusEnum
 from src.database.models import Job
 from src.database.models.resume import JobSeekerCV
 from src.agents.employer.ats_suggestion_agent import KeywordTool, KeywordSourceType, ATSOptimisationInput
@@ -11,6 +13,7 @@ from src.utils.route_helpers import get_controller
 class IndustryTaxonomyTool(KeywordTool):
     source_type = KeywordSourceType.INDUSTRY_TAXONOMY
 
+    @error_handler
     async def fetch(self, job: ATSOptimisationInput) -> list[tuple[str, int]]:
         # TODO please add industrial taxonomy controller to the factory
         ctl = get_controller("industry_taxonomy")
@@ -46,18 +49,22 @@ class PeerJobsTool(KeywordTool):
     """
     source_type = KeywordSourceType.PEER_JOBS
 
+    @error_handler
     async def fetch(self, job: ATSOptimisationInput) -> list[tuple[str, int]]:
-        j_ctl = get_controller("jobs_workflow")
-
-        similar_jobs: list[Job] = await j_ctl.get_similar_jobs(job.id)
+        job_search_ctl = get_controller("jobs_search")
+        job_workflow_ctl = get_controller("jobs_workflow")
+        similar_jobs: list[Job] = await job_search_ctl.get_similar_jobs(job_id=job.job_id, limit=20)
 
         successful_jobs = []
+
         for j in similar_jobs:
-            hired_count = await j_ctl.count_applications_by_stage(j.job_id, "hired")
+            success_count = await job_workflow_ctl.count_applications_by_stage(
+                job_id=j.job_id, success_stages=JobApplicationStatusEnum.success_stages())
+
             apps_count  = j.total_applications
             avg_score   = j.job_ats_score or 0
 
-            if (hired_count >= 1 or apps_count >= 30) and avg_score >= 70:
+            if (success_count >= 1 or apps_count >= 30) and avg_score >= 70:
                 successful_jobs.append(j)
 
         counter = Counter()
@@ -97,12 +104,13 @@ class ParsedCVsTool(KeywordTool):
     """
     source_type = KeywordSourceType.PARSED_CVS
 
+    @error_handler
     async def fetch(self, job: ATSOptimisationInput) -> list[tuple[str, int]]:
         resume_controller = get_controller("resume")
-        job_controller    = get_controller("jobs_workflow")
+        job_controller = get_controller("jobs_search")
 
         # 2 ─ similar jobs with applications
-        similar_jobs = await job_controller.get_similar_jobs(job.id)
+        similar_jobs = await job_controller.get_similar_jobs(job_id=job.job_id, limit=20)
         relevant_jobs = [j for j in similar_jobs if getattr(j, "applications_count", 0) > 0]
 
         # 3 ─ collect successful resumes

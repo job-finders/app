@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from flask import Flask
-from sqlalchemy import or_, desc, String
+from sqlalchemy import or_, desc, String, case, true
 from sqlalchemy import select, func
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
@@ -852,91 +852,91 @@ class JobsSearchController(Controllers):
 
     @error_handler
     async def get_similar_jobs(self, job_id: str, limit: int = 12) -> list[Job]:
-        
-        # reasonable not to expect more than 100 similar jobs
+        """
+        Return up to `limit` active jobs that are similar to the given `job_id`
+        based on shared keywords and/or matching category.
+        """
         if not (isinstance(job_id, str) and job_id.strip()):
-            self.logger.error("Invalid User ID")
+            self.logger.error("Invalid job_id provided")
             return []
-        if not isinstance(limit, int):
-            self.logger.error("Limit needs to be an Integer")
+
+        if not isinstance(limit, int) or limit <= 0:
+            self.logger.error("Limit must be a positive integer")
             return []
-        
+
         upper_limit = min(limit, 100)
 
         with self.get_session() as session:
-            # Eager load category and skills
-            target_job = session.query(JobsORM).options(
-                joinedload(JobsORM.category),
-                joinedload(JobsORM.required_skills),
-                joinedload(JobsORM.preferred_skills)
-            ).get(job_id)
-
+            target_job = (
+                session.query(JobsORM)
+                .options(joinedload(JobsORM.category))
+                .get(job_id)
+            )
             if not target_job:
                 return []
 
-            # --- Extract Keywords (Improved) ---
+            # --- Keyword extraction -----------------------------------------------------------
             def extract_keywords(text: str) -> list[str]:
-                # Use simple space splitting for skills
-                return [word.strip().lower() for word in text.split()
-                        if len(word.strip()) > 3][:8]
+                return [w.strip().lower() for w in text.split() if len(w.strip()) > 3][:8]
 
-            # Combine all text fields
             search_text = " ".join([
-                target_job.title,
+                target_job.title or "",
                 target_job.description or "",
-                " ".join(target_job.required_skills or []),
-                " ".join(target_job.preferred_skills or [])
+                *(target_job.required_skills or []),
+                *(target_job.preferred_skills or []),
             ])
-
             keywords = list(set(extract_keywords(search_text)))
-
             if not keywords:
                 return []
 
-            # --- Build Conditions (JSON-safe) ---
+            # --- Build keyword search conditions with OR ----------------------------------
             keyword_conditions = []
             for kw in keywords:
-                # Use cast for JSON fields
-                kw_cond = or_(
+                keyword_conditions.extend([
                     JobsORM.title.ilike(f"%{kw}%"),
                     JobsORM.description.ilike(f"%{kw}%"),
                     cast(JobsORM.required_skills, String).ilike(f"%{kw}%"),
                     cast(JobsORM.preferred_skills, String).ilike(f"%{kw}%"),
-                )
-                keyword_conditions.append(kw_cond)
+                ])
 
-            # --- Main Query (Optimized) ---
+            # Combine using OR instead of AND
+            if keyword_conditions:
+                keyword_clause = or_(*keyword_conditions)
+            else:
+                keyword_clause = true()
+
+            # --- Base query setup -------------------------------------------------------------
             base_query = session.query(JobsORM).filter(
                 JobsORM.job_id != job_id,
                 JobsORM.status == JobStatusEnum.ACTIVE.value
             )
 
-            # Handle category matching
-            category_match = None
+            # --- Apply category filter or fallback to keyword-only ----------------------------
             if target_job.category:
-                category_match = JobsORM.category_id == target_job.category.category_id
-
-            # Build final query
-            if category_match:
-                base_query = base_query.filter(or_(
-                    category_match,
-                    and_(*keyword_conditions)
-                ))
+                category_clause = JobsORM.category_id == target_job.category.category_id
+                base_query = base_query.filter(or_(category_clause, keyword_clause))
             else:
-                base_query = base_query.filter(and_(*keyword_conditions))
+                base_query = base_query.filter(keyword_clause)
 
-            # --- Ordering (Performance-friendly) ---
-            order_criteria = [JobsORM.posted_at.desc()]
-            if category_match:
-                # Boolean sort: category matches first
-                order_criteria.insert(0, category_match.desc())
+            # --- Ordering: prioritize category match, then newest -----------------------------
+            order_clauses = [JobsORM.posted_at.desc()]
+            if target_job.category:
+                order_clauses.insert(
+                    0,
+                    case(
+                        (JobsORM.category_id == target_job.category.category_id, 1),
+                        else_=0
+                    ).desc()
+                )
 
+            # --- Execute final query ----------------------------------------------------------
             similar_jobs = (
-                base_query.order_by(*order_criteria)
+                base_query.order_by(*order_clauses)
                 .limit(upper_limit)
-                .all())
+                .all()
+            )
 
-            return [Job(**job_orm.to_dict()) for job_orm in similar_jobs if job_orm] if similar_jobs else []
+            return [Job(**job_orm.to_dict()) for job_orm in similar_jobs]
 
     @error_handler
     async def get_job_by_slug(self, slug: str) -> Optional[Job]:

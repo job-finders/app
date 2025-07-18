@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import inspect
 from typing import List, Optional
 
 from src.agents.base import BaseAgent
@@ -50,19 +52,17 @@ class ATSKeywordSuggestionAgent(BaseAgent):
         "Falls back to an LLM keyword miner when classic sources are insufficient."
     )
 
-    def __init__(
-        self,
-        tools: Optional[List[KeywordTool]] = None,
-        fallback_threshold: int = 5,
-    ):
-        super().__init__()
+    def __init__(self, user_id: str, tools: Optional[List[KeywordTool]] = None, fallback_threshold: int = 5):
+        super().__init__(user_id=user_id)
+        if self.logger:
+            self.logger.info("Initialized Keyword Suggestion Agent Tool")
         self.tools: List[KeywordTool] = tools or [
             IndustryTaxonomyTool(),
             PeerJobsTool(),
             ParsedCVsTool(),
         ]
         # Always add the LLM tool last; we decide at runtime whether to use it
-        self.llm_tool = LLMKeywordMiningTool(LLMKeywordMinerAgent())
+        self.llm_tool = LLMKeywordMiningTool(LLMKeywordMinerAgent(user_id=user_id))
         self.fallback_threshold = fallback_threshold
 
     # ---------- Prompts ----------
@@ -73,9 +73,12 @@ class ATSKeywordSuggestionAgent(BaseAgent):
             "Only use keywords provided in the mined list; do not invent new ones."
         )
 
-    def prompt(self, input_model: ATSOptimisationInput) -> str:
+    async def prompt(self, input_model: ATSOptimisationInput) -> str:
         location = ", ".join(filter(None, [input_model.city, input_model.province, input_model.country]))
-        mined = self._mine_keywords(input_model)
+        mined = await self._mine_keywords(job=input_model)
+        if mined:
+            self.logger.info(f"MINED KEYWORDS : {mined}")
+
         kw_context = "\n".join(
             f"{i+1}. {ks.keyword} (src={ks.source_type}, weight={ks.weight}, freq={ks.frequency})"
             for i, ks in enumerate(mined[:20])
@@ -94,7 +97,7 @@ class ATSKeywordSuggestionAgent(BaseAgent):
         return ATSOptimisationOutput
 
     # ---------- Mining logic ----------
-    def _mine_keywords(self, job: ATSOptimisationInput) -> List[KeywordSource]:
+    async def _mine_keywords(self, job: ATSOptimisationInput) -> List[KeywordSource]:
         """sumary_line
             Keyword mining logic that combines classic tools and LLM fallback.
         Keyword arguments:
@@ -110,6 +113,8 @@ class ATSKeywordSuggestionAgent(BaseAgent):
         corpus: List[Counter] = []
         for tool in self.tools:
             raw = tool.fetch(job)
+            if inspect.iscoroutine(raw):
+                raw = await raw
             corpus.append(Counter({kw: f for kw, f in raw}))
 
         # 2. Determine if we need fallback
@@ -118,7 +123,8 @@ class ATSKeywordSuggestionAgent(BaseAgent):
             classic_keywords.update(c.keys())
         if len(classic_keywords) < self.fallback_threshold:
             # 3. Run LLM tool and append
-            llm_counter = Counter({kw: f for kw, f in self.llm_tool.fetch(job)})
+            from_llm = await self.llm_tool.fetch(job=job)
+            llm_counter = Counter({kw: f for kw, f in from_llm})
             corpus.append(llm_counter)
 
         # 4. TF-IDF as before

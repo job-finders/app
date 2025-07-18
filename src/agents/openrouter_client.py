@@ -1,7 +1,8 @@
 from typing import List, Dict, Type, Optional, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 import httpx
 import json
+
 from src.config import config_instance
 from src.utils.route_helpers import get_service
 
@@ -52,7 +53,7 @@ class OpenRouterClient:
         self.logger.info(f"DEBUG: OpenRouter response status: {response.status_code}")
         response.raise_for_status()
         return response.json()
-    
+
     async def structured_completion(
         self,
         messages: List[Dict[str, str]],
@@ -72,7 +73,7 @@ class OpenRouterClient:
             enhanced_messages[0]["content"] += schema_prompt
         else:
             enhanced_messages.insert(0, {"role": "system", "content": schema_prompt})
-        
+
         response = await self.chat_completion(
             enhanced_messages,
             model=model,
@@ -92,11 +93,17 @@ class OpenRouterClient:
                 content = content[7:-3].strip()
             elif content.startswith("```") and content.endswith("```"):
                 content = content[3:-3].strip()
-            
-            return output_model.model_validate_json(content)
-        except Exception:
+            print('OUTPUT START')
+            print(content)
+            print("OUTPUT END")
+            if output_model:
+                return output_model.model_validate_json(content)
+            return content
+        except ValidationError as e:
             # Fallback to original parsing method
-            return output_model.model_validate_json(content)
+            print(str(e))
+            return None
+
     
     async def agent_call(
         self,
@@ -131,7 +138,7 @@ async def call_openrouter(
     output_model: Type[BaseModel],
     model: str = "deepseek-chat",
     temperature: float = 0.7,
-    max_tokens: int = 1024,
+        max_tokens: int = 2048,
 ) -> BaseModel:
     openrouter_client = OpenRouterClient()
     openrouter_client.init_app()

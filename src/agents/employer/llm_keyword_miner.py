@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from src.database.models.company_ats import KeywordTool, KeywordSourceType, ATSOptimisationInput
 from src.agents.base import BaseAgent  # your project’s agent base
@@ -26,10 +26,16 @@ class LLMKeywordMinerAgent(BaseAgent):
 
     def system_prompt(self) -> str:
         return (
-            "You are an expert recruiter. "
-            "Given a job post, return the 15 most important ATS keywords "
-            "that do NOT already appear literally in the description or skills. "
-            "Output a JSON array of strings only, e.g. [\"react\", \"typescript\"]."
+            "You are an expert recruiter using your knowledge to optimize job posts for Applicant Tracking Systems (ATS).\n"
+            "Your task is to extract up to 15 high-impact keywords that are relevant to the role but do NOT appear literally in the job description or skills.\n"
+            "You must ONLY return a **single JSON object** matching this exact structure:\n\n"
+            '{\n  "keywords": ["keyword1", "keyword2", ...]\n}\n\n'
+            "Strict rules:\n"
+            "- DO NOT include any reasoning, explanations, markdown, or narrative.\n"
+            "- DO NOT include any text outside of the JSON.\n"
+            "- DO NOT format with comments or extra sections.\n"
+            "- DO NOT mention 'Here is the JSON' or anything similar.\n"
+            "- You must return valid JSON. No trailing commas, no malformed syntax.\n"
         )
 
     def prompt(self, input_model: LLMKeywordMiningInput) -> str:
@@ -38,7 +44,7 @@ class LLMKeywordMinerAgent(BaseAgent):
             f"Description: {input_model.description}\n"
             f"Required Skills: {', '.join(input_model.required_skills)}\n"
             f"Preferred Skills: {', '.join(input_model.preferred_skills)}\n"
-            "Return JSON array only."
+            "Return only the JSON object with the 'keywords' list as described."
         )
 
     def output_model(self):
@@ -60,6 +66,10 @@ class LLMKeywordMiningTool(KeywordTool):
             preferred_skills=job.preferred_skills,
         )
         # noinspection PyTypeChecker
-        llm_output: LLMKeywordMiningOutput = await self.agent.run(llm_input)
+        try:
+            llm_output: LLMKeywordMiningOutput = await self.agent.run(input_model=llm_input)
+        except ValidationError as e:
+            print(str(e))
+            return []
         # simulate frequency = 1 for every keyword
         return [(kw, 1) for kw in llm_output.keywords]

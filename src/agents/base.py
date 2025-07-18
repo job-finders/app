@@ -1,3 +1,4 @@
+import inspect
 from abc import ABC, abstractmethod
 from datetime import datetime
 import time
@@ -20,6 +21,9 @@ class ModelType(Enum):
     DEEPSEEK_CHIMERA_FREE = "tngtech/deepseek-r1t2-chimera:free"
     DEEPSEEK_R1_GWEN_FREE = "deepseek/deepseek-r1-0528-qwen3-8b:free"
     DEEPSEEK_R1_528_FREE = "deepseek/deepseek-r1-0528:free"
+    MOONSHOT_KIMI_K2_FREE = "moonshotai/kimi-k2:free"
+    MOONSHOT_KIMI_K2 = "moonshotai/kimi-k2"
+    GWEN_30B = "qwen/qwen3-30b-a3b:free"
     
     # Fallback models (for when DeepSeek can't handle the task)
     GPT4 = "openai/gpt-4"
@@ -99,7 +103,7 @@ class BaseAgent(ABC):
     @staticmethod
     def select_model(user_prompt: str, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> ModelType:
         prompt_lower = user_prompt.lower()
-        return ModelType.DEEPSEEK_R1_GWEN_FREE
+        return ModelType.MOONSHOT_KIMI_K2_FREE
         # Role-specific routing - primarily DeepSeek
         if user_role == UserRole.EMPLOYER:
             if any(word in prompt_lower for word in ["screening", "candidate evaluation", "shortlist"]):
@@ -246,6 +250,10 @@ class BaseAgent(ABC):
     async def run(self, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> BaseModel:
 
         user_prompt = self.prompt(*args, **kwargs)
+        if inspect.iscoroutine(user_prompt):
+            print("ITS COROUTINE")
+            user_prompt = await user_prompt
+
         system_prompt = self.system_prompt()
 
         # Select model with usage limits
@@ -273,7 +281,7 @@ class BaseAgent(ABC):
                 output_model=self.output_model(),
                 model=selected_model.value,
                 temperature=kwargs.get('temperature', 0.7),
-                max_tokens=kwargs.get('max_tokens', 1024)
+                max_tokens=kwargs.get('max_tokens', 2048)
             )
             # Add assistant response to memory
             protect_response = kwargs.get('protect_response', False)
