@@ -15,6 +15,7 @@ from src.controllers.jobs import JobsWorkflowController
 from src.controllers.jobseekers import JobSeekerProfilesController
 from src.controllers.resumes import ResumeController
 from src.controllers.users import UsersController
+from src.controllers.jobs.industry_taxonomy import IndustryTaxonomyController
 from src.logger import init_logger
 
 
@@ -144,6 +145,11 @@ class ControllerFactory:
         self.logger.info(f"Getting UserEngagementController")
         return self._get_controller('user_engagement', UserEngagementController)
 
+    def get_industrial_taxonomy_controller(self) -> IndustryTaxonomyController:
+        """Get IndustryTaxonomyController instance"""
+        
+        self.logger.info(f"Getting IndustryTaxonomyController")
+        return self._get_controller('industry_taxonomy', IndustryTaxonomyController)
 
     def _get_controller(self, name: str, controller_class):
         """Thread-safe controller getter with double-checked locking"""

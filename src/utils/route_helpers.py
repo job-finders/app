@@ -22,7 +22,8 @@ def _get_controller_map():
         'employee_agents': 'get_employee_agents_controller',
         'admin_controller': 'get_admin_controller',
         'user_engagement': 'get_user_engagement_controller',
-        'billing': 'get_billing_controller'}
+        'billing': 'get_billing_controller',
+        'industry_taxonomy': 'get_industry_taxonomy_controller'}
 
 def get_controller(controller_name: str):
     """

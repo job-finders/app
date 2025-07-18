@@ -6,19 +6,16 @@ from src.utils.route_tools import get_controller
 
 
 class IndustryTaxonomyTool(KeywordTool):
-    """sumary_line
-        should use get_controller to get the controller for this tool then use the controller to get
-        keywords from the industry taxonomy service. 
-        this could be a service that provides keywords for different industries and roles.
-        the keywords should be relevant to the job being optimised.
-    """
-
     source_type = KeywordSourceType.INDUSTRY_TAXONOMY
 
-    def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
-        # TODO: query your taxonomy service here
-        return [("python", 42), ("django", 18)]
-
+    async def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
+        # TODO please add industrial taxonomy controller to the factory
+        ctl = get_controller("industry_taxonomy")
+        return await ctl.fetch_keywords(
+            title=job.title,
+            description=job.description,
+            skills=job.required_skills + job.preferred_skills,
+        )
 
 class PeerJobsTool(KeywordTool):
     """
