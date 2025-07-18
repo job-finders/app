@@ -42,7 +42,7 @@ class EmployerATSOptimizationController(Controllers):
             province=job.province,
             country=job.country,
         )
+        # TODO - keyword mining tools should be used to generate keywords then passed to the agent
         result: ATSOptimisationOutput = await agent.run(payload)
         suggestions = result.suggestions
 
-    
