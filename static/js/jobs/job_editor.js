@@ -7,8 +7,6 @@ window.pillContainers = [
     {id: 'preferred-skills-list', jsonId: 'preferred-skills-json', isDict: false}
 ];
 
-    
-
 /* --------------  shared helpers  -------------- */
 function addPill(containerId, text) {
     const container = document.getElementById(containerId);
@@ -170,7 +168,7 @@ async function toggleFeatured(jobId, featured) {
 
 
 
-/* ==========  Job Post Insights Card (no jQuery)  ========== */
+/* ==========  Job Post Insights Card ========== */
 (() => {
 
     const endpoint = "{{ url_for("employer_agents.analyze_job_post", job_id=job.job_id) }}";

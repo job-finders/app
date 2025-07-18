@@ -133,7 +133,7 @@ async def show_edit_form(user: User, job_id: str):
         flash("Job not found.", "warning")
         return redirect(url_for("jobs.list_jobs"))
     workflow_logger.info(f"Job details for editing: {job}")
-    return render_template("jobs_workflow/edit.html", current_user=user, job=job)
+    return render_template("jobs_workflow/job_editor/edit.html", current_user=user, job=job)
 
 
 @jobs_workflow_route.post("/<string:job_id>/edit")
