@@ -547,26 +547,27 @@ class Job(BaseModel):
 
         return self.spam_severity_score >= 6
 
-    @computed_field(return_type=list[str])
-    @property
-    def job_keyword_listing(self) -> list[str]:
+    @cached_property
+    def job_keyword_listing(self) -> List[str]:
         """
-        Returns a list of keywords (including duplicates) from important job fields.
-        Includes required_skills, preferred_skills, and words from the description.
+        Returns a list of keywords (including duplicates) from:
+        - required_skills
+        - preferred_skills
+        - description
+        - title
+        Already tokenized and stop-word–cleaned.
         """
-        keywords = []
-        # Add required and preferred skills
-        if self.required_skills:
-            keywords.extend(self.required_skills)
-        if self.preferred_skills:
-            keywords.extend(self.preferred_skills)
-        # Add words from description (split on non-word chars)
-        if self.description:
-            keywords.extend(re.findall(r"\w+", self.description.lower()))
-        if self.title:
-            keywords.extend(re.findall(r"\w+", self.title.lower()))
+        raw_parts = [
+            *self.required_skills,
+            *self.preferred_skills,
+            self.description or "",
+            self.title or "",
+        ]
+        keywords: List[str] = []
+        for part in raw_parts:
+            keywords.extend(tokenize(str(part)))
         return keywords
-
+        
     @computed_field(return_type=str)
     @property
     def salary(self) -> str:

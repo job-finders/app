@@ -1,9 +1,24 @@
 
+import re
+from collections import Counter
 
+STOP_WORDS = {"a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "he",
+              "in", "is", "it", "its", "of", "on", "that", "the", "to", "was", "will", "with"}
 
+def tokenize(text: str) -> list[str]:
+    """Return lowercase tokens without stop-words."""
+    text = re.sub(r"[^\w\s]", " ", text.lower())
+    return [t for t in text.split() if t not in STOP_WORDS and len(t) > 2]
 
 
 class IndustryTaxonomyTool(KeywordTool):
+    """sumary_line
+        should use get_controller to get the controller for this tool then use the controller to get
+        keywords from the industry taxonomy service. 
+        this could be a service that provides keywords for different industries and roles.
+        the keywords should be relevant to the job being optimised.
+    """
+
     source_type = KeywordSourceType.INDUSTRY_TAXONOMY
 
     def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
@@ -12,6 +27,17 @@ class IndustryTaxonomyTool(KeywordTool):
 
 
 class PeerJobsTool(KeywordTool):
+    """sumary_line
+        should use get_controller to get the controller for this tool then use the controller to get
+        historical jobs that are similar to the job being optimised and extract keywords from them.
+        for similar jobs find the ones that have been successful in the past, i.e. those that have been filled or have received a high number of applications.
+        and also find the jobs that have a higher average ats score. for resumes. (the average ats score can be found from the applications the job received its already calculated in the job model).
+
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    
     source_type = KeywordSourceType.PEER_JOBS
 
     def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
@@ -20,6 +46,19 @@ class PeerJobsTool(KeywordTool):
 
 
 class ParsedCVsTool(KeywordTool):
+    """sumary_line
+        could use get_controller to get the controller for this tool then use the controller to get 
+        resumes that applied for similar roles successfully and extract keywords from them.
+
+        success can be determined by the number of successful applications or the number of interviews scheduled.
+
+        success can also be detarmined by the ats score for the resume for jobs similar to the job being optimised.
+
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    
     source_type = KeywordSourceType.PARSED_CVS
 
     def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
