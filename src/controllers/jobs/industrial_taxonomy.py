@@ -1,17 +1,7 @@
-import math
-from datetime import datetime, timedelta, timezone
-from typing import Optional
-
 from flask import Flask
-from sqlalchemy import or_, desc, String
-from sqlalchemy import select, func
-from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import joinedload
-from sqlalchemy.sql.expression import cast
-from sqlalchemy.sql.operators import and_
 
 from src.controllers.controller import Controllers
-from src.controllers.controller import error_handler
+from src.utils import tokenize
 
 
 class IndustryTaxonomyController(Controllers):
@@ -29,8 +19,8 @@ class IndustryTaxonomyController(Controllers):
         self,
         title: str,
         description: str,
-        skills: List[str],
-    ) -> List[tuple[str, int]]:
+            skills: list[str],
+    ) -> list[tuple[str, int]]:
         """
         1.  Tokenise title + description + skills
         2.  Find the best matching JobCategory via overlap

@@ -17,6 +17,7 @@ from src.database.models.company_models import Company, SavedCandidates, Company
 from src.database.models.jobseeker_profile import JobSeekerProfile
 from src.database.models.resume import JobSeekerCV
 from src.database.models.employer_models import Employer
+from src.utils import tokenize
 
 
 def format_reference(ref: str) -> str:
@@ -127,8 +128,8 @@ class JobCategory(BaseModel):
     updated_at: Optional[AwareDatetime] = Field(default=None)
 
     # NEW: lightweight taxonomy fields
-    canonical_skills: List[str] = Field(default_factory=list)   # ["Python", "Django", "PostgreSQL"]
-    skill_synonyms: Dict[str, List[str]] = Field(default_factory=dict)  # {"Python": ["py", "python3"]}
+    canonical_skills: list[str] = Field(default_factory=list)  # ["Python", "Django", "PostgreSQL"]
+    skill_synonyms: dict[str, list[str]] = Field(default_factory=dict)  # {"Python": ["py", "python3"]}
     
     # Relationship
     jobs: list['Job'] = Field(default_factory=list)
@@ -253,7 +254,7 @@ class Job(BaseModel):
     # NOTE: this points to jobseekers interested in this job - through the savedJobs Class
     interested_jobseekers: list['SavedJob'] = Field(default_factory=list)
 
-    ats_reports: list['ATSReport'] = Field(default_factory=list, description="List of ATS reports for this job")
+    ats_reports: list['ATSReport'] = Field(default_factory=list, description="list of ATS reports for this job")
 
     @model_validator(mode="before")
     @classmethod
@@ -551,8 +552,8 @@ class Job(BaseModel):
 
         return self.spam_severity_score >= 6
 
-    @cached_property
-    def job_keyword_listing(self) -> List[str]:
+    @property
+    def job_keyword_listing(self) -> list[str]:
         """
         Returns a list of keywords (including duplicates) from:
         - required_skills
@@ -567,7 +568,7 @@ class Job(BaseModel):
             self.description or "",
             self.title or "",
         ]
-        keywords: List[str] = []
+        keywords: list[str] = []
         for part in raw_parts:
             keywords.extend(tokenize(str(part)))
         return keywords

@@ -3,6 +3,7 @@ import threading
 import time
 from typing import Dict, Any
 
+from src.controllers.jobs.industrial_taxonomy import IndustryTaxonomyController
 from src.controllers.admin import AdminController
 from src.controllers.agents import EmployeeAgentsController
 from src.controllers.agents import EmployerAgentsController
@@ -15,7 +16,7 @@ from src.controllers.jobs import JobsWorkflowController
 from src.controllers.jobseekers import JobSeekerProfilesController
 from src.controllers.resumes import ResumeController
 from src.controllers.users import UsersController
-from src.controllers.jobs.industry_taxonomy import IndustryTaxonomyController
+
 from src.logger import init_logger
 
 

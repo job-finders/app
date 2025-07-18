@@ -99,10 +99,10 @@ class ResumeController(Controllers):
         self,
         *,
         job_id: str,
-        outcome: List[str] | None = None,
+            outcome: list[str] | None = None,
         min_ats_score: int = 0,
         limit: int = 20,
-    ) -> List[JobSeekerCV]:
+    ) -> list[JobSeekerCV]:
         """
         Return JobSeekerCV instances whose applications to `job_id` are successful.
 

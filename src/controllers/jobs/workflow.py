@@ -12,6 +12,7 @@ from requests_cache import utcnow
 from sqlalchemy import select, func, and_, case
 from sqlalchemy.orm import joinedload
 
+from src.database.models.company_models import Company
 from src.database.models.users import Roles, User, RolesEnum
 from src.controllers.jobs.auto_categorizer import AutoCategorizer
 from src.controllers.controller import Controllers
@@ -403,8 +404,8 @@ class JobsWorkflowController(Controllers):
             if benchmark:
                 draft_orm.salary_min = benchmark.get('25_percentile', draft_orm.salary_min)
                 draft_orm.salary_max = benchmark.get('75_percentile', draft_orm.salary_max)
-
-            self.create_approval_request(draft_orm)
+            # TODO - verify if indeed i have to pass in job_id rather than the entire job draft
+            await self.create_approval_request(job_id=draft_orm.job_id)
 
             # Step 5: Approval check
             validation = await self.validate_job_post(Job(**draft_orm.to_dict()))
