@@ -286,13 +286,15 @@
 <!--  ##########################################################################  -->
 <!--  ##########################################################################  -->
 
-{% include 'jobs_workflow/job_editor/ai_enhance_modal.html' %}
+    {% include 'jobs_workflow/job_editor/ai_enhance_model.html' %}
+
+    <input type="hidden" id="endpointurl" value="{{ url_for('employer_agents.analyze_job_post', job_id=job.job_id) }}">
 
 {% endblock %}
 
 {% block scripts %}
 
-    <script src="{{ url_for('static', filename='js/jobs/job_edit.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jobs/job_editor.js') }}"></script>
     <!-- Optional: Bootstrap Icons CDN if not already loaded -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 {% endblock %}

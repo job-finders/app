@@ -171,7 +171,7 @@ async function toggleFeatured(jobId, featured) {
 /* ==========  Job Post Insights Card ========== */
 (() => {
 
-    const endpoint = "{{ url_for("employer_agents.analyze_job_post", job_id=job.job_id) }}";
+    const endpoint = document.getElementById('endpointurl').value;
     /* ---- DOM references ---- */
     const card = document.getElementById('jobPostInsightsCard');
     const btn = document.getElementById('refreshInsightsBtn');
