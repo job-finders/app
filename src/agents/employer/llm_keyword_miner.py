@@ -1,9 +1,8 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from enum import Enum
 
-from src.models.base import utc_time
-from .base import BaseAgent  # your project’s agent base
+from src.database.models.company_ats import KeywordTool, KeywordSourceType, ATSOptimisationInput
+from src.agents.base import BaseAgent  # your project’s agent base
 
 
 class LLMKeywordMiningInput(BaseModel):
@@ -53,13 +52,14 @@ class LLMKeywordMiningTool(KeywordTool):
     def __init__(self, agent: LLMKeywordMinerAgent):
         self.agent = agent
 
-    def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
+    async def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
         llm_input = LLMKeywordMiningInput(
             title=job.title,
             description=job.description,
             required_skills=job.required_skills,
             preferred_skills=job.preferred_skills,
         )
-        llm_output: LLMKeywordMiningOutput = self.agent.run(llm_input)
+        # noinspection PyTypeChecker
+        llm_output: LLMKeywordMiningOutput = await self.agent.run(llm_input)
         # simulate frequency = 1 for every keyword
         return [(kw, 1) for kw in llm_output.keywords]

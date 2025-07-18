@@ -1,14 +1,17 @@
 
-import re
 from collections import Counter
+
+from src.database.models import Job
+from src.database.models.resume import JobSeekerCV
+from src.agents.employer.ats_suggestion_agent import KeywordTool, KeywordSourceType, ATSOptimisationInput
 from src.utils import tokenize
-from src.utils.route_tools import get_controller
+from src.utils.route_helpers import get_controller
 
 
 class IndustryTaxonomyTool(KeywordTool):
     source_type = KeywordSourceType.INDUSTRY_TAXONOMY
 
-    async def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
+    async def fetch(self, job: ATSOptimisationInput) -> list[tuple[str, int]]:
         # TODO please add industrial taxonomy controller to the factory
         ctl = get_controller("industry_taxonomy")
         return await ctl.fetch_keywords(
@@ -43,10 +46,10 @@ class PeerJobsTool(KeywordTool):
     """
     source_type = KeywordSourceType.PEER_JOBS
 
-    async def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
+    async def fetch(self, job: ATSOptimisationInput) -> list[tuple[str, int]]:
         j_ctl = get_controller("jobs_workflow")
 
-        similar_jobs: List[Job] = await j_ctl.get_similar_jobs(job.id)
+        similar_jobs: list[Job] = await j_ctl.get_similar_jobs(job.id)
 
         successful_jobs = []
         for j in similar_jobs:
@@ -94,7 +97,7 @@ class ParsedCVsTool(KeywordTool):
     """
     source_type = KeywordSourceType.PARSED_CVS
 
-    async def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
+    async def fetch(self, job: ATSOptimisationInput) -> list[tuple[str, int]]:
         resume_controller = get_controller("resume")
         job_controller    = get_controller("jobs_workflow")
 

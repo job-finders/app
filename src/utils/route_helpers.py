@@ -23,7 +23,8 @@ def _get_controller_map():
         'admin_controller': 'get_admin_controller',
         'user_engagement': 'get_user_engagement_controller',
         'billing': 'get_billing_controller',
-        'industry_taxonomy': 'get_industry_taxonomy_controller'}
+        'industry_taxonomy': 'get_industry_taxonomy_controller',
+        'employer_ats_optimization': 'get_employer_ats_optimization_controller'}
 
 def get_controller(controller_name: str):
     """

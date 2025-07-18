@@ -1,13 +1,10 @@
 # src/controllers/agents.py
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Tuple
-
-from src.database.constants import utc_time
-from src.routes.utils import to_aware
-
-from src.agents.ats_optimization_agent import ATSOptimiseAgent,ATSOptimisationInput, ATSOptimisationOutput
+from src.agents.employer.ats_suggestion_agent import ATSKeywordSuggestionAgent
+from src.controllers.agents.ats_keywords_minig_tools import IndustryTaxonomyTool, PeerJobsTool, ParsedCVsTool
 from src.controllers.controller import Controllers, error_handler
-from src.utils.route_helpers import get_service
+from src.database.models import Job
+from src.database.models.company_ats import AIATSReport, KeywordSource, ATSScoreBreakdown, AIEnhancementSuggestion, \
+    SuggestionImpact, ATSOptimisationOutput, ATSOptimisationInput
 
 
 class EmployerATSOptimizationController(Controllers):
@@ -32,8 +29,6 @@ class EmployerATSOptimizationController(Controllers):
             and industry standard job categories.
 
         """
-
-
         agent = ATSKeywordSuggestionAgent(
             tools=[
                 IndustryTaxonomyTool(),
@@ -54,6 +49,54 @@ class EmployerATSOptimizationController(Controllers):
             country=job.country,
         )
         # TODO - keyword mining tools should be used to generate keywords then passed to the agent
+        # noinspection PyTypeChecker
         result: ATSOptimisationOutput = await agent.run(payload)
-        suggestions = result.suggestions
+        return result
 
+    @error_handler
+    async def compile_ats_report(self, job: Job) -> AIATSReport:
+        raw = await self.suggest_industry_keywords(job)
+
+        matched = [
+            KeywordSource(keyword=k.keyword, frequency=k.frequency,
+                          source_type=k.source_type.value, weight=k.weight)
+            for k in raw.matched_keywords
+        ]
+        missing = [
+            KeywordSource(keyword=k.keyword, frequency=k.frequency,
+                          source_type=k.source_type.value, weight=k.weight)
+            for k in raw.missing_keywords
+        ]
+
+        score_breakdown = ATSScoreBreakdown(
+            title_score=getattr(raw.score_breakdown, "title_score", 0),
+            skills_score=getattr(raw.score_breakdown, "skills_score", 0),
+            description_score=getattr(raw.score_breakdown, "description_score", 0),
+            formatting_score=getattr(raw.score_breakdown, "formatting_score", 0),
+            experience_level_score=getattr(raw.score_breakdown, "experience_level_score", 0),
+        )
+
+        suggestions = [
+            AIEnhancementSuggestion(
+                field=s.field,
+                action=s.action,
+                current=s.current,
+                recommended=s.recommended,
+                keywords_added=s.keywords_added,
+                impact=SuggestionImpact(
+                    estimated_score_increase=s.impact.estimated_score_increase,
+                    confidence=s.impact.confidence,
+                    reasoning=s.impact.reasoning,
+                ),
+            )
+            for s in raw.suggestions
+        ]
+
+        return AIATSReport(
+            job_id=str(job.job_id),
+            score_breakdown=score_breakdown,
+            matched_keywords=matched,
+            missing_keywords=missing,
+            suggestions=suggestions,
+            keyword_corpora=["industry_taxonomy", "peer_jobs", "parsed_cvs"],
+        )

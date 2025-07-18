@@ -1,76 +1,11 @@
 from __future__ import annotations
-import math
+
 from typing import List, Optional
-from abc import ABC, abstractmethod
 
-from pydantic import BaseModel, Field
-from enum import Enum
-
-from src.models.base import utc_time
+from src.agents.base import BaseAgent
 from src.agents.employer.llm_keyword_miner import LLMKeywordMinerAgent, LLMKeywordMiningTool
-from .base import BaseAgent
-
-# ------------------------------------------------------------------
-# Domain models (same as before)
-# ------------------------------------------------------------------
-class KeywordSourceType(str, Enum):
-    INDUSTRY_TAXONOMY = "industry_taxonomy"
-    PEER_JOBS = "peer_jobs"
-    PARSED_CVS = "parsed_cvs"
-
-
-class KeywordSource(BaseModel):
-    keyword: str
-    frequency: int = Field(ge=0)
-    source_type: KeywordSourceType
-    weight: float = Field(default=1.0, ge=0.0, le=1.0)
-
-
-class SuggestionImpact(BaseModel):
-    estimated_score_increase: int = Field(ge=0, le=30)
-    confidence: float = Field(ge=0.0, le=1.0)
-    reasoning: str
-
-
-class AIEnhancementSuggestion(BaseModel):
-    field: str
-    action: str = Field(description="replace | append | delete")
-    current: Optional[str] = None
-    recommended: Optional[str] = None
-    keywords_added: List[str] = Field(default_factory=list)
-    impact: SuggestionImpact
-
-
-class ATSOptimisationInput(BaseModel):
-    job_id: str
-    title: str
-    description: str
-    required_skills: List[str] = Field(default_factory=list)
-    preferred_skills: List[str] = Field(default_factory=list)
-    city: Optional[str] = None
-    province: Optional[str] = None
-    country: Optional[str] = None
-
-
-class ATSOptimisationOutput(BaseModel):
-    generated_at: str = Field(default_factory=lambda: utc_time().isoformat())
-    suggestions: List[AIEnhancementSuggestion]
-    top_missing_keywords: List[str] = Field(
-        description="Top 5 missing keywords ordered by impact"
-    )
-
-
-# ------------------------------------------------------------------
-# Tool interfaces and default implementations
-# ------------------------------------------------------------------
-
-
-class KeywordTool(ABC):
-    source_type: KeywordSourceType
-
-    @abstractmethod
-    def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
-        ...
+from src.database.models.company_ats import KeywordTool, KeywordSourceType, ATSOptimisationInput, ATSOptimisationOutput, \
+    KeywordSource
 
 
 class IndustryTaxonomyTool(KeywordTool):

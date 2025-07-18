@@ -4,7 +4,7 @@ import json
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from pydantic import ValidationError
 
-
+from src.database.models.company_ats import AIATSReport
 from src.controllers.company import CompanyController
 from src.logger import init_logger
 from src.controllers.agents import EmployerAgentsController
@@ -167,13 +167,18 @@ async def edit_job(user: User, job_id: str):
 @employer_job_access_required()
 async def calculate_ats(user: User, job_id: str):
     """
-    Receives form fields, returns rendered ATS sidebar (HTML fragment).
+         This route is used to calculate ATS metrics for a job post.
+         the ATS is based on industry standards and job requirements.
+         Receives form fields, returns rendered ATS sidebar (HTML fragment).
     """
-    form = request.form
-    # Build temp Job from form, run ATS engine …
-    job_temp = Job(**{k: v for k, v in form.items() if k in Job.__fields__})
-    # compute industry score, keywords, etc.
-    return render_template('jobs_workflow/_ats_metrics.html', job=job_temp)
+    jobs_workflow_controller = get_controller("jobs_workflow")
+    company_ats_controller = get_controller('employer_ats_optimization')
+    job_details: Job = await jobs_workflow_controller.get_job_details(job_id=job_id)
+    ats_report: AIATSReport = await company_ats_controller.compile_ats_report(job=job_details)
+    if ats_report is None:
+        return {}, 404
+
+    return ats_report.model_dump_json(), 200
 
 
 
