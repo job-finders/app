@@ -69,23 +69,79 @@ class PeerJobsTool(KeywordTool):
 
 
 class ParsedCVsTool(KeywordTool):
-    """sumary_line
-        could use get_controller to get the controller for this tool then use the controller to get 
-        resumes that applied for similar roles successfully and extract keywords from them.
-
-        success can be determined by the number of successful applications or the number of interviews scheduled.
-
-        success can also be detarmined by the ats score for the resume for jobs similar to the job being optimised.
-
-    Keyword arguments:
-    argument -- description
-    Return: return_description
     """
-    
+    Refined algorithm leveraging the full JobSeekerCV context.
+
+    1.  Acquire controllers
+        resume_controller  = get_controller("resume")
+        job_controller     = get_controller("jobs_workflow")
+
+    2.  Obtain similar jobs that have applications
+        similar_jobs = await job_controller.get_similar_jobs(job.id)
+        relevant_jobs = [j for j in similar_jobs if getattr(j, "applications_count", 0) > 0]
+
+    3.  For each job, fetch the most-successful resumes
+        – outcome in ["interviewed", "hired"]
+        – min_ats_score ≥ 70
+        – trust_score ≥ 60   (optional quality gate)
+
+    4.  Aggregate weighted keywords from the **entire resume context**:
+        – skills (highest weight)
+        – professional_title
+        – summary
+        – experience
+        – projects
+        – certifications
+        – languages
+
+    5.  Return keywords sorted by (tf-idf * trust_score) descending.
+    """
     source_type = KeywordSourceType.PARSED_CVS
 
-    def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
-        # TODO: aggregate keywords from CVs of similar roles
-        return [("fastapi", 20), ("asyncio", 12)]
+    async def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
+        resume_controller = get_controller("resume")
+        job_controller    = get_controller("jobs_workflow")
 
-        
+        # 2 ─ similar jobs with applications
+        similar_jobs = await job_controller.get_similar_jobs(job.id)
+        relevant_jobs = [j for j in similar_jobs if getattr(j, "applications_count", 0) > 0]
+
+        # 3 ─ collect successful resumes
+        resumes: list[JobSeekerCV] = []
+        for j in relevant_jobs:
+            batch = await resume_controller.get_successful_resumes_by_job(
+                job_id=j.job_id,
+                outcome=["interviewed", "hired"],
+                min_ats_score=70,
+                limit=20
+            )
+            resumes.extend(r for r in batch if r.trust_score >= 60)
+
+        if not resumes:
+            return []
+
+        # 4 ─ weighted keyword extraction
+        counter = Counter()
+        for r in resumes:
+            weight = max(1, r.trust_score // 10)  # 6–10 multiplier
+
+            # High-value fields
+            counter.update({k: weight * 3 for k in tokenize(" ".join(r.skills))})
+            counter.update({k: weight * 2 for k in tokenize(r.professional_title)})
+            counter.update({k: weight * 2 for k in tokenize(r.summary or "")})
+
+            # Medium-value fields
+            for exp in r.experience:
+                counter.update({k: weight for k in tokenize(exp.description or "")})
+            for proj in r.projects or []:
+                counter.update({k: weight for k in tokenize(proj.description or "")})
+                counter.update({k: weight for k in tokenize(" ".join(proj.technologies or []))})
+
+            for cert in r.certifications or []:
+                counter.update({k: weight for k in tokenize(cert.name)})
+            for lang in r.languages or []:
+                counter.update({k: weight for k in tokenize(lang.name)})
+
+        # 5 ─ return top keywords
+        return counter.most_common()
+

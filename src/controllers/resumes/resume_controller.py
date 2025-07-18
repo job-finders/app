@@ -94,6 +94,61 @@ class ResumeController(Controllers):
 
             return JobSeekerCV(**cv_orm.to_dict(include_relationships=True))
 
+    @error_handler
+    async def get_successful_resumes_by_job(
+        self,
+        *,
+        job_id: str,
+        outcome: List[str] | None = None,
+        min_ats_score: int = 0,
+        limit: int = 20,
+    ) -> List[JobSeekerCV]:
+        """
+        Return JobSeekerCV instances whose applications to `job_id` are successful.
+
+        Success = JobApplicationORM.application_stage IN (`outcome`)
+                  AND JobApplicationORM.validation_score >= min_ats_score
+        """
+        if outcome is None:
+            outcome = ["interviewed", "hired", "shortlisted"]
+
+        if not isinstance(job_id, str) or not job_id.strip():
+            return []
+
+        with self.get_session() as session:
+            # 1. Grab the CV IDs that meet the success criteria
+            cv_ids_subquery = (
+                session.query(JobApplicationORM.cv_id)
+                .filter(
+                    JobApplicationORM.job_id == job_id,
+                    JobApplicationORM.application_stage.in_(outcome),
+                    JobApplicationORM.validation_score >= min_ats_score,
+                )
+                .limit(limit)
+                .subquery()
+            )
+
+            # 2. Fetch full JobSeekerCV objects with eager-loaded relationships
+            cvs_orm = (
+                session.query(JobSeekerCVORM)
+                .options(
+                    joinedload(JobSeekerCVORM.experience),
+                    joinedload(JobSeekerCVORM.education),
+                    joinedload(JobSeekerCVORM.certifications),
+                    joinedload(JobSeekerCVORM.languages),
+                    joinedload(JobSeekerCVORM.projects),
+                    joinedload(JobSeekerCVORM.publications),
+                    joinedload(JobSeekerCVORM.awards),
+                    joinedload(JobSeekerCVORM.custom_sections),
+                )
+                .filter(JobSeekerCVORM.cv_id.in_(cv_ids_subquery))
+                .all()
+            )
+
+            return [
+                JobSeekerCV(**cv.to_dict(include_relationships=True))
+                for cv in cvs_orm
+            ]
 
     @error_handler
     async def get_primary_resume(self, user_id: str) -> JobSeekerCV| None:
