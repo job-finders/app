@@ -1,17 +1,17 @@
+# Standard Library
 import random
 from datetime import datetime, timedelta
 from typing import TypedDict, List, Tuple
-
+# Flask Core
 from flask import Blueprint, render_template, request
-
-from src.database.models.jobs_model import JobCategory
-from src.database.models.resume import JobSeekerCV
-from src.database.models import Job
-
+# Authentication
 from src.authentication import user_details
-from src.database.models.users import User
+# Domain Models
+from src.database.models import Job, JobCategory, JobSeekerCV, User
+# Routes
 from src.routes import flask_error_handler
 from src.routes.utils import gone
+# Utilities
 from src.utils.route_helpers import get_controller
 
 

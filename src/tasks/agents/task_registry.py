@@ -1,8 +1,7 @@
 # agents/task_registry.py
-from tasks.celery.scheduled_tasks import sync_hashnode_posts
 
 class PeriodicAgentTaskRegistry:
-    def __init__(self):
+    def __init__(self, sync_hashnode_posts=None):
         self.commands = {
             "trigger_hashnode_sync": {
                 "fn": sync_hashnode_posts.delay,

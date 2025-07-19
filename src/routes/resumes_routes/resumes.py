@@ -1,15 +1,43 @@
+# Standard Library
 import asyncio
 from datetime import date, datetime
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+# Flask & Third-Party
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    jsonify,
+)
 from pydantic import ValidationError
 
+# Authentication
 from src.authentication import jobseeker_login
+
+# Domain Models
+from src.database.models import (
+    User,
+    JobSeekerCV,
+    Experience,
+    Education,
+    Certification,
+    Language,
+    Project,
+    Publication,
+    Award,
+    CustomSection,
+)
+
+# Constants
 from src.database.constants import utc_time
-from src.database.models.resume import (JobSeekerCV, Experience, Education, Certification,
-                                        Language, Project, Publication, Award, CustomSection)
-from src.database.models.users import User
+
+# Routes
 from src.routes import flask_error_handler
+
+# Utilities
 from src.utils.route_helpers import get_controller
 
 resume_routes = Blueprint(
@@ -112,9 +140,10 @@ def _parse_ats_form_data(form_data, files) -> dict:
             index += 1
     return parsed
 
-def lenient_cv_parse(data: dict) -> JobSeekerCV:
+
+def lenient_cv_parse(user_uid: str, data: dict) -> JobSeekerCV:
     """Lenient CV parsing with fallback values"""
-    return JobSeekerCV(professional_title=data.get('professional_title', 'Draft CV'),
+    return JobSeekerCV(user_uid=user_uid, professional_title=data.get('professional_title', 'Draft CV'),
                        summary=data.get('summary', ''), skills=data.get('skills', []),
                        experience=[Experience(**e) for e in data.get('experience', [])],
                        education=[Education(**e) for e in data.get('education', [])],
@@ -129,7 +158,7 @@ async def ats_check(user: User):
     try:
         # Use lenient parsing for partial CV data
         raw_data = _parse_ats_form_data(request.form, request.files)
-        cv_data = lenient_cv_parse(raw_data)
+        cv_data = lenient_cv_parse(user_uid=user.uid, data=raw_data)
 
         # Generate ATS report
         ats_controller = get_controller('ats')

@@ -5,6 +5,7 @@ from src.logger import init_logger
 
 from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
+
 users_route = Blueprint('user', __name__)
 users_logger = init_logger("home_logger")
 

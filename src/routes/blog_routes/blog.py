@@ -1,10 +1,16 @@
+# Flask Core
 from flask import Blueprint, render_template
 
-from src.database.models.users import User
-from src.authentication import user_details
-from src.cache.cache_redis import cached
-from src.routes import flask_error_handler
 from src.database.models.seo import create_tags
+# Authentication
+from src.authentication import user_details
+# Caching
+from src.cache.cache_redis import cached
+# Domain Models
+from src.database.models import User
+# Routes
+from src.routes import flask_error_handler
+# Logger
 from src.logger import init_logger
 
 blog_route = Blueprint('blog', __name__)

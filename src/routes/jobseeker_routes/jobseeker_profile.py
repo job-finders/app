@@ -1,13 +1,15 @@
+# Third-Party
 from pydantic import ValidationError
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-
-
-from src.routes import flask_error_handler
+# Authentication
 from src.authentication import login_required, jobseeker_login, user_details
-from src.database.models.users import User
-
-from src.database.models.jobseeker_profile import JobSeekerProfile
+# Domain Models
+from src.database.models import User, JobSeekerProfile
+# Routes
+from src.routes import flask_error_handler
+# Utilities
 from src.utils.route_helpers import get_controller
+
 jobseeker_profiles_bp = Blueprint("jobseeker_profiles", __name__, url_prefix="/jobseeker/profile")
 
 def parse_profile_form(form_data, user_uid):

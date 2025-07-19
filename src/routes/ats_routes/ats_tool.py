@@ -2,7 +2,7 @@ from flask import Blueprint, request, render_template
 
 from src.routes import flask_error_handler
 from src.authentication import login_required, jobseeker_login
-from src.database.models.users import User
+from src.database.models import User
 from src.logger import init_logger
 from src.utils.route_helpers import get_controller
 

@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, send_from_directory, url_for, make
 
 from src.utils import static_folder
 from src.utils.route_helpers import get_controller, get_service
+
 seo_route = Blueprint('seo', __name__)
 
 

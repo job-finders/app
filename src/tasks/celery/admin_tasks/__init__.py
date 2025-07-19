@@ -1,9 +1,7 @@
 from asgiref.sync import async_to_sync
-from src.tasks.celery.celery_app import celery_app
-from src.utils.route_helpers import get_service, get_controller
 
-from celery import Task
-from celery.exceptions import Retry
+from src.utils.route_helpers import get_service, get_controller
+from src.tasks.celery import celery_app
 
 
 def obtain_admin_user():

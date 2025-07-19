@@ -1,8 +1,14 @@
+# Standard Library
 import inspect
 from datetime import date, timedelta
 
-from src.database.models.billing import InvoiceStatusEnum, CompanyBillingProfile
+# Domain Models
+from src.database.models import InvoiceStatusEnum, CompanyBillingProfile
+
+# Services
 from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType
+
+# Utilities
 from src.utils.route_helpers import get_service
 
 

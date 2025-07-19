@@ -1,14 +1,26 @@
+# Standard Library
 import asyncio
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+# Flask & Third-Party
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    jsonify,
+)
 from pydantic import ValidationError
-
+# Authentication
 from src.authentication import jobseeker_login, is_valid_uid
-from src.database.models.jobs_model import JobApplication, Job, ATSReport
-from src.database.models.resume import JobSeekerCV
-from src.database.models.users import User
+# Domain Models
+from src.database.models import JobApplication, Job, ATSReport, JobSeekerCV, User
+# Logger
 from src.logger import init_logger
+# Routes
 from src.routes import flask_error_handler
+# Utilities
 from src.utils.route_helpers import get_controller
 
 jobseeker_applications_route = Blueprint("jobseeker_applications", __name__, url_prefix="/jobseeker/applications")

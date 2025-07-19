@@ -1,13 +1,17 @@
-from datetime import timedelta, timezone, datetime
+# Standard Library
+import inspect
+from datetime import datetime, timedelta, timezone
+from typing import Callable, List, get_type_hints
 from uuid import uuid4
 
+# Domain Models
+from src.database.models import CompanyBillingProfile, InvoiceStatusEnum, BillingPlan, Invoice
 
-from src.services.billing.schemas_interfaces import BillingServiceInterface, MethodSchema
-from src.database.models.billing import CompanyBillingProfile, InvoiceStatusEnum, BillingPlan, Invoice
+# SQL Models
 from src.database.sql.billing_sql import InvoiceORM, CompanyBillingProfileORM
 
-import inspect
-from typing import get_type_hints, Callable, List
+# Services
+from src.services.billing.schemas_interfaces import BillingServiceInterface, MethodSchema
 
 
 class InvoiceService(BillingServiceInterface):

@@ -1,30 +1,50 @@
+# Standard Library
 import asyncio
 import json
 import os
 import uuid
 from datetime import datetime, timezone
 
+# Flask & Third-Party
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError, HttpUrl
 from werkzeug.utils import secure_filename
 
+# Authentication
 from src.authentication import login_required, employer_login, require_billing_role
+
+# Controllers
 from src.controllers.agents import EmployerAgentsController
 from src.controllers.jobs import JobsWorkflowController
-from src.database.models.company_models import CompanyVerificationStatus, CompanyUpdate, CompanyCIPC, \
-    CompanyVerificationDocument, CompanySettings, AllowableCompanyVerificationDocumentsEnum, DirectorDetails
-from src.database.models.employer_models import Employer
-from src.database.models.jobs_model import Company, JobApplicationDashboard, Job
-from src.database.models.resume import JobSeekerCV, SavedCV
-from src.database.models.users import User
+
+# Domain Models
+from src.database.models import (
+    Company,
+    CompanyUpdate,
+    CompanyVerificationStatus,
+    CompanyVerificationDocument,
+    CompanySettings,
+    AllowableCompanyVerificationDocumentsEnum,
+    CompanyCIPC,
+    DirectorDetails,
+    Employer,
+    Job,
+    JobApplicationDashboard,
+    JobSeekerCV,
+    SavedCV,
+    User,
+)
+# Logger
 from src.logger import init_logger
+# Routes
 from src.routes import flask_error_handler
+# Services
 from src.services.billing.billing_service import BillingTiersEnum
+# Utilities
 from src.utils.file_uploads import save_company_logo, save_verification_file
 from src.utils.route_helpers import get_controller
 
 company_bp = Blueprint('company', __name__, url_prefix='/dashboard/company')
-
 logger = init_logger("company_routes")
 
 # Configure these in your settings

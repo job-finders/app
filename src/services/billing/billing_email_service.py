@@ -1,9 +1,12 @@
+# Standard Library
 import inspect
 from datetime import datetime, timezone
 from typing import Any
 
+# Flask
 from flask import render_template
 
+# Email & Services
 from src.emailer import EmailModel
 from src.services.billing.schemas_interfaces import BillingEventType, BillingServiceInterface
 

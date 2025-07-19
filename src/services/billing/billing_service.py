@@ -1,15 +1,25 @@
+# Standard Library
 import asyncio
+import inspect
 from datetime import datetime, timedelta, timezone, date
 from decimal import Decimal
-from typing import Callable, Optional
-import inspect
-
-from src.database.constants import utc_time
-from src.database.models.billing import CompanyBillingProfile, BillingPlan
-from src.database.sql.billing_sql import CompanyBillingProfileORM, BillingPlanORM
-from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType
-from src.utils.route_helpers import get_service
 from enum import Enum
+from typing import Callable, Optional
+
+# Domain Models
+from src.database.models import CompanyBillingProfile, BillingPlan
+
+# SQL Models
+from src.database.sql.billing_sql import CompanyBillingProfileORM, BillingPlanORM
+
+# Services
+from src.services.billing.schemas_interfaces import BillingServiceInterface, BillingEventType
+
+# Utilities
+from src.utils.route_helpers import get_service
+
+# Constants
+from src.database.constants import utc_time
 
 class BillingTiersEnum(Enum):
     Trial = "Trial"

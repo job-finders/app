@@ -1,25 +1,56 @@
-# src/routes/jobs_workflow.py
+# Standard Library
 import json
 import uuid
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+# Flask & Third-Party
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    jsonify,
+)
 from pydantic import ValidationError
+# Authentication
+from src.authentication import (
+    employer_login,
+    system_admin_login,
+    jobseeker_login,
+    employer_job_access_required,
+    require_billing_role,
+)
 
-from src.database.constants import utc_time
-from src.database.models.company_ats import AIATSReport
-from src.controllers.company import CompanyController
-from src.logger import init_logger
+# Controllers
 from src.controllers.agents import EmployerAgentsController
+from src.controllers.company import CompanyController
 from src.controllers.jobs import JobsWorkflowController
-from src.authentication import (employer_login, system_admin_login, jobseeker_login, employer_job_access_required,
-                                require_billing_role)
 
-from src.services.billing.billing_service import BillingTiersEnum
-from src.database.models.jobs_model import Job, JobApplication, JobEditableFields, ApplicationFunnelStats, JobStatusEnum
-from src.database.models.users import User
-# from src.firewall.rate_limiting import rate_limit
+# Domain Models
+from src.database.models import (
+    Job,
+    JobApplication,
+    JobEditableFields,
+    ApplicationFunnelStats,
+    JobStatusEnum,
+    AIATSReport,
+    User,
+)
+
+# Constants
+from src.database.constants import utc_time
+# Logger
+from src.logger import init_logger
+# Routes
 from src.routes import flask_error_handler
+# Services
+from src.services.billing.billing_service import BillingTiersEnum
+# Utilities
 from src.utils.route_helpers import get_controller
+
+# Firewall (commented for now)
+# from src.firewall.rate_limiting import rate_limit
 
 jobs_workflow_route = Blueprint("jobs_workflow", __name__, url_prefix="/dashboard/jobs")
 workflow_logger = init_logger("workflow-route")

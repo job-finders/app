@@ -1,20 +1,25 @@
-# routes/agents.py
+# Standard Library
 import json
-
+# Flask Core
 from flask import Blueprint, request, jsonify, Response
+# Third-Party
 from pydantic import HttpUrl
-
+# Controllers
 from src.controllers.agents import EmployerAgentsController
 from src.controllers.jobs import JobsWorkflowController
+# Routes
 from src.routes import flask_error_handler
-from src.database.models import Job
-from src.database.models.agent_models import JobPostInsights
+# Domain Models
+from src.database.models import JobPostInsights, User
+# Agents
 from src.agents.employer import EnhanceJobPostOutput
+# Auth
 from src.authentication import login_required, employer_login
-from src.database.models.users import User
+# Logger
 from src.logger import init_logger
-from src.utils.route_helpers import get_controller
+# Utilities
 from src.utils import split_csv, parse_date_to_aware
+from src.utils.route_helpers import get_controller
 
 employer_agents_route = Blueprint('employer_agents', __name__, url_prefix='/agents/employer/v1')
 agents_logger = init_logger("agents_tool")

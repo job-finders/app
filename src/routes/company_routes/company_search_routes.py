@@ -1,11 +1,14 @@
+# Flask Core
 from flask import Blueprint, render_template, redirect, url_for, flash
-
+# Authentication
 from src.authentication import employer_login, user_details
-from src.database.models.company_models import CompanyVerificationStatus, Company
-from src.database.models.employer_models import Employer
-from src.database.models.users import User
+# Domain Models
+from src.database.models import Company, CompanyVerificationStatus, Employer, User
+# Logger
 from src.logger import init_logger
+# Routes
 from src.routes import flask_error_handler
+# Utilities
 from src.utils.route_helpers import get_controller
 
 company_search_routes = Blueprint('company_search', __name__, url_prefix='/company')

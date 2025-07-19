@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 
 from src.routes import flask_error_handler
 from src.authentication import login_required, jobseeker_login
-from src.database.models.users import User
+from src.database.models import User
 from src.utils.route_helpers import get_controller
 
 employee_agents_route = Blueprint('employee_agents', __name__, url_prefix='/agents/employee/v1')

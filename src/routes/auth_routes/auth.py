@@ -1,14 +1,29 @@
+# Standard Library
 from datetime import timedelta
-
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Response, make_response
-
+# Flask Core
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+    Response,
+    make_response,
+)
+# Authentication
 from src.authentication import login_required, user_details
 from src.authentication.jwt_helper import create_jwt
+# Constants
 from src.database.constants import utc_time
-from src.database.models import Role
-from src.database.models.users import User
+# Domain Models
+from src.database.models import User, Role
+# Logger
 from src.logger import init_logger
+# Routes
 from src.routes import flask_error_handler
+# Utilities
 from src.utils.route_helpers import get_controller
 
 auth_route = Blueprint("auth", __name__, template_folder="templates", url_prefix="/auth")

@@ -1,16 +1,30 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, send_file
-from pydantic import ValidationError
-
-from src.cache.cache_redis import cached
-from src.firewall.rate_limiting import rate_limit
-from src.authentication import user_details
+# Flask Core
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    flash,
+    redirect,
+    url_for,
+    abort,
+    send_file,
+)
 
 from src.database.models.seo import create_tags
-from src.database.models.users import User
+# Authentication
+from src.authentication import user_details
+# Caching
+from src.cache.cache_redis import cached
+# Domain Models
+from src.database.models import User
+# Firewall / Rate Limiting
+from src.firewall.rate_limiting import rate_limit
+# Logger
 from src.logger import init_logger
+# Routes
 from src.routes import flask_error_handler
-from src.routes.utils import (fetch_and_cache_logo, create_context, not_found)
-from src.utils import format_title
+from src.routes.utils import fetch_and_cache_logo, create_context, not_found
+# Utilities
 from src.utils.route_helpers import get_service
 
 home_route = Blueprint('home', __name__)

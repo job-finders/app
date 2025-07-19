@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, render_template
 
 from src.authentication import system_admin_login
-from src.database.models.users import User
+from src.database.models import User
 from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
 

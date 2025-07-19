@@ -1,10 +1,12 @@
-from flask import Blueprint, render_template
-from flask import jsonify
-
+# Flask Core
+from flask import Blueprint, render_template, jsonify
+# Authentication
 from src.authentication import jobseeker_login
-from src.database.models.resume import JobSeekerCV
-from src.database.models.users import User
+# Domain Models
+from src.database.models import JobSeekerCV, User
+# Routes
 from src.routes import flask_error_handler
+# Utilities
 from src.utils.route_helpers import get_controller
 
 jobseeker_route = Blueprint('jobseekers', __name__,  url_prefix="/jobseeker")
