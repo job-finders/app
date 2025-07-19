@@ -12,7 +12,7 @@ from src.agents.base import BaseAgent
 from src.agents.employer.llm_keyword_miner import LLMKeywordMinerAgent, LLMKeywordMiningTool
 from src.database.models.company_ats import KeywordTool, KeywordSourceType, ATSOptimisationInput, ATSOptimisationOutput, \
     KeywordSource
-
+from src.utils import tokenize
 
 class IndustryTaxonomyTool(KeywordTool):
     """sumary_line
@@ -148,15 +148,31 @@ class ATSKeywordSuggestionAgent(BaseAgent):
             "  \"top_missing_keywords\": [\"kw1\", \"kw2\", \"kw3\", \"kw4\", \"kw5\"]\n"
             "}"
         )
+
     async def prompt(self, input_model: ATSOptimisationInput) -> str:
         location = ", ".join(filter(None, [input_model.city, input_model.province, input_model.country]))
         mined = await self._mine_keywords(job=input_model)
+        
+        # Tokenize existing content to identify present terms
+        existing_tokens = set(
+            token for field in [
+                input_model.description,
+                *input_model.required_skills,
+                *input_model.preferred_skills
+            ] 
+            for token in tokenize(field)
+        )
         
         # Format keyword context with source metadata
         kw_context = "\n".join(
             f"- {ks.keyword} (src: {ks.source_type.value}, weight: {ks.weight}, freq: {ks.frequency})"
             for ks in mined[:15]
         )
+        
+        # Format existing tokens for display
+        excluded_display = ', '.join(sorted(existing_tokens)[:50])
+        if len(existing_tokens) > 50:
+            excluded_display += f" ... (+{len(existing_tokens)-50} more)"
         
         return (
             "## JOB ANALYSIS REQUEST ##\n"
@@ -167,19 +183,23 @@ class ATSKeywordSuggestionAgent(BaseAgent):
             f"DESCRIPTION:\n{input_model.description}\n\n"
             f"REQUIRED SKILLS: {', '.join(input_model.required_skills) or 'None'}\n"
             f"PREFERRED SKILLS: {', '.join(input_model.preferred_skills) or 'None'}\n\n"
+            "## EXISTING TOKENS (ALREADY PRESENT) ##\n"
+            f"{excluded_display}\n\n"
             "## MINED KEYWORDS (MISSING FROM ABOVE) ##\n"
             f"{kw_context}\n\n"
             "## ACTION REQUIRED ##\n"
             "1. Generate 3-5 enhancement suggestions:\n"
             "   - For TEXT FIELDS: Use 'replace' with exact text snippets\n"
             "   - For SKILL LISTS: Use 'append' with specific keywords\n"
-            "   - IMPACT: Estimate score increase (1-5 per keyword) and confidence based on source/weight\n"
-            "2. Select top 5 missing keywords ordered by:\n"
-            "   [source_weight × frequency] then peer_jobs > industry_taxonomy > parsed_cvs\n"
+            "   - IMPACT: Estimate score increase (1-5 per keyword)\n"
+            "2. Select top 5 missing keywords:\n"
+            "   - MUST NOT be in existing tokens above\n"
+            "   - Ordered by: [weight × frequency] > source priority\n"
+            "   - Source priority: peer_jobs > industry_taxonomy > parsed_cvs\n"
             "3. OUTPUT: Pure JSON only - no commentary"
         )
 
-    def output_model(self):
+    def output_model(self) -> ATSOptimisationOutput:
         return ATSOptimisationOutput
 
     # ---------- Mining logic ----------
