@@ -8,11 +8,10 @@ from sqlalchemy import or_
 
 from src.controllers.admin.interfaces import AdminServiceInterface
 from src.controllers.controller import error_handler
-from src.database.models.jobs_model import Job, JobStatusEnum
-from src.database.models.jobseeker_profile import JobSeekerProfile
-from src.database.models.resume import JobSeekerCV
-from src.database.models.users import RolesEnum
-from src.database.sql.jobs_sql import JobsORM, ATSReportORM, JobApplicationORM, JobCategoryORM
+
+from src.database.models import Job, JobStatusEnum, JobSeekerProfile, JobSeekerCV, RolesEnum
+from src.database import JobsORM, ATSReportORM, JobApplicationORM, JobCategoryORM
+
 from src.utils.route_helpers import get_controller, get_service
 
 

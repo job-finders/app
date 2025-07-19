@@ -1,16 +1,41 @@
+# Standard Library
 import uuid
 from datetime import timedelta
 
+# Flask Core
 from flask import url_for
+
+# SQLAlchemy ORM
 from sqlalchemy.orm import joinedload
 
+# Controllers
 from src.controllers.controller import Controllers, error_handler
+
+# Constants
 from src.database.constants import utc_time
-from src.database.models.resume import (JobSeekerCV, SavedCV)
-from src.database.sql.resume import (JobSeekerCVORM, ExperienceORM, EducationORM, CertificationORM, LanguageORM,
-                                     ProjectORM, PublicationORM, AwardORM, CustomSectionORM, SavedCVORM)
-from src.database.sql.users import UserORM
+
+# Domain Models
+from src.database.models import JobSeekerCV, SavedCV
+
+# SQL Models (ORMs)
+from src.database import (
+    JobSeekerCVORM,
+    ExperienceORM,
+    EducationORM,
+    CertificationORM,
+    LanguageORM,
+    ProjectORM,
+    PublicationORM,
+    AwardORM,
+    CustomSectionORM,
+    SavedCVORM,
+    UserORM,
+)
+
+# Email
 from src.emailer import EmailModel, settings
+
+# Utilities
 from src.utils.route_helpers import get_service
 
 

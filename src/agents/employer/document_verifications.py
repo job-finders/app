@@ -1,7 +1,7 @@
 from typing import Optional, List, Type
 from pydantic import BaseModel, Field
 
-from src.database.models.company_models import Company, CompanyCIPC
+from src.database.models import Company, CompanyCIPC
 from src.agents.base import BaseAgent
 
 class DocumentVerificationInput(BaseModel):

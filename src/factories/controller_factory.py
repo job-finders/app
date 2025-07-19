@@ -3,6 +3,7 @@ import threading
 import time
 from typing import Dict, Any
 
+from src.controllers.agents.candidate_benchmark_controller import CandidateBenchMarkController
 from src.controllers.agents.employer_ats_optimization_controller import EmployerATSOptimizationController
 from src.controllers.jobs.industrial_taxonomy import IndustryTaxonomyController
 from src.controllers.admin import AdminController
@@ -159,6 +160,11 @@ class ControllerFactory:
         self.logger.info(f"Getting EmployerATSOptimizationController")
         return self._get_controller('employer_ats_optimization', EmployerATSOptimizationController)
 
+    def get_candidate_benchmark_controller(self) -> CandidateBenchMarkController:
+        """ Get Candidate BenchMarking Controller
+            :return:
+        """
+        return self._get_controller('candidate_benchmarking', CandidateBenchMarkController)
 
     def _get_controller(self, name: str, controller_class):
         """Thread-safe controller getter with double-checked locking"""

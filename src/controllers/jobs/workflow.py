@@ -1,38 +1,62 @@
+# Standard Library
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+# Third-party
 import requests
 from Levenshtein import ratio as levenstein_ratio
-from flask import Flask
 from pydantic import ValidationError
-from requests import RequestException
 from requests_cache import utcnow
+
+# Flask Core
+from flask import Flask
+
+# SQLAlchemy Core & ORM
 from sqlalchemy import select, func, and_, case
-from sqlalchemy.orm import joinedload
-
-from src.database.models.company_models import Company
-from src.database.models.users import Roles, User, RolesEnum
-from src.controllers.jobs.auto_categorizer import AutoCategorizer
-from src.controllers.controller import Controllers
-from src.controllers.controller import error_handler
-from src.database.models.employer_models import Employer
-from src.database.models.jobs_model import (Job, JobApplication, SavedJob, JobStatistics, StatusCounts,
-                                            ApplicationMetrics, ApplicationFunnelStats, BulkImportResult,
-                                            TalentPoolReport, JobApplicationDashboard, ATSReport, JobEditableFields,
-                                            JobApplicationStatusEnum, JobApprovalStatusEnum, JobStatusEnum, JobCategory)
-from src.database.models.jobseeker_profile import JobSeekerProfile
-from src.database.sql.company import CompanyORM
-from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, JobApprovalRequestORM, ATSReportORM,
-                                       JobCategoryORM)
-from src.database.sql.jobseeker_profile import JobSeekerProfileORM
-from src.database.sql.resume import JobSeekerCVORM
-from src.database.sql.users import UserORM
-
 from sqlalchemy.orm import joinedload, subqueryload
 
+# Controllers
+from src.controllers.controller import Controllers, error_handler
+from src.controllers.jobs.auto_categorizer import AutoCategorizer
 
+# Domain Models (aggregated)
+from src.database.models import (
+    Company,
+    Employer,
+    Job,
+    JobApplication,
+    SavedJob,
+    JobStatistics,
+    StatusCounts,
+    ApplicationMetrics,
+    ApplicationFunnelStats,
+    BulkImportResult,
+    TalentPoolReport,
+    JobApplicationDashboard,
+    ATSReport,
+    JobEditableFields,
+    JobApplicationStatusEnum,
+    JobApprovalStatusEnum,
+    JobStatusEnum,
+    JobCategory,
+    JobSeekerProfile,
+)
+
+# SQL Models (ORMs)
+from src.database import (
+    CompanyORM,
+    JobsORM,
+    SavedJobORM,
+    JobApplicationORM,
+    JobApprovalRequestORM,
+    ATSReportORM,
+    JobCategoryORM,
+    JobSeekerProfileORM,
+    JobSeekerCVORM,
+    UserORM,
+)
 
 
 class JobsWorkflowController(Controllers):

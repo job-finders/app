@@ -174,12 +174,12 @@
                                 </td>
                                 <td class="d-none d-md-table-cell">{{ app.applied_date.strftime('%d %b %Y') if app.applied_date else "—" }}</td>
                                 <td class="text-center">
-                                    {% if app.ats_report and app.ats_report.validation_score is not none %}
+                                    {% if app.ats_report and app.ats_report.score is not none %}
                                         <span class="badge
-                  {% if app.ats_report.validation_score >= 80 %}bg-success
-                  {% elif app.ats_report.validation_score >= 50 %}bg-warning text-dark
+                  {% if app.ats_report.score >= 80 %}bg-success
+                  {% elif app.ats_report.score >= 50 %}bg-warning text-dark
                   {% else %}bg-danger{% endif %}">
-                  {{ app.ats_report.validation_score }}%
+                  {{ app.ats_report.score }}%
                 </span>
                                     {% else %}
                                         <span class="badge bg-secondary">—</span>
@@ -194,7 +194,7 @@
                                                 onclick="aiReview('{{ app.application_id }}')">
                                             <i class="ti-search"></i>
                                         </button>
-                                        <a href="{{ url_for('company.view_application', application_id=app.application_id) }}"
+                                        <a href="{{ url_for('jobs_workflow.view_job_applications', job_id=app.job_id) }}"
                                            class="btn btn-outline-info">
                                             <i class="ti-eye"></i>
                                         </a>

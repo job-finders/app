@@ -1,11 +1,18 @@
 # src/controllers/agents.py
 from typing import Optional, List
 from flask import Flask
+
+from src.database.models import JobSeekerProfile, JobApplication, Job, JobSeekerCV, CandidateBenchmarkReport
+
+from src.controllers.controller import Controllers, error_handler
+from src.controllers.company import CompanyController
+from src.controllers.jobs import JobsWorkflowController, JobsSearchController
+from src.controllers.jobseekers import JobSeekerProfilesController
+from src.controllers.resumes import ResumeController
+
 from src.agents.employer.candidate_benchmark import CandidateBenchmarkAgent, UserMode
-from src.controllers.agents.ats_keywords_minig_tools import IndustryTaxonomyTool, PeerJobsTool, ParsedCVsTool
-from src.controllers.controller import Controllers, error_handler, get_controller
-from src.database.models import Job, User, JobSeekerCV, JobApplication
-from src.database.models.agent_models import CandidateBenchmarkReport
+from src.utils.route_helpers import get_controller
+
 
 class CandidateBenchMarkController(Controllers):
     """
@@ -59,16 +66,19 @@ class CandidateBenchMarkController(Controllers):
         self.logger.info(f"Employer benchmarking for application: {job_application_id}")
         
         # Get controllers
-        app_controller = get_controller('job_application')
-        job_controller = get_controller('jobs_search')
-        resume_controller = get_controller('resume')
-        user_controller = get_controller('users')
-        
+
+        job_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
+        job_search_controller: JobsSearchController = get_controller('jobs_search')
+        resume_controller: ResumeController = get_controller('resume')
+        company_controller: CompanyController = get_controller("company")
+        jobseeker_profile_controller: JobSeekerProfilesController = get_controller("job_seeker_profile")
         # Fetch application data
-        application: JobApplication = await app_controller.get_application_by_id(job_application_id)
-        job: Job = await job_controller.get_job_by_id(application.job_id)
+        application: JobApplication = await job_search_controller.get_application_by_id(
+            application_id=job_application_id)
+        job: Job = await job_search_controller.get_job_by_id(job_id=application.job_id)
         candidate_cv: JobSeekerCV = await resume_controller.get_cv_by_id(application.cv_id)
-        candidate_profile: User = await user_controller.get_user_by_uid(application.candidate_id)
+        candidate_profile: JobSeekerProfile = await jobseeker_profile_controller.get_profile_by_uid(
+            user_uid=candidate_cv.user_uid)
         
         # Validate data
         if not all([application, job, candidate_cv, candidate_profile]):
@@ -83,9 +93,9 @@ class CandidateBenchMarkController(Controllers):
         # Combine profile and CV data
         candidate_data = (
             f"## Candidate Profile\n"
-            f"Name: {candidate_profile.full_name}\n"
+            f"Names: {candidate_profile.full_names}\n"
             f"Summary: {candidate_profile.profile_summary or 'N/A'}\n"
-            f"Skills: {', '.join(candidate_profile.skills) if candidate_profile.skills else 'N/A'}\n\n"
+            f"Skills: {', '.join(candidate_cv.skills) if candidate_cv.skills else 'N/A'}\n\n"
             f"## Candidate CV\n{candidate_cv.ats_description}"
         )
         
@@ -98,64 +108,65 @@ class CandidateBenchMarkController(Controllers):
         
         # Execute agent
         agent = CandidateBenchmarkAgent(user_id=employer_id)
+        # noinspection PyTypeChecker
         return await agent.run(input_model=input_data)
 
     @error_handler
     async def benchmark_for_employee(
-        self,
-        user_id: str,
-        job_id: str,
-        cv_id: Optional[str] = None
+            self,
+            user_id: str,
+            job_id: str,
+            cv_id: Optional[str] = None
     ) -> CandidateBenchmarkReport:
         """
         Benchmark job fit from employee's perspective for career development
-        
+
         Args:
             user_id: ID of the job seeker
             job_id: ID of the target job
             cv_id: Optional specific CV ID to use (default: primary CV)
-            
+
         Returns:
             CandidateBenchmarkReport with career development insights
         """
         self.logger.info(f"Employee benchmarking - User: {user_id}, Job: {job_id}")
-        
-        # Get controllers
-        user_controller = get_controller('users')
-        job_controller = get_controller('jobs_search')
-        resume_controller = get_controller('resume')
-        
-        # Fetch data
-        user: User = await user_controller.get_user_by_uid(user_id)
-        job: Job = await job_controller.get_job_by_id(job_id)
+        # Get consistent controllers
+        job_search_controller: JobsSearchController = get_controller('jobs_search')
+        resume_controller: ResumeController = get_controller('resume')
+        jobseeker_profile_controller: JobSeekerProfilesController = get_controller("job_seeker_profile")
+
+        # Fetch data using consistent patterns
+        job: Job = await job_search_controller.get_job_by_id(job_id=job_id)
+        candidate_profile: JobSeekerProfile = await jobseeker_profile_controller.get_profile_by_uid(user_uid=user_id)
+
+        # Get CV - use primary if none specified
         cv: JobSeekerCV = await resume_controller.get_cv_by_id(cv_id) if cv_id \
             else await resume_controller.get_primary_resume(user_id)
-        
-        # Validate data
-        if not user:
-            raise ValueError(f"User {user_id} not found")
+
+        # Validate all required data exists
         if not job:
             raise ValueError(f"Job {job_id} not found")
+        if not candidate_profile:
+            raise ValueError(f"JobSeekerProfile for user {user_id} not found")
         if not cv:
             raise ValueError(f"No CV found for user {user_id}")
-        
-        # Combine profile and CV data
+
+        # Combine profile and CV data (consistent with employer method)
         candidate_data = (
             f"## Candidate Profile\n"
-            f"Summary: {user.profile_summary or 'N/A'}\n"
-            f"Skills: {', '.join(user.skills) if user.skills else 'N/A'}\n"
-            f"Experience: {user.work_experience or 'N/A'}\n\n"
+            f"Names: {candidate_profile.full_names}\n"
+            f"Summary: {candidate_profile.profile_summary or 'N/A'}\n"
+            f"Skills: {', '.join(cv.skills) if cv.skills else 'N/A'}\n\n"
             f"## Candidate CV\n{cv.ats_description}"
         )
-        
+
         # Prepare agent input
         input_data = CandidateBenchmarkAgent.Input(
             cv_text=candidate_data,
             job_post=job.ats_description,
             mode=UserMode.EMPLOYEE
         )
-        
+
         # Execute agent
         agent = CandidateBenchmarkAgent(user_id=user_id)
         return await agent.run(input_model=input_data)
-        

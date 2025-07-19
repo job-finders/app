@@ -3,20 +3,16 @@ import re
 import uuid
 from collections import Counter
 from datetime import date, timedelta, datetime, timezone
-from textwrap import indent
 from enum import Enum
 from typing import Optional, Any
 
 from pydantic import BaseModel, Field, computed_field, ConfigDict, model_validator, AwareDatetime, HttpUrl
 from textstat.backend.metrics import flesch_reading_ease
 
-
 from src.agents.employer import EnhanceJobPostOutput
 from src.database.constants import utc_time
-from src.database.models.company_models import Company, SavedCandidates, CompanyFollowing
+from src.database.models.company_models import Company
 from src.database.models.jobseeker_profile import JobSeekerProfile
-from src.database.models.resume import JobSeekerCV
-from src.database.models.employer_models import Employer
 from src.utils import tokenize
 
 
@@ -688,7 +684,6 @@ class Job(BaseModel):
         The agent is allowed to leave fields empty (None / [] / {}); only the
         explicitly provided values are copied to the new Job record.
         """
-        from src.routes.utils import to_aware
 
         # ------------------------------------------------------------------
         # 1.  Core data that must always exist on a brand-new Job row
@@ -1174,12 +1169,6 @@ class ApplicationFunnelStats(BaseModel):
         description="Percentage of submitted applicants who were hired. "
                     "Calculated as (hired / started) * 100."
     )
-
-
-# Update forward references for Pydantic model
-Company.model_rebuild()
-
-
 
 class JobApplicationDashboard(BaseModel):
     """"""

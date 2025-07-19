@@ -1,14 +1,12 @@
 # agents/employer/job_post_intelligence.py
-import uuid
-from typing import Type, Optional, List, Dict, Literal
+from enum import Enum
+from typing import List, Optional, Dict
+from typing import Type, Literal
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator
+from pydantic import ConfigDict
 
 from src.agents.base import BaseAgent
-
-from typing import List, Optional, Dict
-from pydantic import BaseModel, Field, field_validator
-from enum import Enum
 
 
 # ------------------------------------------------------------------

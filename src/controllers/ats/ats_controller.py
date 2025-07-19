@@ -1,15 +1,22 @@
-import json, os, re, uuid, aiohttp, docx2txt, fitz, spacy
-
+import json
+import os
+import re
+import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
+
+import aiohttp
+import docx2txt
+import fitz  # PyMuPDF
+import spacy
 from flask import Request, Flask
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
 from src.controllers.controller import Controllers, error_handler
-from src.database.models.jobs_model import Job, ATSReport
+# Pydantic Models
+from src.database.models import Job, ATSReport, JobSeekerCV
+# ORM Models
 from src.database.sql.config import ConfigurationORM
-from src.database.models.resume import JobSeekerCV
-from src.controllers.resumes import ResumeController
 
 # single, shared spaCy model instance
 _NLP = spacy.load("en_core_web_sm", disable=["parser", "ner"])

@@ -3,10 +3,10 @@
 from typing import List, Optional, Type
 from pydantic import BaseModel, Field
 from src.agents.base import BaseAgent
-from src.database.models.resume import JobSeekerCV  # Import your full resume model
 from datetime import datetime
 
 
+# COULD BE DEPRECATED
 class ApplicationCoachInput(BaseModel):
     """
     Comprehensive input model for job application coaching agent.

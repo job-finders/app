@@ -1,7 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field, ValidationError
 
-from src.database.models.company_ats import KeywordTool, KeywordSourceType, ATSOptimisationInput
+from src.database.models import KeywordTool, KeywordSourceType, ATSOptimisationInput
 from src.agents.base import BaseAgent  # your project’s agent base
 from src.utils import tokenize
 

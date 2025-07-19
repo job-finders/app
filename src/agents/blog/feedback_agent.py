@@ -1,6 +1,6 @@
 # /agents/feedback_agent.py
 
-from src.database.models.feedback_analysis import FeedbackAnalysisSummary, ArticleFeedbackEntry
+from src.database.models import FeedbackAnalysisSummary, ArticleFeedbackEntry
 from collections import defaultdict
 
 def analyze_feedback() -> FeedbackAnalysisSummary:

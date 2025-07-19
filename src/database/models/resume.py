@@ -3,7 +3,6 @@ from datetime import date
 from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, HttpUrl, ConfigDict, field_validator, AwareDatetime
-
 from src.database.constants import utc_time
 
 

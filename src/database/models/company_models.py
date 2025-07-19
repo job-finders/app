@@ -32,7 +32,6 @@ class CompanyVerificationStatus(Enum):
     CIPC_FAILED = "cipc_failed"
     VERIFIED = "verified"
 
-
 # noinspection PyUnresolvedReferences,PyTypeHints
 class Company(BaseModel):
     """Pydantic model for company data with job statistics"""
@@ -302,10 +301,6 @@ class Company(BaseModel):
         if v and not re.match(r"^@?(\w){1,15}$", v):
             raise ValueError("Invalid Twitter handle")
         return v
-
-
-
-
 
 class CompanyUpdate(BaseModel):
     """Model for partial company updates"""

@@ -25,6 +25,7 @@ class BlogPromptORM(Base):
     feedback_score = Column(Float, default=0.0)
     topic = relationship("BlogTopicORM", back_populates="prompts")
 
+
 class BlogFeedbackResulORM(Base):
     __tablename__ = "blog_feedback_results"
 

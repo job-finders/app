@@ -10,10 +10,8 @@ from src.agents.jobseeker.application_coach import (
 )
 from src.agents.jobseeker.cover_letter import CoverLetterOutput, CoverLetterInput, CoverLetterAgent
 from src.controllers.controller import Controllers, error_handler
-from src.database.models import Job
-from src.database.models.resume import JobSeekerCV
-from src.database.models.users import User
-from src.logger import init_logger
+from src.database.models import Job, JobSeekerCV, User
+
 from src.utils.route_helpers import get_controller
 
 

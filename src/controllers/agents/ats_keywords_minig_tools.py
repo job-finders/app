@@ -2,10 +2,9 @@
 from collections import Counter
 
 from src.controllers.controller import error_handler
-from src.database.models.jobs_model import JobApplicationStatusEnum
-from src.database.models import Job
-from src.database.models.resume import JobSeekerCV
-from src.agents.employer.ats_suggestion_agent import KeywordTool, KeywordSourceType, ATSOptimisationInput
+
+from src.database.models import (Job, JobApplicationStatusEnum, JobSeekerCV, KeywordTool,
+                                 KeywordSourceType, ATSOptimisationInput)
 from src.utils import tokenize
 from src.utils.route_helpers import get_controller
 

@@ -5,9 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, case, text
 
 from src.controllers.admin.interfaces import AdminServiceInterface
-from src.database.sql.analytics import UserSearchActivityORM
-from src.database.sql.jobs_sql import JobsORM, JobVersionHistoryORM, JobApplicationORM
-from src.database.sql.users import UserORM
+from src.database import UserSearchActivityORM, JobsORM, JobVersionHistoryORM, JobApplicationORM, UserORM
 
 
 class AdminActionResult(BaseModel):

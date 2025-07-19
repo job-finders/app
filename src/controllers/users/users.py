@@ -1,12 +1,19 @@
-
-
+# Flask Core
 from flask import Flask
 
-from src.controllers.controller import Controllers
-from src.controllers.controller import error_handler
+# Controllers
+from src.controllers.controller import Controllers, error_handler
+
+# Constants
 from src.database.constants import utc_time
-from src.database.models.users import User
-from src.database.sql.users import UserORM
+
+# Domain Models
+from src.database.models import User
+
+# SQL Models (ORMs)
+from src.database import UserORM
+
+# Email
 from src.emailer import EmailModel
 
 

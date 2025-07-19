@@ -1,24 +1,47 @@
+# Standard Library
 import secrets
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
+# Flask Core
 from flask import Flask, render_template, url_for
+
+# SQLAlchemy ORM
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
-from src.controllers.controller import Controllers, error_handler
-from src.database.models.company_models import Company, CompanyUpdate, CompanyVerificationStatus
-from src.database.models.company_models import CompanyCIPC, CompanyVerificationDocument
-from src.database.models.employer_models import Employer
-from src.database.models.jobs_model import Job, JobStatusEnum, TalentPoolReport, JobApplicationDashboard
-from src.database.models.resume import JobSeekerCV, SavedCV
-from src.database.models.users import User
-from src.database.sql.company import CompanyORM, CompanyCIPCORM, CompanyVerificationDocumentORM, DirectorDetailsORM
-from src.database.sql.employer import EmployerORM
-from src.database.sql.users import UserORM
-from src.emailer import EmailModel
+# App Core
 from src.logger import init_logger
+from src.emailer import EmailModel
 from src.utils.route_helpers import get_service, get_controller
+from src.controllers.controller import Controllers, error_handler
+
+# Domain Models (all aggregated exports)
+from src.database.models import (
+    Company,
+    CompanyUpdate,
+    CompanyVerificationStatus,
+    CompanyCIPC,
+    CompanyVerificationDocument,
+    Employer,
+    Job,
+    JobStatusEnum,
+    TalentPoolReport,
+    JobApplicationDashboard,
+    JobSeekerCV,
+    SavedCV,
+    User,
+)
+
+# SQL Models (ORMs)
+from src.database import (
+    CompanyORM,
+    CompanyCIPCORM,
+    CompanyVerificationDocumentORM,
+    DirectorDetailsORM,
+    EmployerORM,
+    UserORM,
+)
 
 # from src.cache.cache_redis import cached
 

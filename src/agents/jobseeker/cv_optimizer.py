@@ -1,7 +1,7 @@
 # agents/jobseeker/cv_optimizer.py
 from src.agents.base import BaseAgent
-from src.database.models import Job
-from src.database.models.resume import JobSeekerCV
+from src.database.models import Job, JobSeekerCV
+
 
 from typing import List, Optional
 from pydantic import BaseModel, Field

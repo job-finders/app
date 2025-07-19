@@ -25,7 +25,7 @@ UserORM
 )
 from .sql.resume import (
 AwardORM, ProjectORM, EducationORM, LanguageORM, PublicationORM, ExperienceORM, CertificationORM,
-CustomSectionORM,JobSeekerCVORM
+CustomSectionORM, JobSeekerCVORM, SavedCVORM
 )
 from .sql.notifications import (
 NotificationsORM

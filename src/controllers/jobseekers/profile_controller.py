@@ -1,14 +1,21 @@
+# Standard Library
 from datetime import datetime, timezone
 
+# Flask & Third-Party
 from flask import Flask
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 
+# Controllers
 from src.controllers.controller import Controllers, error_handler
-from src.database.models.config import Configuration
-from src.database.models.jobseeker_profile import JobSeekerProfile
-from src.database.sql.config import ConfigurationORM
-from src.database.sql.jobseeker_profile import JobSeekerProfileORM
+
+# Domain Models
+from src.database.models import Configuration, JobSeekerProfile
+
+# SQL Models (ORMs)
+from src.database import ConfigurationORM, JobSeekerProfileORM
+
+# Utilities
 from src.utils import save_file_to_storage
 
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}

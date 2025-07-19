@@ -1,18 +1,17 @@
 from __future__ import annotations
-        
-from collections import Counter
-import re
-import math
 
-import asyncio
 import inspect
+import math
+import re
+from collections import Counter
 from typing import List, Optional
 
 from src.agents.base import BaseAgent
 from src.agents.employer.llm_keyword_miner import LLMKeywordMinerAgent, LLMKeywordMiningTool
-from src.database.models.company_ats import KeywordTool, KeywordSourceType, ATSOptimisationInput, ATSOptimisationOutput, \
+from src.database.models import KeywordTool, KeywordSourceType, ATSOptimisationInput, ATSOptimisationOutput, \
     KeywordSource
 from src.utils import tokenize
+
 
 class IndustryTaxonomyTool(KeywordTool):
     """sumary_line

@@ -1,9 +1,11 @@
 # src/routes/jobs_workflow.py
 import json
+import uuid
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from pydantic import ValidationError
 
+from src.database.constants import utc_time
 from src.database.models.company_ats import AIATSReport
 from src.controllers.company import CompanyController
 from src.logger import init_logger
@@ -21,6 +23,7 @@ from src.utils.route_helpers import get_controller
 
 jobs_workflow_route = Blueprint("jobs_workflow", __name__, url_prefix="/dashboard/jobs")
 workflow_logger = init_logger("workflow-route")
+
 
 
 @jobs_workflow_route.get("/create")
@@ -137,7 +140,8 @@ async def show_edit_form(user: User, job_id: str):
     job_details: Job = await job_workflow_controller.get_job_details(job_id=job_id)
     ats_report: AIATSReport = await company_ats_controller.compile_ats_report(job=job_details)
     # workflow_logger.info(f"Job details for editing: {job}")
-    workflow_logger.info(f"ATS Report: {ats_report}")
+    if ats_report:
+        workflow_logger.info(f"ATS Report: {ats_report}")
 
     context = dict(current_user=user, job=job, report=ats_report)
     return render_template("jobs_workflow/job_editor/edit.html", **context)
@@ -328,26 +332,26 @@ async def job_insights(user: User, job_id: str):
 @employer_job_access_required()
 @flask_error_handler
 async def view_job_applications(user: User, job_id: str):
-    """
-    View detailed job applications and funnel stats for a specific job.
-
-    :param user: Authenticated employer user
-    :param job_id: The job posting ID to fetch applications for
-    :return: Rendered HTML page with job application data and funnel stats
-    """
     jobs_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
 
-    # Fetch application funnel stats (may return None)
     job_applications_details = await jobs_workflow_controller.get_application_funnel_stats(job_id=job_id)
     if job_applications_details is None:
-        # Fallback empty funnel stats (all zeroed)
         job_applications_details = ApplicationFunnelStats(
             views=0, started=0, completed=0, qualified=0,
             interviewed=0, hired=0, rejected=0, conversion_rate=0.0
         )
 
-    # Fetch list of job applications (may be empty list)
     job, job_applications_list = await jobs_workflow_controller.get_job_applications(job_id=job_id) or []
+
+    if not job_applications_list:
+        # 🧪 Generate 3 fake applications for testing
+        from src.routes.fake_data import generate_fake_job_application
+        job_applications_list = [
+            generate_fake_job_application(job_id=job_id, user_id=str(uuid.uuid4())),
+            generate_fake_job_application(job_id=job_id, user_id=str(uuid.uuid4())),
+            generate_fake_job_application(job_id=job_id, user_id=str(uuid.uuid4())),
+        ]
+
     context = dict(
         job=job,
         job_id=job_id,
@@ -355,9 +359,7 @@ async def view_job_applications(user: User, job_id: str):
         job_applications=job_applications_list,
         current_user=user
     )
-    # Render template with all required context
     return render_template("jobs_workflow/job_applications.html", **context)
-
 
 @jobs_workflow_route.route("/<string:job_id>/update-status", methods=["POST"])
 @employer_login

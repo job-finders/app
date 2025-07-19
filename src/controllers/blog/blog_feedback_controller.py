@@ -2,8 +2,8 @@ from datetime import datetime
 
 from src.controllers.controller import Controllers, error_handler
 from src.logger import init_logger
-from src.database.sql.blog_learning import BlogFeedbackResulORM, BlogPromptORM
-from src.database.models.feedback_analysis import BlogFeedbackInput, BlogFeedbackOutput
+from src.database import BlogFeedbackResulORM, BlogPromptORM
+from src.database.models import BlogFeedbackInput, BlogFeedbackOutput
 
 
 class BlogFeedbackController(Controllers):

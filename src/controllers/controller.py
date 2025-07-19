@@ -7,7 +7,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError, IntegrityError
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.database import UserORM
-from src.database.models.users import RolesEnum, User
+from src.database.models import RolesEnum, User
 from src.database.sql import Session
 from src.logger import init_logger
 from src.config import config_instance

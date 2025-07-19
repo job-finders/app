@@ -1,10 +1,11 @@
 # src/controllers/agents.py
-from src.agents.employer.ats_suggestion_agent import ATSKeywordSuggestionAgent
 from src.controllers.agents.ats_keywords_minig_tools import IndustryTaxonomyTool, PeerJobsTool, ParsedCVsTool
 from src.controllers.controller import Controllers, error_handler
-from src.database.models import Job
-from src.database.models.company_ats import AIATSReport, KeywordSource, ATSScoreBreakdown, AIEnhancementSuggestion, \
-    SuggestionImpact, ATSOptimisationOutput, ATSOptimisationInput
+
+from src.database.models import (Job, AIATSReport, KeywordSource, ATSScoreBreakdown, AIEnhancementSuggestion,
+                                 SuggestionImpact, ATSOptimisationOutput, ATSOptimisationInput)
+
+from src.agents.employer.ats_suggestion_agent import ATSKeywordSuggestionAgent
 
 
 class EmployerATSOptimizationController(Controllers):
@@ -22,7 +23,7 @@ class EmployerATSOptimizationController(Controllers):
         # App-specific initialization
         # self.cache.init_app(app)
 
-
+    @error_handler
     async def suggest_industry_keywords(self, job: Job) -> ATSOptimisationOutput:
         """
             Given a Job Model, return ats keyword suggestions based on the job description and title. 
@@ -53,6 +54,7 @@ class EmployerATSOptimizationController(Controllers):
         result: ATSOptimisationOutput = await agent.run(input_model=payload)
         return result
 
+    @error_handler
     async def compile_ats_report(self, job: Job) -> AIATSReport:
         self.logger.info(f"will now compile industry keywords")
         raw = await self.suggest_industry_keywords(job)

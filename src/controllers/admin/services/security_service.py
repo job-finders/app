@@ -5,13 +5,10 @@ from pydantic import BaseModel, Field
 from src.controllers.admin.interfaces import AdminServiceInterface
 from src.controllers.admin.security_rules import JobSeekerRuleEngine, EmployerRuleEngine
 from src.controllers.controller import error_handler
+
 from src.database.constants import utc_time
-from src.database.models.admin_models import AdminModel
-from src.database.models.employer_models import Employer
-from src.database.models.jobs_model import Company
-from src.database.models.jobseeker_profile import JobSeekerProfile
-from src.database.models.users import RolesEnum
-from src.database.sql.admin_sql import FlaggedUserORM, AdminRecommendationORM, AdminORM
+from src.database.models import AdminModel, Employer, Company, JobSeekerProfile, RolesEnum
+from src.database import FlaggedUserORM, AdminRecommendationORM, AdminORM
 from src.utils.route_helpers import get_controller, get_service
 
 

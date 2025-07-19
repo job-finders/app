@@ -6,16 +6,33 @@ from datetime import datetime, timezone, timedelta
 from flask import Flask, render_template
 from sqlalchemy import exists
 
+from src.database.sql.analytics import RedisActivityClient, ActivityProcessor
 from src.config import config_instance
 from src.database.constants import utc_time
-from src.database.sql.company import CompanyFollowingORM, CompanyORM
+
+# ORM Imports (Grouped)
+from src.database import (
+    CompanyORM,
+    JobsORM,
+    JobApplicationORM,
+    SavedJobORM,
+    JobSeekerProfileORM,
+    CompanyFollowingORM,
+    UserSearchActivityORM,
+    JobViewActivityORM,
+    ApplicationStepORM,
+    ArchivedActivityORM
+)
+
+# Pydantic Models (Grouped)
+from src.database.models import (
+    Job,
+    JobApplication,
+    JobApplicationStatusEnum,
+    JobSeekerProfile
+)
+
 from src.controllers.controller import Controllers, error_handler
-from src.database.models.jobs_model import Job, JobApplication, JobApplicationStatusEnum
-from src.database.models.jobseeker_profile import JobSeekerProfile
-from src.database.sql.analytics import (UserSearchActivityORM, JobViewActivityORM, ApplicationStepORM,
-                                        RedisActivityClient, ActivityProcessor, ArchivedActivityORM)
-from src.database.sql.jobs_sql import JobApplicationORM, SavedJobORM, JobsORM
-from src.database.sql.jobseeker_profile import JobSeekerProfileORM
 from src.emailer import EmailModel
 from src.utils.route_helpers import get_service, get_controller
 

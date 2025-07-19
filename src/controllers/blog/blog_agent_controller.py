@@ -3,8 +3,8 @@ from typing import List
 
 from src.controllers.controller import Controllers, error_handler
 from src.logger import init_logger
-from src.database.sql.blog_learning import BlogTopic, BlogPromptORM, BlogFeedbackResulORM
-from src.database.models.feedback_analysis import BlogFeedbackInput, BlogFeedbackOutput
+from src.database import BlogPromptORM, BlogFeedbackResulORM, BlogTopicORM
+from src.database.models import BlogFeedbackInput, BlogFeedbackOutput, BlogTopic
 
 class BlogAgentController(Controllers):
     """
@@ -61,7 +61,7 @@ class BlogAgentController(Controllers):
             ValueError: If the specified topic does not exist.
         """
         with self.get_session() as session:
-            topic = session.query(BlogTopic).filter(BlogTopic.id == prompt_in.topic_id).first()
+            topic = session.query(BlogTopicORM).filter(BlogTopic.topic_id == prompt_in.topic_id).first()
             if not topic:
                 raise ValueError(f"Blog topic id {prompt_in.topic_id} not found")
 

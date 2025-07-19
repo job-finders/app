@@ -3,7 +3,7 @@ from typing import Type, List, Optional
 from enum import Enum
 from pydantic import BaseModel, Field
 from src.agents.base import BaseAgent
-from src.database.models.agent_models import CandidateBenchmarkReport
+from src.database.models import CandidateBenchmarkReport
 
 class UserMode(str, Enum):
     EMPLOYER = "employer"

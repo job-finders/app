@@ -79,6 +79,7 @@ class JobSeekerProfile(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
     # --- Validators ---
     @field_validator("job_titles_of_interest", "industries_of_interest", "locations_of_interest", "freelance_skills", mode="before")
     def strip_empty_list_items(cls, v):
@@ -92,6 +93,10 @@ class JobSeekerProfile(BaseModel):
             raise ValueError("Availability cannot be blank")
         return v
 
+    @property
+    def full_names(self) -> str:
+        """full names"""
+        return f"{self.first_name.lower()} {self.last_name.lower()}"
     # --- Profile Metrics ---
     @property
     def profile_completion_percentage(self) -> int:

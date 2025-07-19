@@ -1,4 +1,5 @@
 # /schemas/feedback_analysis.py
+from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -35,3 +36,20 @@ class BlogFeedbackOutput(BaseModel):
     comments: int
     submitted_at: str
     model_config = ConfigDict(from_attributes=True)
+
+
+class BlogPrompt(BaseModel):
+    blog_prompt_id: str
+    content: str
+    topic_id: str
+    created_at: datetime
+    feedback_score: int
+    topic: Optional['BlogTopic']
+
+
+class BlogTopic(BaseModel):
+    blog_topic_id: str
+    title: str
+    created_at: datetime
+    prompts: list[BlogPrompt]
+    description: str

@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from difflib import SequenceMatcher
 from typing import Callable, List, Tuple
 
-from src.database.models.jobseeker_profile import JobSeekerProfile
+from src.database.models import JobSeekerProfile
 
 
 @dataclass

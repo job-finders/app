@@ -2,28 +2,29 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
-from src.database import EmployerORM
 from src.database.constants import utc_time
-from src.routes.utils import to_aware
-from src.agents.employer.job_post_intelligence import JobCategoryDefinitionAgent, JobCategoryNameInput, \
-    JobCategoryDefinitionOutput
+from src.controllers.controller import Controllers, error_handler
+
+from src.agents.employer.job_post_intelligence import (JobCategoryDefinitionAgent, JobCategoryNameInput,
+                                                       JobCategoryDefinitionOutput)
+
 from src.agents.employer.candidate_benchmark import JobPostSummaryInput
-from src.agents.employer.document_verifications import DocumentVerificationInput, DocumentVerificationAgent, \
-    DocumentVerificationOutPut
+from src.agents.employer.document_verifications import (DocumentVerificationInput, DocumentVerificationAgent,
+                                                        DocumentVerificationOutPut)
 from src.agents.employer import JobPostIntelligenceAgent
 
-from src.database.models.agent_models import JobPostInsights
-from src.controllers.controller import Controllers, error_handler
 from src.agents.employer import (EnhanceJobPostOutput, EnhanceJobPostInput, EnhanceJobPostAgent, JobSummaryInput,
 JobSummaryAgent, JobSummaryOutput)
 
-from src.database.models import Job
-from src.database.sql.jobs_sql import JobsORM
-from src.database.sql.company import CompanyORM, CompanyVerificationDocumentORM, CompanyCIPCORM, \
-    AIBasedDocumentReviewResultORM
-from src.database.models.company_models import Company, CompanyVerificationDocument, CompanyCIPC, CompanyVerificationStatus, AllowableCompanyVerificationDocumentsEnum
-from src.utils.route_helpers import get_service
+from src.database.models import (Company, CompanyVerificationDocument, CompanyCIPC,
+                                 CompanyVerificationStatus, AllowableCompanyVerificationDocumentsEnum,
+                                 Job, JobPostInsights)
 
+from src.database import (EmployerORM, JobsORM, CompanyORM, CompanyVerificationDocumentORM,
+                          CompanyCIPCORM, AIBasedDocumentReviewResultORM)
+
+
+from src.utils.route_helpers import get_service
 
 class EmployerAgentsController(Controllers):
     """
@@ -144,7 +145,7 @@ class EmployerAgentsController(Controllers):
         return job
 
     @error_handler
-    async def analyze_job_post(self, user_id: str, job_id: str) -> JobPostInsights:
+    async def analyze_job_post(self, user_id: str, job_id: str) -> JobPostInsights | None:
         """
         Analyze an existing job post and generate insights on clarity, inclusiveness, and SEO.
 
@@ -315,6 +316,7 @@ class EmployerAgentsController(Controllers):
                 company_data=Company(**company_orm.to_dict())
             )
 
+            # noinspection PyTypeChecker
             document_verification_output: DocumentVerificationOutPut = await document_verification_agent.run(input_model=agent_input)
             # AI Output Example (suspicious tax clearance certificate)
             session.add(AIBasedDocumentReviewResultORM(**document_verification_output.model_dump()))

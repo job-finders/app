@@ -1,15 +1,6 @@
-from datetime import datetime
-
-from flask import render_template, url_for
-import asyncio
-from pymysql import OperationalError
-
-
-from src.emailer import EmailModel
-from src.database.sql.notifications import NotificationsORM
 
 from src.controllers.controller import Controllers
-from src.utils.route_helpers import get_service
+
 
 class NotificationsController(Controllers):
 

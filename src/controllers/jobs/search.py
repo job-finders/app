@@ -1,27 +1,43 @@
+# Standard Library
 import math
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+# Flask Core
 from flask import Flask
-from sqlalchemy import or_, desc, String, case, true
-from sqlalchemy import select, func
+
+# SQLAlchemy Core & ORM
+from sqlalchemy import or_, desc, String, case, true, select, func
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import cast
 from sqlalchemy.sql.operators import and_
 
-from src.controllers.controller import Controllers
-from src.controllers.controller import error_handler
-from src.database.models.jobs_model import (Job, JobApplication, JobStatusEnum, JobCategory)
-from src.database.models.jobseeker_profile import JobSeekerProfile
-from src.database.models.resume import JobSeekerCV
+# App Core
+from src.controllers.controller import Controllers, error_handler
 from src.database.sql import escape_like
-from src.database.sql.company import CompanyORM
-from src.database.sql.employer import EmployerORM
-from src.database.sql.jobs_sql import (JobsORM, SavedJobORM, JobApplicationORM, JobCategoryORM)
-from src.database.sql.jobseeker_profile import JobSeekerProfileORM
-from src.database.sql.resume import JobSeekerCVORM
 
+# Domain Models (aggregated)
+from src.database.models import (
+    Job,
+    JobApplication,
+    JobStatusEnum,
+    JobCategory,
+    JobSeekerProfile,
+    JobSeekerCV,
+)
+
+# SQL Models (ORMs)
+from src.database import (
+    CompanyORM,
+    EmployerORM,
+    JobsORM,
+    SavedJobORM,
+    JobApplicationORM,
+    JobCategoryORM,
+    JobSeekerProfileORM,
+    JobSeekerCVORM,
+)
 
 # noinspection DuplicatedCode
 class JobsSearchController(Controllers):
@@ -208,6 +224,20 @@ class JobsSearchController(Controllers):
                 JobsORM.status == JobStatusEnum.ACTIVE.value
             ).first()
             return Job(**job_orm.to_dict()) if job_orm else None
+
+    @error_handler
+    async def get_application_by_id(self, application_id: str) -> JobApplication | None:
+        """
+
+        """
+        with self.get_session() as session:
+            job_application_orm = session.query(JobApplicationORM).filter_by(application_id=application_id).first()
+            if not job_application_orm:
+                return None
+
+            return JobApplication(**job_application_orm.to_dict())
+
+
     
     @error_handler
     async def get_job_by_reference(self, reference: str) -> Job | None:

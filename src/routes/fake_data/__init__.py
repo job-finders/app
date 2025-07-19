@@ -1,0 +1,3 @@
+from .fake_job_applications import generate_fake_job_application
+from .fake_resume import generate_fake_cv
+from .fake_ats_report import generate_fake_ats_report
