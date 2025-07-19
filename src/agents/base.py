@@ -83,10 +83,17 @@ class BaseAgent(ABC):
         self.memory = AgentMemoryStore(user_id, agent_name=self.name)
         self.usage_tracker = UsageTracker(user_id, usage_tier)
         self.hashnode_token = config_instance().HASHNODE_TOKEN
-        self.openrouter_client = OpenRouterClient()
+        self.openrouter_client: OpenRouterClient = OpenRouterClient()
         self.logger = None
         self._last_interaction = {}
-
+        self.init_agent()
+    
+    
+    def init_agent(self):        
+        self.openrouter_client.init_app()
+        if self.logger is None:
+            from src.utils.route_helpers import get_service
+            self.logger = get_service("logger")()("BaseAgent")
 
     @abstractmethod
     def system_prompt(self):
@@ -103,7 +110,7 @@ class BaseAgent(ABC):
     @staticmethod
     def select_model(user_prompt: str, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> ModelType:
         prompt_lower = user_prompt.lower()
-        return ModelType.MOONSHOT_KIMI_K2_FREE
+        
         # Role-specific routing - primarily DeepSeek
         if user_role == UserRole.EMPLOYER:
             if any(word in prompt_lower for word in ["screening", "candidate evaluation", "shortlist"]):
@@ -213,12 +220,13 @@ class BaseAgent(ABC):
     @staticmethod
     def get_fallback_model(selected_model: ModelType) -> ModelType:
         """Get cheaper fallback model when usage limits are exceeded"""
-        if selected_model in [ModelType.DEEPSEEK_REASONER, ModelType.DEEPSEEK_V3]:
-            return ModelType.DEEPSEEK_R1_528_FREE
+        if selected_model in [ModelType.MOONSHOT_KIMI_K2]:
+            return ModelType.MOONSHOT_KIMI_K2_FREE
         return ModelType.DEEPSEEK_CHIMERA_FREE
 
     async def check_usage_and_select_model(self, user_prompt: str, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> ModelType:
         """Check usage limits and select appropriate model"""
+
         selected_model = self.select_model(user_prompt, user_role, task_type, *args, **kwargs)
         
         # Check if user has exceeded limits
@@ -227,8 +235,11 @@ class BaseAgent(ABC):
             if self.usage_tracker.tier == UsageTier.FREE:
                 raise Exception("Daily/Monthly limit exceeded. Please upgrade your plan.")
             else:
-                return self.get_fallback_model(selected_model)
-        
+                self.logger.info("Reverting to a Fallback Model Due to Usage")
+                selected_model = self.get_fallback_model(selected_model)
+
+        self.logger.info(f"Using Model {selected_model.value} on OpenRouter")
+
         return selected_model
 
     def get_usage_info(self) -> Dict[str, Any]:
@@ -237,7 +248,7 @@ class BaseAgent(ABC):
         monthly_usage = self.usage_tracker.get_current_usage("monthly")
         limits = self.usage_tracker.tier.value
         
-        return {
+        usage_info = {
             "tier": self.usage_tracker.tier.name,
             "daily_usage": daily_usage,
             "daily_limit": limits["daily_limit"],
@@ -246,6 +257,7 @@ class BaseAgent(ABC):
             "daily_remaining": limits["daily_limit"] - daily_usage,
             "monthly_remaining": limits["monthly_limit"] - monthly_usage
         }
+        self.logger.info(f"Usage Information : {usage_info}")
 
     async def run(self, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> BaseModel:
 
@@ -274,9 +286,8 @@ class BaseAgent(ABC):
         messages.append({"role": "user", "content": user_prompt})  # <── add this line
 
         try:
-            self.openrouter_client.init_app()
             # Make API call with enhanced client
-            output = await self.openrouter_client.structured_completion(
+            output_model = await self.openrouter_client.structured_completion(
                 messages=messages,
                 output_model=self.output_model(),
                 model=selected_model.value,
@@ -285,11 +296,19 @@ class BaseAgent(ABC):
             )
             # Add assistant response to memory
             protect_response = kwargs.get('protect_response', False)
-            assistant_entry_id = self.memory.add_entry(
-                "assistant", 
-                output.model_dump_json(), 
-                protect=protect_response
-            )
+            try:
+                if output_model:
+                    assistant_entry_id = self.memory.add_entry(
+                        "assistant", 
+                        output_model.model_dump_json(), 
+                        protect=protect_response
+                    )
+                else:
+                    self.logger.error("Potentil Problem the Model Returned no OutPut")
+            except ValidationError as e:
+                self.logger.error(str(e))
+                pass
+
             # Store entry IDs for potential future reference
             self._last_interaction = {
                 "user_entry_id": user_entry_id,
@@ -297,7 +316,7 @@ class BaseAgent(ABC):
                 "timestamp": time.time()
             }
             
-            return output
+            return output_model
             
         except Exception as e:
             # Enhanced error handling with memory context
@@ -307,26 +326,24 @@ class BaseAgent(ABC):
                 "memory_stats": "",
                 "user_prompt_preview": user_prompt[:100] + "..." if len(user_prompt) > 100 else user_prompt
             }
-            
+            # TODO - standardise this for errors indicating there is no more credit
+            credit_problems - ['limit_exceed', 'add credit']
             # Handle rate limiting and model errors
-            if "limit exceeded" in str(e).lower():
+            if any([word in str(e).lower() for word in credit_problems]:
                 try:
-                    return await self.run_fallback_model(kwargs=kwargs, user_entry_id=user_entry_id,
-                                                         selected_model=selected_model,
-                                                         messages=messages)
+                    return await self.run_fallback_model(
+                        kwargs=kwargs, user_entry_id=user_entry_id, selected_model=selected_model,messages=messages)
                 except Exception as e:
                     # Log both original and fallback errors
                     fallback_error = str(e)
                     error_context["fallback_error"] = str(fallback_error)
-                    self._log_error(error_context)
+                    self.logger.error(error_context)
                     raise fallback_error
-
             else:
-                self._log_error(error_context)
+                self.logger.error(error_context)
                 raise e
 
-    async def run_fallback_model(self, kwargs, user_entry_id: str, selected_model: ModelType,
-                                 messages: list[dict[str, str]]):
+    async def run_fallback_model(self, kwargs, user_entry_id: str, selected_model: ModelType, messages: list[dict[str, str]]):
 
         # Will use a Fallback Model for the previous selected Model.
         fallback_model = self.get_fallback_model(selected_model=selected_model)
@@ -338,9 +355,8 @@ class BaseAgent(ABC):
             temperature=kwargs.get('temperature', 0.7),
             max_tokens=kwargs.get('max_tokens', 1024)
         )
-        error_context = dict(message=f"Fallback model Output: {output}",
-                             method="run_fallback_model")
-        self._log_error(error_context=error_context)
+        error_context = dict(message=f"Fallback model Output: {output}", method="run_fallback_model")
+        self.logger.error(error_context=error_context)
 
         # Add fallback response to memory with note
         fallback_response = output.model_dump_json()
@@ -378,4 +394,4 @@ class BaseAgent(ABC):
         if not self.logger:
             __logger_name: str = f"Debug Logger: {self.__class__.__name__.lower()} : "
             self.logger = get_service('logger')()(__logger_name)
-        self.logger.info(error_context)
+        self.logger.error(error_context)

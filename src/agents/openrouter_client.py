@@ -12,13 +12,8 @@ class OpenRouterClient:
         self.api_key = api_key or config_instance().OPENROUTER_API_KEY
         self.base_url = "https://openrouter.ai/api/v1"
         self.logger = None
-        self.headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        self._http_client = httpx.AsyncClient(
-            timeout=httpx.Timeout(default_timeout, read=default_timeout)
-        )
+        self.headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        self._http_client = httpx.AsyncClient(timeout=httpx.Timeout(default_timeout, read=default_timeout))
 
     def init_app(self):
         if self.logger is None:
@@ -42,6 +37,7 @@ class OpenRouterClient:
             "stream": stream,
             **kwargs
         }
+        
         self.logger.info(f"DEBUG: OpenRouter request data: {json.dumps(data, indent=2)}")
 
         response = await self._http_client.post(
