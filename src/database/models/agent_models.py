@@ -1,7 +1,7 @@
 
 # src/database/models/agent_models.py
 from typing import List
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 
 

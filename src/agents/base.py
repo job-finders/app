@@ -4,7 +4,7 @@ from datetime import datetime
 import time
 from enum import Enum
 from typing import Type, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from src.agents.openrouter_client import OpenRouterClient
 from src.config import config_instance
@@ -146,7 +146,7 @@ class BaseAgent(ABC):
         
         elif user_role == UserRole.RECRUITER:
             if any(word in prompt_lower for word in ["sourcing", "candidate search", "talent acquisition"]):
-                return ModelType.MOONSHOT_KIMI_K2R
+                return ModelType.MOONSHOT_KIMI_K2
             elif any(word in prompt_lower for word in ["outreach", "messaging", "communication"]):
                 return ModelType.DEEPSEEK_CHAT
             elif any(word in prompt_lower for word in ["pipeline management", "tracking", "metrics"]):
@@ -242,7 +242,7 @@ class BaseAgent(ABC):
 
         return selected_model
 
-    def get_usage_info(self) -> Dict[str, Any]:
+    def get_usage_info(self) -> dict[str, str | int]:
         """Get current usage statistics"""
         daily_usage = self.usage_tracker.get_current_usage("daily")
         monthly_usage = self.usage_tracker.get_current_usage("monthly")
@@ -258,6 +258,7 @@ class BaseAgent(ABC):
             "monthly_remaining": limits["monthly_limit"] - monthly_usage
         }
         self.logger.info(f"Usage Information : {usage_info}")
+        return usage_info
 
     async def run(self, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> BaseModel:
 
@@ -280,11 +281,7 @@ class BaseAgent(ABC):
         protect_user_msg = kwargs.get('protect_user_message', False)
         user_entry_id = self.memory.add_entry("user", user_prompt, protect=protect_user_msg)
 
-        # Build final message structure
-        # Build final message structure
-        messages = [{"role": "system", "content": system_prompt}]
-        messages.append({"role": "user", "content": user_prompt})  # <── add this line
-
+        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
         try:
             # Make API call with enhanced client
             output_model = await self.openrouter_client.structured_completion(
@@ -304,7 +301,7 @@ class BaseAgent(ABC):
                         protect=protect_response
                     )
                 else:
-                    self.logger.error("Potentil Problem the Model Returned no OutPut")
+                    self.logger.error("Potential Problem the Model Returned no OutPut")
             except ValidationError as e:
                 self.logger.error(str(e))
                 pass
@@ -312,7 +309,6 @@ class BaseAgent(ABC):
             # Store entry IDs for potential future reference
             self._last_interaction = {
                 "user_entry_id": user_entry_id,
-                "assistant_entry_id": assistant_entry_id,
                 "timestamp": time.time()
             }
             
@@ -327,15 +323,15 @@ class BaseAgent(ABC):
                 "user_prompt_preview": user_prompt[:100] + "..." if len(user_prompt) > 100 else user_prompt
             }
             # TODO - standardise this for errors indicating there is no more credit
-            credit_problems - ['limit_exceed', 'add credit']
+            credit_problems = ['limit_exceed', 'add credit', 'payment']
             # Handle rate limiting and model errors
-            if any([word in str(e).lower() for word in credit_problems]):
+            if any([word.casefold() in str(e).lower() for word in credit_problems]):
                 try:
                     return await self.run_fallback_model(
                         kwargs=kwargs, user_entry_id=user_entry_id, selected_model=selected_model,messages=messages)
                 except Exception as e:
                     # Log both original and fallback errors
-                    fallback_error = str(e)
+                    fallback_error = e
                     error_context["fallback_error"] = str(fallback_error)
                     self.logger.error(error_context)
                     raise fallback_error
@@ -355,23 +351,29 @@ class BaseAgent(ABC):
             temperature=kwargs.get('temperature', 0.7),
             max_tokens=kwargs.get('max_tokens', 1024)
         )
+        if output is None:
+            raise ValueError("Keyword suggestion agent returned no output.")
+
         error_context = dict(message=f"Fallback model Output: {output}", method="run_fallback_model")
-        self.logger.error(error_context=error_context)
+        self.logger.error(error_context)
 
         # Add fallback response to memory with note
-        fallback_response = output.model_dump_json()
-        assistant_entry_id = self.memory.add_entry(
-            "assistant",
-            f"[FALLBACK_MODEL:{fallback_model.value}] {fallback_response}",
-            protect=kwargs.get('protect_response', False)
-        )
+        try:
+            fallback_response = output.model_dump_json()
+            assistant_entry_id = self.memory.add_entry(
+                "assistant",
+                f"[FALLBACK_MODEL:{fallback_model.value}] {fallback_response}",
+                protect=kwargs.get('protect_response', False)
+            )
+            self._last_interaction = {
+                "user_entry_id": user_entry_id,
+                "assistant_entry_id": assistant_entry_id,
+                "fallback_used": True,
+                "timestamp": time.time()
+            }
 
-        self._last_interaction = {
-            "user_entry_id": user_entry_id,
-            "assistant_entry_id": assistant_entry_id,
-            "fallback_used": True,
-            "timestamp": time.time()
-        }
+        except ValidationError as e:
+            self.logger.error(str(e))
 
         return output
 

@@ -1,6 +1,8 @@
 # src/controllers/agents.py
 from typing import Optional
 
+from flask import Flask
+
 from src.agents.jobseeker.application_coach import (
     ApplicationCoachAgent,
     JobMatchInsights,
@@ -13,6 +15,7 @@ from src.database.models.resume import JobSeekerCV
 from src.database.models.users import User
 from src.logger import init_logger
 from src.utils.route_helpers import get_controller
+
 
 class EmployeeAgentsController(Controllers):
     """
@@ -49,12 +52,9 @@ class EmployeeAgentsController(Controllers):
             factory: Dependency injection factory.
         """
         super().__init__(factory)
-    
 
     def init_app(app: Flask):
         super().init_app(app=app)
-
-
 
     @error_handler
     async def analyze_job_match(
@@ -157,7 +157,6 @@ class EmployeeAgentsController(Controllers):
         agent = CoverLetterAgent(user_id=user_id)
         result = await agent.run(input_model=input_data)
         return result
-
 
     async def optimize_primary_cv(self, primary_resume: JobSeekerCV):
         """
