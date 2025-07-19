@@ -1,7 +1,8 @@
-# agents/schemas.py
-from typing import List
 
+# src/database/models/agent_models.py
+from typing import List
 from pydantic import BaseModel, ConfigDict
+from typing import List, Optional
 
 
 class CVOptimizationSuggestion(BaseModel):
@@ -37,8 +38,45 @@ class JobPostInsights(BaseModel):
 
 
 class CandidateBenchmarkReport(BaseModel):
-    strength_summary: str
-    improvement_areas: List[str]
-    percentile_rank: float
+    """
+    Comprehensive candidate evaluation report containing dual-perspective insights
+    """
+    summary: str = Field(
+        description="Concise overall assessment of candidate-job fit"
+    )
+    percentile_rank: float = Field(
+        ge=0, le=100,
+        description="Candidate's competitive position percentile (0-100 scale)"
+    )
+    key_strengths: List[str] = Field(
+        description="Candidate's strongest qualifications relative to position"
+    )
+    development_areas: List[str] = Field(
+        description="Areas needing improvement for this specific role"
+    )
+    employer_insights: Optional[List[str]] = Field(
+        default=None,
+        description="Hiring considerations specific to employer perspective"
+    )
+    candidate_insights: Optional[List[str]] = Field(
+        default=None,
+        description="Career development insights specific to candidate perspective"
+    )
+    interview_indicators: Optional[List[str]] = Field(
+        default=None,
+        description="Key areas to explore during interviews (employer only)"
+    )
+    cv_optimization_tips: Optional[List[str]] = Field(
+        default=None,
+        description="Specific CV improvements for this role (candidate only)"
+    )
+    risk_factors: Optional[List[str]] = Field(
+        default=None,
+        description="Potential concerns about candidate fit (employer only)"
+    )
+    growth_opportunities: Optional[List[str]] = Field(
+        default=None,
+        description="Career development paths (candidate only)"
+    )
 
     model_config = ConfigDict(from_attributes=True)

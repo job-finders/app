@@ -174,9 +174,9 @@ async def edit_job(user: User, job_id: str):
 @employer_job_access_required()
 async def calculate_ats(user: User, job_id: str):
     """
-         This route is used to calculate ATS metrics for a job post.
-         the ATS is based on industry standards and job requirements.
-         Receives form fields, returns rendered ATS sidebar (HTML fragment).
+        This route is used to calculate ATS metrics for a job post.
+        the ATS is based on industry standards and job requirements.
+        Receives form fields, returns rendered ATS sidebar (HTML fragment).
     """
     workflow_logger.info(f"inside calculate ats : {job_id}")
     jobs_workflow_controller = get_controller("jobs_workflow")

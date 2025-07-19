@@ -49,7 +49,11 @@ class EmployeeAgentsController(Controllers):
             factory: Dependency injection factory.
         """
         super().__init__(factory)
-        self.logger = init_logger("EmployeeAgentsController")
+    
+
+    def init_app(app: Flask):
+        super().init_app(app=app)
+
 
 
     @error_handler
