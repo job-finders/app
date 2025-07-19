@@ -1001,7 +1001,7 @@ class JobApplication(BaseModel):
     user_id: str
     job_id: str
     ats_report_id: Optional[str]
-    job: Optional[Job] = Field(None)  # Relationship to JobModel
+
     cv_id: Optional[str] = None
 
     applied_date: AwareDatetime = Field(default_factory=utc_time)
@@ -1022,8 +1022,11 @@ class JobApplication(BaseModel):
     validation_score: int = Field(default=0)
     missing_requirements: list[str] = Field(default_factory=list)
     review_summary: Optional[str] = Field(default=None)
-    ats_report: Optional[ATSReport] = Field(default=None)
 
+    # relationships
+    ats_report: Optional[ATSReport] = Field(default=None)
+    job: Optional[Job] = Field(None)  # Relationship to JobModel
+    jobseeker_profile: Optional[JobSeekerProfile] = Field(default=None)
 
     model_config = ConfigDict(from_attributes=True)
 

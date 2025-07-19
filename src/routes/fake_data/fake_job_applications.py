@@ -1,28 +1,40 @@
+from src.database.constants import utc_time
+from src.database.models import JobApplication, JobApplicationStatusEnum
 import uuid
 import random
 from datetime import timedelta
 
-from src.database.constants import utc_time
-from src.database.models import JobApplication, JobApplicationStatusEnum
-
-from .fake_ats_report import generate_fake_ats_report
-from .fake_resume import generate_fake_cv
-
-
 def generate_fake_job_application(job_id: str, user_id: str = None, stage: str = None) -> JobApplication:
     """
     Generate a fake JobApplication with a realistic CV and an ATS Report.
+    If no user_id is provided, a new JobSeekerProfile will be created.
     """
-    user_id = user_id or f"test-user-{str(uuid.uuid4())[:8]}"
+    from .fake_jobseeker_profile import generate_fake_jobseeker_profile
+    from .fake_resume import generate_fake_cv
+    from .fake_ats_report import generate_fake_ats_report
 
-    # Generate a fake CV and get its ID
-    fake_cv = generate_fake_cv(user_uid=user_id)
+    profile = None
+    fake_cv = None
+
+    # Create or load a fake JobSeekerProfile
+    if not user_id:
+        profile = generate_fake_jobseeker_profile()
+        user_id = profile.user_uid
+    else:
+        # If a user_id is provided but no profile, you might want to retrieve one here in real scenarios.
+        profile = None  # Placeholder — fetch logic if needed
+
+    # Generate or reuse a fake CV
+    if not profile or not profile.resumes_list:
+        fake_cv = generate_fake_cv(user_uid=user_id)
+    else:
+        fake_cv = profile.resumes_list[-1]
+
     cv_id = fake_cv.cv_id
 
-    # Generate ATS Report for that CV
+    # Generate ATS Report for the selected CV
     ats_report = generate_fake_ats_report(job_id=job_id, cv_id=cv_id)
 
-    # Calculate applied date
     applied_days_ago = random.randint(1, 10)
     application_stage = stage or random.choice(list(JobApplicationStatusEnum.__members__.values())).value
 
@@ -54,5 +66,6 @@ def generate_fake_job_application(job_id: str, user_id: str = None, stage: str =
             "I'm very interested in this opportunity.",
             "Excited to contribute to your team!",
             None
-        ])
+        ]),
+        jobseeker_profile=profile  # ✅ Include the full profile
     )

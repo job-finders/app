@@ -378,11 +378,19 @@ async def view_job_applications(user: User, job_id: str):
         # 🧪 Generate 3 fake applications for testing
         from src.routes.fake_data import generate_fake_job_application
         job_applications_list = [
-            generate_fake_job_application(job_id=job_id, user_id=str(uuid.uuid4())),
-            generate_fake_job_application(job_id=job_id, user_id=str(uuid.uuid4())),
-            generate_fake_job_application(job_id=job_id, user_id=str(uuid.uuid4())),
-        ]
+            generate_fake_job_application(job_id=job_id),
+            generate_fake_job_application(job_id=job_id),
+            generate_fake_job_application(job_id=job_id),
+            generate_fake_job_application(job_id=job_id),
+            generate_fake_job_application(job_id=job_id),
+            generate_fake_job_application(job_id=job_id),
+            generate_fake_job_application(job_id=job_id),
+            generate_fake_job_application(job_id=job_id),
+            generate_fake_job_application(job_id=job_id),
 
+        ]
+    job_application = job_applications_list[-1]
+    workflow_logger.info(job_application)
     context = dict(
         job=job,
         job_id=job_id,
