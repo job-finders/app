@@ -1,4 +1,8 @@
 from __future__ import annotations
+        
+from collections import Counter
+import re
+import math
 
 import asyncio
 import inspect
@@ -11,6 +15,15 @@ from src.database.models.company_ats import KeywordTool, KeywordSourceType, ATSO
 
 
 class IndustryTaxonomyTool(KeywordTool):
+    """sumary_line
+        This tool finds and returns keywords based on the Industry Taxonomy of the Industry 
+        The Job Being created belongs in, 
+        Taxonomy is mainly based on the JobCategory class 
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    
     source_type = KeywordSourceType.INDUSTRY_TAXONOMY
 
     def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
@@ -18,6 +31,18 @@ class IndustryTaxonomyTool(KeywordTool):
 
 
 class PeerJobsTool(KeywordTool):
+    """sumary_line
+        
+        This tool will find keywords based on the jobs similar to the job being created, 
+        the keywords retained will be passed onto the LLM for selection based on the criteria 
+        where there should be an improvement on ATS Rating and also Relevancy to the Job Being 
+        Created.
+
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    
     source_type = KeywordSourceType.PEER_JOBS
 
     def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
@@ -25,6 +50,17 @@ class PeerJobsTool(KeywordTool):
 
 
 class ParsedCVsTool(KeywordTool):
+    """sumary_line
+        This tool takes a job being created find jobs similar to this jobs but with applications - 
+        it then takes the Resumes that where used for this applications, obtains unique keywords 
+        that are also not found in the present job descriptions. 
+        sends all keywords to the LLM so see which keywords the LLM selects for improving the Job 
+        Based on ATS and Relevancy to the Job.
+    Keyword arguments:
+    argument -- description
+    Return: return_description
+    """
+    
     source_type = KeywordSourceType.PARSED_CVS
 
     def fetch(self, job: ATSOptimisationInput) -> List[tuple[str, int]]:
@@ -40,6 +76,12 @@ class ATSKeywordSuggestionAgent(BaseAgent):
         This agent generates ATS optimisation suggestions based on job descriptions.
         Helps enhance Job Visibility and candidate matching by suggesting missing keywords.
         Keyword mining is done using a combination of classic tools and an LLM fallback.
+
+        This agents gets a list of keywords based on the Job Description from Old Jobs and
+        Previous Resumes which where successfull in applying for jobs similar to the Job being 
+        created.
+
+        It then takes those keywords 
         
     Keyword arguments:
     argument -- description
@@ -68,29 +110,73 @@ class ATSKeywordSuggestionAgent(BaseAgent):
     # ---------- Prompts ----------
     def system_prompt(self) -> str:
         return (
-            "You are an expert ATS optimisation specialist. "
-            "Return valid JSON matching `ATSOptimisationOutput`. "
-            "Only use keywords provided in the mined list; do not invent new ones."
+            "You are an expert ATS optimization specialist. Your task is to analyze job descriptions and "
+            "generate enhancement suggestions with strict adherence to these rules:\n"
+            "1. ONLY use keywords from the provided 'Mined Keywords' list\n"
+            "2. For suggestions:\n"
+            "   - Each must target a specific 'field' (description/required_skills/preferred_skills)\n"
+            "   - Specify 'action' type: 'append' (add keywords) or 'replace' (modify text)\n"
+            "   - For 'replace': provide both 'current' snippet and 'recommended' text\n"
+            "   - For 'append': list exact 'keywords_added'\n"
+            "   - Include impact assessment with:\n"
+            "        • estimated_score_increase (0-30)\n"
+            "        • confidence (0.0-1.0)\n"
+            "        • brief reasoning\n"
+            "3. For top_missing_keywords: Select exactly 5 highest-impact keywords\n"
+            "4. Output MUST be pure JSON matching this schema:\n"
+            "{\n"
+            "  \"suggestions\": [\n"
+            "    {\n"
+            "      \"field\": \"description\",\n"
+            "      \"action\": \"append\",\n"
+            "      \"keywords_added\": [\"keyword1\", \"keyword2\"],\n"
+            "      \"impact\": {\n"
+            "        \"estimated_score_increase\": 8,\n"
+            "        \"confidence\": 0.85,\n"
+            "        \"reasoning\": \"Explanation\"\n"
+            "      }\n"
+            "    },\n"
+            "    {\n"
+            "      \"field\": \"required_skills\",\n"
+            "      \"action\": \"replace\",\n"
+            "      \"current\": \"Current text snippet\",\n"
+            "      \"recommended\": \"Improved text with keywords\",\n"
+            "      \"keywords_added\": [\"keyword3\"],\n"
+            "      \"impact\": {...}\n"
+            "    }\n"
+            "  ],\n"
+            "  \"top_missing_keywords\": [\"kw1\", \"kw2\", \"kw3\", \"kw4\", \"kw5\"]\n"
+            "}"
         )
-
     async def prompt(self, input_model: ATSOptimisationInput) -> str:
         location = ", ".join(filter(None, [input_model.city, input_model.province, input_model.country]))
         mined = await self._mine_keywords(job=input_model)
-        if mined and self.logger:
-            self.logger.info(f"MINED KEYWORDS : {mined}")
-
+        
+        # Format keyword context with source metadata
         kw_context = "\n".join(
-            f"{i+1}. {ks.keyword} (src={ks.source_type}, weight={ks.weight}, freq={ks.frequency})"
-            for i, ks in enumerate(mined[:20])
+            f"- {ks.keyword} (src: {ks.source_type.value}, weight: {ks.weight}, freq: {ks.frequency})"
+            for ks in mined[:15]
         )
+        
         return (
-            f"Title: {input_model.title}\n"
-            f"Location: {location or 'Not specified'}\n\n"
-            f"Description:\n{input_model.description}\n\n"
-            f"Required Skills: {', '.join(input_model.required_skills)}\n"
-            f"Preferred Skills: {', '.join(input_model.preferred_skills)}\n\n"
-            f"Top mined missing keywords:\n{kw_context}\n\n"
-            "Return JSON only."
+            "## JOB ANALYSIS REQUEST ##\n"
+            f"JOB ID: {input_model.job_id}\n"
+            f"TITLE: {input_model.title}\n"
+            f"LOCATION: {location or 'Unspecified'}\n\n"
+            "## EXISTING CONTENT ##\n"
+            f"DESCRIPTION:\n{input_model.description}\n\n"
+            f"REQUIRED SKILLS: {', '.join(input_model.required_skills) or 'None'}\n"
+            f"PREFERRED SKILLS: {', '.join(input_model.preferred_skills) or 'None'}\n\n"
+            "## MINED KEYWORDS (MISSING FROM ABOVE) ##\n"
+            f"{kw_context}\n\n"
+            "## ACTION REQUIRED ##\n"
+            "1. Generate 3-5 enhancement suggestions:\n"
+            "   - For TEXT FIELDS: Use 'replace' with exact text snippets\n"
+            "   - For SKILL LISTS: Use 'append' with specific keywords\n"
+            "   - IMPACT: Estimate score increase (1-5 per keyword) and confidence based on source/weight\n"
+            "2. Select top 5 missing keywords ordered by:\n"
+            "   [source_weight × frequency] then peer_jobs > industry_taxonomy > parsed_cvs\n"
+            "3. OUTPUT: Pure JSON only - no commentary"
         )
 
     def output_model(self):
@@ -100,14 +186,14 @@ class ATSKeywordSuggestionAgent(BaseAgent):
     async def _mine_keywords(self, job: ATSOptimisationInput) -> List[KeywordSource]:
         """sumary_line
             Keyword mining logic that combines classic tools and LLM fallback.
+
+            The Keywords will contain words that are found on jobs similar to the one being created but 
+            not present on the job being created.
+
         Keyword arguments:
         argument -- description
         Return: return_description
         """
-        
-        from collections import Counter
-        import re
-        import math
 
         # 1. Classic tools
         corpus: List[Counter] = []
