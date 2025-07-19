@@ -329,7 +329,7 @@ class BaseAgent(ABC):
             # TODO - standardise this for errors indicating there is no more credit
             credit_problems - ['limit_exceed', 'add credit']
             # Handle rate limiting and model errors
-            if any([word in str(e).lower() for word in credit_problems]:
+            if any([word in str(e).lower() for word in credit_problems]):
                 try:
                     return await self.run_fallback_model(
                         kwargs=kwargs, user_entry_id=user_entry_id, selected_model=selected_model,messages=messages)
