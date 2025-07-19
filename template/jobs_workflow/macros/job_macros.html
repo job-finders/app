@@ -113,7 +113,7 @@
                 <button class="btn btn-outline-primary" onclick="aiReview('{{ app.application_id }}')">
                     <i class="ti-search"></i>
                 </button>
-                <a href="{{ url_for('jobs_workflow.view_job_applications', job_id=app.job_id) }}"
+                <a href="{{ url_for('jobs_workflow.get_application',job_id=app.job_id, application_id=app.application_id) }}"
                    class="btn btn-outline-info">
                     <i class="ti-eye"></i>
                 </a>

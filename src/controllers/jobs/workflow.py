@@ -851,6 +851,32 @@ class JobsWorkflowController(Controllers):
 
             return job, job_applications
 
+    @error_handler
+    async def get_job_application_details(self, application_id: str) -> JobApplication | None:
+        """
+
+        :param application_id:
+        :return:
+        """
+        if not application_id:
+            return None
+
+        with self.get_session() as session:
+            job_application_orm = (
+                session.query(JobApplicationORM)
+                .options(
+                    joinedload(JobApplicationORM.job),
+                    joinedload(JobApplicationORM.jobseeker_profile),
+                    joinedload(JobApplicationORM.ats_report),
+                )
+                .filter(JobApplicationORM.application_id == application_id)
+                .first()
+            )
+
+            if not job_application_orm:
+                return None
+
+            return JobApplication(**job_application_orm.to_dict(include_relationships=True))
 
     @error_handler
     async def get_application_funnel_stats(self, job_id: str) -> ApplicationFunnelStats | None:

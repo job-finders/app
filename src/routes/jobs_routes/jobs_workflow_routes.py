@@ -13,6 +13,7 @@ from flask import (
     jsonify,
 )
 from pydantic import ValidationError
+
 # Authentication
 from src.authentication import (
     employer_login,
@@ -23,6 +24,7 @@ from src.authentication import (
 )
 
 # Controllers
+from src.controllers.resumes import ResumeController
 from src.controllers.agents import EmployerAgentsController
 from src.controllers.company import CompanyController
 from src.controllers.jobs import JobsWorkflowController
@@ -377,6 +379,7 @@ async def view_job_applications(user: User, job_id: str):
     if not job_applications_list:
         # 🧪 Generate 3 fake applications for testing
         from src.routes.fake_data import generate_fake_job_application
+
         job_applications_list = [
             generate_fake_job_application(job_id=job_id),
             generate_fake_job_application(job_id=job_id),
@@ -387,8 +390,8 @@ async def view_job_applications(user: User, job_id: str):
             generate_fake_job_application(job_id=job_id),
             generate_fake_job_application(job_id=job_id),
             generate_fake_job_application(job_id=job_id),
-
         ]
+
     job_application = job_applications_list[-1]
     workflow_logger.info(job_application)
     context = dict(
@@ -399,6 +402,31 @@ async def view_job_applications(user: User, job_id: str):
         current_user=user
     )
     return render_template("jobs_workflow/job_applications.html", **context)
+
+
+@jobs_workflow_route.get("/<string:job_id>/application/<string:application_id>/get-application")
+@employer_login
+@require_billing_role()
+@employer_job_access_required()
+@flask_error_handler
+async def get_application(user: User, job_id: str, application_id: str):
+    ...
+    """
+    View full details of a job application, including profile, CV, and ATS report.
+    """
+    jobs_workflow_controller: JobsWorkflowController = get_controller("jobs_workflow")
+    resumes_controller: ResumeController = get_controller("resume")
+    # Get full application context from controller
+    application_data = await jobs_workflow_controller.get_job_application_details(application_id=application_id)
+    if application_data:
+        resume = await resumes_controller.get_cv_by_id(cv_id=application_data.cv_id)
+    else:
+        resume = None
+
+    context = dict(current_user=user, job_application=application_data, resume=resume)
+
+    return render_template("jobs_workflow/view_job_application.html", **context)
+
 
 @jobs_workflow_route.route("/<string:job_id>/update-status", methods=["POST"])
 @employer_login
