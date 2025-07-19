@@ -107,11 +107,11 @@ class BaseAgent(ABC):
         # Role-specific routing - primarily DeepSeek
         if user_role == UserRole.EMPLOYER:
             if any(word in prompt_lower for word in ["screening", "candidate evaluation", "shortlist"]):
-                return ModelType.DEEPSEEK_REASONER
+                return ModelType.MOONSHOT_KIMI_K2
             elif any(word in prompt_lower for word in ["job posting", "job description", "requirements"]):
                 return ModelType.DEEPSEEK_CHAT  # DeepSeek handles writing well
             elif any(word in prompt_lower for word in ["budget", "salary range", "compensation"]):
-                return ModelType.DEEPSEEK_V3
+                return ModelType.MOONSHOT_KIMI_K2
             elif any(word in prompt_lower for word in ["company culture", "team fit", "onboarding"]):
                 return ModelType.DEEPSEEK_CHAT
         
@@ -119,11 +119,11 @@ class BaseAgent(ABC):
             if any(word in prompt_lower for word in ["resume", "cv", "cover letter", "application"]):
                 return ModelType.DEEPSEEK_CHAT  # Good at structured writing
             elif any(word in prompt_lower for word in ["job search", "job matching", "recommendations"]):
-                return ModelType.DEEPSEEK_REASONER
+                return ModelType.MOONSHOT_KIMI_K2
             elif any(word in prompt_lower for word in ["interview prep", "mock interview", "questions"]):
                 return ModelType.DEEPSEEK_CHAT  # Conversational
             elif any(word in prompt_lower for word in ["salary negotiation", "market rate", "compensation"]):
-                return ModelType.DEEPSEEK_V3
+                return ModelType.MOONSHOT_KIMI_K2
             elif any(word in prompt_lower for word in ["career path", "skills development", "growth"]):
                 return ModelType.DEEPSEEK_CHAT
         
@@ -131,36 +131,36 @@ class BaseAgent(ABC):
             if any(word in prompt_lower for word in ["policy", "compliance", "legal", "documentation"]):
                 return ModelType.DEEPSEEK_CHAT  # Good at formal writing
             elif any(word in prompt_lower for word in ["talent pipeline", "recruitment strategy", "hiring plan"]):
-                return ModelType.DEEPSEEK_REASONER
+                return ModelType.MOONSHOT_KIMI_K2
             elif any(word in prompt_lower for word in ["employee engagement", "retention", "culture"]):
                 return ModelType.DEEPSEEK_CHAT
             elif any(word in prompt_lower for word in ["performance review", "evaluation", "feedback"]):
-                return ModelType.DEEPSEEK_V3
+                return ModelType.MOONSHOT_KIMI_K2
         
         elif user_role == UserRole.RECRUITER:
             if any(word in prompt_lower for word in ["sourcing", "candidate search", "talent acquisition"]):
-                return ModelType.DEEPSEEK_REASONER
+                return ModelType.MOONSHOT_KIMI_K2R
             elif any(word in prompt_lower for word in ["outreach", "messaging", "communication"]):
                 return ModelType.DEEPSEEK_CHAT
             elif any(word in prompt_lower for word in ["pipeline management", "tracking", "metrics"]):
-                return ModelType.DEEPSEEK_V3
+                return ModelType.MOONSHOT_KIMI_K2
         
         # Task-specific routing
         if task_type:
             if task_type == "matching":
-                return ModelType.DEEPSEEK_REASONER
+                return ModelType.MOONSHOT_KIMI_K2
             elif task_type == "writing":
                 return ModelType.DEEPSEEK_CHAT
             elif task_type == "analysis":
-                return ModelType.DEEPSEEK_V3
+                return ModelType.MOONSHOT_KIMI_K2
             elif task_type == "conversation":
                 return ModelType.DEEPSEEK_CHAT
             elif task_type == "coding":
-                return ModelType.DEEPSEEK_CODER
+                return ModelType.MOONSHOT_KIMI_K2
         
         # General job-related content routing - DeepSeek first
         if any(word in prompt_lower for word in ["job matching", "recommend jobs", "find jobs", "job search", "match candidates"]):
-            return ModelType.DEEPSEEK_REASONER
+            return ModelType.MOONSHOT_KIMI_K2
         
         elif any(word in prompt_lower for word in ["resume", "cv", "cover letter", "portfolio", "application"]):
             return ModelType.DEEPSEEK_CHAT
@@ -172,28 +172,28 @@ class BaseAgent(ABC):
             return ModelType.DEEPSEEK_CHAT
         
         elif any(word in prompt_lower for word in ["salary", "compensation", "pay", "benefits", "market rate"]):
-            return ModelType.DEEPSEEK_V3
+            return ModelType.MOONSHOT_KIMI_K2
         
         elif any(word in prompt_lower for word in ["career advice", "guidance", "transition", "growth", "development"]):
             return ModelType.DEEPSEEK_CHAT
         
         elif any(word in prompt_lower for word in ["company research", "industry analysis", "trends", "insights"]):
-            return ModelType.DEEPSEEK_V3
+            return ModelType.MOONSHOT_KIMI_K2
         
         elif any(word in prompt_lower for word in ["skills assessment", "evaluation", "competency", "proficiency"]):
-            return ModelType.DEEPSEEK_REASONER
+            return ModelType.MOONSHOT_KIMI_K2
         
         elif any(word in prompt_lower for word in ["networking", "connections", "professional", "contacts"]):
             return ModelType.DEEPSEEK_CHAT
         
         elif any(word in prompt_lower for word in ["market analysis", "demand", "supply", "statistics"]):
-            return ModelType.DEEPSEEK_V3
+            return ModelType.MOONSHOT_KIMI_K2
         
         elif any(word in prompt_lower for word in ["onboarding", "orientation", "training", "integration"]):
             return ModelType.DEEPSEEK_CHAT
         
         elif any(word in prompt_lower for word in ["performance", "productivity", "metrics", "kpi"]):
-            return ModelType.DEEPSEEK_V3
+            return ModelType.MOONSHOT_KIMI_K2
         
         elif any(word in prompt_lower for word in ["diversity", "inclusion", "equity", "bias"]):
             return ModelType.DEEPSEEK_CHAT
@@ -202,7 +202,7 @@ class BaseAgent(ABC):
             return ModelType.DEEPSEEK_CHAT
         
         elif any(word in prompt_lower for word in ["contract", "freelance", "gig", "temporary"]):
-            return ModelType.DEEPSEEK_REASONER
+            return ModelType.MOONSHOT_KIMI_K2
         
         elif any(word in prompt_lower for word in ["code", "programming", "technical", "development"]):
             return ModelType.DEEPSEEK_CHAT

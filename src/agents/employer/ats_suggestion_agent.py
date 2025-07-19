@@ -76,7 +76,7 @@ class ATSKeywordSuggestionAgent(BaseAgent):
     async def prompt(self, input_model: ATSOptimisationInput) -> str:
         location = ", ".join(filter(None, [input_model.city, input_model.province, input_model.country]))
         mined = await self._mine_keywords(job=input_model)
-        if mined:
+        if mined and self.logger:
             self.logger.info(f"MINED KEYWORDS : {mined}")
 
         kw_context = "\n".join(
