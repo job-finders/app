@@ -1,0 +1,334 @@
+{% extends "company/layout/page.html" %}
+
+{% block title %}
+    View Application - {{ job_application.job.title if job_application and job_application.job else 'Unknown Job' }}
+{% endblock %}
+
+{% block styles %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .badge-sm {
+            font-size: 0.75rem;
+            padding: 0.35em 0.6em;
+        }
+
+        .section-heading {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: .5rem;
+        }
+
+        .side-panel {
+            background: #f9f9f9;
+            border-left: 1px solid #ddd;
+            padding: 1rem;
+            min-height: 100%;
+        }
+
+        .sticky-panel {
+            position: sticky;
+            top: 1rem;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid py-4">
+        {% if job_application %}
+            <div class="row">
+                <!-- Main Panel -->
+                <div class="col-md-8">
+                    <!-- Candidate Header -->
+                    <div class="card mb-4">
+                        <div class="card-body d-flex justify-content-between align-items-start flex-column flex-md-row">
+                            <div>
+                                <h3 class="fw-bold text-primary">
+                                    {{ job_application.jobseeker_profile.full_names | default("Unnamed Candidate") }}
+                                </h3>
+                                <p class="mb-1 text-muted">{{ job_application.jobseeker_profile.email | default("No Email") }}</p>
+                                <span class="badge
+                                    {% if job_application.application_stage == 'hired' %}bg-success
+                                    {% elif job_application.application_stage == 'interviewing' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ job_application.application_stage | title | default("Unknown") }}
+                                </span>
+                            </div>
+                            <div class="mt-3 mt-md-0">
+                                <a href="{{ url_for('company.manage_jobs') }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="ti-arrow-left me-1"></i>Back
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Job, ATS, Date Info -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card card-body">
+                                <div class="section-heading">Job</div>
+                                <div>{{ job_application.job.title if job_application.job else 'N/A' }}</div>
+                                <small class="text-muted">{{ job_application.job.location if job_application.job else 'N/A' }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card card-body">
+                                <div class="section-heading">Applied On</div>
+                                <div>{{ job_application.applied_date.strftime('%d %b %Y') if job_application.applied_date else 'N/A' }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card card-body">
+                                <div class="section-heading">ATS Score</div>
+                                {% if job_application.ats_score is not none %}
+                                    <span class="badge-sm badge
+                                        {% if job_application.ats_score >= 80 %}bg-success
+                                        {% elif job_application.ats_score >= 50 %}bg-warning text-dark
+                                        {% else %}bg-danger{% endif %}">
+                                        {{ job_application.ats_score }}%
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Not Available</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resume -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="section-heading">Resume</div>
+                            {% if resume %}
+                                <pre class="bg-light p-3 rounded"
+                                     style="font-family: monospace; font-size: 0.9rem;">{{ resume.ats_description | e }}</pre>
+                            {% else %}
+                                <p class="text-muted">Resume not available</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Cover Letter -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="section-heading">Cover Letter</div>
+                            {% if job_application.cover_letter %}
+                                <div class="bg-light p-3 rounded" style="white-space: pre-wrap;">
+                                    {{ job_application.cover_letter }}
+                                </div>
+                            {% else %}
+                                <p class="text-muted">No cover letter submitted</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- ATS Report -->
+                    {% if job_application.ats_report %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="section-heading">ATS Report</div>
+                                <p>
+                                    <strong>Feedback:</strong><br>{{ job_application.ats_feedback | default("No feedback") }}
+                                </p>
+                                <p><strong>Matched
+                                    Keywords:</strong> {{ job_application.matched_keywords | join(', ') }}</p>
+                                <p><strong>Missing
+                                    Keywords:</strong> {{ job_application.missing_keywords | join(', ') }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if benchmark_report %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="section-heading">AI Benchmark Report</div>
+                                <p class="text-muted">{{ benchmark_report.summary }}</p>
+
+                                <div class="progress mb-3" style="height: 20px;">
+                                    <div class="progress-bar bg-info" role="progressbar"
+                                         style="width: {{ benchmark_report.percentile_rank }}%;"
+                                         aria-valuenow="{{ benchmark_report.percentile_rank }}"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100">
+                                        Top {{ 100 - benchmark_report.percentile_rank | round(0, 'floor') }}%
+                                    </div>
+                                </div>
+
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-6">
+                                        <strong>Key Strengths</strong>
+                                        <ul>
+                                            {% for s in benchmark_report.key_strengths %}
+                                                <li>{{ s }}</li>{% endfor %}
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Areas for Development</strong>
+                                        <ul>
+                                            {% for d in benchmark_report.development_areas %}
+                                                <li>{{ d }}</li>{% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {% if benchmark_report.employer_insights %}
+                                    <p><strong>Employer Insights:</strong></p>
+                                    <ul>{% for i in benchmark_report.employer_insights %}
+                                        <li>{{ i }}</li>{% endfor %}</ul>
+                                {% endif %}
+                                {% if benchmark_report.interview_indicators %}
+                                    <p><strong>Interview Focus Areas:</strong></p>
+                                    <ul>{% for i in benchmark_report.interview_indicators %}
+                                        <li>{{ i }}</li>{% endfor %}</ul>
+                                {% endif %}
+                                {% if benchmark_report.risk_factors %}
+                                    <p class="text-danger"><strong>Risk Factors:</strong></p>
+                                    <ul>{% for r in benchmark_report.risk_factors %}
+                                        <li>{{ r }}</li>{% endfor %}</ul>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                </div>
+
+                <!-- Side Panel -->
+                <div class="col-md-4">
+                    <div class="side-panel sticky-panel">
+                        <h5 class="fw-bold text-primary mb-3">AI & Actions</h5>
+
+                        <!-- AI Actions -->
+                        <div class="mb-3">
+                            <button class="btn btn-sm btn-outline-primary w-100 mb-2" onclick="runAIBenchmarking()">
+                                <i class="ti-brain me-1"></i> Run AI Benchmark
+                            </button>
+                            <button class="btn btn-sm btn-outline-info w-100" onclick="runAIReview()">
+                                <i class="ti-search me-1"></i> AI Review Summary
+                            </button>
+                        </div>
+
+                        <!-- Review Notes -->
+                        <div class="mb-3">
+                            <label for="reviewNotes" class="form-label fw-bold">Review Notes</label>
+                            <textarea class="form-control" id="reviewNotes" rows="4"
+                                      placeholder="Write review..."></textarea>
+                            <button class="btn btn-sm btn-outline-success mt-2 w-100" onclick="submitReview()">Submit
+                                Review
+                            </button>
+                        </div>
+
+                        <!-- Change Stage -->
+                        <div class="mb-3">
+                            <label for="stageSelect" class="form-label fw-bold">Update Stage</label>
+                            <select class="form-select" id="stageSelect">
+                                {% for stage in job_application.__class__.__annotations__['application_stage'].__args__ %}
+                                    <option value="{{ stage }}"
+                                            {% if job_application.application_stage == stage %}selected{% endif %}>{{ stage }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-sm btn-outline-dark mt-2 w-100" onclick="updateStage()">Update
+                                Stage
+                            </button>
+                        </div>
+
+                        <!-- Warnings -->
+                        {% if job_application.ats_risk %}
+                            <div class="alert alert-danger mt-4">⚠️ ATS score is low or key terms missing.</div>
+                        {% elif not job_application.is_ats_ready %}
+                            <div class="alert alert-warning mt-4">🔎 ATS could be improved. Missing keywords detected.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                Job application data could not be loaded.
+                <a href="{{ url_for('company.manage_jobs') }}" class="btn btn-danger mt-3">Return to Jobs</a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+
+        function runAIBenchmarking() {
+            const url = "{{ url_for('employer_agents.candidate_job_application_benchmarking_employer', job_application_id=job_application.application_id) }}";
+
+            fetch(url, {method: 'POST'})
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.createElement('div');
+                    container.classList.add('card', 'mb-4');
+
+                    container.innerHTML = `
+                    <div class="card-body">
+                        <div class="section-heading">AI Benchmark Report</div>
+                        <p class="text-muted">${data.summary}</p>
+
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar bg-info" role="progressbar"
+                                 style="width: ${data.percentile_rank}%;">
+                                 Top ${100 - Math.floor(data.percentile_rank)}%
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <strong>Key Strengths</strong>
+                                <ul>${data.key_strengths.map(s => `<li>${s}</li>`).join('')}</ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Areas for Development</strong>
+                                <ul>${data.development_areas.map(d => `<li>${d}</li>`).join('')}</ul>
+                            </div>
+                        </div>
+
+                        ${data.employer_insights ? `
+                            <p><strong>Employer Insights:</strong></p>
+                            <ul>${data.employer_insights.map(i => `<li>${i}</li>`).join('')}</ul>
+                        ` : ''}
+
+                        ${data.interview_indicators ? `
+                            <p><strong>Interview Focus Areas:</strong></p>
+                            <ul>${data.interview_indicators.map(i => `<li>${i}</li>`).join('')}</ul>
+                        ` : ''}
+
+                        ${data.risk_factors ? `
+                            <p class="text-danger"><strong>Risk Factors:</strong></p>
+                            <ul>${data.risk_factors.map(r => `<li>${r}</li>`).join('')}</ul>
+                        ` : ''}
+                    </div>
+                `;
+
+                    // Insert the benchmark report above the resume block
+                    const mainCol = document.querySelector('.col-md-8');
+                    const resumeCard = mainCol.querySelector('.card.mb-4');
+                    mainCol.insertBefore(container, resumeCard);
+
+                })
+                .catch(error => {
+                    alert("⚠️ Failed to run benchmark. Check logs.");
+                    console.error("Benchmark Error:", error);
+                });
+        }
+
+
+        function runAIReview() {
+            alert("🔍 AI Review generation in progress...");
+            // TODO: Trigger AI summary endpoint
+        }
+
+        function submitReview() {
+            const notes = document.getElementById('reviewNotes').value;
+            alert("📝 Review submitted:\n" + notes);
+            // TODO: POST review notes to backend
+        }
+
+        function updateStage() {
+            const stage = document.getElementById('stageSelect').value;
+            alert("📈 Stage updated to: " + stage);
+            // TODO: PATCH application stage update to backend
+        }
+    </script>
+{% endblock %}

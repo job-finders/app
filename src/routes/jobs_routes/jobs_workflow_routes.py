@@ -408,7 +408,7 @@ async def view_job_applications(user: User, job_id: str):
         job_applications=job_applications_list,
         current_user=user
     )
-    return render_template("jobs_workflow/job_applications.html", **context)
+    return render_template("jobs_workflow/job_applications/job_applications.html", **context)
 
 
 @jobs_workflow_route.get("/<string:job_id>/application/<string:application_id>/get-application")
@@ -444,7 +444,7 @@ async def get_application(user: User, job_id: str, application_id: str):
 
     context = dict(current_user=user, job_application=application_data, resume=resume)
 
-    return render_template("jobs_workflow/view_job_application.html", **context)
+    return render_template("jobs_workflow/job_applications/view_job_application.html", **context)
 
 
 @jobs_workflow_route.route("/<string:job_id>/update-status", methods=["POST"])

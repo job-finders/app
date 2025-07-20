@@ -42,9 +42,8 @@ class CandidateBenchMarkController(Controllers):
 
     def __init__(self, factory):
         super().__init__(factory)
-    
-    @staticmethod
-    def init_app(app: Flask):
+
+    def init_app(self, app: Flask):
         super().init_app(app=app)
 
     @error_handler
@@ -52,7 +51,7 @@ class CandidateBenchMarkController(Controllers):
         self,
         job_application_id: str,
         employer_id: str
-    ) -> CandidateBenchmarkReport:
+    ) -> CandidateBenchmarkReport | None:
         """
         Benchmark a candidate from employer's perspective for hiring decisions
         
@@ -75,6 +74,10 @@ class CandidateBenchMarkController(Controllers):
         # Fetch application data
         application: JobApplication = await job_search_controller.get_application_by_id(
             application_id=job_application_id)
+
+        if not application:
+            return None
+
         job: Job = await job_search_controller.get_job_by_id(job_id=application.job_id)
         candidate_cv: JobSeekerCV = await resume_controller.get_cv_by_id(application.cv_id)
         candidate_profile: JobSeekerProfile = await jobseeker_profile_controller.get_profile_by_uid(

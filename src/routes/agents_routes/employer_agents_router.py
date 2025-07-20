@@ -4,6 +4,9 @@ import json
 from flask import Blueprint, request, jsonify, Response
 # Third-Party
 from pydantic import HttpUrl
+
+from src.controllers.company import CompanyController
+from src.controllers.agents.candidate_benchmark_controller import CandidateBenchMarkController
 # Controllers
 from src.controllers.agents import EmployerAgentsController
 from src.controllers.jobs import JobsWorkflowController
@@ -110,3 +113,27 @@ async def analyze_job_post(user: User, job_id: str):
         agents_logger.exception("Job post analysis failed")
         return jsonify({"error": "Job post analysis failed", "details": str(e)}), 500
 
+
+@employer_agents_route.route("/jobs/candidate-benchmarking/<string:job_application_id>", methods=["POST"])
+@flask_error_handler
+@employer_login
+async def candidate_job_application_benchmarking_employer(user: User, job_application_id: str):
+    """
+    Benchmark a job application from the employer's perspective.
+    """
+    agents_logger.info(f"Benchmarking job application {job_application_id} for user {user.uid}")
+    benchmarking_controller: CandidateBenchMarkController = get_controller('candidate_benchmarking')
+    company_controller: CompanyController = get_controller("company")
+    try:
+        employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
+        result = await benchmarking_controller.benchmark_for_employer(
+            job_application_id=job_application_id, employer_id=employer_details.employer_id)
+        if not result:
+            agents_logger.exception("Job Application Benchmarking cannot be run on fake data")
+            details = "Job Application Data not Found"
+            return jsonify({"error": "Job application benchmarking failed", "details": details}), 500
+
+        return jsonify(result.model_dump()), 200
+    except Exception as e:
+        agents_logger.exception("Job application benchmarking failed")
+        return jsonify({"error": "Job application benchmarking failed", "details": str(e)}), 500
