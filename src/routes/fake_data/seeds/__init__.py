@@ -1,0 +1,1 @@
+from .seeds import generate_fake_application_pipeline
