@@ -1110,6 +1110,21 @@ class JobApplication(BaseModel):
             return False
         return self.ats_report.score < 50 or len(self.ats_report.missing_keywords) > 5
 
+    @property
+    def resume_used(self):
+        """
+        Returns the resume used in the job application.
+        Conditions:
+        - jobseeker_profile must be present
+        - cv_id must be set
+        The resume is found in jobseeker_profile.linked_resumes.
+        """
+        if self.jobseeker_profile and self.cv_id:
+            resumes = getattr(self.jobseeker_profile, "linked_resumes", [])
+            for resume in resumes:
+                if getattr(resume, "cv_id", None) == self.cv_id:
+                    return resume
+        return None
 
 # Pydantic Models
 class StatusCounts(BaseModel):

@@ -378,22 +378,29 @@ async def view_job_applications(user: User, job_id: str):
 
     if not job_applications_list:
         # 🧪 Generate 3 fake applications for testing
+        from src.routes.fake_data import store
         from src.routes.fake_data import generate_fake_job_application
+        if store.is_fake_mode():
+            job_applications_list = [
+                generate_fake_job_application(job_id=job_id),
+                generate_fake_job_application(job_id=job_id),
+                generate_fake_job_application(job_id=job_id),
+                generate_fake_job_application(job_id=job_id),
+                generate_fake_job_application(job_id=job_id),
+                generate_fake_job_application(job_id=job_id),
+                generate_fake_job_application(job_id=job_id),
+                generate_fake_job_application(job_id=job_id),
+                generate_fake_job_application(job_id=job_id),
+            ]
 
-        job_applications_list = [
-            generate_fake_job_application(job_id=job_id),
-            generate_fake_job_application(job_id=job_id),
-            generate_fake_job_application(job_id=job_id),
-            generate_fake_job_application(job_id=job_id),
-            generate_fake_job_application(job_id=job_id),
-            generate_fake_job_application(job_id=job_id),
-            generate_fake_job_application(job_id=job_id),
-            generate_fake_job_application(job_id=job_id),
-            generate_fake_job_application(job_id=job_id),
-        ]
+            for job_application in job_applications_list:
+                job_application.job = job
+                store.job_applications[job_application.application_id] = job_application
 
-    job_application = job_applications_list[-1]
-    workflow_logger.info(job_application)
+    if job_applications_list:
+        job_application = job_applications_list[-1]
+        workflow_logger.info(job_application)
+
     context = dict(
         job=job,
         job_id=job_id,
@@ -414,14 +421,26 @@ async def get_application(user: User, job_id: str, application_id: str):
     """
     View full details of a job application, including profile, CV, and ATS report.
     """
+    from src.routes.fake_data import store
     jobs_workflow_controller: JobsWorkflowController = get_controller("jobs_workflow")
     resumes_controller: ResumeController = get_controller("resume")
     # Get full application context from controller
-    application_data = await jobs_workflow_controller.get_job_application_details(application_id=application_id)
+    application_data: JobApplication = await jobs_workflow_controller.get_job_application_details(
+        application_id=application_id)
     if application_data:
         resume = await resumes_controller.get_cv_by_id(cv_id=application_data.cv_id)
     else:
-        resume = None
+        if store.is_fake_mode():
+            # fake mode is for development purposes only - future development would allow users to view fake applications
+            # in order to better understand how the app works.
+            application_data = store.job_applications.get(application_id)
+            if not application_data:
+                flash("Application not found.", "warning")
+                return redirect(url_for("jobs_workflow.view_job_applications", job_id=job_id))
+            resume = application_data.jobseeker_profile.resumes_list[
+                -1] if application_data.jobseeker_profile and application_data.jobseeker_profile.resumes_list else None
+        else:
+            resume = None
 
     context = dict(current_user=user, job_application=application_data, resume=resume)
 

@@ -1,3 +1,3 @@
-from routes.fake_data.seeds.fake_job_applications import generate_fake_job_application
-from routes.fake_data.seeds.fake_resume import generate_fake_cv
-from routes.fake_data.seeds.fake_ats_report import generate_fake_ats_report
+from .seeds.fake_job_applications import generate_fake_job_application
+from .seeds.fake_resume import generate_fake_cv
+from .seeds.fake_ats_report import generate_fake_ats_report

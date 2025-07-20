@@ -100,8 +100,8 @@
                     <div class="section-heading">Resume</div>
                     {% if resume %}
                         <pre class="bg-light p-3 rounded" style="font-family: monospace; font-size: 0.9rem;">
-{{ resume.content | e }}
-                </pre>
+                        {{ resume.ats_description | e }}
+                    </pre>
                     {% else %}
                         <p class="text-muted">Resume not available</p>
                     {% endif %}
