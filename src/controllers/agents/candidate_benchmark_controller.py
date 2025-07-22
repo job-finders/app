@@ -120,7 +120,7 @@ class CandidateBenchMarkController(Controllers):
             user_id: str,
             job_id: str,
             cv_id: Optional[str] = None
-    ) -> CandidateBenchmarkReport:
+    ) -> CandidateBenchmarkReport | None:
         """
         Benchmark job fit from employee's perspective for career development
 
@@ -148,11 +148,17 @@ class CandidateBenchMarkController(Controllers):
 
         # Validate all required data exists
         if not job:
+            self.logger.error(f"Job {job_id} not found")
+            return None
+
             raise ValueError(f"Job {job_id} not found")
         if not candidate_profile:
-            raise ValueError(f"JobSeekerProfile for user {user_id} not found")
+            self.logger.error(f"JobSeekerProfile for user {user_id} not found")
+            return None
+
         if not cv:
-            raise ValueError(f"No CV found for user {user_id}")
+            self.logger.error(f"CV for user {user_id} not found")
+            return None
 
         # Combine profile and CV data (consistent with employer method)
         candidate_data = (
