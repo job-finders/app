@@ -1,19 +1,22 @@
+from __future__ import annotations
 import inspect
+import time
 from abc import ABC, abstractmethod
 from datetime import datetime
-import time
 from enum import Enum
-from typing import Type, Dict, Any
-from pydantic import BaseModel, ValidationError
+from typing import Any, Dict, Type
 
-from src.agents.openrouter_client import OpenRouterClient
-from src.config import config_instance
+from pydantic import BaseModel
 
 from src.agents.memory import AgentMemoryStore
+from src.agents.openrouter_client import OpenRouterClient
+from src.config import config_instance
+from src.utils.route_helpers import get_service
 
 
-class ModelType(Enum):
-    # Primary DeepSeek models (cost-effective)
+# ---------- Configuration Enums ------------------------------------------------
+class ModelType(str, Enum):
+    # deepseek
     DEEPSEEK_CHAT = "deepseek/deepseek-chat"
     DEEPSEEK_REASONER = "deepseek/deepseek-reasoner"
     DEEPSEEK_V3 = "deepseek/deepseek-v3"
@@ -21,20 +24,26 @@ class ModelType(Enum):
     DEEPSEEK_CHIMERA_FREE = "tngtech/deepseek-r1t2-chimera:free"
     DEEPSEEK_R1_GWEN_FREE = "deepseek/deepseek-r1-0528-qwen3-8b:free"
     DEEPSEEK_R1_528_FREE = "deepseek/deepseek-r1-0528:free"
-    MOONSHOT_KIMI_K2_FREE = "moonshotai/kimi-k2:free"
-    MOONSHOT_KIMI_K2 = "moonshotai/kimi-k2"
-    GWEN_30B = "qwen/qwen3-30b-a3b:free"
-    
-    # Fallback models (for when DeepSeek can't handle the task)
-    GPT4 = "openai/gpt-4"
-    CLAUDE = "anthropic/claude-3-haiku"  # Cheaper Claude variant
 
-class UserRole(Enum):
+    # moonshot
+    MOONSHOT_KIMI_K2 = "moonshotai/kimi-k2"
+    MOONSHOT_KIMI_K2_FREE = "moonshotai/kimi-k2:free"
+
+    # qwen
+    GWEN_30B = "qwen/qwen3-30b-a3b:free"
+
+    # fallbacks
+    GPT4 = "openai/gpt-4"
+    CLAUDE = "anthropic/claude-3-haiku"
+
+
+class UserRole(str, Enum):
     JOB_SEEKER = "job_seeker"
     EMPLOYER = "employer"
     HR_MANAGER = "hr_manager"
     RECRUITER = "recruiter"
     ADMIN = "admin"
+
 
 class UsageTier(Enum):
     FREE = {"daily_limit": 10, "monthly_limit": 100}
@@ -42,358 +51,220 @@ class UsageTier(Enum):
     PREMIUM = {"daily_limit": 200, "monthly_limit": 5000}
     ENTERPRISE = {"daily_limit": 1000, "monthly_limit": 25000}
 
+
+# ---------- Usage Tracking -----------------------------------------------------
 class UsageTracker:
-    def __init__(self, user_id: str, tier: UsageTier = UsageTier.FREE):
+    def __init__(self, user_id: str, tier: UsageTier = UsageTier.FREE) -> None:
         self.user_id = user_id
         self.tier = tier
-        self.usage_data = {}  # Store in Redis/DB in production
-    
-    def get_usage_key(self, period: str) -> str:
+        self._redis: dict[str, int] = {}  # Replace with real Redis or DB
+
+    # ---------------------------------------------------------------------
+    def _key(self, period: str) -> str:
         today = datetime.now().strftime("%Y-%m-%d")
         month = datetime.now().strftime("%Y-%m")
-        return f"{self.user_id}:{period}:{today if period == 'daily' else month}"
-    
-    def get_current_usage(self, period: str) -> int:
-        key = self.get_usage_key(period)
-        return self.usage_data.get(key, 0)
-    
-    def increment_usage(self, period: str) -> None:
-        key = self.get_usage_key(period)
-        self.usage_data[key] = self.usage_data.get(key, 0) + 1
-    
-    def check_limit(self) -> bool:
-        daily_usage = self.get_current_usage("daily")
-        monthly_usage = self.get_current_usage("monthly")
-        
+        suffix = today if period == "daily" else month
+        return f"{self.user_id}:{period}:{suffix}"
+
+    def current(self, period: str) -> int:
+        return self._redis.get(self._key(period), 0)
+
+    def bump(self, period: str) -> None:
+        key = self._key(period)
+        self._redis[key] = self._redis.get(key, 0) + 1
+
+    def within_limits(self) -> bool:
         limits = self.tier.value
-        return (daily_usage < limits["daily_limit"] and 
-                monthly_usage < limits["monthly_limit"])
+        return (
+            self.current("daily") < limits["daily_limit"]
+            and self.current("monthly") < limits["monthly_limit"]
+        )
 
-    def record_usage(self) -> bool:
-        if self.check_limit():
-            self.increment_usage("daily")
-            self.increment_usage("monthly")
-            return True
-        return False
+    def record(self) -> bool:
+        if not self.within_limits():
+            return False
+        self.bump("daily")
+        self.bump("monthly")
+        return True
 
+
+# ---------- Agent --------------------------------------------------------------
 class BaseAgent(ABC):
-    def __init__(self, user_id: str, usage_tier: UsageTier = UsageTier.FREE):
+    def __init__(
+        self,
+        user_id: str,
+        usage_tier: UsageTier = UsageTier.FREE,
+    ) -> None:
         self.user_id = user_id
         self.name = getattr(self, "name", self.__class__.__name__)
-        self.memory = AgentMemoryStore(user_id, agent_name=self.name)
-        self.usage_tracker = UsageTracker(user_id, usage_tier)
+        self.memory = AgentMemoryStore(user_id, self.name)
+        self.usage = UsageTracker(user_id, usage_tier)
         self.hashnode_token = config_instance().HASHNODE_TOKEN
-        self.openrouter_client: OpenRouterClient = OpenRouterClient()
-        self.logger = None
-        self._last_interaction = {}
-        self.init_agent()
-    
-    
-    def init_agent(self):        
-        self.openrouter_client.init_app()
-        if self.logger is None:
-            from src.utils.route_helpers import get_service
-            self.logger = get_service("logger")()("BaseAgent")
+        self.client = OpenRouterClient()
+        self._logger = get_service("logger")()(self.name)
+        self._last_interaction: dict[str, Any] = {}
+        self.client.init_app()
 
+    # ------------------------------------------------------------------
     @abstractmethod
-    def system_prompt(self):
-        ...
+    def system_prompt(self) -> str: ...
+    @abstractmethod
+    def prompt(self, *args, **kwargs) -> str: ...
+    @abstractmethod
+    def output_model(self) -> Type[BaseModel]: ...
 
-    @abstractmethod
-    def prompt(self, *args, **kwargs) -> str:
-        ...
+    # ------------------------------------------------------------------
+    # Model Routing
+    # ------------------------------------------------------------------
+    ROUTING_RULES = {
+        "matching": ModelType.MOONSHOT_KIMI_K2,
+        "analysis": ModelType.MOONSHOT_KIMI_K2,
+        "budget": ModelType.MOONSHOT_KIMI_K2,
+        "salary": ModelType.MOONSHOT_KIMI_K2,
+        "writing": ModelType.DEEPSEEK_CHAT,
+        "conversation": ModelType.DEEPSEEK_CHAT,
+        "resume": ModelType.DEEPSEEK_CHAT,
+        "cover letter": ModelType.DEEPSEEK_CHAT,
+        "interview": ModelType.DEEPSEEK_CHAT,
+    }
 
-    @abstractmethod
-    def output_model(self) -> Type[BaseModel]:
-        ...
+    @classmethod
+    def select_model(
+        cls,
+        user_prompt: str,
+        user_role: UserRole | None = None,
+        task_type: str | None = None,
+    ) -> ModelType:
+        """Return the best model for the given prompt / role / task."""
+        text = user_prompt.lower()
+
+        # Role-specific shortcuts
+        if user_role == UserRole.EMPLOYER and "screening" in text:
+            return ModelType.MOONSHOT_KIMI_K2
+        if user_role == UserRole.JOB_SEEKER and "job search" in text:
+            return ModelType.MOONSHOT_KIMI_K2
+
+        # Task-type override
+        if task_type and task_type in cls.ROUTING_RULES:
+            return cls.ROUTING_RULES[task_type]
+
+        # Keyword-based fallthrough
+        for phrase, model in cls.ROUTING_RULES.items():
+            if phrase in text:
+                return model
+
+        return ModelType.DEEPSEEK_CHAT  # default
 
     @staticmethod
-    def select_model(user_prompt: str, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> ModelType:
-        prompt_lower = user_prompt.lower()
-        
-        # Role-specific routing - primarily DeepSeek
-        if user_role == UserRole.EMPLOYER:
-            if any(word in prompt_lower for word in ["screening", "candidate evaluation", "shortlist"]):
-                return ModelType.MOONSHOT_KIMI_K2
-            elif any(word in prompt_lower for word in ["job posting", "job description", "requirements"]):
-                return ModelType.DEEPSEEK_CHAT  # DeepSeek handles writing well
-            elif any(word in prompt_lower for word in ["budget", "salary range", "compensation"]):
-                return ModelType.MOONSHOT_KIMI_K2
-            elif any(word in prompt_lower for word in ["company culture", "team fit", "onboarding"]):
-                return ModelType.DEEPSEEK_CHAT
-        
-        elif user_role == UserRole.JOB_SEEKER:
-            if any(word in prompt_lower for word in ["resume", "cv", "cover letter", "application"]):
-                return ModelType.DEEPSEEK_CHAT  # Good at structured writing
-            elif any(word in prompt_lower for word in ["job search", "job matching", "recommendations"]):
-                return ModelType.MOONSHOT_KIMI_K2
-            elif any(word in prompt_lower for word in ["interview prep", "mock interview", "questions"]):
-                return ModelType.DEEPSEEK_CHAT  # Conversational
-            elif any(word in prompt_lower for word in ["salary negotiation", "market rate", "compensation"]):
-                return ModelType.MOONSHOT_KIMI_K2
-            elif any(word in prompt_lower for word in ["career path", "skills development", "growth"]):
-                return ModelType.DEEPSEEK_CHAT
-        
-        elif user_role == UserRole.HR_MANAGER:
-            if any(word in prompt_lower for word in ["policy", "compliance", "legal", "documentation"]):
-                return ModelType.DEEPSEEK_CHAT  # Good at formal writing
-            elif any(word in prompt_lower for word in ["talent pipeline", "recruitment strategy", "hiring plan"]):
-                return ModelType.MOONSHOT_KIMI_K2
-            elif any(word in prompt_lower for word in ["employee engagement", "retention", "culture"]):
-                return ModelType.DEEPSEEK_CHAT
-            elif any(word in prompt_lower for word in ["performance review", "evaluation", "feedback"]):
-                return ModelType.MOONSHOT_KIMI_K2
-        
-        elif user_role == UserRole.RECRUITER:
-            if any(word in prompt_lower for word in ["sourcing", "candidate search", "talent acquisition"]):
-                return ModelType.MOONSHOT_KIMI_K2
-            elif any(word in prompt_lower for word in ["outreach", "messaging", "communication"]):
-                return ModelType.DEEPSEEK_CHAT
-            elif any(word in prompt_lower for word in ["pipeline management", "tracking", "metrics"]):
-                return ModelType.MOONSHOT_KIMI_K2
-        
-        # Task-specific routing
-        if task_type:
-            if task_type == "matching":
-                return ModelType.MOONSHOT_KIMI_K2
-            elif task_type == "writing":
-                return ModelType.DEEPSEEK_CHAT
-            elif task_type == "analysis":
-                return ModelType.MOONSHOT_KIMI_K2
-            elif task_type == "conversation":
-                return ModelType.DEEPSEEK_CHAT
-            elif task_type == "coding":
-                return ModelType.MOONSHOT_KIMI_K2
-        
-        # General job-related content routing - DeepSeek first
-        if any(word in prompt_lower for word in ["job matching", "recommend jobs", "find jobs", "job search", "match candidates"]):
-            return ModelType.MOONSHOT_KIMI_K2
-        
-        elif any(word in prompt_lower for word in ["resume", "cv", "cover letter", "portfolio", "application"]):
-            return ModelType.DEEPSEEK_CHAT
-        
-        elif any(word in prompt_lower for word in ["job description", "job posting", "requirements", "hiring"]):
-            return ModelType.DEEPSEEK_CHAT
-        
-        elif any(word in prompt_lower for word in ["interview", "preparation", "questions", "practice", "mock"]):
-            return ModelType.DEEPSEEK_CHAT
-        
-        elif any(word in prompt_lower for word in ["salary", "compensation", "pay", "benefits", "market rate"]):
-            return ModelType.MOONSHOT_KIMI_K2
-        
-        elif any(word in prompt_lower for word in ["career advice", "guidance", "transition", "growth", "development"]):
-            return ModelType.DEEPSEEK_CHAT
-        
-        elif any(word in prompt_lower for word in ["company research", "industry analysis", "trends", "insights"]):
-            return ModelType.MOONSHOT_KIMI_K2
-        
-        elif any(word in prompt_lower for word in ["skills assessment", "evaluation", "competency", "proficiency"]):
-            return ModelType.MOONSHOT_KIMI_K2
-        
-        elif any(word in prompt_lower for word in ["networking", "connections", "professional", "contacts"]):
-            return ModelType.DEEPSEEK_CHAT
-        
-        elif any(word in prompt_lower for word in ["market analysis", "demand", "supply", "statistics"]):
-            return ModelType.MOONSHOT_KIMI_K2
-        
-        elif any(word in prompt_lower for word in ["onboarding", "orientation", "training", "integration"]):
-            return ModelType.DEEPSEEK_CHAT
-        
-        elif any(word in prompt_lower for word in ["performance", "productivity", "metrics", "kpi"]):
-            return ModelType.MOONSHOT_KIMI_K2
-        
-        elif any(word in prompt_lower for word in ["diversity", "inclusion", "equity", "bias"]):
-            return ModelType.DEEPSEEK_CHAT
-        
-        elif any(word in prompt_lower for word in ["remote work", "hybrid", "flexible", "work-life"]):
-            return ModelType.DEEPSEEK_CHAT
-        
-        elif any(word in prompt_lower for word in ["contract", "freelance", "gig", "temporary"]):
-            return ModelType.MOONSHOT_KIMI_K2
-        
-        elif any(word in prompt_lower for word in ["code", "programming", "technical", "development"]):
-            return ModelType.DEEPSEEK_CHAT
-        
-        # Default to most cost-effective model
-        return ModelType.DEEPSEEK_CHAT
-
-    @staticmethod
-    def get_fallback_model(selected_model: ModelType) -> ModelType:
-        """Get cheaper fallback model when usage limits are exceeded"""
-        if selected_model in [ModelType.MOONSHOT_KIMI_K2]:
-            return ModelType.MOONSHOT_KIMI_K2_FREE
-        return ModelType.DEEPSEEK_CHIMERA_FREE
-
-    async def check_usage_and_select_model(self, user_prompt: str, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> ModelType:
-        """Check usage limits and select appropriate model"""
-
-        selected_model = self.select_model(user_prompt, user_role, task_type, *args, **kwargs)
-        
-        # Check if user has exceeded limits
-        if not self.usage_tracker.check_limit():
-            # Use cheapest model or deny service
-            if self.usage_tracker.tier == UsageTier.FREE:
-                raise Exception("Daily/Monthly limit exceeded. Please upgrade your plan.")
-            else:
-                self.logger.info("Reverting to a Fallback Model Due to Usage")
-                selected_model = self.get_fallback_model(selected_model)
-
-        self.logger.info(f"Using Model {selected_model.value} on OpenRouter")
-
-        return selected_model
-
-    def get_usage_info(self) -> dict[str, str | int]:
-        """Get current usage statistics"""
-        daily_usage = self.usage_tracker.get_current_usage("daily")
-        monthly_usage = self.usage_tracker.get_current_usage("monthly")
-        limits = self.usage_tracker.tier.value
-        
-        usage_info = {
-            "tier": self.usage_tracker.tier.name,
-            "daily_usage": daily_usage,
-            "daily_limit": limits["daily_limit"],
-            "monthly_usage": monthly_usage,
-            "monthly_limit": limits["monthly_limit"],
-            "daily_remaining": limits["daily_limit"] - daily_usage,
-            "monthly_remaining": limits["monthly_limit"] - monthly_usage
-        }
-        self.logger.info(f"Usage Information : {usage_info}")
-        return usage_info
-
-    async def run(self, user_role: UserRole = None, task_type: str = None, *args, **kwargs) -> BaseModel:
-
-        user_prompt = self.prompt(*args, **kwargs)
-        if inspect.iscoroutine(user_prompt):
-            print("ITS COROUTINE")
-            user_prompt = await user_prompt
-
-        system_prompt = self.system_prompt()
-
-        # Select model with usage limits
-        selected_model = await self.check_usage_and_select_model(
-            user_prompt, user_role, task_type, *args, **kwargs
+    def fallback_for(model: ModelType) -> ModelType:
+        return (
+            ModelType.MOONSHOT_KIMI_K2_FREE
+            if model == ModelType.MOONSHOT_KIMI_K2
+            else ModelType.DEEPSEEK_CHIMERA_FREE
         )
-        # Record usage
-        if not self.usage_tracker.record_usage():
-            raise Exception("Usage limit exceeded during execution")
 
-        # Add user message to memory with protection option
-        protect_user_msg = kwargs.get('protect_user_message', False)
-        user_entry_id = self.memory.add_entry("user", user_prompt, protect=protect_user_msg)
+    # ------------------------------------------------------------------
+    async def check_usage_and_select_model(
+        self,
+        user_prompt: str,
+        user_role: UserRole | None = None,
+        task_type: str | None = None,
+    ) -> ModelType:
+        model = self.select_model(user_prompt, user_role, task_type)
 
-        messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+        if not self.usage.within_limits():
+            if self.usage.tier == UsageTier.FREE:
+                raise RuntimeError("Daily / monthly limit exceeded. Please upgrade.")
+            model = self.fallback_for(model)
+
+        self._logger.info(f"Using model {model.value}")
+        return model
+
+    # ------------------------------------------------------------------
+    async def run(
+        self,
+        user_role: UserRole | None = None,
+        task_type: str | None = None,
+        *args,
+        **kwargs,
+    ) -> BaseModel:
+        prompt = self.prompt(*args, **kwargs)
+        if inspect.iscoroutine(prompt):
+            prompt = await prompt
+
+        model = await self.check_usage_and_select_model(prompt, user_role, task_type)
+        if not self.usage.record():
+            raise RuntimeError("Usage limit exceeded during execution")
+
+        user_id = self.memory.add_entry(
+            "user",
+            prompt,
+            protect=kwargs.get("protect_user_message", False),
+        )
+
+        messages = [
+            {"role": "system", "content": self.system_prompt()},
+            {"role": "user", "content": prompt},
+        ]
+
         try:
-            # Make API call with enhanced client
-            output_model = await self.openrouter_client.structured_completion(
+            response = await self.client.structured_completion(
                 messages=messages,
                 output_model=self.output_model(),
-                model=selected_model.value,
-                temperature=kwargs.get('temperature', 0.7),
-                max_tokens=kwargs.get('max_tokens', 2048)
+                model=model.value,
+                temperature=kwargs.get("temperature", 0.7),
+                max_tokens=kwargs.get("max_tokens", 2048),
             )
-            # Add assistant response to memory
-            protect_response = kwargs.get('protect_response', False)
-            try:
-                if output_model:
-                    assistant_entry_id = self.memory.add_entry(
-                        "assistant", 
-                        output_model.model_dump_json(), 
-                        protect=protect_response
-                    )
-                else:
-                    self.logger.error("Potential Problem the Model Returned no OutPut")
-            except ValidationError as e:
-                self.logger.error(str(e))
-                pass
+            if response is None:
+                raise ValueError("Agent produced no output.")
 
-            # Store entry IDs for potential future reference
-            self._last_interaction = {
-                "user_entry_id": user_entry_id,
-                "timestamp": time.time()
-            }
-            
-            return output_model
-            
+            self.memory.add_entry(
+                "assistant",
+                response.model_dump_json(),
+                protect=kwargs.get("protect_response", False),
+            )
+            self._last_interaction = {"user_entry_id": user_id, "timestamp": time.time()}
+            return response
+
         except Exception as e:
-            # Enhanced error handling with memory context
-            error_context = {
-                "error": str(e),
-                "model": selected_model.value if 'selected_model' in locals() else "unknown",
-                "memory_stats": "",
-                "user_prompt_preview": user_prompt[:100] + "..." if len(user_prompt) > 100 else user_prompt
-            }
-            # TODO - standardise this for errors indicating there is no more credit
-            credit_problems = ['limit_exceed', 'add credit', 'payment']
-            # Handle rate limiting and model errors
-            if any([word.casefold() in str(e).lower() for word in credit_problems]):
-                try:
-                    return await self.run_fallback_model(
-                        kwargs=kwargs, user_entry_id=user_entry_id, selected_model=selected_model,messages=messages)
-                except Exception as e:
-                    # Log both original and fallback errors
-                    fallback_error = e
-                    error_context["fallback_error"] = str(fallback_error)
-                    self.logger.error(error_context)
-                    raise fallback_error
-            else:
-                self.logger.error(error_context)
-                raise e
+            if any(w in str(e).lower() for w in ("limit_exceed", "add credit", "payment")):
+                return await self._run_fallback(messages, user_id, kwargs)
+            self._logger.error({"error": str(e), "model": model.value})
+            raise
 
-    async def run_fallback_model(self, kwargs, user_entry_id: str, selected_model: ModelType, messages: list[dict[str, str]]):
-
-        # Will use a Fallback Model for the previous selected Model.
-        fallback_model = self.get_fallback_model(selected_model=selected_model)
-
-        output = await self.openrouter_client.structured_completion(
+    async def _run_fallback(
+        self,
+        messages: list[dict[str, str]],
+        user_id: str,
+        kwargs: dict[str, Any],
+    ) -> BaseModel:
+        model = self.fallback_for(self.select_model(messages[-1]["content"]))
+        response = await self.client.structured_completion(
             messages=messages,
             output_model=self.output_model(),
-            model=fallback_model.value,
-            temperature=kwargs.get('temperature', 0.7),
-            max_tokens=kwargs.get('max_tokens', 1024)
+            model=model.value,
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
         )
-        if output is None:
-            raise ValueError("Keyword suggestion agent returned no output.")
+        if response is None:
+            raise ValueError("Fallback agent produced no output.")
 
-        error_context = dict(message=f"Fallback model Output: {output}", method="run_fallback_model")
-        self.logger.error(error_context)
+        self.memory.add_entry(
+            "assistant",
+            f"[FALLBACK:{model.value}] {response.model_dump_json()}",
+            protect=kwargs.get("protect_response", False),
+        )
+        return response
 
-        # Add fallback response to memory with note
-        try:
-            fallback_response = output.model_dump_json()
-            assistant_entry_id = self.memory.add_entry(
-                "assistant",
-                f"[FALLBACK_MODEL:{fallback_model.value}] {fallback_response}",
-                protect=kwargs.get('protect_response', False)
-            )
-            self._last_interaction = {
-                "user_entry_id": user_entry_id,
-                "assistant_entry_id": assistant_entry_id,
-                "fallback_used": True,
-                "timestamp": time.time()
-            }
-
-        except ValidationError as e:
-            self.logger.error(str(e))
-
-        return output
-
-    def delete_memory_entry(self, entry_id: str) -> bool:
-        """Delete a specific memory entry."""
-        return self.memory.delete_entry(entry_id)
-
-    def delete_memory_entries(self, entry_ids: list[str]) -> dict[str, bool]:
-        """Delete multiple memory entries."""
-        return self.memory.delete_entries(entry_ids)
-
-    def get_last_interaction(self) -> Dict:
-        """Get details of the last interaction."""
-        return getattr(self, '_last_interaction', {})
-
-    def _log_error(self, error_context: dict[str, str]):
-        """Log error with enhanced context."""
-        # Implement your logging logic here
-        from src.utils.route_helpers import get_service
-        if not self.logger:
-            __logger_name: str = f"Debug Logger: {self.__class__.__name__.lower()} : "
-            self.logger = get_service('logger')()(__logger_name)
-        self.logger.error(error_context)
+    # ------------------------------------------------------------------
+    def usage_info(self) -> dict[str, int | str]:
+        limits = self.usage.tier.value
+        daily = self.usage.current("daily")
+        monthly = self.usage.current("monthly")
+        info = {
+            "tier": self.usage.tier.name,
+            "daily": f"{daily}/{limits['daily_limit']}",
+            "monthly": f"{monthly}/{limits['monthly_limit']}",
+        }
+        self._logger.info(f"Usage {info}")
+        return info
