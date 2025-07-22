@@ -60,8 +60,9 @@ class OpenRouterClient:
         self._log.debug("Request payload: %s", json.dumps(payload, indent=2))
 
         resp = await self._client.post(self._ENDPOINT, json=payload)
-        resp.raise_for_status()
         self._log.debug("HTTP %s", resp.status_code)
+        resp.raise_for_status()
+        
         return resp.json()
 
     # ------------------------------------------------------------------
@@ -91,8 +92,13 @@ class OpenRouterClient:
         raw = await self.chat_completion(
             msgs, model=model, temperature=temperature, max_tokens=max_tokens, **extras
         )
-        content = raw["choices"][0]["message"]["content"]
-
+        try:
+            self._log.debug("Raw response: %s", json.dumps(raw, indent=2))
+            content = raw["choices"][0]["message"]["content"]
+        except KeyError as e:
+            self._log.error("Malformed response: %s", raw)
+            raise ValueError(f"Missing expected key in response: {e}")
+            
         # remove ```json … ``` wrappers if present
         if content.startswith("```json") and content.endswith("```"):
             content = content[7:-3].strip()
