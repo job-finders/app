@@ -1,58 +1,115 @@
 {% extends "company/layout/page.html" %}
+{% block title %}Billing & Plans – {{ company.name }}{% endblock %}
 
-{% block title %}Choose a Plan | {{ company.name }}{% endblock %}
+{% block extra_css %}
+<style>
+    .plan-card            { transition: transform .2s; cursor:pointer }
+    .plan-card:hover      { transform: translateY(-4px); }
+    .plan-card.current    { border: 2px solid #0d6efd; }
+    .badge-trial          { background:#ffc107; color:#212529; }
+    .badge-unpaid         { background:#dc3545; }
+    @media(max-width:576px){
+        .plan-card .btn { width:100% }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <div class="text-center mb-5">
-        <h1 class="fw-bold">Choose the Right Plan</h1>
-        <p class="text-muted">Upgrade your hiring toolkit and access advanced features tailored to your hiring needs.</p>
-    </div>
-    <!-- Plans Grid -->
-    <div class="row g-4">
-        {% for plan in billing_plans %}
-        <div class="col-md-4">
-            <div class="card h-100 shadow-sm {% if billing.current_plan_id == plan.plan_id %}border-primary{% endif %}">
-                <div class="card-header bg-white border-0 text-center">
-                    <h5 class="fw-bold text-uppercase">{{ plan.name }}</h5>
-                    <p class="small text-muted mb-0">{{ plan.description }}</p>
-                </div>
-                <div class="card-body d-flex flex-column text-center">
-                    <div class="mb-3">
-                        <span class="display-6 fw-bold">${{ plan.price_usd }}</span>
-                        <span class="text-muted">/ {{ plan.billing_cycle }}</span>
-                    </div>
-                    <ul class="list-unstyled mb-4 text-start px-3">
-                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>{{ plan.max_jobs }} job slots</li>
-                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>ATS: {{ 'Included' if plan.includes_ats else 'Not included' }}</li>
-                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Analytics: {{ 'Included' if plan.includes_analytics else 'Not included' }}</li>
-                    </ul>
-                    {% if billing_profile.current_plan_id == plan.plan_id %}
-                        <button class="btn btn-outline-primary disabled mt-auto" disabled>
-                            <i class="bi bi-check-circle me-1"></i> Current Plan
-                        </button>
-                    {% else %}
+    <h1 class="mb-3">Billing & Plans</h1>
 
-                        <form method="POST" action="{{ url_for('billing.create_billing_profile', company_id=billing_profile.company_id) }}" class="mt-auto">
-                           
-                            <input type="hidden" name="plan_id" value="{{ plan.plan_id }}">
-                            <button type="submit" class="btn btn-primary w-100 mt-auto">
-                                <i class="bi bi-arrow-right-circle me-1"></i>
-                                {% if billing_profile.trial_active %}Upgrade Now{% else %}Subscribe{% endif %}
+    {# -------------- unpaid banner -------------- #}
+    {% if unpaid_invoices %}
+        <div class="alert alert-danger d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Unpaid Invoice(s)</strong><br>
+                <small>{{ unpaid_invoices|length }} outstanding payments need your attention.</small>
+            </div>
+            <a class="btn btn-sm btn-outline-light"
+               href="{{ url_for('billing.checkout', invoice_id=unpaid_invoices[0].invoice_id) }}">
+                Pay now →
+            </a>
+        </div>
+    {% endif %}
+
+    {# -------------- current plan -------------- #}
+    {% if profile and profile.current_plan_id %}
+    <div class="card mb-4">
+        <div class="card-body row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-1">{{ profile.billing_plan.name }}</h5>
+                {% if profile.trial_active %}
+                    <span class="badge badge-trial">Trial ends {{ profile.trial_end_date }}</span>
+                {% else %}
+                    <small class="text-muted">
+                        Renews {{ profile.subscription_end }}
+                        {% if profile.is_payment_overdue %}<br><span class="badge badge-unpaid">Payment overdue</span>{% endif %}
+                    </small>
+                {% endif %}
+            </div>
+            <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                <a class="btn btn-outline-primary btn-sm"
+                   href="{{ url_for('billing.checkout', invoice_id=profile.last_invoice_id) }}">
+                    Manage Payment
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# -------------- plans grid -------------- #}
+    <h2 class="h4 mb-3">Choose a Plan</h2>
+    <div class="row g-3">
+        {% for plan in plans %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 plan-card {% if profile and profile.current_plan_id == plan.plan_id %}current{% endif %}">
+                <div class="card-header text-center">
+                    <h5 class="mb-0">{{ plan.name }}</h5>
+                    {% if plan.is_featured %}<small class="badge bg-success">Popular</small>{% endif %}
+                </div>
+
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="fs-2 fw-bold">R{{ plan.price }}</span>
+                        <small class="text-muted"> / month</small>
+                    </div>
+
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>
+                            {{ plan.max_open_jobs or "∞" }} open jobs</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>
+                            {{ plan.max_users or "∞" }} collaborators</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>
+                            {% if plan.allow_priority_support %}Priority support{% else %}Standard support{% endif %}</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>
+                            {% if plan.show_branding %}Branding enabled{% else %}White-label{% endif %}</li>
+                    </ul>
+                </div>
+
+                <div class="card-footer bg-white border-0">
+                    <form method="POST" class="d-grid">
+                        <input type="hidden" name="plan_id" value="{{ plan.plan_id }}">
+
+                        {% if profile and profile.current_plan_id == plan.plan_id %}
+                            <button class="btn btn-outline-primary" disabled>
+                                Current Plan
                             </button>
-                            
-                        </form>
-                    {% endif %}
+                        {% elif plan.is_trial and not profile %}
+                            <button class="btn btn-warning"
+                                    name="action" value="trial">
+                                Start 14-Day Trial
+                            </button>
+                        {% else %}
+                            <button class="btn btn-primary"
+                                    name="action" value="upgrade">
+                                {% if profile %}Switch Plan{% else %}Subscribe{% endif %}
+                            </button>
+                        {% endif %}
+                    </form>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
-
-    {% if billing_profile.trial_active %}
-    <div class="alert alert-warning mt-5 text-center" role="alert">
-        <strong>Trial ends on {{ billing_profile.trial_end_date }}</strong>. Upgrade now to keep your account active and continue posting jobs.
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

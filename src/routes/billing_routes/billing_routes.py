@@ -18,46 +18,64 @@ async def payfast_ipn():
     billing_controller = get_controller("billing")
     return await billing_controller.itn_callback(data=request.form)
 
-@billing_route.route("/create-billing-profile/<string:company_id>", methods=["GET", "POST"])
+@billing_route.route("/billing/<string:company_id>", methods=["GET", "POST"])
 @flask_error_handler
 @employer_login
-async def create_billing_profile(user: User, company_id: str):
+async def manage_billing(user: User, company_id: str):
     """
-    GET  – display the plan-selection / profile-creation form.
-    POST – validate the form, create the billing profile, then redirect
-           to the billing dashboard.
+    GET  – show plans, current subscription, unpaid invoices
+    POST – change plan (upgrade / downgrade) or start trial
     """
-    billing_controller = get_controller("billing")
+    billing_ctl   = get_controller("billing")
+    company_ctl   = get_controller("company")
+    company       = await company_ctl.get_company_by_id(company_id)
+
+    # current state
+    profile       = await billing_ctl.get_billing_profile(company_id)
+    all_plans     = await billing_ctl.get_all_billing_plans()
+    unpaid        = await billing_ctl.invoice_service.execute(
+                        "list_company_invoices", company_id, paid=False)
 
     if request.method == "POST":
-        # Extract submitted data (e.g. selected plan, card token, etc.)
         plan_id = request.form.get("plan_id")
-        # …other fields…
+        action  = request.form.get("action")          # upgrade | downgrade | trial
+        if not plan_id:
+            flash("Please select a plan", "warning")
+            return redirect(request.url)
 
-        response = await billing_controller.create_subscription(company_id=company_profile.company_id, plan_id=plan_id)
-        flash(f"{company_profile.name}, your billing plan is active. You’re all set!", category="success")
-        return response
+        # 1.  trial start
+        if action == "trial":
+            await billing_ctl.billing_service.execute(
+                "start_trial", company_id=company_id, plan_id=plan_id)
+            flash("Trial activated 🎉", "success")
+            return redirect(url_for("company.get_dashboard"))
 
-    # GET ---------------------------------------------------------------
-    billing_profile = await billing_controller.get(
-        user=user, company_id=company_id
-    )
-    
-    billing_plans = await billing_controller.get_all_billing_plans()
+        # 2.  upgrade / downgrade
+        await billing_ctl.billing_service.execute(
+            "change_plan", company_id=company_id, new_plan_id=plan_id)
+        flash("Plan updated successfully", "success")
+
+        # 3.  outstanding invoice?
+        if unpaid:
+            invoice = unpaid[0]
+            return redirect(url_for("billing.checkout", invoice_id=invoice.invoice_id))
+
+        return redirect(url_for("company.get_dashboard"))
 
     return render_template(
         "company/billing/plan_management.html",
-        billing_plans=billing_plans,
-        current_user=user,
-        billing_profile=billing_profile,
+        company       = company,
+        profile       = profile,
+        plans         = [p for p in all_plans if p.is_active],
+        unpaid_invoices = unpaid,
     )
+
 
 @billing_route.get("/dashboard")
 @flask_error_handler
 @employer_login
 async def get_dashboard(user: User):
     """
-
     :param user:
     :return:
     """
@@ -90,7 +108,7 @@ async def get_dashboard(user: User):
     
 
     flash(message="You do not have a billing profile, please create one to continue", category="danger")
-    return redirect(url_for("billing.create_billing_profile")), 400
+    return redirect(url_for("billing.manage_plan", company_id=company_profile.company_id)), 400
 
 
 
@@ -120,3 +138,35 @@ async def subscribe(user: User, plan_slug: str):
     return await billing_controller.create_subscription(company_id=employer_profile.company_id, plan_id=billing_plan.plan_id)
 
 
+
+@billing_route.route("/checkout/<string:invoice_id>", methods=["GET"])
+@flask_error_handler
+@employer_login
+async def checkout(user: User, invoice_id: str):
+    """
+    GET – display invoice summary & PayFast payment button
+    PayFast will POST the ITN to /billing/itn when payment is complete
+    """
+    billing_ctl = get_controller("billing")
+    invoice     = await billing_ctl.invoice_service.execute("get_invoice", invoice_id=invoice_id)
+
+    if not invoice:
+        flash("Invoice not found", "danger")
+        return redirect(url_for("company.get_dashboard"))
+
+    if invoice.status == "Paid":
+        flash("This invoice has already been paid", "info")
+        return redirect(url_for("company.get_dashboard"))
+
+    company = await get_controller("company").get_company_by_id(invoice.company_id)
+    pay_url = await billing_ctl.payment_service.execute(
+        "generate_payfast_form", invoice=invoice, company=company
+    )
+
+    return render_template(
+        "company/billing/checkout.html",
+        invoice=invoice,
+        company=company,
+        pay_url=pay_url,
+    )
+    
