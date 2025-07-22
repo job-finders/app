@@ -98,7 +98,7 @@ class OpenRouterClient:
         except KeyError as e:
             self._log.error("Malformed response: %s", raw)
             raise ValueError(f"Missing expected key in response: {e}")
-            
+
         # remove ```json … ``` wrappers if present
         if content.startswith("```json") and content.endswith("```"):
             content = content[7:-3].strip()
@@ -111,6 +111,8 @@ class OpenRouterClient:
             self._log.warning("Validation failed: %s", e)
             raise
 
+    # ------------------------------------------------------------------
+    # ---------------- its safer to use agent_call ----------------
     # ------------------------------------------------------------------
     async def agent_call(
         self,
@@ -132,7 +134,15 @@ class OpenRouterClient:
         resp = await self.chat_completion(
             messages, model=model, temperature=temperature, max_tokens=max_tokens, **extras
         )
-        return resp["choices"][0]["message"]["content"]
+        try:
+            self._log.debug("Raw response: %s", json.dumps(resp, indent=2))
+
+            content = resp["choices"][0]["message"]["content"]
+        except KeyError as e:
+            self._log.error("Malformed response: %s", resp)
+            raise ValueError(f"Missing expected key in response: {e}")
+
+        return content
 
 
 # --------------------------------------------------------------------------
