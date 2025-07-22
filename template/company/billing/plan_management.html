@@ -8,10 +8,9 @@
         <h1 class="fw-bold">Choose the Right Plan</h1>
         <p class="text-muted">Upgrade your hiring toolkit and access advanced features tailored to your hiring needs.</p>
     </div>
-
     <!-- Plans Grid -->
     <div class="row g-4">
-        {% for plan in plans %}
+        {% for plan in billing_plans %}
         <div class="col-md-4">
             <div class="card h-100 shadow-sm {% if billing.current_plan_id == plan.plan_id %}border-primary{% endif %}">
                 <div class="card-header bg-white border-0 text-center">
@@ -28,17 +27,20 @@
                         <li><i class="bi bi-check-circle-fill text-success me-2"></i>ATS: {{ 'Included' if plan.includes_ats else 'Not included' }}</li>
                         <li><i class="bi bi-check-circle-fill text-success me-2"></i>Analytics: {{ 'Included' if plan.includes_analytics else 'Not included' }}</li>
                     </ul>
-                    {% if billing.current_plan_id == plan.plan_id %}
+                    {% if billing_profile.current_plan_id == plan.plan_id %}
                         <button class="btn btn-outline-primary disabled mt-auto" disabled>
                             <i class="bi bi-check-circle me-1"></i> Current Plan
                         </button>
                     {% else %}
-                        <form method="POST" action="/dashboard/billing/subscribe">
+
+                        <form method="POST" action="{{ url_for('billing.create_billing_profile', company_id=billing_profile.company_id) }}" class="mt-auto">
+                           
                             <input type="hidden" name="plan_id" value="{{ plan.plan_id }}">
                             <button type="submit" class="btn btn-primary w-100 mt-auto">
                                 <i class="bi bi-arrow-right-circle me-1"></i>
-                                {% if billing.trial_active %}Upgrade Now{% else %}Subscribe{% endif %}
+                                {% if billing_profile.trial_active %}Upgrade Now{% else %}Subscribe{% endif %}
                             </button>
+                            
                         </form>
                     {% endif %}
                 </div>
@@ -47,9 +49,9 @@
         {% endfor %}
     </div>
 
-    {% if billing.trial_active %}
+    {% if billing_profile.trial_active %}
     <div class="alert alert-warning mt-5 text-center" role="alert">
-        <strong>Trial ends on {{ billing.trial_end_date }}</strong>. Upgrade now to keep your account active and continue posting jobs.
+        <strong>Trial ends on {{ billing_profile.trial_end_date }}</strong>. Upgrade now to keep your account active and continue posting jobs.
     </div>
     {% endif %}
 </div>

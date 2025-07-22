@@ -66,10 +66,8 @@ class BillingController(Controllers):
 
         if not billing_plan.is_trial:
             invoice = await self.invoice_service.execute(action="create_invoice", billing_profile=billing_profile, plan=billing_plan)
-            await self.billing_events.execute('record_event',
-                                              company_id=billing_profile.company_id,
-                                              event_type=BillingEventType.INVOICE_CREATED,
-                                              metadata={"invoice_id": invoice.invoice_id})
+            await self.billing_events.execute('record_event', company_id=billing_profile.company_id, event_type=BillingEventType.INVOICE_CREATED,
+            metadata={"invoice_id": invoice.invoice_id})
 
             company_controller = get_controller("company")
             company = await company_controller.get_company_by_id(company_id=company_id)
@@ -121,6 +119,7 @@ class BillingController(Controllers):
         list_invoices = await self.invoice_service.execute("list_company_invoices", company_id, limit=5)
         billing_events = await self.billing_events.execute('list_events', company_id)
         if not billing_profile:
+            self.logger.warning(f"No billing profile found for company_id: {company_id}")
             return {}
 
         billing_plan = await self.billing_service.execute('look_up_plan', plan_id=billing_profile.current_plan_id)
@@ -182,3 +181,21 @@ class BillingController(Controllers):
                 return plan
         return None
 
+    async def get_all_billing_plans(self):
+        """
+        :return: List of all billing plans
+        """
+        return await self.billing_service.execute('list_all_billing_plans')
+
+    async def get_create_billing_profile(self, company_id: str, plan_id: str):
+        """
+        Create a billing profile for the company if it does not exist.
+        :param company_id:
+        :param plan_id:
+        :return: BillingProfile
+        """
+        billing_profile: CompanyBillingProfile = await  self.billing_service.execute('get_billing_profile', company_id=company_id)
+        if not billing_profile:
+            billing_profile: CompanyBillingProfile = await self.billing_service.execute('create_billing_profile', company_id=company_id, plan_id=plan_id)
+        return billing_profile
+                
