@@ -61,7 +61,7 @@ class EmployeeAgentsController(Controllers):
             job_id: str,
             cv_id: Optional[str] = None,
             cover_letter: Optional[str] = None
-    ) -> JobMatchInsights:
+    ) -> JobMatchInsights | None:
         """
         Analyzes how well a candidate matches a specific job
 
@@ -88,11 +88,16 @@ class EmployeeAgentsController(Controllers):
             resume: JobSeekerCV = await resume_controller.get_cv_by_id(cv_id=cv_id)
 
         if user is None:
-            raise ValueError(f"User with ID {user_id} not found")
+            self.logger.error(f"User with ID {user_id} not found")
+            return None
+
         if job is None:
-            raise ValueError(f"Job with ID {job_id} not found")
+            self.logger.error(f"Job with ID {job_id} not found")
+            return None
+
         if resume is None:
-            raise ValueError("Candidate doesn't have a CV uploaded")
+            self.logger.error("Candidate doesn't have a CV uploaded")
+            return None
 
         # Prepare agent input
         input_data = ApplicationCoachInput(
@@ -137,13 +142,18 @@ class EmployeeAgentsController(Controllers):
             resume: JobSeekerCV = await resume_controller.get_cv_by_id(cv_id=cv_id)
 
         if user is None:
-            raise ValueError(f"User with ID {user_id} not found")
+            self.logger.error(f"User with ID {user_id} not found") 
+            return None
+
 
         if job is None:
-            raise ValueError(f"Job with ID {job_id} not found")
+            self.logger.error(f"Job with ID {job_id} not found")
+            return None
+
 
         if resume is None:
-            raise ValueError("Candidate doesn't have a CV uploaded")
+            self.logger.error("Candidate doesn't have a CV uploaded")   
+            return None
 
         # Prepare agent input
         input_data = CoverLetterInput(
