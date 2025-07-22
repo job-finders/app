@@ -76,6 +76,7 @@ class CandidateBenchMarkController(Controllers):
             application_id=job_application_id)
 
         if not application:
+            self.logger.error(f"JobApplication {job_application_id} not found")
             return None
 
         job: Job = await job_search_controller.get_job_by_id(job_id=application.job_id)
@@ -85,13 +86,17 @@ class CandidateBenchMarkController(Controllers):
         
         # Validate data
         if not all([application, job, candidate_cv, candidate_profile]):
+            
             missing = [name for name, val in [
                 ('application', application),
                 ('job', job),
                 ('candidate_cv', candidate_cv),
                 ('candidate_profile', candidate_profile)
             ] if not val]
-            raise ValueError(f"Missing data: {', '.join(missing)}")
+
+            self.logger.error(f"Missing data for benchmarking: {', '.join(missing)}")
+            return None
+            
         
         # Combine profile and CV data
         candidate_data = (
