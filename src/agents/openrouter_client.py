@@ -1,144 +1,144 @@
-from typing import List, Dict, Type, Optional, Any
-from pydantic import BaseModel, ValidationError
-import httpx
+from __future__ import annotations
 import json
+from typing import Any, Dict, List, Type, Optional
+
+import httpx
+from pydantic import BaseModel, ValidationError
 
 from src.config import config_instance
 from src.utils.route_helpers import get_service
 
 
 class OpenRouterClient:
-    def __init__(self, api_key: Optional[str] = None, default_timeout: float = 30.0):
-        self.api_key = api_key or config_instance().OPENROUTER_API_KEY
-        self.base_url = "https://openrouter.ai/api/v1"
-        self.logger = None
-        self.headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
-        self._http_client = httpx.AsyncClient(timeout=httpx.Timeout(default_timeout, read=default_timeout))
+    """
+    Thin async wrapper around OpenRouter’s chat-completions endpoint.
+    Handles:
+      • unified HTTP client
+      • structured (Pydantic) or plain completions
+      • JSON-in-code-block sanitation
+      • configurable logging & timeout
+    """
+    _ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 
-    def init_app(self):
-        if self.logger is None:
-            self.logger = get_service("logger")()("openrouter_client")
+    def __init__(
+        self,
+        api_key: str | None = None,
+        timeout: float = 30.0,
+    ) -> None:
+        self._api_key = api_key or config_instance().OPENROUTER_API_KEY
+        self._client = httpx.AsyncClient(
+            timeout=httpx.Timeout(timeout, read=timeout),
+            headers={
+                "Authorization": f"Bearer {self._api_key}",
+                "Content-Type": "application/json",
+            },
+        )
+        self._log = get_service("logger")()("openrouter_client")
 
+    # ------------------------------------------------------------------
+    async def close(self) -> None:
+        await self._client.aclose()
+
+    # ------------------------------------------------------------------
     async def chat_completion(
         self,
         messages: List[Dict[str, str]],
+        *,
         model: str = "deepseek-chat",
         temperature: float = 0.7,
-            max_tokens: int = 2024,
-            stream: bool = False,
-        **kwargs
+        max_tokens: int = 2048,
+        **extras: Any,
     ) -> Dict[str, Any]:
-        """Raw chat completion without parsing"""
-        data = {
+        """Raw OpenRouter call returning the full JSON payload."""
+        payload = {
             "model": model,
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
-            "stream": stream,
-            **kwargs
+            **extras,
         }
-        
-        self.logger.info(f"DEBUG: OpenRouter request data: {json.dumps(data, indent=2)}")
+        self._log.debug("Request payload: %s", json.dumps(payload, indent=2))
 
-        response = await self._http_client.post(
-            f"{self.base_url}/chat/completions",
-            json=data,
-            headers=self.headers
-        )
+        resp = await self._client.post(self._ENDPOINT, json=payload)
+        resp.raise_for_status()
+        self._log.debug("HTTP %s", resp.status_code)
+        return resp.json()
 
-        self.logger.info(f"DEBUG: OpenRouter response status: {response.status_code}")
-        response.raise_for_status()
-        return response.json()
-
+    # ------------------------------------------------------------------
     async def structured_completion(
         self,
         messages: List[Dict[str, str]],
         output_model: Type[BaseModel],
+        *,
         model: str = "deepseek-chat",
         temperature: float = 0.7,
-            max_tokens: int = 2048,
-        **kwargs
+        max_tokens: int = 2048,
+        **extras: Any,
     ) -> BaseModel:
-        """Structured completion with Pydantic parsing"""
-        # Add schema to system message for better structured output
-        schema_prompt = f"\nRespond with valid JSON matching this schema:\n{output_model.model_json_schema()}"
-        
-        enhanced_messages = messages.copy()
-        self.logger.info(f"DEBUG: OpenRouter messages before schema: {json.dumps(enhanced_messages, indent=2)}")
-        if enhanced_messages and enhanced_messages[0]["role"] == "system":
-            enhanced_messages[0]["content"] += schema_prompt
-        else:
-            enhanced_messages.insert(0, {"role": "system", "content": schema_prompt})
-
-        response = await self.chat_completion(
-            enhanced_messages,
-            model=model,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=False,
-            **kwargs
+        """
+        Returns a Pydantic model validated from the assistant’s JSON reply.
+        Injects the schema into the system message to improve reliability.
+        """
+        schema_prompt = (
+            f"\nRespond with valid JSON matching this schema:\n{output_model.model_json_schema()}"
         )
+        msgs = messages.copy()
+        if msgs and msgs[0]["role"] == "system":
+            msgs[0]["content"] += schema_prompt
+        else:
+            msgs.insert(0, {"role": "system", "content": schema_prompt})
 
-        self.logger.info(f"DEBUG: OpenRouter response: {response}")
+        raw = await self.chat_completion(
+            msgs, model=model, temperature=temperature, max_tokens=max_tokens, **extras
+        )
+        content = raw["choices"][0]["message"]["content"]
 
-        content = response["choices"][0]["message"]["content"]
-        
-        # Try to parse JSON if it's wrapped in code blocks
+        # remove ```json … ``` wrappers if present
+        if content.startswith("```json") and content.endswith("```"):
+            content = content[7:-3].strip()
+        elif content.startswith("```") and content.endswith("```"):
+            content = content[3:-3].strip()
+
         try:
-            if content.startswith("```json") and content.endswith("```"):
-                content = content[7:-3].strip()
-            elif content.startswith("```") and content.endswith("```"):
-                content = content[3:-3].strip()
-            print('OUTPUT START')
-            print(content)
-            print("OUTPUT END")
-            if output_model:
-                return output_model.model_validate_json(content)
-            return content
+            return output_model.model_validate_json(content)
         except ValidationError as e:
-            # Fallback to original parsing method
-            print(str(e))
-            return None
+            self._log.warning("Validation failed: %s", e)
+            raise
 
-    
+    # ------------------------------------------------------------------
     async def agent_call(
         self,
-        system_prompt: str,
-        user_message: str,
-        output_model: Optional[Type[BaseModel]] = None,
+        system: str,
+        user: str,
+        *,
+        output_model: Type[BaseModel] | None = None,
         model: str = "deepseek-chat",
         temperature: float = 0.7,
-            max_tokens: int = 2048,
-        **kwargs
+        max_tokens: int = 2048,
+        **extras: Any,
     ) -> BaseModel | str:
-        """Agent-friendly call with system/user separation"""
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message}
-        ]
-        
+        """Convenience helper for agent-style (system + user) calls."""
+        messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
         if output_model:
             return await self.structured_completion(
-                messages, output_model, model, temperature, max_tokens, **kwargs
+                messages, output_model, model=model, temperature=temperature, max_tokens=max_tokens, **extras
             )
-        else:
-            response = await self.chat_completion(
-                messages, model, temperature, max_tokens, **kwargs
-            )
-            return response["choices"][0]["message"]["content"]
+        resp = await self.chat_completion(
+            messages, model=model, temperature=temperature, max_tokens=max_tokens, **extras
+        )
+        return resp["choices"][0]["message"]["content"]
 
 
-# Backward compatibility function
+# --------------------------------------------------------------------------
+# Backward-compatibility alias
 async def call_openrouter(
     messages: List[Dict[str, str]],
     output_model: Type[BaseModel],
     model: str = "deepseek-chat",
     temperature: float = 0.7,
-        max_tokens: int = 2048,
+    max_tokens: int = 2048,
 ) -> BaseModel:
-    openrouter_client = OpenRouterClient()
-    openrouter_client.init_app()
-
-    return await openrouter_client.structured_completion(
-        messages, output_model, model, temperature, max_tokens
-    )
+    async with OpenRouterClient() as cli:
+        return await cli.structured_completion(
+            messages, output_model, model=model, temperature=temperature, max_tokens=max_tokens
+        )
