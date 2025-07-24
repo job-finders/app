@@ -1,7 +1,7 @@
 from typing import List
 from pydantic import BaseModel, Field
 from ..base import BaseAgent   # mirrors employer-agent base
-from .memory import memory     # shared wrapper
+from .memory import memory   # the shared singleton
 from .schemas import Topic, ArticleOutline, PerformanceMetrics     # will be defined next
 
 
