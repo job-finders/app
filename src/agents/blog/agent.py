@@ -1,110 +1,88 @@
 from typing import List
 from pydantic import BaseModel, Field
-from ..base import BaseAgent   # mirrors employer-agent base
-from .memory import memory   # the shared singleton
-from .schemas import Topic, ArticleOutline, PerformanceMetrics     # will be defined next
+from src.agents.base import BaseAgent, UserRole
+from .schemas import Topic, ArticleOutline, PerformanceMetrics, RefinementInstructions
 
 
+# ------------------------------------------------------------------
+# Topic Discovery Agent
+# ------------------------------------------------------------------
 class TopicDiscoveryAgent(BaseAgent):
     name = "TopicDiscoveryAgent"
-    system_template = "prompts/system.jinja2"
-    user_template   = "prompts/user.jinja2"
 
-    def __init__(self):
-        super().__init__()
-        self.memory_prefix = "topics:raw"
+    def system_prompt(self) -> str:
+        return (
+            "You are an expert content strategist.\n"
+            "Return ONLY valid JSON that matches the Topic schema."
+        )
 
-    async def run(self, site_map: dict) -> List[Topic]:
-        prompt_vars = {
-            "agent_type": "TopicDiscovery",
-            "job_description": "discover high-value blog topics from the site map",
-            "schema_json": Topic.schema_json(indent=2),
-            "memory_keys": [f"{self.memory_prefix}:{section}" for section in site_map.keys()],
-            "input_json": site_map
-        }
-        raw = await self.call_llm(prompt_vars)
-        topics = [Topic(**t) for t in raw]
-        for t in topics:
-            memory.set(f"{self.memory_prefix}:{t.section}", t.dict())
-        return topics
+    def prompt(self, site_map: dict) -> str:
+        sections = ", ".join(site_map.keys())
+        return (
+            f"Site sections: {sections}\n"
+            f"Site map JSON: {site_map}\n"
+            "Generate a list of high-value blog topics for each section."
+        )
 
-#--------------------------------------------------------------------------------------
-#--------------------------- Article Planner Agent -----------------------------------
-#--------------------------------------------------------------------------------------
+    def output_model(self):
+        return List[Topic]
 
+
+# ------------------------------------------------------------------
+# Article Planner Agent
+# ------------------------------------------------------------------
 class ArticlePlannerAgent(BaseAgent):
     name = "ArticlePlannerAgent"
-    system_template = "prompts/system.jinja2"
-    user_template = "prompts/user.jinja2"
 
-    def __init__(self):
-        super().__init__()
-        self.memory_prefix = "outline"
+    def system_prompt(self) -> str:
+        return (
+            "You are a senior blog editor.\n"
+            "Return ONLY valid JSON that matches the ArticleOutline schema."
+        )
 
-    async def run(self, topic: Topic) -> ArticleOutline:
-        prompt_vars = {
-            "agent_type": "ArticlePlanner",
-            "job_description": "produce a detailed outline for a blog article",
-            "schema_json": ArticleOutline.schema_json(indent=2),
-            "memory_keys": [f"{self.memory_prefix}:{topic.id}"],
-            "input_json": topic.dict()
-        }
-        raw = await self.call_llm(prompt_vars)
-        outline = ArticleOutline(**raw)
-        memory.set(f"{self.memory_prefix}:{outline.slug}", outline.dict())
-        return outline
+    def prompt(self, topic: Topic) -> str:
+        return (
+            f"Topic: {topic.title}\n"
+            f"Keywords: {', '.join(topic.keywords)}"
+        )
+
+    def output_model(self):
+        return ArticleOutline
 
 
-#----------------------------------------------------------------------------------------
-#--------------------------- Performance Monitor Agent --------------------------------------
-
-
+# ------------------------------------------------------------------
+# Performance Monitor Agent
+# ------------------------------------------------------------------
 class PerformanceMonitorAgent(BaseAgent):
     name = "PerformanceMonitorAgent"
-    system_template = "prompts/system.jinja2"
-    user_template   = "prompts/user.jinja2"
 
-    def __init__(self):
-        super().__init__()
-        self.memory_prefix = "perf"
+    def system_prompt(self) -> str:
+        return (
+            "You are a data analyst for blog performance.\n"
+            "Return ONLY valid JSON that matches the PerformanceMetrics schema."
+        )
 
-    async def run(self, slug: str) -> PerformanceMetrics:
-        # TODO: replace with real adapters (GA4, social APIs, etc.)
-        prompt_vars = {
-            "agent_type": "PerformanceMonitor",
-            "job_description": "collect engagement and SEO metrics for a published article",
-            "schema_json": PerformanceMetrics.schema_json(indent=2),
-            "memory_keys": [f"{self.memory_prefix}:{slug}"],
-            "input_json": {"slug": slug}
-        }
-        raw = await self.call_llm(prompt_vars)
-        metrics = PerformanceMetrics(**raw)
-        memory.set(f"{self.memory_prefix}:{slug}", metrics.dict())
-        return metrics
+    def prompt(self, slug: str) -> str:
+        return f"Slug: {slug}"
 
-#----------------------------------------------------------------------------------------
-#--------------------------- Refiner Agent ----------------------------------------------
-#-----------------------------------------------------------------------------------------
+    def output_model(self):
+        return PerformanceMetrics
 
 
+# ------------------------------------------------------------------
+# Refiner Agent
+# ------------------------------------------------------------------
 class RefinerAgent(BaseAgent):
     name = "RefinerAgent"
-    system_template = "prompts/system.jinja2"
-    user_template   = "prompts/user.jinja2"
 
-    def __init__(self):
-        super().__init__()
-        self.memory_prefix = "refinement"
+    def system_prompt(self) -> str:
+        return (
+            "You are a blog optimisation strategist.\n"
+            "Return ONLY valid JSON that matches the RefinementInstructions schema."
+        )
 
-    async def run(self, metrics: PerformanceMetrics) -> RefinementInstructions:
-        prompt_vars = {
-            "agent_type": "Refiner",
-            "job_description": "decide whether to refine, drop, or expand an article based on performance",
-            "schema_json": RefinementInstructions.schema_json(indent=2),
-            "memory_keys": [f"{self.memory_prefix}:{metrics.slug}"],
-            "input_json": metrics.dict()
-        }
-        raw = await self.call_llm(prompt_vars)
-        instructions = RefinementInstructions(**raw)
-        memory.set(f"{self.memory_prefix}:{metrics.slug}", instructions.dict())
-        return instructions
+    def prompt(self, metrics: PerformanceMetrics) -> str:
+        return f"Performance metrics: {metrics.model_dump_json()}"
+
+    def output_model(self):
+        return RefinementInstructions
