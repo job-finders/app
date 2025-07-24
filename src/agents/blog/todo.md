@@ -51,10 +51,13 @@
 - [ ] 5.3 Update `/src/agents/__init__.py` to register new agents.
 
 
-## Phase 6 – Hashnode Integration
-- [ ] 6.1 Import & wrap `HashnodeService` (from `src.services.hashnode`) into `src/agents/blog/hashnode_client.py`
-- [ ] 6.2 Update `ArticlePlannerAgent` → returns outline **and** Hashnode draft ID
-- [ ] 6.3 Create `HashnodePublisherAgent` (new) – create/update posts via Hashnode API
-- [ ] 6.4 Update `PerformanceMonitorAgent` – pull real metrics via Hashnode analytics
-- [ ] 6.5 Update `RefinerAgent` – push edits as new Hashnode revisions
-- [ ] 6.6 Add CLI flag `--publish` to actually hit Hashnode (dry-run by default)
+## Phase 6 – Hashnode Integration (side-effect free)
+- [ ] 6.1  Import `HashnodeAgentInterface` into `src/agents/blog/hashnode_client.py`
+- [ ] 6.2  **Orchestrator layer**: new file `src/agents/blog/orchestrator.py`
+        - receives agent outputs
+        - decides whether to create / update / publish via Hashnode
+- [ ] 6.3  Update `ArticlePlannerAgent` → returns `ArticlePlan` (no Hashnode ID yet)
+- [ ] 6.4  New `HashnodeDraftAgent` → returns `DraftInstruction` (what to create/update)
+- [ ] 6.5  Orchestrator consumes `DraftInstruction` and calls `hashnode.create_post()`
+- [ ] 6.6  `PerformanceMonitorAgent` → returns `PerformanceReport` (pure data)
+- [ ] 6.7  Orchestrator uses report to decide next refinement cycle
