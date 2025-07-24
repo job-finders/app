@@ -14,3 +14,6 @@ __all__ = [
     "RefinerAgent",
     # ... existing employer agents
 ]
+
+import os
+ENABLED = os.getenv("BLOG_AGENTS_V2", "false").lower() in {"true", "1"}
