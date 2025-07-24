@@ -1,4 +1,5 @@
-
+from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -36,7 +37,7 @@ class SchedulePostInput(BaseModel):
 
 class AddTagsInput(BaseModel):
     post_id: str
-    tags: List[str]
+    tags: list[str]
 
 
 class CreateSeriesInput(BaseModel):

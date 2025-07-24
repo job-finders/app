@@ -20,11 +20,7 @@ class OpenRouterClient:
     """
     _ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 
-    def __init__(
-        self,
-        api_key: str | None = None,
-        timeout: float = 30.0,
-    ) -> None:
+    def __init__(self, api_key: str | None = None, timeout: float = 30.0, ) -> None:
         self._api_key = api_key or config_instance().OPENROUTER_API_KEY
         self._client = httpx.AsyncClient(
             timeout=httpx.Timeout(timeout, read=timeout),
@@ -34,6 +30,10 @@ class OpenRouterClient:
             },
         )
         self._log = get_service("logger")()("openrouter_client")
+
+    def init_app(self):
+        if not self._api_key:
+            self._api_key = config_instance().OPENROUTER_API_KEY
 
     # ------------------------------------------------------------------
     async def close(self) -> None:

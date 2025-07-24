@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any
 
@@ -7,6 +9,7 @@ from xml.etree import ElementTree as ET
 
 from flask import Flask
 
+from src.database.models import User
 from src.controllers.controller import Controllers, error_handler
 from src.logger import init_logger
 from src.database import BlogTopicORM, ArticleORM, ScheduledPostORM, PerformanceORM
@@ -25,43 +28,57 @@ from src.agents.blog.agent import (
     PerformanceMonitorAgent,
     RefinerAgent,
 )
+from src.utils.route_helpers import get_service
 
 from .utils import generate_cover_image, generate_social_card
-
+import asyncio
 
 class BlogAgentController(Controllers):
-    """
-    Central orchestrator for the entire blog pipeline.
-    Main flow = 4 daily crons (topic → draft → schedule → analytics).
-    Utility helpers below are **deprecated**; they exist only for
-    CLI / admin use and do **not** participate in the automated pipeline.
-    """
-
     def __init__(self, factory):
         super().__init__(factory)
-        self.logger = init_logger("BlogAgentController")
+        # ----- synchronous, lightweight setup -----
+        self.logger = get_service('logger')()(self.__class__.__name__)
         token = config_instance().HASHNODE_TOKEN
         self.hashnode = HashnodeService(token) if token else None
+        # ----- run the async part now -----
+        self.agents = {}
+
+    async def async_init(self):
+        """Build all agents asynchronously."""
+        system_admin: User = await self.get_system_admin()
+        user_id = system_admin.uid if system_admin else "system"
+
+        self.agents = {
+            "topic_discovery": TopicDiscoveryAgent(user_id=user_id),
+            "article_planner": ArticlePlannerAgent(user_id=user_id),
+            "content_generator": ContentGeneratorAgent(user_id=user_id),
+            "seo_audit": SEOAuditAgent(user_id=user_id),
+            "publishing_decision": PublishingDecisionAgent(user_id=user_id),
+            "social_amplifier": SocialAmplifierAgent(user_id=user_id),
+            "ab_designer": ABTestDesignerAgent(user_id=user_id),
+            "archive_curator": ArchiveCuratorAgent(user_id=user_id),
+            "performance_monitor": PerformanceMonitorAgent(user_id=user_id),
+            "refiner": RefinerAgent(user_id=user_id),
+        }
+
+    # Remove the old init_app override – it is no longer needed.
+    def init_app(self, app: Flask):
+        super().init_app(app=app)
+        # 1. create a brand-new event loop
         if not self.hashnode:
             self.logger.warning("HASHNODE_TOKEN missing – Hashnode features disabled")
 
-        self.agents = {
-            "topic_discovery": TopicDiscoveryAgent(user_id="system"),
-            "article_planner": ArticlePlannerAgent(user_id="system"),
-            "content_generator": ContentGeneratorAgent(user_id="system"),
-            "seo_audit": SEOAuditAgent(user_id="system"),
-            "publishing_decision": PublishingDecisionAgent(user_id="system"),
-            "social_amplifier": SocialAmplifierAgent(user_id="system"),
-            "ab_designer": ABTestDesignerAgent(user_id="system"),
-            "archive_curator": ArchiveCuratorAgent(user_id="system"),
-            "performance_monitor": PerformanceMonitorAgent(user_id="system"),
-            "refiner": RefinerAgent(user_id="system"),
-        }
+        loop = asyncio.new_event_loop()
+        try:
+            asyncio.set_event_loop(loop)  # optional, keeps warnings quiet
+            # 2. run async_init and block until it finishes
+            loop.run_until_complete(self.async_init())
+        finally:
+            # 3. always clean up
+            loop.close()
+            asyncio.set_event_loop(None)  # remove the temporary loop
 
-    def init_app(self, app: Flask):
-        super().init_app(app=app)
-
-    # ---------- daily crons (canonical flow) ----------
+    # ---------- daily  (canonical flow) ----------
     async def cron_topic_generator(self) -> int:
         """00:05 UTC – discover topics & persist them (canonical)."""
         sitemap = await self.fetch_hashnode_sitemap()
@@ -108,7 +125,7 @@ class BlogAgentController(Controllers):
     async def cron_draft_scheduler(self) -> int:
         """03:00 UTC – schedule drafts (canonical)."""
         scheduled = 0
-        start = datetime.utcnow().replace(hour=9, minute=0)
+        start = datetime.now(timezone.utc).replace(hour=9, minute=0)
         interval = timedelta(hours=4)
         with self.get_session() as session:
             for i, art in enumerate(
