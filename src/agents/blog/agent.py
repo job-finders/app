@@ -1,0 +1,29 @@
+from typing import List
+from pydantic import BaseModel, Field
+from ..base import BaseAgent   # mirrors employer-agent base
+from .memory import memory     # shared wrapper
+from .schemas import Topic     # will be defined next
+
+
+class TopicDiscoveryAgent(BaseAgent):
+    name = "TopicDiscoveryAgent"
+    system_template = "prompts/system.jinja2"
+    user_template   = "prompts/user.jinja2"
+
+    def __init__(self):
+        super().__init__()
+        self.memory_prefix = "topics:raw"
+
+    async def run(self, site_map: dict) -> List[Topic]:
+        prompt_vars = {
+            "agent_type": "TopicDiscovery",
+            "job_description": "discover high-value blog topics from the site map",
+            "schema_json": Topic.schema_json(indent=2),
+            "memory_keys": [f"{self.memory_prefix}:{section}" for section in site_map.keys()],
+            "input_json": site_map
+        }
+        raw = await self.call_llm(prompt_vars)
+        topics = [Topic(**t) for t in raw]
+        for t in topics:
+            memory.set(f"{self.memory_prefix}:{t.section}", t.dict())
+        return topics
