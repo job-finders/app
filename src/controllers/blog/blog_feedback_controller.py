@@ -1,99 +1,63 @@
 from datetime import datetime
 
+from flask import Flask
+
 from src.controllers.controller import Controllers, error_handler
 from src.logger import init_logger
-from src.database import BlogFeedbackResulORM, BlogPromptORM
-from src.database.models import BlogFeedbackInput, BlogFeedbackOutput
-
+from src.database import PerformanceORM
 
 class BlogFeedbackController(Controllers):
     """
-    Controller for handling user interaction feedback (views, likes, comments) on blog prompts.
-    Responsible for calculating feedback scores and updating both feedback and prompt records.
+    Controller that **copies** Hashnode analytics into a local
+    PerformanceORM row and optionally computes a feedback score.
     """
 
     def __init__(self, factory):
         super().__init__(factory)
         self.logger = init_logger("BlogFeedbackController")
 
-    def init_app(self, app):
-        super().init_app(app)
-        # App-specific initialization
-        # self.cache.init_app(app)
+    def init_app(self, app: Flask):
+        super().init_app(app=app)
+        if self.logger:
+            self.logger.info("Initialized Feedback Controller")
 
+    # ---------- helpers ----------
     @staticmethod
-    def calculate_feedback_score(views: int, likes: int, comments: int) -> float:
+    def calculate_feedback_score(perf: PerformanceORM) -> float:
         """
-        Calculate a feedback score based on the number of views, likes, and comments.
-
-        The formula used is: (likes * 2 + comments * 3) / views
-
-        Args:
-            views (int): Number of views.
-            likes (int): Number of likes.
-            comments (int): Number of comments.
-
-        Returns:
-            float: A normalized feedback score, rounded to 4 decimal places.
+        Simple composite: (reactions * 2 + comments * 3) / max(views, 1)
         """
-        if views == 0:
-            return 0.0
-        return round((likes * 2 + comments * 3) / views, 4)
+        return round((perf.reactions * 2 + perf.comments * 3) / max(perf.views, 1), 4)
 
+    # ---------- main entry ----------
     @error_handler
-    async def submit_feedback(self, feedback_in: BlogFeedbackInput) -> BlogFeedbackOutput:
+    async def ingest_performance(
+            self, performance_data: dict
+    ) -> str:  # returns record id
         """
-        Submit or update feedback for a given blog prompt. If feedback exists, it is updated;
-        otherwise, a new record is created. The feedback score is recalculated and synced to the
-        related BlogPromptORM record.
+        Store analytics pulled from Hashnode into PerformanceORM.
 
-        Args:
-            feedback_in (BlogFeedbackInput): Feedback data including prompt ID, views, likes, and comments.
-
-        Returns:
-            BlogFeedbackOutput: The updated feedback data, including the calculated score and timestamp.
-
-        Raises:
-            ValueError: If the database operation fails (handled by the @error_handler decorator).
+        `performance_data` = {
+            "article_id": "...",
+            "views": 123,
+            "read_time": 2.3,
+            "reactions": 45,
+            "comments": 12,
+            "shares": 7,
+            "collected_at": "2024-07-25T14:00:00Z"
+        }
         """
         with self.get_session() as session:
-            feedback = session.query(BlogFeedbackResulORM).filter(
-                BlogFeedbackResulORM.prompt_id == feedback_in.prompt_id
-            ).first()
-
-            if feedback is None:
-                feedback = BlogFeedbackResulORM(
-                    prompt_id=feedback_in.prompt_id,
-                    views=feedback_in.views,
-                    likes=feedback_in.likes,
-                    comments=feedback_in.comments,
-                    submitted_at=datetime.utcnow()
-                )
-                session.add(feedback)
-            else:
-                feedback.views = feedback_in.views
-                feedback.likes = feedback_in.likes
-                feedback.comments = feedback_in.comments
-                feedback.submitted_at = datetime.utcnow()
-
-            feedback.feedback_score = self.calculate_feedback_score(
-                feedback.views, feedback.likes, feedback.comments
+            record = PerformanceORM(
+                article_id=performance_data["article_id"],
+                views=performance_data.get("views", 0),
+                read_time=performance_data.get("read_time", 0.0),
+                reactions=performance_data.get("reactions", 0),
+                comments=performance_data.get("comments", 0),
+                shares=performance_data.get("shares", 0),
+                collected_at=datetime.fromisoformat(performance_data["collected_at"]),
             )
-
-            # Update the associated BlogPromptORM with the new feedback score
-            prompt = session.query(BlogPromptORM).filter(BlogPromptORM.id == feedback_in.prompt_id).first()
-            if prompt:
-                prompt.feedback_score = feedback.feedback_score
-
-            # controller will auto commit on exit
-
-            # session.commit()
-
-            return BlogFeedbackOutput(
-                prompt_id=feedback.prompt_id,
-                feedback_score=feedback.feedback_score,
-                views=feedback.views,
-                likes=feedback.likes,
-                comments=feedback.comments,
-                submitted_at=feedback.submitted_at.isoformat()
-            )
+            record.feedback_score = self.calculate_feedback_score(record)
+            session.add(record)
+            session.flush()
+            return record.id

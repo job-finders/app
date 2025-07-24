@@ -19,6 +19,13 @@ from src.controllers.jobseekers import JobSeekerProfilesController
 from src.controllers.resumes import ResumeController
 from src.controllers.users import UsersController
 
+# ------------------------
+# ----------blog controllers
+
+from src.controllers.blog.blog_feedback_controller import BlogFeedbackController
+from src.controllers.blog.blog_agent_controller import BlogAgentController
+from src.controllers.blog.blog_prompt_mutations import PromptMutationController
+
 
 from src.logger import init_logger
 
@@ -165,6 +172,27 @@ class ControllerFactory:
             :return:
         """
         return self._get_controller('candidate_benchmarking', CandidateBenchMarkController)
+
+    def get_blog_feedback_controller(self) -> BlogFeedbackController:
+        """
+
+        :return:
+        """
+        return self._get_controller('blog_feedback_controller', BlogFeedbackController)
+
+    def get_blog_agent_controller(self) -> BlogAgentController:
+        """
+
+        :return:
+        """
+        return self._get_controller('blog_agent_controller', BlogAgentController)
+
+    def get_prompt_mutation_controller(self) -> PromptMutationController:
+        """
+
+        :return:
+        """
+        return self._get_controller('prompt_mutation_controller', PromptMutationController)
 
     def _get_controller(self, name: str, controller_class):
         """Thread-safe controller getter with double-checked locking"""

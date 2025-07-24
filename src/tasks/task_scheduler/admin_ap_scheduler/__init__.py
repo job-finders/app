@@ -15,6 +15,10 @@ def schedule_app_tasks(scheduler, app):
         company_controller = get_controller("company")
         billing_controller = get_controller("billing")
 
+        # ---------- inside schedule_app_tasks ----------
+        # after the existing scheduler setup
+        blog_controller = get_controller("blog_agent_controller")
+
         # Configure job defaults to prevent overlapping runs
         scheduler.add_jobstore('sqlalchemy', url=app.config['SQLALCHEMY_DATABASE_URI'])
         scheduler.add_executor('threadpool', max_workers=5)  # Limit concurrent jobs
@@ -156,5 +160,38 @@ def schedule_app_tasks(scheduler, app):
             id='billing_cron_jobs',
             jitter=300,
             replace_existing=True)
+
+        # ---- blog pipeline (no overlap with existing jobs) ----
+        scheduler.add_job(
+            async_job_wrapper("blog_topic_generator", blog_controller.cron_topic_generator),
+            trigger='cron',
+            hour=0, minute=5,  # 00:05 UTC
+            id='blog_topic_generator',
+            jitter=300, replace_existing=True
+        )
+
+        scheduler.add_job(
+            async_job_wrapper("blog_article_creator", blog_controller.cron_article_creator),
+            trigger='cron',
+            hour=2, minute=0,  # 02:00 UTC
+            id='blog_article_creator',
+            jitter=300, replace_existing=True
+        )
+
+        scheduler.add_job(
+            async_job_wrapper("blog_draft_scheduler", blog_controller.cron_draft_scheduler),
+            trigger='cron',
+            hour=3, minute=0,  # 03:00 UTC
+            id='blog_draft_scheduler',
+            jitter=300, replace_existing=True
+        )
+
+        scheduler.add_job(
+            async_job_wrapper("blog_feedback_gatherer", blog_controller.cron_feedback_gatherer),
+            trigger='cron',
+            hour=9, minute=0,  # 09:00 UTC
+            id='blog_feedback_gatherer',
+            jitter=300, replace_existing=True
+        )
 
         logger.info("Scheduled: All tasks initialized in app scheduler.")

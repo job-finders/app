@@ -25,7 +25,11 @@ def _get_controller_map():
         'billing': 'get_billing_controller',
         'industry_taxonomy': 'get_industry_taxonomy_controller',
         'employer_ats_optimization': 'get_employer_ats_optimization_tool_controller',
-        'candidate_benchmarking': 'get_candidate_benchmark_controller'}
+        'candidate_benchmarking': 'get_candidate_benchmark_controller',
+        'blog_feedback_controller': 'get_blog_feedback_controller',
+        'blog_agent_controller': 'get_blog_agent_controller',
+        'prompt_mutation_controller': 'get_prompt_mutation_controller'
+    }
 
 def get_controller(controller_name: str):
     """

@@ -1,7 +1,17 @@
 from typing import List
 from pydantic import BaseModel, Field
 from src.agents.base import BaseAgent, UserRole
-from .schemas import Topic, ArticleOutline, PerformanceMetrics, RefinementInstructions
+from .schemas import (
+    Topic,
+    ArticleOutline,
+    PerformanceMetrics,
+    RefinementInstructions,
+    ArticleMarkdown,
+    SEOScoreReport,
+    PublishDecision,
+    SocialCopySet,
+    ABVariants,
+    ArchiveActions)
 
 
 # ------------------------------------------------------------------

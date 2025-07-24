@@ -20,7 +20,6 @@ class FeedbackAnalysisSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-
 class BlogFeedbackInput(BaseModel):
     prompt_id: int
     views: int = 0
@@ -37,6 +36,9 @@ class BlogFeedbackOutput(BaseModel):
     submitted_at: str
     model_config = ConfigDict(from_attributes=True)
 
+    def summary(self):
+        """summary of this model"""
+        return
 
 class BlogPrompt(BaseModel):
     blog_prompt_id: str

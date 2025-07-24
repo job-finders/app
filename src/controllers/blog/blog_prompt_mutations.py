@@ -1,52 +1,47 @@
-
-
-from src.agents.prompts import PromptMutatorAgent
-from src.database import {
-    PromptORM,
-    PromptMutationLogORM,
-    ArticleORM,
-    PerformanceORM,
-
-}
+from src.database import PromptORM, PromptMutationLogORM, ArticleORM, PerformanceORM
+from src.agents.blog.prompts import PromptMutatorAgent
+from src.controllers.controller import Controllers
+from src.utils.route_helpers import get_service
 
 
 class PromptMutationController(Controllers):
     def __init__(self, factory):
         super().__init__(factory=factory)
         self.factory = factory
-        # The Agent to mutate prompts for blog agents based on performance
         self.mutator = PromptMutatorAgent(user_id="system")
-        # Initialize the logger
         self.logger  = get_service("logger")()(self.__class__.__name__)
 
     def init_app(self, app):
-        super().init_app(app)   
-        self.logger.info("PromptMutationController initialized")
+        super().init_app(app)
+        if self.logger:
+            self.logger.info("PromptMutationController initialized")
 
-        
+    # ---------- daily cron ----------
     async def daily_mutate_prompts(self) -> dict:
-        """Daily mutation of prompts for blog agents based on performance."""
-        
+        """
+        1. Collect PerformanceORM rows
+        2. Feed them to PromptMutatorAgent
+        3. Save new prompt + mutation log
+        """
         summary = {"mutated": 0}
-        with self.get_session() as s:
-            # TODO - ensure the agents matches the Agents that can be Mutated
-            for agent_name in ["TopicDiscoveryAgent", "ArticlePlannerAgent", "ContentGeneratorAgent"]:
-                # 1. load latest prompt
+        with self.get_session() as session:
+            for agent_name in [
+                "TopicDiscoveryAgent",
+                "ArticlePlannerAgent",
+                "ContentGeneratorAgent",
+            ]:
                 latest = (
-                    s.query(PromptORM)
+                    session.query(PromptORM)
                     .filter_by(agent_name=agent_name)
                     .order_by(PromptORM.version.desc())
                     .first()
                 )
                 if not latest:
-                    continue  # seed prompts not loaded yet
+                    continue  # seed prompts not yet inserted
 
-                # 2. gather performance summary for this agent
-                perf = self._aggregate_performance(s, agent_name)
-
-                # 3. mutate
+                perf = self._aggregate_performance(session, agent_name)
                 mutation = await self.mutator.run(
-                    PromptMutatorAgent.Input(
+                    self.mutator.Input(
                         agent_name=agent_name,
                         prompt_version=latest.version,
                         performance_summary=perf["summary"],
@@ -54,15 +49,16 @@ class PromptMutationController(Controllers):
                     )
                 )
 
-                # 4. store new prompt
                 new_prompt = PromptORM(
                     agent_name=agent_name,
                     version=latest.version + 1,
-                    system_jinja=mutation.new_system_jinja,
-                    user_jinja=mutation.new_user_jinja,
+                    system_prompt=mutation.system_prompt,
+                    prompt=mutation.prompt,
                 )
-                s.add(new_prompt)
-                s.add(
+                session.add(new_prompt)
+                session.flush()  # to obtain new_prompt.id
+
+                session.add(
                     PromptMutationLogORM(
                         agent_name=agent_name,
                         old_prompt_id=latest.id,
@@ -73,9 +69,9 @@ class PromptMutationController(Controllers):
                 summary["mutated"] += 1
         return summary
 
+    # ---------- helper ----------
     def _aggregate_performance(self, session, agent_name: str) -> dict:
-        """Return summary dict + last N examples for the agent."""
-        # Example: join Article → Performance tables and compute averages
+        """Return {summary: {...}, examples: [...]} for the requested agent."""
         rows = (
             session.query(ArticleORM, PerformanceORM)
             .join(PerformanceORM, PerformanceORM.article_id == ArticleORM.id)
@@ -83,17 +79,22 @@ class PromptMutationController(Controllers):
             .limit(20)
             .all()
         )
+        if not rows:
+            return {"summary": {}, "examples": []}
+
         summary = {
-            "avg_views": sum(r[1].views for r in rows) / max(len(rows), 1),
-            "avg_read_time": sum(r[1].read_time for r in rows) / max(len(rows), 1),
+            "avg_views": sum(r[1].views for r in rows) / len(rows),
+            "avg_read_time": sum(r[1].read_time for r in rows) / len(rows),
+            "avg_reactions": sum(r[1].reactions for r in rows) / len(rows),
         }
         examples = [
             {
+                "article_id": r[0].id,
                 "title": r[0].title,
                 "views": r[1].views,
                 "read_time": r[1].read_time,
+                "reactions": r[1].reactions,
             }
             for r in rows
         ]
         return {"summary": summary, "examples": examples}
-

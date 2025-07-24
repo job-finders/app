@@ -1,20 +1,16 @@
 from __future__ import annotations
-from datetime import datetime
-from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from typing import Any, Dict
 
-from .schema import {
+from .hashnode_service import HashnodeClient
+from .schema import (
     CreatePostInput,
     UpdatePostInput,
     DeletePostInput,
     SchedulePostInput,
     AddTagsInput,
     CreateSeriesInput,
-    AddPostToSeriesInput
-}
-
-from src.services.hashnode.hashnode_client import HashnodeClient
+    AddPostToSeriesInput)
 
 # ------------------------------------------------------------------
 # Service
@@ -49,27 +45,26 @@ class HashnodeService:
 
     # ---------- Posts ----------
 
-  async def create_post(self, data: CreatePostInput) -> Dict[str, Any]:
-      mutation = """
-      mutation CreateStory($input: CreateStoryInput!) {
-        createStory(input: $input) {
-          post { id title slug }
-        }
-      }
-      """
-      payload = {
+    async def create_post(self, data: CreatePostInput) -> Dict[str, Any]:
+        mutation = """
+        mutation CreateStory($input: CreateStoryInput!) {
+            createStory(input: $input) {
+              post { id title slug }
+            }
+          }
+          """
+        payload = {
           "title": data.title,
           "contentMarkdown": data.content_markdown,
           "isPartOfPublication": {"publicationId": data.publication_id},
-          "isDraft": data.is_draft,
-      }
-      if data.slug:
-          payload["slug"] = data.slug
-      if data.cover_image_url:
-          payload["coverImage"] = data.cover_image_url
-      if data.social_image_url:
-          payload["socialImage"] = data.social_image_url
-      return await self.client.query(mutation, {"input": payload})
+            "isDraft": data.is_draft, }
+        if data.slug:
+            payload["slug"] = data.slug
+        if data.cover_image_url:
+            payload["coverImage"] = data.cover_image_url
+        if data.social_image_url:
+            payload["socialImage"] = data.social_image_url
+        return await self.client.query(mutation, {"input": payload})
 
     async def update_post(self, data: UpdatePostInput) -> Dict[str, Any]:
         mutation = """
