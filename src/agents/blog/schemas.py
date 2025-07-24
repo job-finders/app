@@ -22,4 +22,16 @@ class ArticleOutline(BaseModel):
     target_keywords: list[str]
     estimated_reading_time: int
 
-    
+
+
+#--------------------------------------------------
+#------------ Performance Monitoring ------------
+#--------------------------------------------------
+
+class PerformanceMetrics(BaseModel):
+    slug: str
+    views: int
+    avg_read_time: float
+    shares: int
+    backlinks: int
+    ctr: float

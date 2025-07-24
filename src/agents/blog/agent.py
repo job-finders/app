@@ -2,7 +2,7 @@ from typing import List
 from pydantic import BaseModel, Field
 from ..base import BaseAgent   # mirrors employer-agent base
 from .memory import memory     # shared wrapper
-from .schemas import Topic, ArticleOutline     # will be defined next
+from .schemas import Topic, ArticleOutline, PerformanceMetrics     # will be defined next
 
 
 class TopicDiscoveryAgent(BaseAgent):
@@ -53,3 +53,32 @@ class ArticlePlannerAgent(BaseAgent):
         outline = ArticleOutline(**raw)
         memory.set(f"{self.memory_prefix}:{outline.slug}", outline.dict())
         return outline
+
+
+#----------------------------------------------------------------------------------------
+#--------------------------- Performance Monitor Agent --------------------------------------
+
+
+class PerformanceMonitorAgent(BaseAgent):
+    name = "PerformanceMonitorAgent"
+    system_template = "prompts/system.jinja2"
+    user_template   = "prompts/user.jinja2"
+
+    def __init__(self):
+        super().__init__()
+        self.memory_prefix = "perf"
+
+    async def run(self, slug: str) -> PerformanceMetrics:
+        # TODO: replace with real adapters (GA4, social APIs, etc.)
+        prompt_vars = {
+            "agent_type": "PerformanceMonitor",
+            "job_description": "collect engagement and SEO metrics for a published article",
+            "schema_json": PerformanceMetrics.schema_json(indent=2),
+            "memory_keys": [f"{self.memory_prefix}:{slug}"],
+            "input_json": {"slug": slug}
+        }
+        raw = await self.call_llm(prompt_vars)
+        metrics = PerformanceMetrics(**raw)
+        memory.set(f"{self.memory_prefix}:{slug}", metrics.dict())
+        return metrics
+
