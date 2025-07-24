@@ -6,13 +6,6 @@ from flask import Blueprint, jsonify, url_for
 from src.routes import flask_error_handler
 from src.routes.seo_routes.seo import get_site_job_links
 
-# Agents
-from src.agents.blog.article_creator_agent import ArticleCreatorAgent
-from src.agents.blog.feedback_collector import FeedbackCollector
-from src.agents.blog.gap_analyzer_agent import GapAnalyzerAgent
-from src.agents.blog.post_submitter_agent import BlogPostSubmitterAgent
-from src.agents.blog.reader_agent import BlogPostReaderAgent
-from src.agents.blog.strategy_refiner import StrategyRefiner
 
 # Logger
 from src.logger import init_logger
@@ -63,22 +56,6 @@ async def scrape_junction():
     """
     junction_scrapper = get_service('junction_scraper')
     await junction_scrapper.scrape_and_store_jobs()
-
-@cron_route.route("/create-article", methods=["GET"])
-@flask_error_handler
-async def create_article_pipeline():
-    existing_posts = await BlogPostReaderAgent().run()
-    content_gaps = await GapAnalyzerAgent().run(existing_posts)
-
-    for topic in content_gaps.suggested_topics:
-        for prompt in topic.prompts:
-            article = await ArticleCreatorAgent().run(prompt=prompt, topic=topic.title)
-            await BlogPostSubmitterAgent().run(article)
-
-    feedback_data = await FeedbackCollector().run()
-    await StrategyRefiner().run(feedback_data)
-
-    return jsonify({"status": "Blog automation executed successfully"})
 
 # @cron_route.route("/_cron/adapt-blog-strategy", methods=["GET"])
 # def adapt_blog_strategy():

@@ -1,7 +1,7 @@
 from typing import List
 from pydantic import BaseModel
 
-from database.models import BlogFeedbackOutput
+from src.database.models import BlogFeedbackOutput
 from src.agents.base import BaseAgent, UserRole
 
 
