@@ -50,5 +50,11 @@
 - [ ] 5.2 GitHub Action runs on push to `/src/agents/blog/**` (lint + tests).  
 - [ ] 5.3 Update `/src/agents/__init__.py` to register new agents.
 
-## Commit Prefix
-`[blog-agent-<step>]`
+
+## Phase 6 – Hashnode Integration
+- [ ] 6.1 Import & wrap `HashnodeService` (from `src.services.hashnode`) into `src/agents/blog/hashnode_client.py`
+- [ ] 6.2 Update `ArticlePlannerAgent` → returns outline **and** Hashnode draft ID
+- [ ] 6.3 Create `HashnodePublisherAgent` (new) – create/update posts via Hashnode API
+- [ ] 6.4 Update `PerformanceMonitorAgent` – pull real metrics via Hashnode analytics
+- [ ] 6.5 Update `RefinerAgent` – push edits as new Hashnode revisions
+- [ ] 6.6 Add CLI flag `--publish` to actually hit Hashnode (dry-run by default)
