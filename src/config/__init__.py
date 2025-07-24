@@ -71,6 +71,17 @@ class PayfastSettings(BaseSettings):
         extra="ignore"
     )
 
+class HasnodeBlogSettings(BaseSettings):
+    BLOG_URL: str = Field(..., alias='HASHNODE_BLOG_URL')
+    HASHNODE_TOKEN: str = Field(..., alias='HASHNODE_TOKEN')
+    BLOG_ID: str = Field(..., alias='HASHNODE_BLOG_ID')
+    AUTHOR_ID: str = Field(..., alias='HASHNODE_AUTHOR_ID')
+
+    model_config = SettingsConfigDict(
+        env_file=".env.developer",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 class Settings(BaseSettings):
     APP_NAME: str = "Job Finders"
@@ -91,6 +102,7 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = Field(..., alias="OPENROUTER_API_KEY")
     ADMIN_USERNAME: str = Field(..., alias="ADMIN_USERNAME")
     ADMIN_PASSWORD: str = Field(..., alias="ADMIN_PASSWORD")
+    HASHNODE_BLOG: HasnodeBlogSettings = Field(default_factory=HasnodeBlogSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env.developer",

@@ -100,5 +100,20 @@ class HashnodeAgentCommandRegistry:
                 "description": "Update an existing post on Hashnode",
                 "input_model": UpdatePostInput,
             },
+            "get_post": {
+                "fn": self.service.get_post,
+                "description": "Retrieve a specific post by its ID",
+                "input_model": "publication_id": str, {"post_id": str},
+            },
+            "get_post_analytics": {
+                "fn": self.service.get_post_analytics,
+                "description": "Get analytics data for a specific post",
+                "input_model": {"publication_id": str,"post_id": str},
+            },
+            "list_publication_posts"{
+                "fn": self.service.list_publication_posts,
+                "description": "List all posts in a specific publication",
+                "input_model": {"publication_id": str, "page": int},
+            }
         }
 

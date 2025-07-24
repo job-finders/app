@@ -274,3 +274,22 @@ class HashnodeService:
         return await self.client.query(query, variables)
 
 
+    async def get_post(self,publication_id: str, post_id: str) -> Dict[str, Any]:
+        """
+        Retrieve a single post by its Hashnode id.
+        """
+
+    async def get_post_analytics(self, publication_id: str, post_id: str) -> Dict[str, Any]:
+        """
+        Returns views, read time, reactions, shares, etc.
+        """
+
+    async def list_publication_posts(
+        self,
+        publication_id: str,
+        limit: int = 10,
+        page: int = 0,
+    ) -> list[Dict[str, Any]]:
+        """
+        Enumerate posts for a given publication (used for discovery & sync).
+        """
