@@ -233,3 +233,33 @@ class HashnodeService:
         }
         """
         return await self.client.query(query, {"slug": series_slug})
+
+    async def get_all_posts(
+            self,
+            publication_id: str,
+            page: int = 0,
+            limit: int = 50,
+    ) -> Dict[str, Any]:
+        """
+        Fetch all posts for a publication, automatically paginating until
+        no more posts are returned or an empty page is encountered.
+
+        Returns a flattened list under the key `posts`.
+        """
+        all_posts = []
+        while True:
+            batch = await self.list_publication_posts(
+                publication_id=publication_id,
+                page=page,
+                limit=limit,
+            )
+            posts = (
+                batch.get("publication", {})
+                .get("posts", [])
+            )
+            if not posts:
+                break
+            all_posts.extend(posts)
+            page += 1
+
+        return {"posts": all_posts}

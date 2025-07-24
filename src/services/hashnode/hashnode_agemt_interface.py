@@ -1,4 +1,6 @@
 # services/agent_commands/hashnode_agent.py
+from datetime import datetime
+from typing import Optional
 
 from src.services.hashnode.hashnode_client import HashnodeService, CreatePostInput, UpdatePostInput
 
@@ -131,7 +133,7 @@ class HashnodeAgentCommandRegistry:
             "get_post": {
                 "fn": self.service.get_post,
                 "description": "Retrieve a specific post by its ID",
-                "input_model": "publication_id": str, {"post_id": str},
+                "input_model": {"publication_id": str, "post_id": str},
             },
             "get_post_analytics": {
                 "fn": self.service.get_post_analytics,
@@ -169,8 +171,8 @@ class HashnodeAgentCommandRegistry:
                 "description": "Schedule a post to go live at a future UTC datetime",
                 "input_model": {"post_id": str, "scheduled_at": datetime},
             },
-            "generate_series": {
-                "fn": self.service.generate_series,
+            "create_series": {
+                "fn": self.service.create_series,
                 "description": "Create or update a Hashnode series (tag-based collection)",
                 "input_model": {"name": str, "description": str, "cover_image_url": Optional[str]},
             },

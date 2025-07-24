@@ -102,7 +102,7 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = Field(..., alias="OPENROUTER_API_KEY")
     ADMIN_USERNAME: str = Field(..., alias="ADMIN_USERNAME")
     ADMIN_PASSWORD: str = Field(..., alias="ADMIN_PASSWORD")
-    HASHNODE_BLOG: HasnodeBlogSettings = Field(default_factory=HasnodeBlogSettings)
+    # HASHNODE_BLOG: HasnodeBlogSettings = Field(default_factory=HasnodeBlogSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env.developer",
