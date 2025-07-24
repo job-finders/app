@@ -39,6 +39,34 @@ class HashnodeAgentCommandRegistry:
         """
         self.service = service
 
+
+    async def run_service(self, command_name: str, **kwargs):
+        """
+        One-line helper that routes a command + kwargs to the correct service call.
+
+        Args:
+            command_name (str): Key from `get_commands()`.
+            **kwargs: Named arguments matching the command's input_model.
+
+        Returns:
+            The raw service response (dict).
+
+        Raises:
+            KeyError if command_name is unknown.
+            pydantic.ValidationError if kwargs do not match the input_model.
+        """
+        cmd = self.get_commands()[command_name]
+        
+        if cmd["input_model"] is None:
+            return await cmd["fn"]()
+        # Build or validate Pydantic model
+
+        model_cls = cmd["input_model"]
+        if isinstance(model_cls, dict):
+            # quick dict schema (for list_publication_posts, etc.)
+            return await cmd["fn"](**kwargs)
+        return await cmd["fn"](model_cls(**kwargs))
+
     def get_commands(self):
         """
         Retrieve the dictionary of available commands that the Hashnode agent can perform.
@@ -110,10 +138,51 @@ class HashnodeAgentCommandRegistry:
                 "description": "Get analytics data for a specific post",
                 "input_model": {"publication_id": str,"post_id": str},
             },
-            "list_publication_posts"{
+
+            "list_publication_posts": {
                 "fn": self.service.list_publication_posts,
                 "description": "List all posts in a specific publication",
                 "input_model": {"publication_id": str, "page": int},
-            }
+            },
+            "delete_post": {
+                "fn": self.service.delete_post,
+                "description": "Permanently remove a post (irreversible)",
+                "input_model": {"post_id": str},
+            },
+            "publish_draft": {
+                "fn": self.service.publish_draft,
+                "description": "Turn an existing draft into a live post",
+                "input_model": {"post_id": str},
+            },
+            "unpublish_post": {
+                "fn": self.service.unpublish_post,
+                "description": "Move a live post back to draft status",
+                "input_model": {"post_id": str},
+            },
+            "add_tags_to_post": {
+                "fn": self.service.add_tags_to_post,
+                "description": "Append or replace tags on an existing post",
+                "input_model": {"post_id": str, "tags": list[str]},
+            },
+            "schedule_post": {
+                "fn": self.service.schedule_post,
+                "description": "Schedule a post to go live at a future UTC datetime",
+                "input_model": {"post_id": str, "scheduled_at": datetime},
+            },
+            "generate_series": {
+                "fn": self.service.generate_series,
+                "description": "Create or update a Hashnode series (tag-based collection)",
+                "input_model": {"name": str, "description": str, "cover_image_url": Optional[str]},
+            },
+            "add_post_to_series": {
+                "fn": self.service.add_post_to_series,
+                "description": "Associate an existing post with a series",
+                "input_model": {"post_id": str, "series_slug": str},
+            },
+            "get_series_posts": {
+                "fn": self.service.get_series_posts,
+                "description": "List all posts inside a specific series",
+                "input_model": {"series_slug": str},
+            },            
         }
 

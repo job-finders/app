@@ -37,3 +37,39 @@ class BlogFeedbackResulORM(Base):
     feedback_score = Column(Float)
     submitted_at = Column(DateTime(timezone=True), default=utc_time)
     prompt = relationship("BlogPromptORM")
+
+
+class TopicORM(Base):
+    __tablename__ = "topics"
+    id          = Column(Integer, primary_key=True)
+    title       = Column(String, unique=True)
+    keywords    = Column(JSON)          # list[str]
+    created_at  = Column(DateTime, default=datetime.utcnow)
+
+class ArticleORM(Base):
+    __tablename__ = "articles"
+    id          = Column(Integer, primary_key=True)
+    topic_id    = Column(Integer, ForeignKey("topics.id"))
+    title       = Column(String)
+    markdown    = Column(Text)
+    draft_hashnode_id = Column(String, nullable=True)  # created but not yet scheduled
+    created_at  = Column(DateTime, default=datetime.utcnow)
+
+class ScheduledPostORM(Base):
+    __tablename__ = "scheduled_posts"
+    id          = Column(Integer, primary_key=True)
+    article_id  = Column(Integer, ForeignKey("articles.id"))
+    scheduled_at = Column(DateTime, index=True)
+    hashnode_post_id = Column(String, nullable=True)  # after creation
+    status      = Column(String, default="pending")   # pending | live
+    created_at  = Column(DateTime, default=datetime.utcnow)
+
+class PerformanceORM(Base):
+    __tablename__ = "performance"
+    id          = Column(Integer, primary_key=True)
+    article_id  = Column(Integer, ForeignKey("articles.id"))
+    views       = Column(Integer, default=0)
+    reactions   = Column(Integer, default=0)
+    read_time   = Column(Float, default=0.0)
+    collected_at = Column(DateTime, default=datetime.utcnow)
+    
