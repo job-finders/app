@@ -7,10 +7,25 @@ from xml.etree import ElementTree as ET
 
 from src.controllers.controller import Controllers, error_handler
 from src.logger import init_logger
-from src.database import BlogPromptORM, BlogFeedbackResulORM, BlogTopicORM
+from src.database import {
+    BlogPromptORM,
+    BlogTopicORM,
+    ArticleORM,
+    ScheduledPostORM,
+    PerformanceORM,
+    TopicORM,
+    BlogFeedbackInput,
+    BlogFeedbackOutput,
+    BlogPromptORM
+}
 from src.database.models import BlogFeedbackInput, BlogFeedbackOutput, BlogTopic
 from src.services.hashnode.hashnode_service import HashnodeService, CreatePostInput, UpdatePostInput
 from src.config import config_instance
+
+from .utils import {
+    generate_cover_image,
+    generate_social_card,
+}
 
 # ---- orchestration helpers (agents remain pure) ----
 from src.agents.blog.agent import (
@@ -232,11 +247,15 @@ class BlogAgentController(Controllers):
             site_map.setdefault("posts", []).append(slug)
         return site_map
 
-
+    # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # ---------- 00:05 UTC ----------
     async def cron_topic_generator(self) -> int:
         """Discover new topics, store in DB."""
         sitemap = await self.fetch_hashnode_sitemap()
+        # calling agents with sitemap in order to discover new topics
         topics  = await self.agents["topic_discovery"].run(sitemap)
         with self.get_session() as s:
             for t in topics:
@@ -253,22 +272,32 @@ class BlogAgentController(Controllers):
                 if not s.query(ArticleORM).filter_by(topic_id=topic.id).first():
                     outline = await self.agents["article_planner"].run(topic)
                     content = await self.agents["content_generator"].run(outline)
+                    cover_url  = await self.generate_cover_image(content.title)   # AI or stock
+                    social_url = await self.generate_social_card(content.title)   # 1200×630
+
                     draft_resp = await self.hashnode.create_post(
                         CreatePostInput(
                             publication_id=(await self.hashnode.get_user_info())["data"]["me"]["publication"]["id"],
                             title=content.title,
                             content_markdown=content.markdown,
                             is_draft=True,
+                            cover_image_url=cover_url,
+                            social_image_url=social_url,
+
                         )
                     )
+
                     s.add(
                         ArticleORM(
                             topic_id=topic.id,
                             title=content.title,
                             markdown=content.markdown,
                             draft_hashnode_id=draft_resp["data"]["createStory"]["post"]["id"],
+                            cover_image_url=draft_resp["data"]["createStory"]["post"].get("coverImage"),
+                            social_image_url=draft_resp["data"]["createStory"]["post"].get("socialImage")
                         )
                     )
+
                     created += 1
         return created
 

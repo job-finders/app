@@ -48,40 +48,39 @@ class HashnodeService:
         return await self.client.query(query)
 
     # ---------- Posts ----------
-    async def create_post(self, data: CreatePostInput) -> Dict[str, Any]:
-        mutation = """
-        mutation CreateStory($input: CreateStoryInput!) {
-          createStory(input: $input) {
-            post {
-              id
-              title
-              slug
-              dateAdded
-            }
-          }
+
+  async def create_post(self, data: CreatePostInput) -> Dict[str, Any]:
+      mutation = """
+      mutation CreateStory($input: CreateStoryInput!) {
+        createStory(input: $input) {
+          post { id title slug }
         }
-        """
-        payload = {
-            "title": data.title,
-            "contentMarkdown": data.content_markdown,
-            "isPartOfPublication": {"publicationId": data.publication_id},
-            "isDraft": data.is_draft,
-        }
-        if data.slug:
-            payload["slug"] = data.slug
-        return await self.client.query(mutation, {"input": payload})
+      }
+      """
+      payload = {
+          "title": data.title,
+          "contentMarkdown": data.content_markdown,
+          "isPartOfPublication": {"publicationId": data.publication_id},
+          "isDraft": data.is_draft,
+      }
+      if data.slug:
+          payload["slug"] = data.slug
+      if data.cover_image_url:
+          payload["coverImage"] = data.cover_image_url
+      if data.social_image_url:
+          payload["socialImage"] = data.social_image_url
+      return await self.client.query(mutation, {"input": payload})
 
     async def update_post(self, data: UpdatePostInput) -> Dict[str, Any]:
         mutation = """
         mutation UpdateStory($input: UpdateStoryInput!) {
           updateStory(input: $input) {
-            code
-            success
-            message
+            code success message
           }
         }
         """
-        return await self.client.query(mutation, {"input": data.dict()})
+        payload = data.dict(exclude_none=True)
+        return await self.client.query(mutation, {"input": payload})
 
     async def get_post(self, publication_id: str, post_id: str) -> Dict[str, Any]:
         query = """

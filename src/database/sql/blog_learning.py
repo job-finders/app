@@ -72,4 +72,15 @@ class PerformanceORM(Base):
     reactions   = Column(Integer, default=0)
     read_time   = Column(Float, default=0.0)
     collected_at = Column(DateTime, default=datetime.utcnow)
-    
+
+
+class PromptORM(Base):
+    __tablename__ = "prompts"
+
+    id              = Column(Integer, primary_key=True)
+    agent_name      = Column(String(64), nullable=False, index=True)
+    version         = Column(Integer, nullable=False, default=1)
+    system_prompt   = Column(Text, nullable=False)   # full system prompt text
+    prompt          = Column(Text, nullable=False)   # full user prompt text (Jinja2)
+    created_at      = Column(DateTime, default=datetime.utcnow, nullable=False)
+
