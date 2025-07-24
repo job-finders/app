@@ -35,3 +35,13 @@ class PerformanceMetrics(BaseModel):
     shares: int
     backlinks: int
     ctr: float
+
+#--------------------------------------------------
+#------------ Refinement Instructions ------------
+#--------------------------------------------------
+
+class RefinementInstructions(BaseModel):
+    slug: str
+    action: str               # "rewrite_outline" | "drop_topic" | "expand_keywords"
+    new_outline: ArticleOutline | None = None
+    reason: str
