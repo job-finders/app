@@ -2,7 +2,7 @@ from typing import List
 from pydantic import BaseModel, Field
 from ..base import BaseAgent   # mirrors employer-agent base
 from .memory import memory     # shared wrapper
-from .schemas import Topic     # will be defined next
+from .schemas import Topic, ArticleOutline     # will be defined next
 
 
 class TopicDiscoveryAgent(BaseAgent):
@@ -27,3 +27,29 @@ class TopicDiscoveryAgent(BaseAgent):
         for t in topics:
             memory.set(f"{self.memory_prefix}:{t.section}", t.dict())
         return topics
+
+#--------------------------------------------------------------------------------------
+#--------------------------- Article Planner Agent -----------------------------------
+#--------------------------------------------------------------------------------------
+
+class ArticlePlannerAgent(BaseAgent):
+    name = "ArticlePlannerAgent"
+    system_template = "prompts/system.jinja2"
+    user_template = "prompts/user.jinja2"
+
+    def __init__(self):
+        super().__init__()
+        self.memory_prefix = "outline"
+
+    async def run(self, topic: Topic) -> ArticleOutline:
+        prompt_vars = {
+            "agent_type": "ArticlePlanner",
+            "job_description": "produce a detailed outline for a blog article",
+            "schema_json": ArticleOutline.schema_json(indent=2),
+            "memory_keys": [f"{self.memory_prefix}:{topic.id}"],
+            "input_json": topic.dict()
+        }
+        raw = await self.call_llm(prompt_vars)
+        outline = ArticleOutline(**raw)
+        memory.set(f"{self.memory_prefix}:{outline.slug}", outline.dict())
+        return outline
