@@ -125,6 +125,7 @@ class BillingController(Controllers):
         billing_plan = await self.billing_service.execute('look_up_plan', plan_id=billing_profile.current_plan_id)
         return {
             'billing': billing_profile,
+            'list_billing_plans': await self.get_all_billing_plans(),
             'current_plan': billing_plan,
             'list_invoices': list_invoices,
             'recent_events': billing_events}

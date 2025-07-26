@@ -187,6 +187,45 @@ class CompanyBillingProfile(BaseModel):
         """
         return max((self.subscription_end - utc_time().date()).days, 0)
 
+    # ------------------------------------------------------------------
+    #  Upgrade / Downgrade detection
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _tier_rank(plan_name: str) -> int:
+        """
+        Map plan names to an integer rank for comparison.
+        Add / remove tiers as your product evolves.
+        """
+        tiers = {
+            "trial": 0,
+            "starter": 1,
+            "growth": 2,
+            "professional": 3,
+            "enterprise": 4,
+        }
+        return tiers.get(plan_name.lower(), 0)
+
+    def is_upgrade(self, new_plan: BillingPlan) -> bool:
+        """
+        True when switching from current plan -> new_plan
+        is considered an upgrade (price or tier).
+        """
+        if not self.billing_plan:
+            return True  # any plan beats “None”
+        return (
+                Decimal(new_plan.price) > Decimal(self.billing_plan.price)
+                or self._tier_rank(new_plan.name) > self._tier_rank(self.billing_plan.name)
+        )
+
+    def is_downgrade(self, new_plan: BillingPlan) -> bool:
+        return not self.is_upgrade(new_plan)
+
+    # ------------------------------------------------------------------
+    #  Convenience event label
+    # ------------------------------------------------------------------
+    def change_event_type(self, new_plan: BillingPlan) -> str:
+        return "plan_upgrade" if self.is_upgrade(new_plan) else "plan_downgrade"
+
 class InvoiceStatusEnum(Enum):
     """
     Enumeration of possible invoice statuses.
@@ -304,6 +343,7 @@ class BillingEvent(BaseModel):
         "trial_profile_created",
         "email_send_failed",
         "manual_payment_received",
+        "plan_changed",  # General change event
         "plan_upgrade",
         "plan_downgrade",
     ]

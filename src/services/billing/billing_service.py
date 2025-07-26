@@ -55,6 +55,7 @@ class BillingService(BillingServiceInterface):
             "start_trial": self._start_trial,
             "expire_trial": self._expire_trial,
             "look_up_plan": self._look_up_plan,
+            "get_plan": self._look_up_plan,  # Alias for backward compatibility
             "list_all_companies": self._list_all_companies,  # Added for cron service mock
             "list_all_billing_plans": self._all_billing_plans,
             "update_subscription_state": self._update_subscription_state,
