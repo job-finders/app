@@ -40,6 +40,7 @@ class BillingEventType(str, Enum):
     TRIAL_PROFILE_CREATED = "trial_profile_created"
     EMAIL_SEND_FAILED = "email_send_failed"
     MANUAL_PAYMENT_RECEIVED = "manual_payment_received"
+    PLAN_CHANGED = "plan_changed"
     PLAN_UPGRADE = "plan_upgrade"
     PLAN_DOWNGRADE = "plan_downgrade"
 

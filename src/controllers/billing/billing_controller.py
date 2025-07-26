@@ -206,3 +206,4 @@ class BillingController(Controllers):
         :return: BillingProfile
         """
         return await self.billing_service.execute('get_billing_profile', company_id=company_id)
+

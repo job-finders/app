@@ -52,8 +52,7 @@ async def manage_billing(user: User, company_id: str):
             return redirect(url_for("company.get_dashboard"))
 
         # 2.  upgrade / downgrade
-        await billing_ctl.billing_service.execute(
-            "change_plan", company_id=company_id, new_plan_id=plan_id)
+        await billing_ctl.billing_service.execute("change_plan", company_id=company_id, new_plan_id=plan_id)
         flash("Plan updated successfully", "success")
 
         # 3.  outstanding invoice?
@@ -62,6 +61,10 @@ async def manage_billing(user: User, company_id: str):
             return redirect(url_for("billing.checkout", invoice_id=invoice.invoice_id))
 
         return redirect(url_for("company.get_dashboard"))
+    else:
+        # GET request - show plans and current subscription
+        if not profile:
+            profile = await billing_ctl.billing_service.execute("create_billing_profile", company_id=company_id)
 
     return render_template(
         "company/billing/plan_management.html",
@@ -106,10 +109,9 @@ async def get_dashboard(user: User):
         billing_logger.info("==============================================================================")
         billing_logger.info(f"Billing Context : {billing_context}")
         return render_template('company/billing/billing.html', **billing_context)
-    
 
     flash(message="You do not have a billing profile, please create one to continue", category="danger")
-    return redirect(url_for("billing.manage_billing", company_id=company_profile.company_id)), 400
+    return redirect(url_for("billing.manage_billing", company_id=company_profile.company_id))
 
 
 

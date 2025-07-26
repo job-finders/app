@@ -309,7 +309,7 @@ class BillingEvent(BaseModel):
     ]
     model_config = ConfigDict(from_attributes=True)
 
-    event_metadata: Dict[str, str] = Field(default_factory=dict)
+    event_metadata: Dict[str, Optional[str]] = Field(default_factory=dict)
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
 
 
