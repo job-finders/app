@@ -18,7 +18,8 @@ async def payfast_ipn():
     billing_controller = get_controller("billing")
     return await billing_controller.itn_callback(data=request.form)
 
-@billing_route.route("/billing/<string:company_id>", methods=["GET", "POST"])
+
+@billing_route.route("/manage/<string:company_id>", methods=["GET", "POST"])
 @flask_error_handler
 @employer_login
 async def manage_billing(user: User, company_id: str):
@@ -34,7 +35,7 @@ async def manage_billing(user: User, company_id: str):
     profile       = await billing_ctl.get_billing_profile(company_id)
     all_plans     = await billing_ctl.get_all_billing_plans()
     unpaid        = await billing_ctl.invoice_service.execute(
-                        "list_company_invoices", company_id, paid=False)
+        "list_company_invoices", company_id=company_id)
 
     if request.method == "POST":
         plan_id = request.form.get("plan_id")
@@ -108,7 +109,7 @@ async def get_dashboard(user: User):
     
 
     flash(message="You do not have a billing profile, please create one to continue", category="danger")
-    return redirect(url_for("billing.manage_plan", company_id=company_profile.company_id)), 400
+    return redirect(url_for("billing.manage_billing", company_id=company_profile.company_id)), 400
 
 
 

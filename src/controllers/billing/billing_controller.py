@@ -198,4 +198,11 @@ class BillingController(Controllers):
         if not billing_profile:
             billing_profile: CompanyBillingProfile = await self.billing_service.execute('create_billing_profile', company_id=company_id, plan_id=plan_id)
         return billing_profile
-                
+
+    async def get_billing_profile(self, company_id: str):
+        """
+        Get the billing profile for the company.
+        :param company_id:
+        :return: BillingProfile
+        """
+        return await self.billing_service.execute('get_billing_profile', company_id=company_id)
