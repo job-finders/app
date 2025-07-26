@@ -55,13 +55,13 @@ class InvoiceService(BillingServiceInterface):
             is_coroutine = inspect.iscoroutinefunction(method_to_execute)
             return await method_to_execute(*args, **kwargs) if is_coroutine else method_to_execute(*args, **kwargs)
         # Catch specific exceptions that might be raised by the lookup or the method itself.
-        except ValueError as e:
+        except (ValueError, KeyError) as e:
             # Re-raise the ValueError if it's one of the ones we explicitly raised.
             raise e
         except Exception as e:
             # Catch any other unexpected exceptions and wrap them in a RuntimeError.
             # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
-            raise RuntimeError(f"Error executing action '{action}': {str(e)}") from e
+            raise RuntimeError(f"Error executing action '{action}' Resultant Error : {str(e)}") from e
 
     async def _get_paid_invoices(self, company_id: str) -> List[Invoice]:
         with self.session_factory() as session:
@@ -189,16 +189,17 @@ class InvoiceService(BillingServiceInterface):
             ValueError: If the invoice doesn't exist.
         """
         with self.session_factory() as session:
-            invoice = session.query(InvoiceORM).filter_by(invoice_id=invoice_id).first()
-            if not invoice:
+            invoice_orm = session.query(InvoiceORM).filter_by(invoice_id=invoice_id).first()
+            if not invoice_orm:
                 raise ValueError("Invoice not found")
 
-            invoice.status = InvoiceStatusEnum.PAID.value
-            invoice.paid_at = datetime.now(timezone.utc)  # Use UTC now
+            invoice_orm.status = InvoiceStatusEnum.PAID.value
+            invoice_orm.paid_at = datetime.now(timezone.utc)  # Use UTC now
 
             session.commit()
-            session.refresh(invoice)
-            return Invoice(**invoice.to_dict())
+            session.refresh(invoice_orm)
+
+            return Invoice(**invoice_orm.to_dict())
 
     async def _list_company_invoices(self, company_id: str, limit: int = 10, offset: int = 0):
         """
@@ -257,14 +258,16 @@ class InvoiceService(BillingServiceInterface):
             ValueError: If the invoice is not found.
         """
         with self.session_factory() as session:
-            invoice = session.query(InvoiceORM).filter_by(invoice_id=invoice_id).first()
-            if not invoice:
+            invoice_orm = session.query(InvoiceORM).filter_by(invoice_id=invoice_id).first()
+            if not invoice_orm:
                 raise ValueError("Invoice not found")
 
-            invoice.status = status.value
+            invoice_orm.status = status.value
             if status == InvoiceStatusEnum.PAID:
-                invoice.paid_at = datetime.now(timezone.utc)  # Use UTC now
+                invoice_orm.paid_at = datetime.now(timezone.utc)  # Use UTC now
+
+            invoice_orm.updated_at = datetime.now(timezone.utc)
 
             session.commit()
-            session.refresh(invoice)
-            return Invoice(**invoice.to_dict())
+            session.refresh(invoice_orm)
+            return Invoice(**invoice_orm.to_dict())

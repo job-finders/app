@@ -111,7 +111,6 @@ class BillingServiceInterface:
     def _interface_schema(self):
         """
         Returns a machine-readable interface specification for AI agents.
-
         Returns:
             dict: A schema describing all available actions, their arguments, and documentation.
         """
@@ -121,7 +120,6 @@ class BillingServiceInterface:
                 doc = inspect.getdoc(method) or ""
                 sig = inspect.signature(method)
                 hints = get_type_hints(method)
-
                 params = []
                 for param_name, param in sig.parameters.items():
                     if param_name == "self":
@@ -132,7 +130,6 @@ class BillingServiceInterface:
                         "event_type": param_type,
                         "required": param.default == inspect.Parameter.empty
                     })
-
                 schema[name] = {
                     "description": doc,
                     "arguments": params,

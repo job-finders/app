@@ -325,7 +325,7 @@ async def payfast_payment(user: User, company_id: str):
         if not invoice:
             flash("Failed to create invoice.", "danger")
             return redirect(url_for("billing.get_dashboard"))
-
+        # This ensures that the last_invoice_id is updated in the billing profile
         last_invoice_id_updated = await billing_controller.invoice_service.execute(
             "update_last_invoice_id",
             company_id=company_id,
