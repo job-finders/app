@@ -1,4 +1,4 @@
-from src.database import PromptORM, PromptMutationLogORM, ArticleORM, PerformanceORM
+from src.database import BlogPromptORM, PromptMutationLogORM, ArticleORM, PerformanceORM
 from src.agents.blog.prompts import PromptMutatorAgent
 from src.controllers.controller import Controllers
 from src.utils.route_helpers import get_service
@@ -31,9 +31,9 @@ class PromptMutationController(Controllers):
                 "ContentGeneratorAgent",
             ]:
                 latest = (
-                    session.query(PromptORM)
+                    session.query(BlogPromptORM)
                     .filter_by(agent_name=agent_name)
-                    .order_by(PromptORM.version.desc())
+                    .order_by(BlogPromptORM.version.desc())
                     .first()
                 )
                 if not latest:
@@ -49,7 +49,7 @@ class PromptMutationController(Controllers):
                     )
                 )
 
-                new_prompt = PromptORM(
+                new_prompt = BlogPromptORM(
                     agent_name=agent_name,
                     version=latest.version + 1,
                     system_prompt=mutation.system_prompt,

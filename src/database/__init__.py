@@ -39,7 +39,7 @@ AgentSessionORM
 
 from .sql.blog_learning import (
     BlogTopicORM, BlogPromptORM, ArticleORM, ScheduledPostORM, PerformanceORM,
-    PromptORM, PromptMutationLogORM
+    PromptMutationLogORM
 )
 
 
@@ -60,5 +60,5 @@ __all__ = [
     "NotificationsORM",
     "ApplicationStepORM", "JobViewActivityORM", "ArchivedActivityORM", "UserSearchActivityORM",
     "AgentSessionORM",
-    "BlogTopicORM", "BlogPromptORM", "ArticleORM", "ScheduledPostORM", "PerformanceORM", "PromptORM"
+    "BlogTopicORM", "BlogPromptORM", "ArticleORM", "ScheduledPostORM", "PerformanceORM", "PromptMutationLogORM"
 ]

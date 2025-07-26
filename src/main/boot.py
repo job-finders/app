@@ -2,17 +2,22 @@ from src.database import *
 from src.database.sql import Base, engine
 def boot():
     try:
-        # JobViewActivityORM.delete_table()
-        # JobApprovalRequestORM.delete_table()
-        # ApplicationStepORM.delete_table()
-        # JobApplicationORM.delete_table()
-        # ATSReportORM.delete_table()
-        # SavedJobORM.delete_table()
-        # JobVersionHistoryORM.delete_table()
-        # JobsORM.delete_table()
-        # JobCategoryORM.delete_table()
 
+        # PromptMutationLogORM.delete_table()
+        # # PromptORM.delete_table()
+        # # BlogPromptORM.delete_table()
+        # BlogTopicORM.delete_table()
+        # ArticleORM.delete_table()
+        # ScheduledPostORM.delete_table()
+        # PerformanceORM.delete_table()
         #
+
+        # run once, before anything else
+        # BlogPromptORM.delete_table()  # drops if it exists
+        # BlogPromptORM.create_if_not_table()  # re-creates with the correct columns
+        # PromptMutationLogORM.create_if_not_table()
+
+        Base.metadata.drop_all(bind=engine, checkfirst=True)
         # Drop all existing tables first
         print("Dropping all existing database tables...")
         # Base.metadata.drop_all(bind=engine)

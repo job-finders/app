@@ -14,7 +14,8 @@ class HashnodeAgentCommandRegistry:
     It’s intended for use in autonomous systems, chat-based agents, or programmable interfaces that need to query or manipulate blog content on Hashnode.
 
     ---
-    Features:
+    Features:Mobius5627084@
+
     - Centralized access to available blogging commands.
     - Introspectable for AI agents to dynamically discover callable functions and required input models.
     - Includes method descriptions and schemas for documentation or validation.
