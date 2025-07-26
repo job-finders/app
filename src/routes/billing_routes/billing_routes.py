@@ -1,7 +1,7 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for, jsonify
 
 from src.services.billing.schemas_interfaces import BillingEventType
-from src.authentication import employer_login,company_access_required
+from src.authentication import employer_login
 from src.database.models import User, BillingPlan, CompanyBillingProfile
 from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller, get_service
@@ -180,9 +180,8 @@ async def checkout(user: User, invoice_id: str):
 async def update_payment_method(user: User):
     """
 
-    :param self:
+
     :param user:
-    :param company_id:
     :return:
     """
     pass

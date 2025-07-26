@@ -44,6 +44,7 @@ class BillingPlanORM(Base):
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
             cls.__table__.create(bind=engine)
 
     # noinspection PyUnresolvedReferences
@@ -96,6 +97,7 @@ class CompanyBillingProfileORM(Base):
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
             cls.__table__.create(bind=engine)
 
     # noinspection PyUnresolvedReferences
@@ -152,6 +154,7 @@ class InvoiceORM(Base):
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
             cls.__table__.create(bind=engine)
 
     # noinspection PyUnresolvedReferences
@@ -189,11 +192,12 @@ class PaymentMethodORM(Base):
     is_active = Column(Boolean, default=True)
     is_default = Column(Boolean, default=True)
 
-    added_on = Column(DateTime(timezone=True), default=datetime.utcnow)
+    added_on = Column(DateTime(timezone=True), default=utc_time())
 
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
             cls.__table__.create(bind=engine)
 
     # noinspection PyUnresolvedReferences
@@ -229,6 +233,7 @@ class BillingEventORM(Base):
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
+            # noinspection PyUnresolvedReferences
             cls.__table__.create(bind=engine)
 
     # noinspection PyUnresolvedReferences
