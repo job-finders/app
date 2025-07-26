@@ -105,10 +105,10 @@ async def get_dashboard(user: User):
     if has_billing_profile:
         billing_logger.info(f"Company Profile : {company_profile}")
         billing_context = await billing_controller.get_billing_dashboard(company_id=employer_profile.company_id)
-        billing_logger.info(f"Billing Dashboard Context : {billing_context}")
+
         billing_context.update(current_user=user, employer_profile=employer_profile, company=company_profile)
         billing_logger.info("==============================================================================")
-        billing_logger.info(f"Billing Context : {billing_context}")
+        # billing_logger.info(f"Billing Context : {billing_context}")
         return render_template('company/billing/billing.html', **billing_context)
 
     flash(message="You do not have a billing profile, please create one to continue", category="danger")
@@ -173,7 +173,6 @@ async def checkout(user: User, invoice_id: str):
         company=company,
         pay_url=pay_url,
     )
-
 
 @billing_route.route("/payment-method/update", methods=["GET"])
 @flask_error_handler
@@ -278,3 +277,70 @@ async def change_plan(user: User):
 
     flash("Plan updated successfully!", "success")
     return redirect(url_for("billing.get_dashboard"))
+
+
+@billing_route.route("/payments/payfast/<string:company_id>", methods=["GET", "POST"])
+@flask_error_handler
+@employer_login
+async def payfast_payment(user: User, company_id: str):
+    """
+    Initiates the Payfast payment process for the given company.
+
+    :param user: The logged-in user.
+    :param company_id: The ID of the company initiating the payment.
+    :return: Redirects to the Payfast payment gateway.
+    """
+    billing_controller = get_controller("billing")
+    # Fetch the current billing profile to get the amount due
+    billing_profile = await billing_controller.get_billing_profile(company_id=company_id)
+    if not billing_profile:
+        flash("Billing profile not found.", "danger")
+        return redirect(url_for("billing.get_dashboard"))
+    billing_logger.info(f"Billing Profile: {billing_profile.subscription_id}")
+    # Fetch the current plan details to get the amount due
+    current_plan = await billing_controller.billing_service.execute(
+        "look_up_plan",
+        plan_id=billing_profile.current_plan_id
+    )
+    if not current_plan:
+        flash("Current plan not found.", "danger")
+        return redirect(url_for("billing.get_dashboard"))
+
+    amount = current_plan.price
+
+    # Check for existing unpaid invoices using the InvoiceService inside the BillingController
+    unpaid_invoices = await billing_controller.invoice_service.execute("get_unpaid_invoices", company_id=company_id)
+    if unpaid_invoices:
+        invoice = unpaid_invoices[0]  # Use the first unpaid invoice
+    else:
+        # Create a new invoice for the company using the InvoiceService inside the BillingController
+        # The subscription_id will be taken from the billing profile automatically
+        invoice = await billing_controller.invoice_service.execute(
+            "create_invoice",
+            billing_profile=billing_profile,
+            plan=current_plan,
+            subscription_id=billing_profile.subscription_id,
+        )
+
+        if not invoice:
+            flash("Failed to create invoice.", "danger")
+            return redirect(url_for("billing.get_dashboard"))
+
+        last_invoice_id_updated = await billing_controller.invoice_service.execute(
+            "update_last_invoice_id",
+            company_id=company_id,
+            invoice_id=invoice.invoice_id
+        )
+
+    # Generate the PayFast payment form using the PaymentService
+    payfast_form_data = await billing_controller.payment_service.execute(
+        "generate_payfast_form",
+        invoice=invoice,
+        company=billing_profile
+    )
+    if not payfast_form_data or "redirect_url" not in payfast_form_data:
+        flash("Failed to generate payment form.", "danger")
+        return redirect(url_for("billing.get_dashboard"))
+
+    # Redirect to the PayFast payment gateway
+    return redirect(payfast_form_data["redirect_url"])

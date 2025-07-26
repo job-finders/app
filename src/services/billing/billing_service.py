@@ -196,7 +196,7 @@ class BillingService(BillingServiceInterface):
                 sort_order=5
             )
         ]
-        self.logger.info(f"Started Initializing Standard Billing Plans : {standard_plans}")
+        # self.logger.info(f"Started Initializing Standard Billing Plans : {standard_plans}")
         with self.session_factory() as session:
             saved_plans = []
 
@@ -307,6 +307,7 @@ class BillingService(BillingServiceInterface):
                 trial_end = now.date() + timedelta(days=self.trial_period_days)
 
                 profile_orm = CompanyBillingProfileORM(
+                    subscription_id=str(uuid.uuid4()),
                     company_id=company_id,
                     current_plan_id=trial_plan.plan_id,
                     subscription_start=now,
@@ -607,11 +608,6 @@ class BillingService(BillingServiceInterface):
     ) -> Optional[CompanyBillingProfile]:
         """
         Creates a new billing profile for a company.
-        :param company_id: The ID of the company.
-        :param plan_id:    The ID of the initial billing plan.  If None, no plan
-                           is attached and the profile is created in an inactive
-                           state (no subscription window, not a trial).
-        :return: The newly created CompanyBillingProfile, or None if it already exists.
         """
         # ------------- Basic validation -------------
         if not (isinstance(company_id, str) and company_id.strip()):
@@ -626,17 +622,20 @@ class BillingService(BillingServiceInterface):
 
             # ------------- No plan requested -------------
             if plan_id is None:
-                billing_profile_orm = CompanyBillingProfileORM(
-                    subscription_id=str(uuid.uuid4()),
+                # ✅ Create Pydantic model first
+                billing_profile = CompanyBillingProfile(
                     company_id=company_id,
                     current_plan_id=None,
                     subscription_start=None,
                     subscription_end=None,
                     trial_active=False,
+                    trial_end_date=None,
                 )
+
+                # ✅ Then create ORM from Pydantic
+                billing_profile_orm = CompanyBillingProfileORM(**billing_profile.model_dump())
                 session.add(billing_profile_orm)
                 session.commit()
-                session.refresh(billing_profile_orm)
 
                 await self.billing_events.execute(
                     "record_event",
@@ -645,7 +644,6 @@ class BillingService(BillingServiceInterface):
                     event_metadata={"trigger": "create_billing_profile", "plan_id": None},
                 )
 
-                billing_profile = CompanyBillingProfile(**billing_profile_orm.to_dict())
                 self.logger.info(f"Billing profile created for {company_id} without a plan.")
                 return billing_profile
 
@@ -671,22 +669,20 @@ class BillingService(BillingServiceInterface):
             today = datetime.now(timezone.utc).date()
             subscription_end = today + timedelta(days=billing_plan.duration_days)
 
-            billing_profile_orm = CompanyBillingProfileORM(
+            # ✅ Create Pydantic model first
+            billing_profile = CompanyBillingProfile(
                 company_id=company_id,
                 current_plan_id=plan_id,
-                subscription_start=datetime.now(timezone.utc),
-                subscription_end=datetime(
-                    subscription_end.year,
-                    subscription_end.month,
-                    subscription_end.day,
-                    23, 59, 59,
-                    tzinfo=timezone.utc,
-                ),
+                subscription_start=datetime.now(timezone.utc).date(),
+                subscription_end=subscription_end,
                 trial_active=False,
+                trial_end_date=None
             )
+
+            # ✅ Then create ORM from Pydantic
+            billing_profile_orm = CompanyBillingProfileORM(**billing_profile.model_dump())
             session.add(billing_profile_orm)
             session.commit()
-            session.refresh(billing_profile_orm)
 
             await self.billing_events.execute(
                 "record_event",
@@ -695,7 +691,6 @@ class BillingService(BillingServiceInterface):
                 event_metadata={"trigger": "create_billing_profile", "plan_id": plan_id},
             )
 
-            billing_profile = CompanyBillingProfile(**billing_profile_orm.to_dict())
             self.logger.info(f"Billing profile created for {company_id} with plan {plan_id}.")
             return billing_profile
 
@@ -760,6 +755,7 @@ class BillingService(BillingServiceInterface):
             if not profile_orm:
                 # If profile doesn't exist, create it here with the subscription
                 profile_orm = CompanyBillingProfileORM(
+                    subscription_id=str(uuid.uuid4()),
                     company_id=company_id,
                     current_plan_id=plan_id,
                     subscription_start=now,

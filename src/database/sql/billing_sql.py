@@ -134,7 +134,7 @@ class InvoiceORM(Base):
 
     invoice_id = Column(String(ID_LEN), primary_key=True, index=True)
     subscription_id = Column(String(ID_LEN), ForeignKey("company_billing.subscription_id"), nullable=False)
-    plan_id = Column(String(ID_LEN), ForeignKey("billing_plan.plan_id"), nullable=True)
+    plan_id = Column(String(ID_LEN), ForeignKey("billing_plan.plan_id"), nullable=False)
     company_id = Column(String(ID_LEN), nullable=False)
 
     status = Column(String(36), default=InvoiceStatusEnum.PENDING.value, nullable=False)

@@ -47,7 +47,7 @@ __all__ = [
     "ConfigurationORM",
     "CompanyORM", "CompanyFollowingORM", "CompanyCIPCORM", "CompanyVerificationDocumentORM", "DirectorDetailsORM",
     "SavedCandidatesORM", "AIBasedDocumentReviewResultORM",
-    "BillingEventORM", "BillingPlanORM", "CompanyBillingProfileORM", "InvoiceORM",
+    "BillingEventORM", "BillingPlanORM", "CompanyBillingProfileORM", "InvoiceORM", "PaymentMethodORM",
     "JobsORM", "JobApplicationORM", "JobCategoryORM", "SavedJobORM", "ApplicationDashboardORM",
     "ImportJobBatchORM", "JobVersionHistoryORM", "JobApprovalRequestORM", "JobApprovalStatusEnum",
     "ATSReportORM", "TalentPoolReportORM",

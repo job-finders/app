@@ -2,17 +2,12 @@
 import inspect
 from datetime import datetime, timedelta, timezone
 from typing import Callable, List, get_type_hints
-from uuid import uuid4
-
 # Domain Models
 from src.database.models import CompanyBillingProfile, InvoiceStatusEnum, BillingPlan, Invoice
-
 # SQL Models
 from src.database.sql.billing_sql import InvoiceORM, CompanyBillingProfileORM
-
 # Services
 from src.services.billing.schemas_interfaces import BillingServiceInterface, MethodSchema
-
 
 class InvoiceService(BillingServiceInterface):
     """
@@ -32,22 +27,21 @@ class InvoiceService(BillingServiceInterface):
             "list_company_invoices": self._list_company_invoices,
             "delete_invoice": self._delete_invoice,
             "update_invoice_status": self._update_invoice_status,
+            "update_last_invoice_id": self._update_last_invoice_id,
             "get_paid_invoices": self._get_paid_invoices,  # Added for cron service usage
+            "get_unpaid_invoices": self._get_unpaid_invoices,  # Added for cron service usage
             "close_invoice": self._close_invoice,  # Added for cron service usage
         }
         # Added _get_paid_invoices for cron service
     async def execute(self, action: str, *args, **kwargs):
         """
         Dynamically executes a method based on the provided action name.
-
         Args:
             action (str): The name of the method to execute (must be present in `_interface_schema`).
             *args: Positional arguments for the method.
             **kwargs: Keyword arguments for the method.
-
         Returns:
             Any: The result of the invoked method.
-
         Raises:
             ValueError: If the action does not exist in this service's schema
                         or if the found entry is not a callable method.
@@ -56,20 +50,14 @@ class InvoiceService(BillingServiceInterface):
         """
         try:
             method_to_execute = self.__interface_map[action]
-
             if method_to_execute is None:
                 raise ValueError(f"Action '{action}' not found in {self.__class__.__name__}.")
-
-            if inspect.iscoroutinefunction(method_to_execute):
-                return await method_to_execute(*args, **kwargs)
-            else:
-                return method_to_execute(*args, **kwargs)
-
+            is_coroutine = inspect.iscoroutinefunction(method_to_execute)
+            return await method_to_execute(*args, **kwargs) if is_coroutine else method_to_execute(*args, **kwargs)
         # Catch specific exceptions that might be raised by the lookup or the method itself.
         except ValueError as e:
             # Re-raise the ValueError if it's one of the ones we explicitly raised.
             raise e
-
         except Exception as e:
             # Catch any other unexpected exceptions and wrap them in a RuntimeError.
             # Using 'from e' maintains the original exception's traceback, which is crucial for debugging.
@@ -87,6 +75,17 @@ class InvoiceService(BillingServiceInterface):
 
         # Added _close_invoice for cron service
 
+    async def _get_unpaid_invoices(self, company_id: str) -> List[Invoice]:
+        with self.session_factory() as session:
+            invoices_orm = (
+                session.query(InvoiceORM)
+                .filter_by(company_id=company_id, status=InvoiceStatusEnum.PENDING.value)
+                .order_by(InvoiceORM.created_at.desc())
+                .all()
+            )
+            return [Invoice(**inv.to_dict()) for inv in invoices_orm]
+
+        # Added _close_invoice for cron service
     async def _close_invoice(self, invoice_id: str):
         with self.session_factory() as session:
             invoice_orm = session.query(InvoiceORM).filter_by(invoice_id=invoice_id).first()
@@ -97,27 +96,22 @@ class InvoiceService(BillingServiceInterface):
             session.refresh(invoice_orm)
             return Invoice(**invoice_orm.to_dict())
 
-    async def _create_invoice(self, billing_profile: CompanyBillingProfile, plan: BillingPlan):
-        """
-        Creates a new invoice for a company's billing plan.
-
-        Args:
-            billing_profile (CompanyBillingProfile): The company's billing profile.
-            plan (BillingPlan): The billing plan being invoiced.
-
-        Returns:
-            Invoice: The newly created invoice.
-        """
+    async def _create_invoice(self, billing_profile: CompanyBillingProfile, plan: BillingPlan,
+                              subscription_id: str = None):
         with self.session_factory() as session:
             today = datetime.now(timezone.utc)
-            amount = float(
-                plan.price) if not billing_profile.is_trial_valid else 0.0  # Assuming is_trial_valid from profile
+            amount = float(plan.price) if not billing_profile.is_trial_valid else 0.0
             due_date = today + timedelta(days=7)
 
+            invoice_subscription_id = subscription_id or billing_profile.billing_profile_id
+            if not invoice_subscription_id:
+                raise ValueError("No valid subscription_id available")
+
+            self.logger.info(f"Billing Plan ID : {plan.plan_id}, Subscription ID: {invoice_subscription_id}")
             invoice = Invoice(
-                invoice_id=str(uuid4()),
                 company_id=billing_profile.company_id,
                 plan_id=plan.plan_id,
+                subscription_id=invoice_subscription_id,
                 amount=amount,
                 currency=plan.currency or "ZAR",
                 status=InvoiceStatusEnum.PENDING.value if amount > 0 else InvoiceStatusEnum.PAID.value,
@@ -125,20 +119,31 @@ class InvoiceService(BillingServiceInterface):
                 paid_at=today if amount == 0 else None,
                 created_at=today
             )
-
-            invoice_orm = InvoiceORM(**invoice.model_dump())
+            invoice_orm = InvoiceORM(**invoice.model_dump(exclude={'billing_profile', 'billing_plan'}))
+            self.logger.info(f"Creating invoice ORM LOG : {invoice_orm.__dict__}")
             session.add(invoice_orm)
+            return invoice
 
-            billing_profile_orm = session.query(CompanyBillingProfileORM).filter_by(
-                company_id=billing_profile.company_id
-            ).first()
-            if billing_profile_orm:
-                billing_profile_orm.last_invoice_id = invoice.invoice_id
+    async def _update_last_invoice_id(self, subscription_id: str, last_invoice_id: str):
+        """
+        Updates the last invoice ID for a given subscription.
 
+        Args:
+            subscription_id (str): The ID of the subscription.
+            last_invoice_id (str): The ID of the last invoice to set.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        with self.session_factory() as session:
+            billing_profile = session.query(CompanyBillingProfileORM).filter_by(
+                billing_profile_id=subscription_id).first()
+            if not billing_profile:
+                return False
+
+            billing_profile.last_invoice_id = last_invoice_id
             session.commit()
-            session.refresh(invoice_orm)
-
-            return Invoice(**invoice_orm.to_dict())
+            return True
 
     async def _get_latest_invoice(self, company_id: str):
         """

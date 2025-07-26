@@ -192,35 +192,35 @@ def error_handler(view_func):
         # Database-related errors (Operational, Integrity, Programming errors)
         except (OperationalError, ProgrammingError, IntegrityError) as e:
             message = f"{view_func.__name__} : Database error: {str(e)}"
-            error_logger.error(message)
+            error_logger.info(message)
             # flash("Error accessing database - please try again.", category='danger')
             return None
 
         # Unauthorized access errors
         except UnauthorizedError as e:
             message = f"{view_func.__name__} : Unauthorized access: {str(e)}"
-            error_logger.error(message)
+            error_logger.info(message)
             # flash("You are not authorized to access this resource.", category='danger')
             return redirect(url_for('home.get_home'), code=302)
 
         # Connection issues (e.g., reset connection)
         except ConnectionResetError as e:
             message = f"{view_func.__name__} : Connection reset: {str(e)}"
-            error_logger.error(message)
+            error_logger.info(message)
             # flash("Unable to connect to the database, please try again.", category='danger')
             return None
 
         # Validation errors from Pydantic (input validation)
         except ValidationError as e:
             message = f"{view_func.__name__} : Validation error: {str(e)}"
-            error_logger.error(message)
+            error_logger.info(message)
             # flash("There was an issue with the provided data. Please check your input.", category='danger')
             return None
 
         # General unexpected errors
         except Exception as e:
             message = f"{view_func.__name__} : Unexpected error: {str(e)}"
-            error_logger.error(message)
+            error_logger.info(message)
             # flash("Oops! Something went wrong. Please try again later.", category='danger')
             return None
 

@@ -259,19 +259,17 @@ class Invoice(BaseModel):
     """
     invoice_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     company_id: str
-    subscription_id: Optional[str] = Field(default=None)
-    plan_id: Optional[str]
+    subscription_id: str
+    plan_id: str
     status: str = Field(default=InvoiceStatusEnum.PENDING.value)
     amount: float
-    currency: str = "ZAR"
+    currency: str = Field(default="ZAR")
     due_date: date
     paid_at: Optional[AwareDatetime]
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
 
     billing_profile: Optional[CompanyBillingProfile] = Field(default=None)
     billing_plan: Optional[BillingPlan] = Field(default=None)
-
-    model_config = ConfigDict(from_attributes=True)
 
     @property
     def is_paid(self) -> bool:

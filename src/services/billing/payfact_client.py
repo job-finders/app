@@ -47,6 +47,7 @@ class PayFastClient:
             "item_name": f"Invoice #{invoice.invoice_id}",
             "custom_str1": invoice.invoice_id,
         }
+        self.logger.info(f"Creating payment data for invoice {invoice.invoice_id}: {data}")
         data["signature"] = self._generate_signature(data)
         return data
 

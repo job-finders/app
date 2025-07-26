@@ -1,11 +1,13 @@
+
 from src.database import *
 from src.database.sql import Base, engine
 def boot():
     try:
-        #
-        # # Drop all existing tables first
-        # print("Dropping all existing database tables...")
-        # # Base.metadata.drop_all(bind=engine)
+        # InvoiceORM.delete_table()
+        # PaymentMethodORM.delete_table()
+        # BillingEventORM.delete_table()
+        # CompanyBillingProfileORM.delete_table()
+
         # Create all tables from scratch
         print("Creating new database schema...")
         Base.metadata.create_all(bind=engine)
