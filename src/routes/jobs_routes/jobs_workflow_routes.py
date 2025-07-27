@@ -174,7 +174,7 @@ async def show_edit_form(user: User, job_id: str):
     ats_report: AIATSReport = await company_ats_controller.compile_ats_report(job=job_details)
     # workflow_logger.info(f"Job details for editing: {job}")
     if ats_report:
-        workflow_logger.info(f"ATS Report: {ats_report}")
+        workflow_logger.info(f"PRE Compiled ATS Report : {ats_report}")
 
     context = dict(current_user=user, job=job, report=ats_report)
     return render_template("jobs_workflow/job_editor/edit.html", **context)

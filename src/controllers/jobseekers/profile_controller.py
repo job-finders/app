@@ -130,7 +130,7 @@ class JobSeekerProfilesController(Controllers):
         if not(isinstance(query, str) and query.strip()):
             return []
         with self.get_session() as session:
-            term = f"%{query.lower()}%"
+            term = f"Search Query : {query}"
             q = session.query(JobSeekerProfileORM).filter(
                 or_(
                     JobSeekerProfileORM.first_name.ilike(term),

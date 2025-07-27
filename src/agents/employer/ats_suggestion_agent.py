@@ -95,8 +95,9 @@ class ATSKeywordSuggestionAgent(BaseAgent):
 
     def __init__(self, user_id: str, tools: Optional[List[KeywordTool]] = None, fallback_threshold: int = 5):
         super().__init__(user_id=user_id)
-        if self.logger:
-            self.logger.info("Initialized Keyword Suggestion Agent Tool")
+
+        if self._logger:
+            self._logger.info("Initialized Keyword Suggestion Agent Tool")
         self.tools: List[KeywordTool] = tools or [
             IndustryTaxonomyTool(),
             PeerJobsTool(),
@@ -195,9 +196,10 @@ class ATSKeywordSuggestionAgent(BaseAgent):
             "   - MUST NOT be in existing tokens above\n"
             "   - Ordered by: [weight × frequency] > source priority\n"
             "   - Source priority: peer_jobs > industry_taxonomy > parsed_cvs\n"
-            "3. OUTPUT: Pure JSON only - no commentary"
+            "3. OUTPUT: Pure JSON only  - no commentary"
         )
 
+    # noinspection PyTypeChecker
     def output_model(self) -> ATSOptimisationOutput:
         return ATSOptimisationOutput
 
@@ -233,18 +235,18 @@ class ATSKeywordSuggestionAgent(BaseAgent):
             corpus.append(llm_counter)
 
         # 4. TF-IDF as before
-        def _tf_idf(corpus: List[Counter]) -> Counter:
+        def _tf_idf(_corpus: List[Counter]) -> Counter:
             df = Counter()
-            for doc in corpus:
+            for doc in _corpus:
                 for term in doc:
                     df[term] += 1
-            N = len(corpus)
-            tf_idf_scores = Counter()
-            for doc in corpus:
+            n = len(_corpus)
+            tf_idf_scores_ = Counter()
+            for doc in _corpus:
                 total = max(sum(doc.values()), 1)
                 for term, cnt in doc.items():
-                    tf_idf_scores[term] += (cnt / total) * (math.log(N / df[term]) + 1)
-            return tf_idf_scores
+                    tf_idf_scores_[term] += (cnt / total) * (math.log(n / df[term]) + 1)
+            return tf_idf_scores_
 
         tf_idf_scores = _tf_idf(corpus)
 

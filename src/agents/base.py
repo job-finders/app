@@ -1,6 +1,5 @@
 from __future__ import annotations
 import inspect
-import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
@@ -8,33 +7,22 @@ from typing import Any, Dict, Type
 
 from pydantic import BaseModel
 
+from src.cache.cache_redis import cached
 from src.agents.memory import AgentMemoryStore
 from src.agents.openrouter_client import OpenRouterClient
 from src.config import config_instance
 from src.utils.route_helpers import get_service
 
 
-# ---------- Configuration Enums ------------------------------------------------
 class ModelType(str, Enum):
-    # deepseek
-    DEEPSEEK_CHAT = "deepseek/deepseek-chat"
-    DEEPSEEK_REASONER = "deepseek/deepseek-reasoner"
-    DEEPSEEK_V3 = "deepseek/deepseek-v3"
-    DEEPSEEK_CODER = "deepseek/deepseek-coder"
-    DEEPSEEK_CHIMERA_FREE = "tngtech/deepseek-r1t2-chimera:free"
-    DEEPSEEK_R1_GWEN_FREE = "deepseek/deepseek-r1-0528-qwen3-8b:free"
-    DEEPSEEK_R1_528_FREE = "deepseek/deepseek-r1-0528:free"
-
-    # moonshot
-    MOONSHOT_KIMI_K2 = "moonshotai/kimi-k2"
-    MOONSHOT_KIMI_K2_FREE = "moonshotai/kimi-k2:free"
-
-    # qwen
-    GWEN_30B = "qwen/qwen3-30b-a3b:free"
-
-    # fallbacks
     GPT4 = "openai/gpt-4"
     CLAUDE = "anthropic/claude-3-haiku"
+    DEEPSEEK_CHAT = "deepseek/deepseek-chat"
+    DEEPSEEK_REASONER = ""
+    DEEPSEEK_CODER = ""
+    MOONSHOT_KIMI_K2 = "moonshotai/kimi-k2"
+    MOONSHOT_KIMI_K2_FREE = "moonshotai/kimi-k2:free"
+    DEEPSEEK_CHIMERA_FREE = "tngtech/deepseek-r1t2-chimera:free"
 
 
 class UserRole(str, Enum):
@@ -52,14 +40,12 @@ class UsageTier(Enum):
     ENTERPRISE = {"daily_limit": 1000, "monthly_limit": 25000}
 
 
-# ---------- Usage Tracking -----------------------------------------------------
 class UsageTracker:
-    def __init__(self, user_id: str, tier: UsageTier = UsageTier.FREE) -> None:
+    def __init__(self, user_id: str, tier: UsageTier = UsageTier.FREE):
         self.user_id = user_id
         self.tier = tier
-        self._redis: dict[str, int] = {}  # Replace with real Redis or DB
+        self._redis: dict[str, int] = {}  # replace with real Redis
 
-    # ---------------------------------------------------------------------
     def _key(self, period: str) -> str:
         today = datetime.now().strftime("%Y-%m-%d")
         month = datetime.now().strftime("%Y-%m")
@@ -69,7 +55,7 @@ class UsageTracker:
     def current(self, period: str) -> int:
         return self._redis.get(self._key(period), 0)
 
-    def bump(self, period: str) -> None:
+    def bump(self, period: str):
         key = self._key(period)
         self._redis[key] = self._redis.get(key, 0) + 1
 
@@ -88,13 +74,55 @@ class UsageTracker:
         return True
 
 
-# ---------- Agent --------------------------------------------------------------
 class BaseAgent(ABC):
-    def __init__(
-        self,
-        user_id: str,
-        usage_tier: UsageTier = UsageTier.FREE,
-    ) -> None:
+    ROUTING_RULES: dict[str, ModelType] = {
+        # --- Job Seeker Utilities ---
+        "resume": ModelType.DEEPSEEK_CHAT,
+        "cover letter": ModelType.DEEPSEEK_CHAT,
+        "job search": ModelType.MOONSHOT_KIMI_K2,
+        "application tracking": ModelType.MOONSHOT_KIMI_K2,
+
+        # --- Employer / HR Screening ---
+        "screening": ModelType.MOONSHOT_KIMI_K2,
+        "candidate filter": ModelType.MOONSHOT_KIMI_K2,
+        "interview questions": ModelType.MOONSHOT_KIMI_K2,
+
+        # --- Analysis & Matching ---
+        "matching": ModelType.MOONSHOT_KIMI_K2,
+        "job matching": ModelType.MOONSHOT_KIMI_K2,
+        "skills match": ModelType.MOONSHOT_KIMI_K2,
+
+        # --- Writing & Optimization ---
+        "writing": ModelType.DEEPSEEK_CHAT,
+        "optimize": ModelType.DEEPSEEK_CHAT,
+        "reword": ModelType.DEEPSEEK_CHAT,
+        "summarize": ModelType.DEEPSEEK_CHAT,
+
+        # --- Salary & Budget ---
+        "salary": ModelType.MOONSHOT_KIMI_K2,
+        "budget": ModelType.MOONSHOT_KIMI_K2,
+        "compensation": ModelType.MOONSHOT_KIMI_K2,
+
+        # --- Conversation / General ---
+        "chat": ModelType.DEEPSEEK_CHAT,
+        "conversation": ModelType.DEEPSEEK_CHAT,
+        "follow up": ModelType.DEEPSEEK_CHAT,
+        "reply": ModelType.DEEPSEEK_CHAT,
+
+        # --- Advanced Reasoning & Logic ---
+        "plan": ModelType.DEEPSEEK_REASONER,
+        "strategy": ModelType.DEEPSEEK_REASONER,
+        "evaluation": ModelType.DEEPSEEK_REASONER,
+        "assessment": ModelType.DEEPSEEK_REASONER,
+
+        # --- Technical / Code / Parsing ---
+        "code": ModelType.DEEPSEEK_CODER,
+        "extract": ModelType.DEEPSEEK_CODER,
+        "parse": ModelType.DEEPSEEK_CODER,
+        "generate code": ModelType.DEEPSEEK_CODER,
+    }
+
+    def __init__(self, user_id: str, usage_tier: UsageTier = UsageTier.FREE):
         self.user_id = user_id
         self.name = getattr(self, "name", self.__class__.__name__)
         self.memory = AgentMemoryStore(user_id, self.name)
@@ -102,106 +130,86 @@ class BaseAgent(ABC):
         self.hashnode_token = config_instance().HASHNODE_TOKEN
         self.client = OpenRouterClient()
         self._logger = get_service("logger")()(self.name)
-        self._last_interaction: dict[str, Any] = {}
+        self._last_interaction = {}
         self.client.init_app()
 
-    # ------------------------------------------------------------------
     @abstractmethod
     def system_prompt(self) -> str: ...
+
     @abstractmethod
     def prompt(self, *args, **kwargs) -> str: ...
+
     @abstractmethod
     def output_model(self) -> Type[BaseModel]: ...
 
-    # ------------------------------------------------------------------
-    # Model Routing
-    # ------------------------------------------------------------------
-    ROUTING_RULES = {
-        "matching": ModelType.MOONSHOT_KIMI_K2,
-        "analysis": ModelType.MOONSHOT_KIMI_K2,
-        "budget": ModelType.MOONSHOT_KIMI_K2,
-        "salary": ModelType.MOONSHOT_KIMI_K2,
-        "writing": ModelType.DEEPSEEK_CHAT,
-        "conversation": ModelType.DEEPSEEK_CHAT,
-        "resume": ModelType.DEEPSEEK_CHAT,
-        "cover letter": ModelType.DEEPSEEK_CHAT,
-        "interview": ModelType.DEEPSEEK_CHAT,
-    }
 
     @classmethod
-    def select_model(
-        cls,
-        user_prompt: str,
-        user_role: UserRole | None = None,
-        task_type: str | None = None,
-    ) -> ModelType:
-        """Return the best model for the given prompt / role / task."""
+    def select_model(cls, user_prompt: str, user_role: UserRole | None = None,
+                     task_type: str | None = None) -> ModelType:
         text = user_prompt.lower()
 
-        # Role-specific shortcuts
         if user_role == UserRole.EMPLOYER and "screening" in text:
             return ModelType.MOONSHOT_KIMI_K2
-        if user_role == UserRole.JOB_SEEKER and "job search" in text:
+        if user_role == UserRole.JOB_SEEKER and "search" in text:
             return ModelType.MOONSHOT_KIMI_K2
 
-        # Task-type override
         if task_type and task_type in cls.ROUTING_RULES:
             return cls.ROUTING_RULES[task_type]
 
-        # Keyword-based fallthrough
         for phrase, model in cls.ROUTING_RULES.items():
             if phrase in text:
                 return model
 
-        return ModelType.DEEPSEEK_CHAT  # default
+        return ModelType.DEEPSEEK_CHAT  # safe default
 
-    @staticmethod
-    def fallback_for(model: ModelType) -> ModelType:
+    async def check_usage_and_select_model(
+            self,
+            user_prompt: str,
+            user_role: UserRole | None = None,
+            task_type: str | None = None,
+    ) -> ModelType:
+        """
+        Checks user limits, analyzes the prompt/task/role and returns the ideal model.
+        Falls back to free-tier if limits are exceeded.
+        """
+        # Analyze prompt and role/task to route model
+        model = self.select_model(user_prompt, user_role, task_type)
+
+        # If the user has exceeded their limits, fall back to a free-tier model
+        if not self.usage.within_limits():
+            if self.usage.tier == UsageTier.FREE:
+                raise RuntimeError("Daily/monthly limit exceeded. Please upgrade.")
+            fallback_model = self.fallback_for(model)
+            self._logger.warning(f"Limits exceeded, falling back to: {fallback_model.value}")
+            return fallback_model
+
+        self._logger.info(f"Selected model: {model.value}")
+        return model
+
+    def fallback_for(self, model: ModelType) -> ModelType:
         return (
             ModelType.MOONSHOT_KIMI_K2_FREE
             if model == ModelType.MOONSHOT_KIMI_K2
             else ModelType.DEEPSEEK_CHIMERA_FREE
         )
 
-    # ------------------------------------------------------------------
-    async def check_usage_and_select_model(
-        self,
-        user_prompt: str,
-        user_role: UserRole | None = None,
-        task_type: str | None = None,
-    ) -> ModelType:
-        model = self.select_model(user_prompt, user_role, task_type)
-
-        if not self.usage.within_limits():
-            if self.usage.tier == UsageTier.FREE:
-                raise RuntimeError("Daily / monthly limit exceeded. Please upgrade.")
-            model = self.fallback_for(model)
-
-        self._logger.info(f"Using model {model.value}")
-        return model
-
-    # ------------------------------------------------------------------
-    async def run(
-        self,
-        user_role: UserRole | None = None,
-        task_type: str | None = None,
-        *args,
-        **kwargs,
-    ) -> BaseModel:
+    @cached(ttl=3600)
+    async def run(self, user_role: UserRole | None = None, task_type: str | None = None, *args, **kwargs) -> BaseModel:
         prompt = self.prompt(*args, **kwargs)
         if inspect.iscoroutine(prompt):
             prompt = await prompt
 
+        # Check structured memory first
+        if mem_cached := self.memory.get_cached_result(prompt):
+            self._logger.info("Returning cached result from memory store.")
+            return self.output_model().model_validate(mem_cached)
+
         model = await self.check_usage_and_select_model(prompt, user_role, task_type)
+
         if not self.usage.record():
-            raise RuntimeError("Usage limit exceeded during execution")
+            raise RuntimeError("Usage limit exceeded")
 
-        user_id = self.memory.add_entry(
-            "user",
-            prompt,
-            protect=kwargs.get("protect_user_message", False),
-        )
-
+        self.memory.add_entry("user", prompt, protect=kwargs.get("protect_user_message", False))
         messages = [
             {"role": "system", "content": self.system_prompt()},
             {"role": "user", "content": prompt},
@@ -215,56 +223,50 @@ class BaseAgent(ABC):
                 temperature=kwargs.get("temperature", 0.7),
                 max_tokens=kwargs.get("max_tokens", 2048),
             )
+
             if response is None:
                 raise ValueError("Agent produced no output.")
 
-            self.memory.add_entry(
-                "assistant",
-                response.model_dump_json(),
-                protect=kwargs.get("protect_response", False),
-            )
-            self._last_interaction = {"user_entry_id": user_id, "timestamp": time.time()}
+            self.memory.add_entry("assistant", response.model_dump_json(),
+                                  protect=kwargs.get("protect_response", False))
+            self.memory.add_result(prompt, response.model_dump())
             return response
 
         except Exception as e:
-            if any(w in str(e).lower() for w in ("limit_exceed", "add credit", "payment")):
-                return await self._run_fallback(messages, user_id, kwargs)
-            self._logger.error({"error": str(e), "model": model.value})
-            raise
+            self._logger.error(f"Error during structured completion: {e}")
+            return await self._run_fallback(messages, prompt, kwargs)
 
     async def _run_fallback(
-        self,
-        messages: list[dict[str, str]],
-        user_id: str,
-        kwargs: dict[str, Any],
+            self,
+            messages: list[dict[str, str]],
+            user_id: str,
+            kwargs: dict[str, Any],
     ) -> BaseModel:
-        model = self.fallback_for(self.select_model(messages[-1]["content"]))
+        """
+        Called when a primary model fails due to quota or billing issue.
+        Uses fallback model based on the original selection.
+        """
+        original_prompt = messages[-1]["content"]
+        original_model = self.select_model(original_prompt)
+        fallback_model = self.fallback_for(original_model)
+
+        self._logger.warning(f"Running fallback agent with model: {fallback_model.value}")
+
         response = await self.client.structured_completion(
             messages=messages,
             output_model=self.output_model(),
-            model=model.value,
+            model=fallback_model.value,
             temperature=kwargs.get("temperature", 0.7),
             max_tokens=kwargs.get("max_tokens", 1024),
         )
+
         if response is None:
             raise ValueError("Fallback agent produced no output.")
 
         self.memory.add_entry(
             "assistant",
-            f"[FALLBACK:{model.value}] {response.model_dump_json()}",
+            f"[FALLBACK:{fallback_model.value}] {response.model_dump_json()}",
             protect=kwargs.get("protect_response", False),
         )
         return response
 
-    # ------------------------------------------------------------------
-    def usage_info(self) -> dict[str, int | str]:
-        limits = self.usage.tier.value
-        daily = self.usage.current("daily")
-        monthly = self.usage.current("monthly")
-        info = {
-            "tier": self.usage.tier.name,
-            "daily": f"{daily}/{limits['daily_limit']}",
-            "monthly": f"{monthly}/{limits['monthly_limit']}",
-        }
-        self._logger.info(f"Usage {info}")
-        return info

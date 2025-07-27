@@ -73,11 +73,11 @@ class KeywordTool(ABC):
         ...
 
 class ATSScoreBreakdown(BaseModel):
-    title_score: int = 0
-    skills_score: int = 0
-    description_score: int = 0
-    formatting_score: int = 0
-    experience_level_score: int = 0
+    title_score: float = 0
+    skills_score: float = 0
+    description_score: float = 0
+    formatting_score: float = 0
+    experience_level_score: float = 0
 
     @computed_field
     @property

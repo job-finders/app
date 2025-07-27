@@ -1,65 +1,102 @@
+
 <!-- AI-Enhanced ATS Report Card -->
 <div id="atsPanel" class="card shadow-sm mb-4">
     <div class="card-header bg-white">
         <h5 class="mb-0 fw-semibold">
-            <i class="ti-stats-up me-2"></i>
-      AI-Enhanced ATS Report
-            <small class="float-end">
-                Score {{ (report.ai_enhanced_score|default('?')) }}/100
-            </small>
+            <i class="ti-stats-up me-2"></i> AI-Enhanced ATS Report
+            {% if report %}
+                <small class="float-end">
+                    Score {{ report.ai_enhanced_score | default('?') }}/100
+                </small>
+            {% endif %}
     </h5>
   </div>
-
+    {% if report %}
   <div class="card-body">
-    <!-- Score breakdown -->
-    <h6>Score Breakdown</h6>
-    <div class="row mb-3 text-center">
-        {% for key, val in (report.score_breakdown|default({})).items() %}
-            {% if key != 'total' %}
-                <div class="col">
-                    <div class="fw-bold">{{ val|default('0') }}</div>
-                    <small class="text-muted">{{ key.replace('_',' ').title() }}</small>
-                </div>
-            {% endif %}
-      {% endfor %}
-    </div>
+      <!-- Score Breakdown -->
+      <h6 class="mt-3">Score Breakdown</h6>
+      {% if report.score_breakdown %}
+          <div class="row mb-3 text-center">
+              <div class="col">
+                  <div class="fw-bold">{{ report.score_breakdown.title_score | default(0) }}</div>
+                  <small class="text-muted">Title Score</small>
+              </div>
+              <div class="col">
+                  <div class="fw-bold">{{ report.score_breakdown.skills_score | default(0) }}</div>
+                  <small class="text-muted">Skills Score</small>
+              </div>
+              <div class="col">
+                  <div class="fw-bold">{{ report.score_breakdown.description_score | default(0) }}</div>
+                  <small class="text-muted">Description Score</small>
+              </div>
+              <div class="col">
+                  <div class="fw-bold">{{ report.score_breakdown.formatting_score | default(0) }}</div>
+                  <small class="text-muted">Formatting Score</small>
+              </div>
+              <div class="col">
+                  <div class="fw-bold">{{ report.score_breakdown.experience_level_score | default(0) }}</div>
+                  <small class="text-muted">Experience Level Score</small>
+              </div>
+          </div>
+      {% else %}
+          <p class="text-muted">Score breakdown not available.</p>
+      {% endif %}
 
-    <!-- Keywords -->
-    <h6>Top Missing Keywords</h6>
-    <div class="mb-3">
-        {% for kw in (report.top_5_missing|default([])) %}
-            <span class="badge bg-danger me-1">{{ kw|default('') }}</span>
-      {% endfor %}
-    </div>
+      <!-- Top Missing Keywords -->
+      <h6 class="mt-4">Top Missing Keywords</h6>
+      {% if report.top_5_missing %}
+          <div class="mb-3">
+              {% for kw in report.top_5_missing %}
+                  <span class="badge bg-danger me-1">{{ kw | default('') }}</span>
+              {% endfor %}
+          </div>
+      {% else %}
+          <p class="text-muted">No missing keywords identified.</p>
+      {% endif %}
 
-    <!-- AI Suggestions (collapsible) -->
-    <h6>
-        <button class="btn btn-sm btn-outline-primary"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#suggestions-{{ report.id|default('none') }}">
+      <!-- AI Suggestions (Collapsible Section) -->
+      <h6 class="mt-4">
+          <button class="btn btn-sm btn-outline-primary"
+                  type="button"
+                  data-toggle="collapse"
+                  data-target="#suggestions-{{ report.id | default('none') }}">
         ✨ AI Suggestions
       </button>
     </h6>
-      <div class="collapse mt-2" id="suggestions-{{ report.id|default('none') }}">
-          {% for s in (report.suggestions|default([])) %}
-              <div class="border-start border-primary ps-3 mb-3">
-                  <strong>{{ (s.field|default('')).title() }}</strong>
-                  <br>
-                  <small class="text-muted">
-                      Impact: +{{ (s.impact.estimated_score_increase|default('?')) }} pts
-                  </small>
-                  {% if s.current %}
-                      <div class="text-danger text-decoration-line-through">{{ s.current|default('') }}</div>
-                  {% endif %}
-                  <div class="text-success fw-bold">{{ s.recommended|default('') }}</div>
-                  <em>{{ (s.impact.reasoning|default('')) }}</em>
-              </div>
-      {% endfor %}
+
+      <div class="collapse mt-2" id="suggestions-{{ report.id | default('none') }}">
+          {% if report.suggestions %}
+              {% for s in report.suggestions %}
+                  <div class="border-start border-primary ps-3 mb-3">
+                      <strong>{{ s.field | default('') | title }}</strong><br>
+                      <small class="text-muted">
+                          Impact: +{{ s.impact.estimated_score_increase | default('?') }} pts
+                          {% if s.impact and s.impact.confidence is not none %}
+                              | Confidence: {{ (s.impact.confidence * 100) | round(0) | int }}%
+                          {% endif %}
+                      </small>
+                      {% if s.current %}
+                          <div class="text-danger text-decoration-line-through">{{ s.current }}</div>
+                      {% endif %}
+                      <div class="text-success fw-bold">{{ s.recommended | default('') }}</div>
+                      <em class="text-muted d-block">{{ s.impact.reasoning | default('') }}</em>
+                  </div>
+              {% endfor %}
+          {% else %}
+              <p class="text-muted">No AI suggestions available.</p>
+          {% endif %}
     </div>
   </div>
 
   <div class="card-footer text-muted small">
-      Built from {{ (report.keyword_corpora|default([])) | join(', ') }}
+      Built from:
+      {{ report.keyword_corpora | default([]) | join(', ') if report.keyword_corpora else 'N/A' }}
   </div>
+        </div>
+    {% else %}
+        <!-- Fallback if report is missing -->
+        <div class="alert alert-warning">
+            No ATS report data available at this time.
+        </div>
 </div>
+    {% endif %}

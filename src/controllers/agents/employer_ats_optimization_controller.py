@@ -1,6 +1,11 @@
 # src/controllers/agents.py
+from collections import defaultdict
+
 from src.controllers.agents.ats_keywords_minig_tools import IndustryTaxonomyTool, PeerJobsTool, ParsedCVsTool
 from src.controllers.controller import Controllers, error_handler
+
+from src.database.models import KeywordSourceType  # Make sure this import is in your file
+
 
 from src.database.models import (Job, AIATSReport, KeywordSource, ATSScoreBreakdown, AIEnhancementSuggestion,
                                  SuggestionImpact, ATSOptimisationOutput, ATSOptimisationInput)
@@ -55,43 +60,65 @@ class EmployerATSOptimizationController(Controllers):
         return result
 
     @error_handler
-    async def compile_ats_report(self, job: Job) -> AIATSReport:
-        self.logger.info(f"will now compile industry keywords")
+    async def compile_ats_report(self, job: Job) -> AIATSReport | None:
+
+        self.logger.info("Will now compile industry keywords")
         raw = await self.suggest_industry_keywords(job)
+        if raw is None:
+            return None
+
+        job_text = " ".join([
+            job.title or "",
+            job.description or "",
+            " ".join(job.required_skills or []),
+            " ".join(job.preferred_skills or []),
+        ]).lower()
+
+        matched_keywords_set = set()
+        missing_keywords_set = set()
+
+        for suggestion in raw.suggestions:
+            for keyword in suggestion.keywords_added:
+                if keyword.lower() in job_text:
+                    matched_keywords_set.add(keyword)
+                else:
+                    missing_keywords_set.add(keyword)
+
+        default_source_type = KeywordSourceType.INDUSTRY_TAXONOMY  # fallback source
+
         matched = [
-            KeywordSource(keyword=k.keyword, frequency=k.frequency,
-                          source_type=k.source_type.value, weight=k.weight)
-            for k in raw.matched_keywords
+            KeywordSource(
+                keyword=k,
+                frequency=0,
+                source_type=default_source_type,
+                weight=1.0,
+            )
+            for k in matched_keywords_set
         ]
+
         missing = [
-            KeywordSource(keyword=k.keyword, frequency=k.frequency,
-                          source_type=k.source_type.value, weight=k.weight)
-            for k in raw.missing_keywords
+            KeywordSource(
+                keyword=k,
+                frequency=0,
+                source_type=default_source_type,
+                weight=1.0,
+            )
+            for k in missing_keywords_set
         ]
+
+        field_to_score = defaultdict(float)
+        for s in raw.suggestions:
+            field_to_score[s.field] += s.impact.estimated_score_increase
 
         score_breakdown = ATSScoreBreakdown(
-            title_score=getattr(raw.score_breakdown, "title_score", 0),
-            skills_score=getattr(raw.score_breakdown, "skills_score", 0),
-            description_score=getattr(raw.score_breakdown, "description_score", 0),
-            formatting_score=getattr(raw.score_breakdown, "formatting_score", 0),
-            experience_level_score=getattr(raw.score_breakdown, "experience_level_score", 0),
+            title_score=field_to_score.get("title", 0),
+            skills_score=field_to_score.get("required_skills", 0) + field_to_score.get("preferred_skills", 0),
+            description_score=field_to_score.get("description", 0),
+            formatting_score=field_to_score.get("formatting", 0),
+            experience_level_score=field_to_score.get("experience_level", 0),
         )
 
-        suggestions = [
-            AIEnhancementSuggestion(
-                field=s.field,
-                action=s.action,
-                current=s.current,
-                recommended=s.recommended,
-                keywords_added=s.keywords_added,
-                impact=SuggestionImpact(
-                    estimated_score_increase=s.impact.estimated_score_increase,
-                    confidence=s.impact.confidence,
-                    reasoning=s.impact.reasoning,
-                ),
-            )
-            for s in raw.suggestions
-        ]
+        suggestions = raw.suggestions
 
         return AIATSReport(
             job_id=str(job.job_id),
