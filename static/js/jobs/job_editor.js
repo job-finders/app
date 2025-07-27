@@ -83,9 +83,10 @@ function getFormData(extra = {}) {
 // 1. Calculate ATS
 document.getElementById('calcAtsBtn').addEventListener('click', async () => {
     const btn = document.getElementById('calcAtsBtn');
+    const ats_endpoint_url = document.getElementById('ats_endpoint_url').value;
     btn.disabled = true;
     btn.innerHTML = '<i class="ti-reload spin"></i> Calculating…';
-    const res = await fetch('{{ url_for("jobs_workflow.calculate_ats", job_id=job.job_id) }}', {
+    const res = await fetch(ats_endpoint_url, {
         method: 'POST',
         body: getFormData()
     });
@@ -100,9 +101,10 @@ document.getElementById('calcAtsBtn').addEventListener('click', async () => {
 document.getElementById('aiEnhanceBtn').addEventListener('click', () => $('#aiPromptModal').modal('show'));
 document.getElementById('doEnhanceBtn').addEventListener('click', async () => {
     const btn = document.getElementById('doEnhanceBtn');
+    const endpoint_url = document.getElementById('endpointurl').value;
     btn.disabled = true;
     btn.innerHTML = '<i class="ti-reload spin"></i> Enhancing…';
-    const res = await fetch('{{ url_for("employer_agents.enhance_job_post", job_id=job.job_id) }}', {
+    const res = await fetch(endpoint_url, {
         method: 'POST',
         body: getFormData({user_prompt: document.getElementById('userPrompt').value})
     });
