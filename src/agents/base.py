@@ -75,6 +75,54 @@ class UsageTracker:
         return True
 
 
+class TaskType(str, Enum):
+    """agents must select the task type they wish to execute from this task types"""
+    # Job Seeker Utilities
+    RESUME = "resume"
+    COVER_LETTER = "cover letter"
+    JOB_SEARCH = "job search"
+    APPLICATION_TRACKING = "application tracking"
+
+    # Employer / HR Screening
+    SCREENING = "screening"
+    CANDIDATE_FILTER = "candidate filter"
+    INTERVIEW_QUESTIONS = "interview questions"
+
+    # Matching
+    MATCHING = "matching"
+    JOB_MATCHING = "job matching"
+    SKILLS_MATCH = "skills match"
+
+    # Writing & Optimization
+    WRITING = "writing"
+    OPTIMIZE = "optimize"
+    REWORD = "reword"
+    SUMMARIZE = "summarize"
+
+    # Salary & Budget
+    SALARY = "salary"
+    BUDGET = "budget"
+    COMPENSATION = "compensation"
+
+    # Conversation / General
+    CHAT = "chat"
+    CONVERSATION = "conversation"
+    FOLLOW_UP = "follow up"
+    REPLY = "reply"
+
+    # Reasoning
+    PLAN = "plan"
+    STRATEGY = "strategy"
+    EVALUATION = "evaluation"
+    ASSESSMENT = "assessment"
+
+    # Technical
+    CODE = "code"
+    EXTRACT = "extract"
+    PARSE = "parse"
+    GENERATE_CODE = "generate code"
+
+
 class BaseAgent(ABC):
     ROUTING_RULES: dict[str, ModelType] = {
         # --- Job Seeker Utilities ---

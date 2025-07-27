@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
+from src.agents.base import UserRole, TaskType
 from src.database.constants import utc_time
 from src.controllers.controller import Controllers, error_handler
 
@@ -84,15 +85,8 @@ class EmployerAgentsController(Controllers):
         if user_prompt:
             agent.set_user_prompt(user_prompt=user_prompt)
 
-        result = await agent.run(input_model=input_model)
-        self.logger.info(f"Agent response : {result}")
-
-        # Set default expiration dates if not provided by agent
-        # if not result.expires_at:
-        #     result.expires_at = (datetime.now(timezone.utc) + timedelta(days=60)).isoformat()
-        # if not result.application_deadline:
-        #     result.application_deadline = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
-        return result
+        # noinspection PyTypeChecker
+        return await agent.run(input_model=input_model, user_role=UserRole.EMPLOYER, task_type=TaskType.OPTIMIZE.value)
 
     @staticmethod
     async def update_enhance_existing_job(
@@ -127,17 +121,6 @@ class EmployerAgentsController(Controllers):
             agent_value = getattr(agent_output, field, None)
             if copy_if_provided(agent_value):
                 setattr(job, field, agent_value)
-
-        # # ---- 2. Special date-time handling ---------------------------
-        # expires_at = to_aware(getattr(agent_output, "expires_at", None))
-        # if expires_at:
-        #     job.expires_at = expires_at
-        #
-        # application_deadline = to_aware(
-        #     getattr(agent_output, "application_deadline", None)
-        # )
-        # if application_deadline:
-        #     job.application_deadline = application_deadline
 
         # ---- 3. Update timestamp -------------------------------------
         job.updated_at = utc_time()
@@ -179,7 +162,7 @@ class EmployerAgentsController(Controllers):
             agent = JobPostIntelligenceAgent(user_id=user_id)
 
             # noinspection PyTypeChecker
-            return await agent.run(input_model=job)
+            return await agent.run(input_model=job, user_role=UserRole.EMPLOYER, task_type=TaskType.OPTIMIZE)
 
     @error_handler
     async def create_job_summary(self, user_id: str, job_id: str) -> JobSummaryOutput:
@@ -215,7 +198,8 @@ class EmployerAgentsController(Controllers):
             # Run the summary agent
             agent = JobSummaryAgent(user_id=user_id)
             input_model = JobPostSummaryInput(ats_description=job.ats_description)
-            job_summary =  await agent.run(input_model=input_model)
+            job_summary = await agent.run(input_model=input_model, user_role=UserRole.EMPLOYER,
+                                          task_type=TaskType.WRITING.value)
             
             job_orm.summary = job_summary.summary
             job_orm.seo_description = job_summary.seo_description
@@ -317,7 +301,8 @@ class EmployerAgentsController(Controllers):
             )
 
             # noinspection PyTypeChecker
-            document_verification_output: DocumentVerificationOutPut = await document_verification_agent.run(input_model=agent_input)
+            document_verification_output: DocumentVerificationOutPut = await document_verification_agent.run(
+                input_model=agent_input, user_role=UserRole.ADMIN, task_type=TaskType.EXTRACT.value)
             # AI Output Example (suspicious tax clearance certificate)
             session.add(AIBasedDocumentReviewResultORM(**document_verification_output.model_dump()))
             session.commit()
@@ -413,7 +398,7 @@ class EmployerAgentsController(Controllers):
         self.logger.info(f"Generating description for job category '{job_category}' for user {user_id}")
         agent = JobCategoryDefinitionAgent(user_id=user_id)
         input_model = JobCategoryNameInput(category_name=job_category)
-        output = await agent.run(input_model=input_model)
+        output = await agent.run(input_model=input_model, user_role=UserRole.ADMIN, task_type=TaskType.WRITING.value)
 
         # Run the agent
         # noinspection PyTypeChecker

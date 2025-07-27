@@ -2,6 +2,7 @@
 from typing import Optional, List
 from flask import Flask
 
+from src.agents.base import UserRole, TaskType
 from src.database.models import JobSeekerProfile, JobApplication, Job, JobSeekerCV, CandidateBenchmarkReport
 
 from src.controllers.controller import Controllers, error_handler
@@ -117,7 +118,8 @@ class CandidateBenchMarkController(Controllers):
         # Execute agent
         agent = CandidateBenchmarkAgent(user_id=employer_id)
         # noinspection PyTypeChecker
-        return await agent.run(input_model=input_data)
+        return await agent.run(input_model=input_data, user_role=UserRole.EMPLOYER,
+                               task_type=TaskType.CANDIDATE_FILTER.value)
 
     @error_handler
     async def benchmark_for_employee(
@@ -155,8 +157,6 @@ class CandidateBenchMarkController(Controllers):
         if not job:
             self.logger.error(f"Job {job_id} not found")
             return None
-
-            raise ValueError(f"Job {job_id} not found")
         if not candidate_profile:
             self.logger.error(f"JobSeekerProfile for user {user_id} not found")
             return None
@@ -183,4 +183,5 @@ class CandidateBenchMarkController(Controllers):
 
         # Execute agent
         agent = CandidateBenchmarkAgent(user_id=user_id)
-        return await agent.run(input_model=input_data)
+        return await agent.run(input_model=input_data, user_role=UserRole.JOB_SEEKER,
+                               task_type=TaskType.CANDIDATE_FILTER.value)

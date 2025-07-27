@@ -1,6 +1,7 @@
 # src/controllers/agents.py
 from collections import defaultdict
 
+from src.agents.base import TaskType, UserRole
 from src.controllers.agents.ats_keywords_minig_tools import IndustryTaxonomyTool, PeerJobsTool, ParsedCVsTool
 from src.controllers.controller import Controllers, error_handler
 
@@ -56,7 +57,8 @@ class EmployerATSOptimizationController(Controllers):
         )
         # TODO - keyword mining tools should be used to generate keywords then passed to the agent
         # noinspection PyTypeChecker
-        result: ATSOptimisationOutput = await agent.run(input_model=payload)
+        result: ATSOptimisationOutput = await agent.run(input_model=payload, user_role=UserRole.EMPLOYER,
+                                                        task_type=TaskType.OPTIMIZE.value)
         return result
 
     @error_handler

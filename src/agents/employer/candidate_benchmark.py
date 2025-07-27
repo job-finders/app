@@ -71,5 +71,5 @@ class CandidateBenchmarkAgent(BaseAgent):
             f"Structure your response in JSON format according to the schema."
         )
 
-    def output_model(self) -> Type[BaseModel]:
+    def output_model(self) -> Type[CandidateBenchmarkReport]:
         return CandidateBenchmarkReport

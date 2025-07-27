@@ -3,6 +3,7 @@ from typing import Optional
 
 from flask import Flask
 
+from src.agents.base import TaskType, UserRole
 from src.agents.jobseeker.application_coach import (
     ApplicationCoachAgent,
     JobMatchInsights,
@@ -109,7 +110,7 @@ class EmployeeAgentsController(Controllers):
         # Run the agent
         agent = ApplicationCoachAgent(user_id=user_id)
         # noinspection PyTypeChecker
-        return await agent.run(input_model=input_data)
+        return await agent.run(input_model=input_data, user_role=UserRole.JOB_SEEKER, task_type=TaskType.MATCHING.value)
 
     @error_handler
     async def generate_cover_letter(
@@ -163,8 +164,10 @@ class EmployeeAgentsController(Controllers):
         )
         # Run the agent
         agent = CoverLetterAgent(user_id=user_id)
-        result = await agent.run(input_model=input_data)
-        return result
+        # noinspection PyTypeChecker
+        return await agent.run(input_model=input_data, user_role=UserRole.JOB_SEEKER,
+                               task_type=TaskType.COVER_LETTER.value)
+
 
     async def optimize_primary_cv(self, primary_resume: JobSeekerCV):
         """
