@@ -8,6 +8,7 @@ from flask import url_for
 # SQLAlchemy ORM
 from sqlalchemy.orm import joinedload
 
+from src.database import JobApplicationORM
 # Controllers
 from src.controllers.controller import Controllers, error_handler
 

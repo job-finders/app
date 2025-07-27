@@ -107,7 +107,7 @@ async def get_dashboard(user: User):
         billing_context = await billing_controller.get_billing_dashboard(company_id=employer_profile.company_id)
 
         billing_context.update(current_user=user, employer_profile=employer_profile, company=company_profile)
-        billing_logger.info("==============================================================================")
+        billing_logger.info("=================== bn===========================================================")
         # billing_logger.info(f"Billing Context : {billing_context}")
         return render_template('company/billing/billing.html', **billing_context)
 

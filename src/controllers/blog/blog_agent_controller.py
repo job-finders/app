@@ -1,6 +1,4 @@
-from __future__ import annotations
 
-import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any
 
@@ -10,8 +8,8 @@ from xml.etree import ElementTree as ET
 from flask import Flask
 
 from src.database.models import User
-from src.controllers.controller import Controllers, error_handler
-from src.logger import init_logger
+from src.controllers.controller import Controllers
+
 from src.database import BlogTopicORM, ArticleORM, ScheduledPostORM, PerformanceORM
 from src.services.hashnode import HashnodeService
 from src.services.hashnode.schema import CreatePostInput

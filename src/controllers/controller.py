@@ -169,7 +169,6 @@ class Controllers:
         self.close()
 
 
-
 class UnauthorizedError(Exception):
     def __init__(self, description: str = "You are not Authorized to access that resource", code: int = 401):
         self.description = description
