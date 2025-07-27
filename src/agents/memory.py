@@ -31,7 +31,8 @@ class AgentMemoryStore:
     def _save_list(self, key: str, items: List[Dict[str, Any]]) -> None:
         self._cache.set(key, items, ttl=self._ttl)
 
-    def _create_entry(self, role: str, content: str, protected: bool = False) -> Dict[str, Any]:
+    @staticmethod
+    def _create_entry(role: str, content: str, protected: bool = False) -> Dict[str, Any]:
         return {
             "id": f"{int(time.time() * 1000)}_{hash(content) % 10000}",
             "timestamp": time.time(),
@@ -89,7 +90,8 @@ class AgentMemoryStore:
     # Structured result caching
     # ------------------------------------------------------------------
 
-    def _args_to_key(self, *args: Any, **kwargs: Any) -> str:
+    @staticmethod
+    def _args_to_key(*args: Any, **kwargs: Any) -> str:
         identifier = json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True)
         return f"args:{hash(identifier)}"
 

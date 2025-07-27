@@ -17,9 +17,10 @@ from src.utils.route_helpers import get_service
 class ModelType(str, Enum):
     GPT4 = "openai/gpt-4"
     CLAUDE = "anthropic/claude-3-haiku"
-    DEEPSEEK_CHAT = "deepseek/deepseek-chat"
-    DEEPSEEK_REASONER = ""
-    DEEPSEEK_CODER = ""
+    DEEPSEEK_CHAT = "deepseek/deepseek-chat-v3-0324"
+    DEEPSEEK_REASONER = "deepseek/deepseek-r1-0528"
+    DEEPSEEK_CODER = "deepseek/deepseek-chat-v3-0324"
+    DEEPSEEK_V3_FREE = "deepseek/deepseek-chat-v3-0324:free"
     MOONSHOT_KIMI_K2 = "moonshotai/kimi-k2"
     MOONSHOT_KIMI_K2_FREE = "moonshotai/kimi-k2:free"
     DEEPSEEK_CHIMERA_FREE = "tngtech/deepseek-r1t2-chimera:free"
@@ -186,7 +187,8 @@ class BaseAgent(ABC):
         self._logger.info(f"Selected model: {model.value}")
         return model
 
-    def fallback_for(self, model: ModelType) -> ModelType:
+    @staticmethod
+    def fallback_for(model: ModelType) -> ModelType:
         return (
             ModelType.MOONSHOT_KIMI_K2_FREE
             if model == ModelType.MOONSHOT_KIMI_K2
