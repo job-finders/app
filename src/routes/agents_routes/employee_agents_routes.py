@@ -34,7 +34,7 @@ async def analyze_job_match(user: User, job_id: str):
             cover_letter=cover_letter
         )
         # this works wonderfully the result of this call will be displayed inline with the job advert
-        return jsonify(result.model_dump()), 200
+        return (jsonify(result.model_dump()), 200) if result is not None else (None, 204)
 
     except ValueError as e:
         employee_agents_controller.logger.warning(f"Validation error: {str(e)}")
@@ -70,7 +70,7 @@ async def generate_cover_letter(user: User, job_id: str):
             cv_id=cv_id,
             tone=tone
         )
-        return jsonify(result.model_dump()), 200
+        return (jsonify(result.model_dump()), 200) if result is not None else (None, 204)
 
     except ValueError as e:
         employee_agents_controller.logger.warning(f"Validation error: {str(e)}")
