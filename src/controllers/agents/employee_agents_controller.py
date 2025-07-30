@@ -119,7 +119,7 @@ class EmployeeAgentsController(Controllers):
             job_id: str,
             cv_id: str,
             tone: Optional[str] = "professional"
-    ) -> CoverLetterOutput:
+    ) -> CoverLetterOutput | None:
         """
         Generates a tailored cover letter for a specific job application
             :param user_id:

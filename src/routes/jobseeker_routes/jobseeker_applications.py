@@ -85,6 +85,8 @@ async def api_ats_check(user: User):
             return jsonify({"error": "Job not found"}), 404
 
         ats_report: ATSReport = await ats_controller.evaluate_application(job=job,cv_id=cv_id,cover_letter=cover_letter)
+        if not ats_report:
+            return jsonify({"error": "Failed to generate ATS report"}), 500
 
         return jsonify(ats_report.model_dump())
 
@@ -174,6 +176,10 @@ async def apply_for_job(user: User, job_id: str):
         job_description=job_details.description,
         cvs=cvs
     )
+    if not best_ats_report:
+        # Better to throw an error here so an error message gets displayed to the user
+        pass
+
     # Get salary recommendation - if JobSeeker is Professional set the AI Prompt to True
     salary_recommendation = await ats_controller.recommend_salary(job=job_details, use_ai=False)
 
