@@ -1,221 +1,461 @@
 {% extends "company/layout/page.html" %}
 
-{% block title %}Edit Company Profile{% endblock %}
+{% block title %}Corporate Profile Management{% endblock %}
+
+{% block css %}
+    {{ super() }}
+    <style>
+        .profile-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .form-section {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #0d6efd;
+        }
+
+        .input-group-icon {
+            position: relative;
+        }
+
+        .input-group-icon i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .input-icon {
+            padding-left: 40px;
+        }
+
+        .verification-badge {
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+        }
+
+        .logo-preview {
+            border: 1px dashed #dee2e6;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .logo-preview:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .social-input-group .input-group-text {
+            min-width: 45px;
+            justify-content: center;
+        }
+    </style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2 mb-0 fw-bold">
-            <i class="bi bi-building me-2"></i>Edit Company Profile
-        </h1>
-        <a href="{{ url_for('company.view_company') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>Cancel
-        </a>
+    <!-- Header Section -->
+    <div class="profile-header rounded-3 p-4 mb-5">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div class="mb-3 mb-md-0">
+                <h1 class="h2 fw-bold text-gray-800">
+                    <i class="bi bi-building-gear me-2"></i>Corporate Profile
+                </h1>
+                <p class="lead mb-0">Manage your company's public presence and information</p>
+            </div>
+            <a href="{{ url_for('company.view_company') }}" class="btn btn-outline-primary">
+                <i class="bi bi-eye me-1"></i>View Profile
+            </a>
+        </div>
     </div>
 
-    <form method="POST" action="{{ url_for('company.update_company_profile') }}" enctype="multipart/form-data">
-        <!-- Basic Information Card -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-0 py-3">
-                <h2 class="h5 mb-0 fw-bold"><i class="bi bi-info-circle me-2 text-primary"></i>Basic Information</h2>
+    <form method="POST" action="{{ url_for('company.update_company_profile') }}" enctype="multipart/form-data"
+          class="needs-validation" novalidate>
+        <!-- Basic Information Section -->
+        <div class="form-section">
+            <div class="d-flex align-items-center mb-4">
+                <i class="bi bi-info-circle fs-3 text-primary me-3"></i>
+                <h2 class="h5 fw-bold mb-0">Corporate Identity</h2>
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <!-- Company Name -->
-                    <div class="col-12 col-md-6">
-                        <label for="name" class="form-label fw-medium">Company Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="name" name="name" 
+
+            <div class="row g-3">
+                <!-- Company Name -->
+                <div class="col-md-6">
+                    <label for="name" class="form-label fw-medium">
+                        Registered Name <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-building"></i>
+                        <input type="text" class="form-control input-icon" id="name" name="name"
                                value="{{ company.name }}" required>
                     </div>
-                    
-                    <!-- Industry -->
-                    <div class="col-12 col-md-6">
-                        <label for="industry" class="form-label fw-medium">Industry</label>
-                        <input type="text" class="form-control" id="industry" name="industry" 
-                               value="{{ company.industry }}" placeholder="e.g. Technology, Healthcare">
+                    <div class="invalid-feedback">Please provide your company name</div>
+                </div>
+
+                <!-- Industry -->
+                <div class="col-md-6">
+                    <label for="industry" class="form-label fw-medium">Industry Sector</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-grid-1x2"></i>
+                        <input type="text" class="form-control input-icon" id="industry" name="industry"
+                               value="{{ company.industry }}" placeholder="e.g. Fintech, Healthcare, SaaS">
                     </div>
-                    
-                    <!-- Description -->
-                    <div class="col-12">
-                        <label for="description" class="form-label fw-medium">Company Description</label>
-                        <textarea class="form-control" id="description" name="description" 
-                                  rows="4" placeholder="Describe your company culture, mission, and values">{{ company.description }}</textarea>
-                        <div class="form-text">This will appear on your public profile</div>
+                </div>
+
+                <!-- Description -->
+                <div class="col-12">
+                    <label for="description" class="form-label fw-medium">
+                        Corporate Profile <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-textarea-resize align-top mt-2"></i>
+                        <textarea class="form-control input-icon" id="description" name="description"
+                                  rows="4" placeholder="Describe your company's mission, values, and unique culture"
+                                  required>{{ company.description }}</textarea>
                     </div>
-                    
-                    <!-- Founded Year -->
-                    <div class="col-12 col-md-6">
-                        <label for="founded_year" class="form-label fw-medium">Founded Year</label>
-                        <input type="number" class="form-control" id="founded_year" name="founded_year" 
-                               value="{{ company.founded_year }}" min="1800" max="{{ current_year }}">
+                    <div class="form-text text-success mt-1">
+                        <i class="bi bi-lightbulb me-1"></i> This appears on your public profile - showcase your brand
                     </div>
-                    
-                    <!-- Employee Count -->
-                    <div class="col-12 col-md-6">
-                        <label for="employee_count" class="form-label fw-medium">Employee Count</label>
-                        <input type="number" name="employee_count" id="employee_count" value="{{ company.employee_count }}">
+                    <div class="invalid-feedback">Company description is required</div>
+                </div>
+
+                <!-- Founded Year -->
+                <div class="col-md-6">
+                    <label for="founded_year" class="form-label fw-medium">Year Established</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-calendar"></i>
+                        <input type="number" class="form-control input-icon" id="founded_year" name="founded_year"
+                               value="{{ company.founded_year }}" min="1800" max="{{ current_year }}"
+                               placeholder="e.g. 2010">
                     </div>
-                    
-                    <!-- Tech Stack -->
-                    <div class="col-12">
-                        <label for="tech_stack" class="form-label fw-medium">Technology Stack</label>
-                        <input type="text" class="form-control" id="tech_stack" name="tech_stack" 
-                               value="{{ company.tech_stack|join(', ') if company.tech_stack else '' }}" 
-                               placeholder="e.g. Python, JavaScript, React, AWS">
-                        <div class="form-text">Separate technologies with commas</div>
+                </div>
+
+                <!-- Employee Count -->
+                <div class="col-md-6">
+                    <label for="employee_count" class="form-label fw-medium">Team Size</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-people"></i>
+                        <select class="form-select input-icon form-control" id="employee_count" name="employee_count">
+                            <option value="" {% if not company.employee_count %}selected{% endif %}>Select range
+                            </option>
+                            <option value="1-10" {% if company.employee_count == '1-10' %}selected{% endif %}>1-10
+                                employees
+                            </option>
+                            <option value="11-50" {% if company.employee_count == '11-50' %}selected{% endif %}>11-50
+                                employees
+                            </option>
+                            <option value="51-200" {% if company.employee_count == '51-200' %}selected{% endif %}>51-200
+                                employees
+                            </option>
+                            <option value="201-500" {% if company.employee_count == '201-500' %}selected{% endif %}>
+                                201-500 employees
+                            </option>
+                            <option value="501-1000" {% if company.employee_count == '501-1000' %}selected{% endif %}>
+                                501-1,000 employees
+                            </option>
+                            <option value="1001+" {% if company.employee_count == '1001+' %}selected{% endif %}>1,001+
+                                employees
+                            </option>
+                        </select>
                     </div>
+                </div>
+
+                <!-- Tech Stack -->
+                <div class="col-12">
+                    <label for="tech_stack" class="form-label fw-medium">Technology Stack</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-cpu"></i>
+                        <input type="text" class="form-control input-icon" id="tech_stack" name="tech_stack"
+                               value="{{ company.tech_stack|join(', ') if company.tech_stack else '' }}"
+                               placeholder="e.g. Python, React, AWS, Kubernetes">
+                    </div>
+                    <div class="form-text">Separate technologies with commas (appears to technical candidates)</div>
                 </div>
             </div>
         </div>
 
-        <!-- Contact Information Card -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-0 py-3">
-                <h2 class="h5 mb-0 fw-bold"><i class="bi bi-geo-alt me-2 text-primary"></i>Contact Information</h2>
+        <!-- Contact Information Section -->
+        <div class="form-section">
+            <div class="d-flex align-items-center mb-4">
+                <i class="bi bi-geo-alt fs-3 text-primary me-3"></i>
+                <h2 class="h5 fw-bold mb-0">Corporate Headquarters</h2>
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <!-- Website -->
-                    <div class="col-12">
-                        <label for="website" class="form-label fw-medium">Website</label>
-                        <input type="url" class="form-control" id="website" name="website" 
-                               value="{{ company.website }}" placeholder="https://yourcompany.com">
+
+            <div class="row g-3">
+                <!-- Website -->
+                <div class="col-12">
+                    <label for="website" class="form-label fw-medium">
+                        Corporate Website <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-globe"></i>
+                        <input type="url" class="form-control input-icon" id="website" name="website"
+                               value="{{ company.website }}" placeholder="https://yourcompany.com" required>
                     </div>
-                    
-                    <!-- Location -->
-                    <div class="col-12 col-md-4">
-                        <label for="city" class="form-label fw-medium">City</label>
-                        <input type="text" class="form-control" id="city" name="city" 
+                    <div class="invalid-feedback">Valid website URL required</div>
+                </div>
+
+                <!-- Location -->
+                <div class="col-md-4">
+                    <label for="city" class="form-label fw-medium">City</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-geo"></i>
+                        <input type="text" class="form-control input-icon" id="city" name="city"
                                value="{{ company.city }}" placeholder="e.g. San Francisco">
                     </div>
-                    
-                    <div class="col-12 col-md-4">
-                        <label for="province" class="form-label fw-medium">State/Province</label>
-                        <input type="text" class="form-control" id="province" name="province" 
+                </div>
+
+                <div class="col-md-4">
+                    <label for="province" class="form-label fw-medium">State/Province</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-geo"></i>
+                        <input type="text" class="form-control input-icon" id="province" name="province"
                                value="{{ company.province }}" placeholder="e.g. California">
                     </div>
-                    
-                    <div class="col-12 col-md-4">
-                        <label for="country" class="form-label fw-medium">Country</label>
-                        <input type="text" class="form-control" id="country" name="country" 
+                </div>
+
+                <div class="col-md-4">
+                    <label for="country" class="form-label fw-medium">Country</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-flag"></i>
+                        <input type="text" class="form-control input-icon" id="country" name="country"
                                value="{{ company.country }}" placeholder="e.g. United States">
                     </div>
-                    
-                    <!-- Contact Email -->
-                    <div class="col-12 col-md-6">
-                        <label for="contact_email" class="form-label fw-medium">Contact Email <span class="text-danger">*</span></label>
-                        <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                </div>
+
+                <!-- Contact Email -->
+                <div class="col-md-6">
+                    <label for="contact_email" class="form-label fw-medium">
+                        Primary Contact Email <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-envelope"></i>
+                        <input type="email" class="form-control input-icon" id="contact_email" name="contact_email"
                                value="{{ company.contact_email }}" required>
                     </div>
-                    
-                    <!-- Phone -->
-                    <div class="col-12 col-md-6">
-                        <label for="phone_number" class="form-label fw-medium">Phone Number</label>
-                        <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                    <div class="invalid-feedback">Valid contact email required</div>
+                </div>
+
+                <!-- Phone -->
+                <div class="col-md-6">
+                    <label for="phone_number" class="form-label fw-medium">Corporate Phone</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-telephone"></i>
+                        <input type="tel" class="form-control input-icon" id="phone_number" name="phone_number"
                                value="{{ company.phone_number }}" placeholder="+1 (555) 123-4567">
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Branding & Social Media Card -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-0 py-3">
-                <h2 class="h5 mb-0 fw-bold"><i class="bi bi-globe me-2 text-primary"></i>Branding & Social Media</h2>
+        <!-- Branding & Social Media Section -->
+        <div class="form-section">
+            <div class="d-flex align-items-center mb-4">
+                <i class="bi bi-globe fs-3 text-primary me-3"></i>
+                <h2 class="h5 fw-bold mb-0">Brand Identity</h2>
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <!-- Logo Upload -->
-                    <div class="col-12">
-                        <label for="logo" class="form-label fw-medium">Company Logo</label>
-                        <div class="d-flex align-items-start">
+
+            <div class="row g-4">
+                <!-- Logo Upload -->
+                <div class="col-12">
+                    <label for="logo" class="form-label fw-medium mb-3">Corporate Logo</label>
+                    <div class="d-flex flex-column flex-md-row align-items-start">
+                        <div class="logo-preview p-3 me-md-4 mb-3 mb-md-0">
                             {% if company.logo_url %}
-                            <div class="me-3">
-                                <img src="{{ company.logo_url }}" alt="Current logo" class="rounded" style="width: 80px; height: 80px; object-fit: contain;">
-                            </div>
+                                <img src="{{ company.logo_url }}" alt="Current logo" class="rounded"
+                                     style="width: 120px; height: 120px; object-fit: contain;">
+                            {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center rounded"
+                                     style="width: 120px; height: 120px;">
+                                    <i class="bi bi-building text-muted" style="font-size: 2.5rem;"></i>
+                                </div>
                             {% endif %}
-                            <div class="flex-grow-1">
+                        </div>
+                        <div class="flex-grow-1 w-100">
+                            <div class="input-group">
                                 <input class="form-control" type="file" id="logo" name="logo" accept="image/*">
-                                <div class="form-text">JPG, PNG or GIF. Max 2MB</div>
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="bi bi-upload me-1"></i>Upload
+                                </button>
+                            </div>
+                            <div class="form-text mt-2">
+                                <i class="bi bi-info-circle me-1"></i> JPG, PNG or GIF. Max 2MB. Optimal size: 400×400px
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Social Media -->
-                    <div class="col-12 col-md-6">
-                        <label for="linkedin_url" class="form-label fw-medium">LinkedIn URL</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-linkedin text-primary"></i></span>
-                            <input type="url" class="form-control" id="linkedin_url" name="linkedin_url" 
-                                   value="{{ company.linkedin_url }}" placeholder="https://linkedin.com/company/yourcompany">
-                        </div>
+                </div>
+
+                <!-- Social Media -->
+                <div class="col-md-6">
+                    <label for="linkedin_url" class="form-label fw-medium">LinkedIn Profile</label>
+                    <div class="input-group social-input-group">
+                        <span class="input-group-text bg-linkedin text-white"><i class="bi bi-linkedin"></i></span>
+                        <input type="url" class="form-control" id="linkedin_url" name="linkedin_url"
+                               value="{{ company.linkedin_url }}"
+                               placeholder="https://linkedin.com/company/yourcompany">
                     </div>
-                    
-                    <div class="col-12 col-md-6">
-                        <label for="twitter_handle" class="form-label fw-medium">Twitter Handle</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-twitter text-info"></i></span>
-                            <input type="text" class="form-control" id="twitter_handle" name="twitter_handle" 
-                                   value="{{ company.twitter_handle }}" placeholder="@yourcompany">
-                        </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="twitter_handle" class="form-label fw-medium">Twitter Profile</label>
+                    <div class="input-group social-input-group">
+                        <span class="input-group-text bg-twitter text-white"><i class="bi bi-twitter"></i></span>
+                        <input type="text" class="form-control" id="twitter_handle" name="twitter_handle"
+                               value="{{ company.twitter_handle }}" placeholder="@yourcompany">
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Verification Section -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-0 py-3">
-                <h2 class="h5 mb-0 fw-bold"><i class="bi bi-shield-check me-2 text-primary"></i>Verification Status</h2>
+        <div class="form-section">
+            <div class="d-flex align-items-center mb-4">
+                <i class="bi bi-shield-check fs-3 text-primary me-3"></i>
+                <h2 class="h5 fw-bold mb-0">Verification Status</h2>
             </div>
-            <div class="card-body">
-                <div class="d-flex align-items-center">
+
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between p-4 bg-light rounded-3">
+                <div class="d-flex align-items-center mb-3 mb-md-0">
+                    <!-- Verification badge display remains the same -->
                     <div class="me-3">
                         {% if company.verification_status == 'verified' %}
-                        <span class="badge bg-success py-2 px-3">
-                            <i class="bi bi-check-circle me-1"></i>Verified
-                        </span>
+                            <span class="verification-badge bg-success text-white border-0 rounded-pill d-flex align-items-center py-2 px-3">
+                <i class="bi bi-check-circle-fill me-2"></i>Verified
+            </span>
                         {% elif company.verification_status == 'pending' %}
-                        <span class="badge bg-warning py-2 px-3">
-                            <i class="bi bi-clock me-1"></i>Verification Pending
-                        </span>
+                            <span class="verification-badge bg-warning text-dark border-0 rounded-pill d-flex align-items-center py-2 px-3">
+                <i class="bi bi-clock-history me-2"></i>Verification Pending
+            </span>
                         {% else %}
-                        <span class="badge bg-secondary py-2 px-3">
-                            <i class="bi bi-question-circle me-1"></i>Unverified
-                        </span>
+                            <span class="verification-badge bg-secondary text-white border-0 rounded-pill d-flex align-items-center py-2 px-3">
+                <i class="bi bi-exclamation-circle me-2"></i>Unverified
+            </span>
                         {% endif %}
                     </div>
-                    <div>
-                        {% if company.verification_status != 'verified' %}
-                        <a href="#" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-send me-1"></i>Request Verification
-                        </a>
-                        {% endif %}
+                    <div class="ms-3">
+                        <h3 class="h6 mb-0 ml-2">Trust & Credibility</h3>
+                        <p class="small mb-0 ml-2">Verified companies receive premium benefits</p>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <p class="small text-muted mb-0">
-                        Verified companies receive a badge on their profile and gain trust with job seekers.
-                        {% if company.verification_status == 'pending' %}
-                        Your request is under review. This usually takes 1-2 business days.
-                        {% endif %}
-                    </p>
+
+                <div class="text-md-end">
+                    {% if company.verification_status != 'verified' %}
+                        <div class="mb-3">
+                            <a href="#" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>Request Verification
+                            </a>
+                        </div>
+                        <!-- Verification Requirements Note -->
+                        <div class="alert alert-info border-info p-2 mb-0" style="max-width: 350px;">
+                            <div class="d-flex">
+                                <i class="bi bi-info-circle-fill text-info me-2 mt-1"></i>
+                                <div>
+                                    <p class="small mb-0">
+                                        <strong>Note:</strong> This initiates automated verification.
+                                        Ensure all company documents and director details are fully updated
+                                        and uploaded before requesting.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <span class="badge bg-success py-2 px-3">
+            <i class="bi bi-star-fill me-1"></i>Verified Partner
+        </span>
+                    {% endif %}
                 </div>
+            </div>
+            <div class="mt-4 bg-light-info border-start border-info border-3 p-3 rounded">
+                <h3 class="h6 fw-bold text-info mb-2">
+                    <i class="bi bi-info-circle me-2"></i>Verification Benefits
+                </h3>
+                <ul class="mb-0">
+                    <li>Increased candidate trust and application rates</li>
+                    <li>Premium placement in search results</li>
+                    <li>Verified badge on company profile</li>
+                    <li>Access to premium analytics</li>
+                </ul>
+                {% if company.verification_status == 'pending' %}
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="bi bi-clock-history me-2"></i> Your request is under review. Typical processing: 1-2
+                        business days.
+                </div>
+                {% endif %}
             </div>
         </div>
 
         <!-- Form Actions -->
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" id="make_profile_public" name="make_profile_public" 
-                       {% if company.is_public %}checked{% endif %}>
-                <label class="form-check-label" for="make_profile_public">Make company profile public</label>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center border-top pt-4 mt-3">
+            <div class="mb-3 mb-md-0">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="make_profile_public"
+                           name="make_profile_public"
+                           {% if company.is_public %}checked{% endif %}>
+                    <label class="form-check-label fw-medium" for="make_profile_public">
+                        <i class="bi bi-eye me-1"></i>Publish Company Profile
+                    </label>
+                </div>
+                <p class="small text-muted mb-0 mt-1">
+                    Public profiles are visible to candidates and potential partners
+                </p>
             </div>
-            
-            <button type="submit" class="btn btn-primary px-4 py-2">
-                <i class="bi bi-save me-1"></i>Save Changes
-            </button>
+
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('company.view_company') }}" class="btn btn-outline-secondary px-4">
+                    <i class="bi bi-x-lg me-1"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-save me-1"></i>Save Changes
+                </button>
+            </div>
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Enable Bootstrap validation
+            const forms = document.querySelectorAll('.needs-validation')
+
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+
+                    form.classList.add('was-validated')
+                }, false)
+            })
+
+            // Tech stack tagging functionality
+            const techStackInput = document.getElementById('tech_stack');
+            if (techStackInput) {
+                techStackInput.addEventListener('keydown', function (e) {
+                    if (e.key === ',') {
+                        e.preventDefault();
+                        const cursorPos = this.selectionStart;
+                        const textBefore = this.value.substring(0, cursorPos).trim();
+                        const textAfter = this.value.substring(cursorPos).trim();
+
+                        // Add space after comma
+                        this.value = textBefore + ', ' + textAfter;
+
+                        // Move cursor to new position
+                        this.selectionStart = this.selectionEnd = cursorPos + 2;
+                    }
+                });
+            }
+        });
+    </script>
 {% endblock %}

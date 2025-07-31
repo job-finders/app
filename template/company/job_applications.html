@@ -5,12 +5,12 @@
 {% block content %}
     <div class="container mt-5">
         <div class="mb-4">
-            <h1 class="h3">Applications for Jobs at {{ company.name }}</h1>
+            <h1 class="h3">{{ company.name }} Jobs &amp; Applications</h1>
             <p class="text-muted">{{ company.location or "Location not specified" }}</p>
             <hr>
         </div>
 
-        {% if not jobs %}
+        {% if not jobs_list %}
             <div class="alert alert-info">
                 <strong>No job posts yet.</strong> Once jobs are posted, applications will appear here.
             </div>

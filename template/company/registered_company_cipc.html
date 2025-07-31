@@ -3,119 +3,268 @@
 {% block css %}
     {{ super() }}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid #0d6efd;
+        }
+
+        .input-group-icon {
+            position: relative;
+        }
+
+        .input-group-icon i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .input-icon {
+            padding-left: 40px;
+        }
+
+        .director-badge {
+            transition: all 0.3s ease;
+        }
+
+        .director-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .compliance-pill {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.75rem;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-md-12 col-lg-12">
+            <div class="col-md-12 col-lg-10 col-xl-8">
 
                 <div class="text-center mb-5">
-                    <i class="bi bi-card-list text-primary" style="font-size: 3rem;"></i>
-                    <h1 class="h2 mt-2 fw-bold">Company Registration Details</h1>
-                    <p class="text-info">Please provide your official company details as they appear on your CIPC
-                        documents.</p>
-                    <p class="text-info">The information provided here is only for verification purposes and will not be
-                        used for any other purpose beyond that.</p>
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-3 d-inline-block">
+                        <i class="bi bi-building text-primary" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h1 class="h2 mt-3 fw-bold text-gray-800">Company Registration Portal</h1>
+                    <p class="lead text-muted">Complete your business profile to enable service activation</p>
+
+                    <div class="alert alert-info border-0 bg-light-info mt-4">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-info-circle-fill text-info fs-4 me-3"></i>
+                            <div>
+                                <h2 class="h5 mb-1">Verification Required</h2>
+                                <p class="mb-0">Official details must match CIPC registration documents. All information
+                                    is securely encrypted.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
                     <div class="card-header bg-white border-0 py-3">
-                        <h2 class="h5 mb-0 fw-bold">
-                            <i class="bi bi-pencil-square me-2 text-primary"></i>Enter Your Company Information
-                        </h2>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h2 class="h5 mb-0 fw-bold text-gray-800">
+                                    <i class="bi bi-clipboard2-data me-2 text-primary"></i>Corporate Registration
+                                    Details
+                                </h2>
+                                <p class="mb-0 text-muted small">Complete all sections to proceed to verification</p>
+                            </div>
+                            <span class="badge bg-light-primary text-primary fs-6 py-2 px-3">
+                                <i class="bi bi-shield-lock me-1"></i>SSL Secured
+                            </span>
+                        </div>
                     </div>
+
                     <div class="card-body p-4 p-md-5">
-                        <form method="post" action="{{ url_for('company.registered_company_cipc_details') }}">
-                            <!-- Primary Details -->
-                            <h3 class="h6 fw-bold border-bottom pb-2 mb-3">Primary Details</h3>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-6">
-                                    <label for="companyName" class="form-label">Official Company Name</label>
-                                    <input type="text" class="form-control" id="companyName" name="company_name"
-                                           value="{{ registered_company.company_name or '' }}" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="registrationNumber" class="form-label">Registration Number</label>
-                                    <input type="text" class="form-control" id="registrationNumber"
-                                           name="registration_number"
-                                           value="{{ registered_company.registration_number or '' }}" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="registrationDate" class="form-label">Registration Date</label>
-                                    <input type="date" class="form-control" id="registrationDate"
-                                           name="registration_date"
-                                           value="{{ registered_company.registration_date.strftime('%Y-%m-%d') if registered_company.registration_date else '' }}">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="companyType" class="form-label">Company Type</label>
-                                    <input type="text" class="form-control" id="companyType" name="company_type"
-                                           placeholder="e.g., (Pty) Ltd"
-                                           value="{{ registered_company.company_type or '' }}">
-                                </div>
-                                <div class="col-12">
-                                    <label for="registeredAddress" class="form-label">Registered Physical
-                                        Address</label>
-                                    <textarea class="form-control" id="registeredAddress" name="registered_address"
-                                              rows="3">{{ registered_company.registered_address or '' }}</textarea>
-                                </div>
-                            </div>
+                        <form method="post" action="{{ url_for('company.registered_company_cipc_details') }}"
+                              class="needs-validation" novalidate>
 
-                            <!-- Directors -->
-                            <h3 class="h6 fw-bold border-bottom pb-2 mb-3">Directors</h3>
-                            <div class="mb-4">
-                                <label class="form-label">Director Information</label>
-                                <div class="row g-2 align-items-end">
-                                    <div class="col-md-5">
-                                        <input type="text" class="form-control" id="directorNameInput"
-                                               placeholder="Full Name">
+                            <!-- Primary Details Section -->
+                            <div class="form-section">
+                                <div class="d-flex align-items-center mb-4">
+                                    <i class="bi bi-file-text fs-3 text-primary me-3"></i>
+                                    <h3 class="h5 fw-bold mb-0">Primary Corporate Information</h3>
+                                </div>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label for="companyName" class="form-label fw-medium">
+                                            Registered Company Name <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="input-group-icon">
+                                            <i class="bi bi-building"></i>
+                                            <input type="text" class="form-control input-icon" id="companyName"
+                                                   name="company_name" placeholder="Enter exact registered name"
+                                                   value="{{ registered_company.company_name or '' }}" required>
+                                        </div>
+                                        <div class="invalid-feedback">Please provide your registered company name</div>
                                     </div>
-                                    <div class="col-md-5">
-                                        <input type="text" class="form-control" id="directorIdInput"
-                                               placeholder="ID Number">
+
+                                    <div class="col-md-6">
+                                        <label for="registrationNumber" class="form-label fw-medium">
+                                            CIPC Registration Number <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="input-group-icon">
+                                            <i class="bi bi-123"></i>
+                                            <input type="text" class="form-control input-icon" id="registrationNumber"
+                                                   name="registration_number" placeholder="e.g. 2023/123456/07"
+                                                   value="{{ registered_company.registration_number or '' }}" required>
+                                        </div>
+                                        <div class="invalid-feedback">Valid registration number required</div>
                                     </div>
-                                    <div class="col-md-2">
-                                        <button class="btn btn-outline-secondary w-100" type="button"
-                                                id="addDirectorBtn">
-                                            <i class="bi bi-plus-circle me-1"></i> Add
-                                    </button>
+
+                                    <div class="col-md-6">
+                                        <label for="registrationDate" class="form-label fw-medium">
+                                            Registration Date
+                                        </label>
+                                        <div class="input-group-icon">
+                                            <i class="bi bi-calendar-event"></i>
+                                            <input type="date" class="form-control input-icon" id="registrationDate"
+                                                   name="registration_date"
+                                                   value="{{ registered_company.registration_date.strftime('%Y-%m-%d') if registered_company.registration_date else '' }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="companyType" class="form-label fw-medium">
+                                            Business Structure
+                                        </label>
+                                        <div class="input-group-icon">
+                                            <i class="bi bi-diagram-3"></i>
+                                            <input type="text" class="form-control input-icon" id="companyType"
+                                                   name="company_type" placeholder="e.g., (Pty) Ltd, Inc, LLC"
+                                                   value="{{ registered_company.company_type or '' }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label for="registeredAddress" class="form-label fw-medium">
+                                            Registered Physical Address
+                                        </label>
+                                        <div class="input-group-icon">
+                                            <i class="bi bi-geo-alt"></i>
+                                            <textarea class="form-control input-icon" id="registeredAddress"
+                                                      name="registered_address" rows="3"
+                                                      placeholder="Full street address including postal code">{{ registered_company.registered_address or '' }}</textarea>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                                <div id="directorList" class="mt-4"></div>
+                            <!-- Directors Section -->
+                            <div class="form-section">
+                                <div class="d-flex align-items-center mb-4">
+                                    <i class="bi bi-people fs-3 text-primary me-3"></i>
+                                    <h3 class="h5 fw-bold mb-0">Director Information</h3>
+                                </div>
 
-                                <input type="hidden" name="director_names" id="directorNamesHidden"
-                                       value='{{ registered_company.director_details | tojson | safe if registered_company and registered_company.director_details else "[]" }}'>
+                                <div class="mb-4">
+                                    <label class="form-label fw-medium d-block mb-3">
+                                        Add Company Directors <span class="text-danger">*</span>
+                                        <span class="text-muted small fw-normal">(Minimum 1 required)</span>
+                                    </label>
+
+                                    <div class="bg-light rounded-3 p-3 mb-4">
+                                        <div class="row g-2 align-items-center">
+                                            <div class="col-md-5">
+                                                <label class="form-label small text-uppercase text-muted mb-1">Full
+                                                    Legal Name</label>
+                                                <input type="text" class="form-control" id="directorNameInput"
+                                                       placeholder="Firstname Lastname">
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label small text-uppercase text-muted mb-1">ID/Passport
+                                                    Number</label>
+                                                <input type="text" class="form-control" id="directorIdInput"
+                                                       placeholder="13-digit SA ID or passport">
+                                            </div>
+                                            <div class="col-md-2 mt-md-4">
+                                                <button class="btn btn-primary w-100" type="button" id="addDirectorBtn">
+                                                    <i class="bi bi-plus-circle me-1"></i> Add
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="directorList" class="mt-4">
+                                        {% if not registered_company or not registered_company.director_details %}
+                                            <div class="alert alert-light border text-center py-4">
+                                                <i class="bi bi-person-plus fs-2 text-muted mb-3"></i>
+                                                <p class="mb-0">No directors added yet</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <input type="hidden" name="director_names" id="directorNamesHidden"
+                                           value='{{ registered_company.director_details | tojson | safe if registered_company and registered_company.director_details else "[]" }}'>
+                                </div>
                             </div>
 
-                            <!-- Compliance -->
-                            <h3 class="h6 fw-bold border-bottom pb-2 mb-3">Compliance Information</h3>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-6">
-                                    <label for="taxPin" class="form-label">SARS Tax Compliance PIN</label>
-                                    <input type="text" class="form-control" id="taxPin" name="tax_pin"
-                                           value="{{ registered_company.tax_pin or '' }}">
-                                    <div class="form-text">Optional, but helps speed up verification.</div>
+                            <!-- Compliance Section -->
+                            <div class="form-section">
+                                <div class="d-flex align-items-center mb-4">
+                                    <i class="bi bi-shield-check fs-3 text-primary me-3"></i>
+                                    <h3 class="h5 fw-bold mb-0">Compliance Details</h3>
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="beeStatus" class="form-label">B-BBEE Status</label>
-                                    <select class="form-select" id="beeStatus" name="bee_status">
-                                        <option value="" {% if not registered_company.bee_status %}selected{% endif %}>
-                                            -- Not Specified --
-                                        </option>
-                                        {% for status in bee_options %}
-                                            <option value="{{ status }}"
-                                                    {% if registered_company.bee_status == status %}selected{% endif %}>{{ status }}</option>
-                                        {% endfor %}
-                                    </select>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="taxPin" class="form-label fw-medium">
+                                            SARS Tax Compliance PIN
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                                            <input type="text" class="form-control" id="taxPin" name="tax_pin"
+                                                   value="{{ registered_company.tax_pin or '' }}"
+                                                   placeholder="Enter 10-digit PIN">
+                                        </div>
+                                        <div class="form-text text-success mt-1">
+                                            <i class="bi bi-lightning me-1"></i> Speeds up verification process
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="beeStatus" class="form-label fw-medium">
+                                            B-BBEE Status Level
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-award"></i></span>
+                                            <select class="form-select" id="beeStatus" name="bee_status">
+                                                <option value=""
+                                                        {% if not registered_company.bee_status %}selected{% endif %}>
+                                                    Select B-BBEE status
+                                                </option>
+                                                {% for status in bee_options %}
+                                                    <option value="{{ status }}"
+                                                            {% if registered_company.bee_status == status %}selected{% endif %}>
+                                                        {{ status }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="form-text">Required for government tenders</div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Submit -->
-                            <div class="d-grid mt-5">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="bi bi-check-circle me-2"></i>Save and Continue
+                            <!-- Submit Section -->
+                            <div class="d-grid mt-5 pt-3 border-top">
+                                <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold">
+                                    <i class="bi bi-check-circle me-2"></i>Complete Registration
                                 </button>
+                                <p class="text-center text-muted small mt-3">
+                                    <i class="bi bi-lock me-1"></i> Your information is protected by bank-grade
+                                    encryption
+                                </p>
                             </div>
                         </form>
                     </div>
@@ -130,6 +279,21 @@
     {{ super() }}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Bootstrap validation
+            const forms = document.querySelectorAll('.needs-validation')
+
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+
+                    form.classList.add('was-validated')
+                }, false)
+            })
+
+            // Director management system
             const directorNameInput = document.getElementById('directorNameInput');
             const directorIdInput = document.getElementById('directorIdInput');
             const addDirectorBtn = document.getElementById('addDirectorBtn');
@@ -144,43 +308,65 @@
                 directorListContainer.innerHTML = '';
 
                 if (directors.length === 0) {
-                    directorListContainer.innerHTML = '<p class="text-muted small">No directors added yet.</p>';
+                    directorListContainer.innerHTML = `
+                        <div class="alert alert-light border text-center py-4">
+                            <i class="bi bi-person-plus fs-2 text-muted mb-3"></i>
+                            <p class="mb-0">No directors added yet</p>
+                        </div>
+                    `;
                     return;
                 }
 
-                directors.forEach((director, index) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'director-entry border rounded p-2 mb-2 d-flex justify-content-between align-items-center';
-                    wrapper.dataset.index = index;
+                const directorGrid = document.createElement('div');
+                directorGrid.className = 'row g-3';
 
-                    const info = document.createElement('div');
-                    info.innerHTML = `
-                        <strong>${director.full_names}</strong><br>
-                        <small>ID: ${director.id_number}</small>
+                directors.forEach((director, index) => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6';
+
+                    col.innerHTML = `
+                        <div class="director-badge card border p-3 d-flex flex-row align-items-center">
+                            <div class="bg-light-primary rounded-circle p-2 me-3">
+                                <i class="bi bi-person-badge text-primary fs-5"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h4 class="h6 fw-bold mb-0">${director.full_names}</h4>
+                                <small class="text-muted">ID: ${director.id_number}</small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-icon remove-director-btn">
+                                <i class="bi bi-x-lg text-danger"></i>
+                            </button>
+                        </div>
                     `;
 
-                    const removeBtn = document.createElement('button');
-                    removeBtn.type = 'button';
-                    removeBtn.className = 'btn btn-sm btn-outline-danger remove-director-btn';
-                    removeBtn.innerHTML = '<i class="bi bi-x-circle"></i>';
-                    removeBtn.addEventListener('click', () => {
+                    col.querySelector('.remove-director-btn').addEventListener('click', () => {
                         directors.splice(index, 1);
                         renderDirectors();
                     });
 
-                    wrapper.appendChild(info);
-                    wrapper.appendChild(removeBtn);
-                    directorListContainer.appendChild(wrapper);
+                    directorGrid.appendChild(col);
                 });
 
+                directorListContainer.appendChild(directorGrid);
                 hiddenDirectorInput.value = JSON.stringify(directors);
+
+                // Update form validation
+                hiddenDirectorInput.setAttribute('required', directors.length === 0 ? true : false);
             };
 
             const addDirector = () => {
                 const full_names = directorNameInput.value.trim();
                 const id_number = directorIdInput.value.trim();
 
-                if (!full_names || !id_number) return;
+                if (!full_names || !id_number) {
+                    if (!full_names) {
+                        directorNameInput.classList.add('is-invalid');
+                    }
+                    if (!id_number) {
+                        directorIdInput.classList.add('is-invalid');
+                    }
+                    return;
+                }
 
                 directors.push({
                     director_id: generateUUID(),
@@ -192,6 +378,8 @@
                 directorNameInput.value = '';
                 directorIdInput.value = '';
                 directorNameInput.focus();
+                directorNameInput.classList.remove('is-invalid');
+                directorIdInput.classList.remove('is-invalid');
 
                 renderDirectors();
             };
@@ -203,6 +391,12 @@
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         addDirector();
+                    }
+                });
+
+                input.addEventListener('input', () => {
+                    if (input.value.trim()) {
+                        input.classList.remove('is-invalid');
                     }
                 });
             });

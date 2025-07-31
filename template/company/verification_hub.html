@@ -35,7 +35,6 @@
 
 {% block content %}
     <div class="container py-5">
-
         <!-- Company Status Card -->
         <div class="card border-0 shadow-sm mb-5">
             <div class="card-body p-4 d-flex flex-column flex-md-row align-items-center">
@@ -65,10 +64,17 @@
                         {% endif %}
                     </p>
                 </div>
-                <div class="mt-3 mt-md-0">
-                    <a href="#" class="btn btn-outline-secondary">
+                <div class="mt-3 mt-md-0 d-flex flex-column align-items-center">
+                    <a href="#" class="btn btn-outline-secondary mb-2">
                         <i class="ti ti-help-circle me-1"></i>Need Help?
                     </a>
+                    {% if can_request_verification %}
+                        <form method="POST" action="{{ url_for('company.request_verification') }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ti ti-send me-1"></i>Request Verification
+                            </button>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -219,8 +225,8 @@
                 if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
             });
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, e => e.preventDefault()));
-            ['dragenter', 'dragover'].forEach(e => dropZone.classList.add('drag-over'));
-            ['dragleave', 'drop'].forEach(e => dropZone.classList.remove('drag-over'));
+            ['dragenter', 'dragover'].forEach(() => dropZone.classList.add('drag-over'));
+            ['dragleave', 'drop'].forEach(() => dropZone.classList.remove('drag-over'));
             dropZone.addEventListener('drop', (e) => {
                 if (e.dataTransfer.files.length > 0) {
                     fileInput.files = e.dataTransfer.files;

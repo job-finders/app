@@ -149,8 +149,12 @@ async def edit_company_profile(user: User):
     if not company:
         flash("Company not found. Please create your company profile.", "danger")
         return redirect(url_for("company.create_company_profile"))
-
-    return render_template('company/company_editor.html',company=company, current_year=datetime.now().year)
+    context = dict(
+        current_user=user,
+        company=company,
+        current_year=datetime.now().year
+    )
+    return render_template('company/company_editor.html', **context)
 
 
 @company_bp.route('/profile/update', methods=['POST'])
@@ -834,11 +838,16 @@ async def registered_company_cipc_details(user: User):
     context = dict(current_user=user, bee_options=BEE_STATUS_OPTIONS)
     # if we have a company_id we try to load the registered company with this id.
     if company_id:
-        registered_company: CompanyCIPC = await company_controller.get_cipc_record_by_company_id(company_id=company_id)
-        logger.info(f"Registered Directors details : {registered_company.director_details}")
+        registered_company: CompanyCIPC | None = await company_controller.get_cipc_record_by_company_id(
+            company_id=company_id)
+        if registered_company is None:
+            logger.info(f"No registered company found for company_id: {company_id}")
+
+        logger.info(f"Registered Directors details : {getattr(registered_company, 'director_details', None)}")
         # at this stage either there is actually a registered company or the controller
         # returned None meaning there is no registered Company
-        context.update(registered_company=registered_company.model_dump())
+        # noinspection PyTypeChecker
+        context.update(registered_company=registered_company)
 
     return render_template("company/registered_company_cipc.html", **context)
 
