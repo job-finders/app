@@ -950,11 +950,12 @@ async def employers_list(user: User):
         return redirect(url_for("company.view_employer_profile"))
 
     # This would typically fetch from the database
-    employers = await company_controller.get_all_company_employers(company_id=_employer_profile.company_id)
+    employers_profile_list: list[Employer] = await company_controller.get_all_company_employers(
+        company_id=_employer_profile.company_id)
     context = {
         "current_user": user,
         "employer_profile": _employer_profile,
-        "employers": employers
+        "employers_list": employers_profile_list
     }
 
     return render_template("company/employers.html",**context)
