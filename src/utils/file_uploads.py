@@ -9,36 +9,42 @@ def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
 def save_company_logo(file, company_id):
-    """Save company logo and return its URL"""
+    """Save company logo in the 'logos' subfolder and return its URL"""
     if not allowed_file(file.filename):
-        raise ValueError("Invalid file event_type")
+        raise ValueError("Invalid file type")
 
-    # Generate unique filename
+    # Extract extension and generate filename
     ext = file.filename.rsplit('.', 1)[1].lower()
     filename = f"company_{company_id}.{ext}"
 
-    # Determine save path
-    upload_dir = current_app.config['UPLOAD_FOLDER']
-    os.makedirs(upload_dir, exist_ok=True)
-    filepath = os.path.join(upload_dir, filename)
+    # Define the target subfolder: uploads/logos/
+    upload_base = current_app.config['UPLOAD_FOLDER']  # Should point to /static/uploads
+    logo_folder = os.path.join(upload_base, 'logos')
+    os.makedirs(logo_folder, exist_ok=True)
 
-    # Save file
+    # Final file path
+    filepath = os.path.join(logo_folder, filename)
+
+    # Save the file
     file.save(filepath)
 
-    # Return URL path
-    return url_for('static', filename=f"uploads/{filename}", _external=True)
+    # Create the URL (static/uploads/logos/company_123.png)
+    relative_path = os.path.relpath(filepath, start=current_app.static_folder)
+    return url_for('static', filename=relative_path.replace(os.sep, '/'), _external=True)
 
 
 def save_verification_file(file, company_name: str, company_id: str, document_id: str, doc_type: str):
-    """Save verification document under company and doc_type directories and return its URL"""
+    """
+    Uploaded files must be cached on cloudflare and served from CDN.
+    Save verification document under company and doc_type directories and return its URL
+    """
     if not allowed_file(file.filename):
         raise ValueError("Invalid file type")
 
     # Sanitize inputs to avoid path injection
-    safe_company = secure_filename(company_name)
-    safe_doc_type = secure_filename(doc_type)
+    safe_company = secure_filename(company_name.lower())
+    safe_doc_type = secure_filename(doc_type.lower())
 
     # Generate filename
     ext = file.filename.rsplit('.', 1)[1].lower()
