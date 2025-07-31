@@ -1,34 +1,34 @@
 {% extends "company/layout/page.html" %}
 {% block styles %}
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
 <style>
-  .candidate-card {
-    transition: all 0.3s ease;
-    border-left: 4px solid transparent;
-  }
-  .candidate-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
-  }
-  .skill-badge {
-    font-size: 0.8rem;
-    margin: 0.2rem;
-  }
-  .experience-item {
-    border-left: 2px solid #17a2b8;
-    padding-left: 1rem;
-    margin: 1rem 0;
-  }
-  .notes-section {
-    background-color: #f8f9fa;
-    border-radius: 0.25rem;
-    padding: 1rem;
-  }
-  .profile-image {
-    width: 100px;
-    height: 100px;
+    .profile-thumb {
+        width: 40px;
+        height: 40px;
     object-fit: cover;
     border-radius: 50%;
   }
+
+    .skill-badge {
+        font-size: 0.75rem;
+        margin: 0.1rem;
+    }
+
+    .notes-preview {
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dataTables_wrapper .row {
+        margin: 0.5rem 0;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(23, 162, 184, 0.05);
+        cursor: pointer;
+    }
 </style>
 {% endblock %}
 
@@ -46,161 +46,215 @@
 
     <div class="card-body">
       {% if not candidates %}
-      <div class="alert alert-info">
-        <i class="ti-info-alt mr-2"></i>No saved candidates found
-      </div>
+          <div class="alert alert-info">
+              <i class="ti-info-alt mr-2"></i>No saved candidates found
+          </div>
+      {% else %}
+          <div class="table-responsive">
+              <table id="candidatesTable" class="table table-hover table-striped" style="width:100%">
+                  <thead class="table-light">
+                  <tr>
+                      <th></th>
+                      <th>Candidate</th>
+                      <th>Location</th>
+                      <th>Skills</th>
+                      <th>Experience</th>
+                      <th>Education</th>
+                      <th>Notes</th>
+                      <th>Added</th>
+                      <th>Actions</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {% for candidate in candidates %}
+                      <tr data-cv-id="{{ candidate.cv_id }}">
+                          <td>
+                              {% if candidate.profile_image_url %}
+                                  <img src="{{ candidate.profile_image_url }}" class="profile-thumb" alt="Profile">
+                              {% else %}
+                                  <div class="profile-thumb bg-secondary d-flex align-items-center justify-content-center">
+                                      <i class="ti-user text-white"></i>
+                                  </div>
+                              {% endif %}
+                          </td>
+                          <td>
+                              <div class="fw-medium">{{ candidate.professional_title }}</div>
+                              <div class="small text-muted">
+                                  {% if candidate.linkedin %}
+                                      <a href="{{ candidate.linkedin }}" target="_blank" class="text-info me-2">
+                                          <i class="ti-linkedin"></i>
+                                      </a>
+                                  {% endif %}
+                                  {% if candidate.github %}
+                                      <a href="{{ candidate.github }}" target="_blank" class="text-dark me-2">
+                                          <i class="ti-github"></i>
+                                      </a>
+                                  {% endif %}
+                                  {% if candidate.resume_file_url %}
+                                      <a href="{{ candidate.resume_file_url }}" target="_blank" class="text-primary">
+                                          <i class="ti-file"></i>
+                                      </a>
+                                  {% endif %}
+                              </div>
+                          </td>
+                          <td>{{ candidate.location or '-' }}</td>
+                          <td>
+                              {% for skill in candidate.skills[:3] %}
+                                  <span class="skill-badge badge bg-light text-dark border">{{ skill }}</span>
+                              {% endfor %}
+                              {% if candidate.skills|length > 3 %}
+                                  <span class="badge bg-light text-dark border">+{{ candidate.skills|length - 3 }}</span>
+                              {% endif %}
+                          </td>
+                          <td>
+                              {% if candidate.experience %}
+                                  <div class="fw-medium small">{{ candidate.experience[0].position }}</div>
+                                  <div class="small text-muted">{{ candidate.experience[0].company }}</div>
+                              {% else %}
+                                  -
+                              {% endif %}
+                          </td>
+                          <td>
+                              {% if candidate.education %}
+                                  <div class="fw-medium small">{{ candidate.education[0].degree }}</div>
+                                  <div class="small text-muted">{{ candidate.education[0].institution }}</div>
+                              {% else %}
+                                  -
+                              {% endif %}
+                          </td>
+                          <td>
+                              {% if candidate.notes %}
+                                  <div class="notes-preview" title="{{ candidate.notes }}">
+                                      {{ candidate.notes }}
+                                  </div>
+                              {% else %}
+                                  -
+                              {% endif %}
+                          </td>
+                          <td data-order="{{ candidate.created_at|datetimeformat('%Y%m%d') }}">
+                              <div class="small">{{ candidate.created_at|datetimeformat('%b %d, %Y') }}</div>
+                              <div class="small text-muted">{{ candidate.created_at|datetimeformat('%I:%M %p') }}</div>
+                          </td>
+                          <td>
+                              <button class="btn btn-sm btn-outline-danger remove-candidate"
+                                      data-cv-id="{{ candidate.cv_id }}"
+                                      data-candidate-name="{{ candidate.professional_title }}">
+                                  <i class="ti-trash"></i>
+                              </button>
+                          </td>
+                      </tr>
+
+                  {% endfor %}
+                  </tbody>
+              </table>
+          </div>
       {% endif %}
+    </div>
+  </div>
+</div>
 
-      <div class="row">
-        {% for candidate in candidates %}
-        <div class="col-md-6 mb-4">
-          <div class="candidate-card card h-100">
-            <div class="card-body">
-              <!-- Candidate Header -->
-              <div class="d-flex align-items-start mb-3">
-                {% if candidate.profile_image_url %}
-                <img src="{{ candidate.profile_image_url }}" class="profile-image mr-3" alt="Profile photo">
-                {% endif %}
-                <div>
-                  <h4 class="mb-1">{{ candidate.professional_title }}</h4>
-                  {% if candidate.location %}
-                  <p class="text-muted mb-1">
-                    <i class="ti-location-pin"></i> {{ candidate.location }}
-                  </p>
-                  {% endif %}
-                  <div class="d-flex">
-                    {% if candidate.linkedin %}
-                    <a href="{{ candidate.linkedin }}" target="_blank" class="btn btn-sm btn-outline-info mr-2">
-                      <i class="ti-linkedin"></i>
-                    </a>
-                    {% endif %}
-                    {% if candidate.github %}
-                    <a href="{{ candidate.github }}" target="_blank" class="btn btn-sm btn-outline-dark mr-2">
-                      <i class="ti-github"></i>
-                    </a>
-                    {% endif %}
-                    {% if candidate.resume_file_url %}
-                    <a href="{{ candidate.resume_file_url }}" target="_blank" class="btn btn-sm btn-primary">
-                      <i class="ti-file mr-2"></i>Resume
-                    </a>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Key Details -->
-              {% if candidate.summary %}
-              <div class="mb-3">
-                <p class="font-italic">"{{ candidate.summary|truncate(150) }}"</p>
-              </div>
-              {% endif %}
-
-              <!-- Skills -->
-              <div class="mb-3">
-                {% for skill in candidate.skills %}
-                <span class="skill-badge badge badge-pill badge-secondary">{{ skill }}</span>
-                {% endfor %}
-              </div>
-
-              <!-- Experience Preview -->
-              {% if candidate.experience %}
-              <div class="mb-3">
-                <h6 class="text-info">
-                  <i class="ti-briefcase mr-2"></i>Recent Experience
-                </h6>
-                {% for exp in candidate.experience[:2] %}
-                <div class="experience-item">
-                  <p class="mb-1 font-weight-bold">{{ exp.position }}</p>
-                  <p class="mb-1 text-muted small">{{ exp.company }} • {{ exp.duration }}</p>
-                </div>
-                {% endfor %}
-              </div>
-              {% endif %}
-
-              <!-- Education Preview -->
-              {% if candidate.education %}
-              <div class="mb-3">
-                <h6 class="text-info">
-                  <i class="ti-book mr-2"></i>Education
-                </h6>
-                {% for edu in candidate.education[:2] %}
-                <div class="experience-item">
-                  <p class="mb-1 font-weight-bold">{{ edu.degree }}</p>
-                  <p class="mb-1 text-muted small">{{ edu.institution }} • {{ edu.duration }}</p>
-                </div>
-                {% endfor %}
-              </div>
-              {% endif %}
-
-              <!-- Saved Notes -->
-              {% if candidate.notes %}
-              <div class="notes-section mt-3">
-                <h6 class="text-info">
-                  <i class="ti-pencil mr-2"></i>Your Notes
-                </h6>
-                <p class="mb-0">{{ candidate.notes }}</p>
-              </div>
-              {% endif %}
-            </div>
-
-            <!-- Card Footer -->
-            <div class="card-footer bg-light d-flex justify-content-between">
-              <small class="text-muted">
-                Added {{ candidate.created_at|datetimeformat }}
-              </small>
-              <div>
-                <button class="btn btn-sm btn-outline-danger"
-                        data-toggle="modal" data-target="#removeModal{{ loop.index }}">
-                  <i class="ti-trash"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Remove Confirmation Modal -->
-        <div class="modal fade" id="removeModal{{ loop.index }}" tabindex="-1">
-          <div class="modal-dialog">
+    <!-- Modal for full candidate details -->
+    <div class="modal fade" id="candidateModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-              <div class="modal-header bg-light">
-                <h5 class="modal-title">Remove Candidate</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                  <span>&times;</span>
-                </button>
-              </div>
-              <div class="modal-body">
-                Confirm removal of {{ candidate.professional_title }} from shortlist?
-              </div>
-              <div class="modal-footer">
-                <form method="POST" action="{{ url_for('company.candidate_management') }}">
-                  {{ csrf_token() }}
-                  <input type="hidden" name="cv_id" value="{{ candidate.cv_id }}">
-                  <button type="submit" name="action" value="remove"
-                          class="btn btn-danger">Confirm Remove</button>
-                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                </form>
-              </div>
+                <!-- Content will be loaded dynamically via JavaScript -->
             </div>
-          </div>
         </div>
-        {% endfor %}
+    </div>
+
+    <!-- Remove Confirmation Modal -->
+    <div class="modal fade" id="removeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title">Remove Candidate</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Confirm removal of <span id="candidateName" class="fw-medium"></span> from shortlist?</p>
+                </div>
+                <div class="modal-footer">
+                    <form id="removeForm" method="POST" action="{{ url_for('company.candidate_management') }}">
+
+                        <input type="hidden" name="cv_id" id="removeCvId">
+                        <button type="submit" name="action" value="remove" class="btn btn-danger">Confirm Remove
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    </form>
       </div>
     </div>
   </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize tooltips
-  $('[data-toggle="tooltip"]').tooltip();
+    // Initialize DataTable
+    const table = $('#candidatesTable').DataTable({
+        order: [[7, 'desc']],
+        columnDefs: [
+            {orderable: false, targets: [0, 8]},
+            {searchable: false, targets: [0, 7, 8]},
+            {width: '5%', targets: [0, 8]},
+            {width: '15%', targets: [2, 3, 4, 5]},
+            {width: '10%', targets: [7]}
+        ],
+        language: {
+            search: "Search candidates:",
+            lengthMenu: "Show _MENU_ candidates",
+            zeroRecords: "No matching candidates found",
+            info: "Showing _START_ to _END_ of _TOTAL_ candidates",
+            infoEmpty: "No candidates available",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        },
+        responsive: true
+    });
 
-  // Auto-truncate long text
-  document.querySelectorAll('.experience-item p').forEach(p => {
-    if (p.textContent.length > 120) {
-      p.textContent = p.textContent.substring(0, 120) + '...';
+    // Row click handler to show full details
+    $('#candidatesTable tbody').on('click', 'tr', function (e) {
+        // Ignore if clicked on action buttons
+        if ($(e.target).closest('.remove-candidate, .btn').length) return;
+
+        const cvId = $(this).data('cv-id');
+        const candidateDetailUrl = "/dashboard/company/candidate/" + cvId;
+        if (cvId) {
+            fetch(candidateDetailUrl)
+                .then(response => response.text())
+                .then(html => {
+                    $('#candidateModal .modal-content').html(html);
+                    $('#candidateModal').modal('show');
+                });
     }
+    });
+
+    // Remove candidate handler
+    $('.remove-candidate').click(function (e) {
+        e.stopPropagation();
+        const cvId = $(this).data('cv-id');
+        const candidateName = $(this).data('candidate-name');
+
+        $('#removeCvId').val(cvId);
+        $('#candidateName').text(candidateName);
+        $('#removeModal').modal('show');
+    });
+
+    // Enable tooltips for notes preview
+    $('[title]').tooltip({
+        placement: 'top',
+        trigger: 'hover'
   });
 });
 </script>

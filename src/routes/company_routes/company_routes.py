@@ -426,7 +426,16 @@ async def candidate_management(user: User):
 
     flash("Candidate saved to shortlist", "success")
     return redirect(url_for("company.candidate_management"))
-    
+
+
+@company_bp.route("/candidate/<string:cv_id>", methods=["GET"])
+@flask_error_handler
+@employer_login
+@require_billing_role(minimum=BillingTiersEnum.Starter.value)
+async def candidate_details(user: User, cv_id: str):
+    company_controller = get_controller('company')
+    candidate = await company_controller.get_candidate_details(cv_id)
+    return render_template("company/candidates/candidate_details.html", candidate=candidate)
 
 @company_bp.route("/analytics/applications", methods=["GET"])
 @flask_error_handler

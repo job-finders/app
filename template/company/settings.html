@@ -11,75 +11,99 @@ company dashboard, recruitment dashboard, hiring analytics, job management, cand
 {% endblock %}
 
 {% block content %}
-
 <div class="card border-0 shadow-sm mb-5">
     <div class="card-header bg-white border-bottom-0 d-flex align-items-center justify-content-between">
-        <h2 class="h5 fw-bold mb-0 text-primary"><i class="bi bi-gear me-2"></i>Company Settings</h2>
+        <h2 class="h5 fw-bold mb-0 text-primary">
+            <i class="bi bi-gear me-2"></i>Company Settings
+        </h2>
     </div>
+
     <div class="card-body py-4">
         <form method="POST" action="{{ url_for('company.save_settings')}}" class="needs-validation" novalidate>
+            <!-- General Settings Section -->
+            {{ form_section(
+                title="General",
+                fields=[
+                    form_field(
+                        name='default_job_duration_days',
+                        label='Default Job Duration (days)',
+                        type='number',
+                        value=settings.default_job_duration_days,
+                        required=True,
+                        help='How long a job post stays active before expiring.',
+                        grid_class='col-md-6'
+                    ),
+                    form_field(
+                        name='max_open_jobs',
+                        label='Max Open Jobs',
+                        type='number',
+                        value=settings.max_open_jobs,
+                        required=True,
+                        help='Limit of concurrently open job posts.',
+                        grid_class='col-md-6'
+                    )
+                ]
+            ) }}
 
-            <!-- GENERAL SETTINGS -->
-            <section class="mb-5">
-                <h5 class="text-uppercase text-muted fw-semibold small mb-3">General</h5>
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <label class="form-label fw-medium">Default Job Duration (days)</label>
-                        <input type="number" class="form-control" name="default_job_duration_days" value="{{ settings.default_job_duration_days }}" required>
-                        <div class="form-text">How long a job post stays active before expiring.</div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-medium">Max Open Jobs</label>
-                        <input type="number" class="form-control" name="max_open_jobs" value="{{ settings.max_open_jobs }}" required>
-                        <div class="form-text">Limit of concurrently open job posts.</div>
-                    </div>
-                </div>
-            </section>
+            <!-- Application Preferences Section -->
+            {{ form_section(
+                title="Applications",
+                fields=[
+                    form_switch(
+                        name='auto_response_enabled',
+                        label='Enable Auto Response',
+                        checked=settings.auto_response_enabled,
+                        id='autoResponseSwitch',
+                        help='Automatically send a message to applicants after submission.'
+                    ),
+                    form_field(
+                        name='default_response_message',
+                        label='Default Response Message',
+                        type='textarea',
+                        value=settings.default_response_message,
+                        placeholder='Thank you for applying!',
+                        rows=3
+                    )
+                ]
+            ) }}
 
-            <!-- APPLICATION PREFERENCES -->
-            <section class="mb-5">
-                <h5 class="text-uppercase text-muted fw-semibold small mb-3">Applications</h5>
+            <!-- Branding Section -->
+            {{ form_section(
+                title="Branding",
+                fields=[
+                    form_field(
+                        name='email_sender_name',
+                        label='Email Sender Name',
+                        value=settings.email_sender_name,
+                        placeholder='Acme Corp Careers',
+                        grid_class='col-md-6'
+                    ),
+                    form_field(
+                        name='email_signature',
+                        label='Email Signature',
+                        value=settings.email_signature,
+                        placeholder='The Acme Corp Talent Team',
+                        grid_class='col-md-6'
+                    )
+                ]
+            ) }}
 
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" id="autoResponseSwitch" name="auto_response_enabled" {% if settings.auto_response_enabled %}checked{% endif %}>
-                    <label class="form-check-label fw-medium" for="autoResponseSwitch">Enable Auto Response</label>
-                    <div class="form-text">Automatically send a message to applicants after submission.</div>
-                </div>
+            <!-- Notifications Section -->
+            {{ form_section(
+                title="Notifications",
+                fields=[
+                    form_switch(
+                        name='notify_on_new_application',
+                        label='Notify on New Applications',
+                        checked=settings.notify_on_new_application,
+                        id='notifyNewApp',
+                        help='Receive email alerts when someone applies to a job.'
+                    )
+                ]
+            ) }}
 
-                <div class="mb-3">
-                    <label class="form-label fw-medium">Default Response Message</label>
-                    <textarea class="form-control" rows="3" name="default_response_message" placeholder="Thank you for applying!">{{ settings.default_response_message }}</textarea>
-                </div>
-            </section>
-
-            <!-- BRANDING -->
-            <section class="mb-5">
-                <h5 class="text-uppercase text-muted fw-semibold small mb-3">Branding</h5>
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <label class="form-label fw-medium">Email Sender Name</label>
-                        <input type="text" class="form-control" name="email_sender_name" value="{{ settings.email_sender_name }}" placeholder="Acme Corp Careers">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-medium">Email Signature</label>
-                        <input type="text" class="form-control" name="email_signature" value="{{ settings.email_signature }}" placeholder="The Acme Corp Talent Team">
-                    </div>
-                </div>
-            </section>
-
-            <!-- NOTIFICATIONS -->
-            <section class="mb-5">
-                <h5 class="text-uppercase text-muted fw-semibold small mb-3">Notifications</h5>
-
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" id="notifyNewApp" name="notify_on_new_application" {% if settings.notify_on_new_application %}checked{% endif %}>
-                    <label class="form-check-label fw-medium" for="notifyNewApp">Notify on New Applications</label>
-                    <div class="form-text">Receive email alerts when someone applies to a job.</div>
-                </div>
-            </section>
-
-            <!-- ACTION BUTTON -->
-            <div class="text-end">
+            <!-- Submit Button -->
+            <div class="text-end mt-4">
                 <button type="submit" class="btn btn-primary px-4 py-2">
                     <i class="bi bi-save me-1"></i> Save Settings
                 </button>
@@ -87,5 +111,54 @@ company dashboard, recruitment dashboard, hiring analytics, job management, cand
         </form>
     </div>
 </div>
-
 {% endblock %}
+
+{% macro form_section(title, fields) %}
+    <section class="mb-5">
+        <h5 class="text-uppercase text-muted fw-semibold small mb-3">{{ title }}</h5>
+        <div class="row g-4">
+            {% for field in fields %}
+                {{ field }}
+            {% endfor %}
+        </div>
+    </section>
+{% endmacro %}
+
+{% macro form_field(name, label, type='text', value='', placeholder='', required=False, help=None, rows=3, grid_class='col-12') %}
+    <div class="{{ grid_class }}">
+        <label class="form-label fw-medium">{{ label }}</label>
+        {% if type == 'textarea' %}
+            <textarea class="form-control"
+                      name="{{ name }}"
+                      rows="{{ rows }}"
+                      placeholder="{{ placeholder }}"
+                      {% if required %}required{% endif %}>{{ value }}</textarea>
+        {% else %}
+            <input type="{{ type }}"
+                   class="form-control"
+                   name="{{ name }}"
+                   value="{{ value }}"
+                   placeholder="{{ placeholder }}"
+                   {% if required %}required{% endif %}>
+        {% endif %}
+        {% if help %}
+            <div class="form-text">{{ help }}</div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro form_switch(name, label, checked, id, help=None) %}
+    <div class="col-12">
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input"
+                   type="checkbox"
+                   id="{{ id }}"
+                   name="{{ name }}"
+                   {% if checked %}checked{% endif %}>
+            <label class="form-check-label fw-medium" for="{{ id }}">{{ label }}</label>
+            {% if help %}
+                <div class="form-text">{{ help }}</div>
+            {% endif %}
+    </div>
+</div>
+{% endmacro %}

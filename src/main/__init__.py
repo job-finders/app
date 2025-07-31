@@ -26,6 +26,7 @@ def _register_blueprints(app):
     from src.routes.admin_routes import system_admin_route
     from src.routes.agents_routes.employer_agents_router import employer_agents_route
     from src.routes.agents_routes.employee_agents_routes import employee_agents_route
+    from src.routes.employer_routes.employer_routes import employer_route
 
 
     blueprints = [
@@ -33,7 +34,7 @@ def _register_blueprints(app):
         seo_route, blog_route, users_route, jobseeker_route,
         jobseeker_profiles_bp, resume_routes, jobseeker_applications_route,
         cron_route, ats_tool_route, company_bp, company_search_routes, billing_route, system_admin_route,
-        employee_agents_route, employer_agents_route
+        employee_agents_route, employer_agents_route, employer_route
     ]
     for blueprint in blueprints:
         app.register_blueprint(blueprint)

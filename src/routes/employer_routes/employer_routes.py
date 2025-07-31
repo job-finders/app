@@ -1,37 +1,15 @@
 # Standard Library
-import asyncio
-import json
-import os
 import uuid
 from datetime import datetime, timezone, timedelta
 
 # Flask & Third-Party
 from flask import Blueprint, request, render_template, redirect, url_for, flash
-from pydantic import ValidationError, HttpUrl
-from werkzeug.utils import secure_filename
 
 # Authentication
-from src.authentication import login_required, employer_login, require_billing_role
-
-# Controllers
-from src.controllers.agents import EmployerAgentsController
-from src.controllers.jobs import JobsWorkflowController
-
+from src.authentication import employer_login, require_billing_role
 # Domain Models
 from src.database.models import (
-    Company,
-    CompanyUpdate,
-    CompanyVerificationStatus,
-    CompanyVerificationDocument,
-    CompanySettings,
-    AllowableCompanyVerificationDocumentsEnum,
-    CompanyCIPC,
-    DirectorDetails,
     Employer,
-    Job,
-    JobApplicationDashboard,
-    JobSeekerCV,
-    SavedCV,
     User,
 )
 # Logger
@@ -39,10 +17,10 @@ from src.logger import init_logger
 # Routes
 from src.routes import flask_error_handler
 # Services
-from src.services.billing.billing_service import BillingTiersEnum
 # Utilities
-from src.utils.file_uploads import save_company_logo, save_verification_file
 from src.utils.route_helpers import get_controller
+
+# Controllers
 
 employer_route = Blueprint('employer', __name__, url_prefix='/dashboard/employer')
 logger = init_logger("company_routes")
@@ -80,7 +58,7 @@ async def invite_employer(user: User):
     try:
         # Create employer record with pending status
         new_employer = Employer(
-            user_uid=str(uuid4()),  # Temporary UID until user registers
+            user_uid=str(uuid.uuid4()),  # Temporary UID until user registers
             company_id=employer_profile.company_id,
             full_name=full_name,
             company_email=email,
@@ -94,7 +72,7 @@ async def invite_employer(user: User):
         )
 
         # Generate invitation token
-        invitation_token = str(uuid4())
+        invitation_token = str(uuid.uuid4())
         await company_controller.create_employer_invitation(
             employer_id=created_employer.employer_id,
             token=invitation_token,

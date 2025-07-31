@@ -1,43 +1,258 @@
 {% extends "auth/layout.html" %}
 
+{% block css %}
+    {{ super() }}
+    <style>
+        .join-card {
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            border: none;
+            overflow: hidden;
+        }
+
+        .card-header-gradient {
+            background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+            color: white;
+            padding: 2rem 1.5rem;
+            text-align: center;
+        }
+
+        .company-logo-container {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .welcome-icon {
+            font-size: 2.5rem;
+            color: white;
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6c757d;
+        }
+
+        .requirements {
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .requirement-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.25rem;
+            color: #6c757d;
+        }
+
+        .requirement-item.valid {
+            color: #198754;
+        }
+
+        .requirement-icon {
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-join {
+            padding: 0.75rem;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-join:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(13, 110, 253, 0.25);
+        }
+
+        .login-prompt {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.95rem;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-0 text-center py-4">
-                        <h2 class="h4 mb-0 fw-bold">Join {{ company_name }}</h2>
-                        <p class="mb-0">Complete your account setup</p>
+            <div class="col-md-10 col-lg-8">
+                <div class="join-card">
+                    <!-- Header with Gradient Background -->
+                    <div class="card-header-gradient">
+                        <div class="company-logo-container">
+                            <i class="bi bi-building welcome-icon"></i>
+                        </div>
+                        <h1 class="h2 mb-3">Join {{ company_name }}</h1>
+                        <p class="mb-0">Complete your account setup to access your team dashboard</p>
                     </div>
 
                     <div class="card-body p-4 p-md-5">
                         <div class="text-center mb-4">
-                            <div class="bg-light-primary rounded-circle p-3 d-inline-block mb-3">
-                                <i class="bi bi-person-plus fs-2 text-primary"></i>
+                            <div class="d-flex align-items-center justify-content-center mb-3">
+                                <div class="bg-light-primary rounded-circle p-2 me-3">
+                                    <i class="bi bi-person-check fs-4 text-primary"></i>
+                                </div>
+                                <h2 class="h4 mb-0">Welcome, {{ full_name }}</h2>
                             </div>
-                            <p>You've been invited to join as <strong>{{ full_name }}</strong></p>
-                            <p class="text-muted">Create a password to complete your account setup</p>
+                            <p class="text-muted">
+                                You've been invited to join <strong>{{ company_name }}</strong> on our platform.
+                                Create your password below to get started.
+                            </p>
                         </div>
 
-                        <form method="POST" action="{{ url_for('company.join_company', token=token) }}">
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
+                        <form method="POST" action="{{ url_for('employer.join_company', token=token) }}" id="joinForm">
+                            <div class="mb-4">
+                                <label for="email" class="form-label fw-medium">Work Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                    <input type="email" class="form-control" id="email"
+                                           value="{{ email }}" readonly>
+                                </div>
                             </div>
 
                             <div class="mb-4">
-                                <label for="confirm_password" class="form-label">Confirm Password</label>
-                                <input type="password" class="form-control" id="confirm_password"
-                                       name="confirm_password" required>
+                                <label for="password" class="form-label fw-medium">Create Password</label>
+                                <div class="password-container">
+                                    <input type="password" class="form-control" id="password"
+                                           name="password" required minlength="8">
+                                    <button type="button" class="password-toggle" id="togglePassword">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="requirements mt-2">
+                                    <p class="small mb-2">Password must include:</p>
+                                    <div class="requirement-item" id="length-req">
+                                        <i class="bi bi-circle requirement-icon"></i>
+                                        <span>At least 8 characters</span>
+                                    </div>
+                                    <div class="requirement-item" id="number-req">
+                                        <i class="bi bi-circle requirement-icon"></i>
+                                        <span>At least one number</span>
+                                    </div>
+                                    <div class="requirement-item" id="special-req">
+                                        <i class="bi bi-circle requirement-icon"></i>
+                                        <span>At least one special character</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
-                                Create Account
+                            <div class="mb-4">
+                                <label for="confirm_password" class="form-label fw-medium">Confirm Password</label>
+                                <input type="password" class="form-control" id="confirm_password"
+                                       name="confirm_password" required minlength="8">
+                                <div class="invalid-feedback">Passwords must match</div>
+                            </div>
+
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label small" for="terms">
+                                    I agree to the <a href="#" class="text-primary">Terms of Service</a> and
+                                    <a href="#" class="text-primary">Privacy Policy</a>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-join w-100">
+                                <i class="bi bi-lock me-2"></i>Create Account & Join Team
                             </button>
+
+                            <div class="login-prompt">
+                                <p class="mb-0">Already have an account? <a href="{{ url_for('auth.login') }}"
+                                                                            class="text-primary fw-medium">Sign In</a>
+                                </p>
+                            </div>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Password toggle functionality
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirm_password');
+
+            if (togglePassword) {
+                togglePassword.addEventListener('click', function () {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    confirmPasswordInput.setAttribute('type', type);
+
+                    // Toggle eye icon
+                    const icon = this.querySelector('i');
+                    icon.classList.toggle('bi-eye');
+                    icon.classList.toggle('bi-eye-slash');
+                });
+            }
+
+            // Password validation
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirm_password');
+            const form = document.getElementById('joinForm');
+
+            // Password requirement elements
+            const lengthReq = document.getElementById('length-req');
+            const numberReq = document.getElementById('number-req');
+            const specialReq = document.getElementById('special-req');
+
+            if (password) {
+                password.addEventListener('input', function () {
+                    const value = this.value;
+
+                    // Validate length
+                    toggleRequirement(lengthReq, value.length >= 8);
+
+                    // Validate number
+                    toggleRequirement(numberReq, /\d/.test(value));
+
+                    // Validate special character
+                    toggleRequirement(specialReq, /[!@#$%^&*(),.?":{}|<>]/.test(value));
+                });
+            }
+
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    // Check password match
+                    if (password.value !== confirmPassword.value) {
+                        e.preventDefault();
+                        confirmPassword.classList.add('is-invalid');
+                    } else {
+                        confirmPassword.classList.remove('is-invalid');
+                    }
+                });
+            }
+
+            // Helper function to update requirement status
+            function toggleRequirement(element, isValid) {
+                if (isValid) {
+                    element.classList.add('valid');
+                    element.querySelector('.requirement-icon').className = 'bi bi-check-circle requirement-icon';
+                } else {
+                    element.classList.remove('valid');
+                    element.querySelector('.requirement-icon').className = 'bi bi-circle requirement-icon';
+                }
+            }
+        });
+    </script>
 {% endblock %}
