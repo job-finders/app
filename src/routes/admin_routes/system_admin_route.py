@@ -20,7 +20,8 @@ async def get_admin_dashboard(user: User):
     """
     admin_controller = get_controller('admin_controller')
     result = await admin_controller.get_admin_dashboard_data(user=user)
-
+    if result is None:
+        return jsonify({"error": "Failed to retrieve dashboard data"}), 500
     return render_template('admin/dashboard.html', dashboard_data=result.data, admin_user=user)
 
 @system_admin_route.route("/users/<string:user_id>/reset-password", methods=["POST"])

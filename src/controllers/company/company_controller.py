@@ -35,6 +35,7 @@ from src.database.models import (
 
 # SQL Models (ORMs)
 from src.database import (
+    JobsORM,
     CompanyORM,
     CompanyCIPCORM,
     CompanyVerificationDocumentORM,
@@ -313,6 +314,29 @@ class CompanyController(Controllers):
                 jobs = [job for job in jobs if job.status.casefold() == status.value.casefold()]
             return [Job(**job.to_dict()) for job in jobs] if jobs else []
 
+    @error_handler
+    async def get_company_jobs_with_job_applications(self, company_id: str) -> List[Job]:
+        """
+        Retrieve all jobs for a company, including nested applications and candidates
+        """
+        if not (isinstance(company_id, str) and company_id.strip()):
+            return []
+        with self.get_session() as session:
+            jobs_orm_list = (
+                session.query(JobsORM)
+                .options(
+                    joinedload(JobsORM.applications)
+                )
+                .filter(JobsORM.company_id == company_id)
+                .all()
+            )
+            jobs = []
+
+            for job_orm in jobs_orm_list:
+                job_dict = job_orm.to_dict(include_relationship=True)
+                self.logger.info(f"Job ORM Data : {job_dict}")
+                jobs.append(Job(**job_dict))
+            return jobs
 
     @error_handler
     async def get_all_company_employers(self, company_id: str) -> List[Employer]:

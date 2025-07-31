@@ -983,3 +983,27 @@ async def get_dashboard(user: User):
         "company/dashboard.html",
         **context
     )
+
+
+@company_bp.route("/job-applications/<string:company_id>", methods=["GET"])
+@flask_error_handler
+@login_required
+async def view_company_job_applications(user: User, company_id: str):
+    """
+    View applications for all jobs posted by the company.
+
+    :param user: The employer user viewing the applications.
+    :param job_id: The ID of the job post.
+    :return: Rendered template with job applications.
+    """
+    company_controller = get_controller('company')
+    jobs_workflow_controller: JobsWorkflowController = get_controller('jobs_workflow')
+    company_details: Company = await company_controller.get_company_by_id(company_id=company_id)
+    jobs_list: list[Job] = await company_controller.get_company_jobs_with_job_applications(company_id=company_id)
+
+    context = dict(
+        current_user=user,
+        company=company_details,
+        jobs_list=jobs_list
+    )
+    return render_template("company/job_applications.html", **context)
