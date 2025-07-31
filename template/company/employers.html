@@ -9,17 +9,14 @@
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border-bottom: 1px solid #dee2e6;
         }
-
         .employer-card {
             transition: all 0.3s ease;
             border-left: 3px solid #0d6efd;
         }
-
         .employer-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
-
         .profile-placeholder {
             width: 80px;
             height: 80px;
@@ -29,27 +26,39 @@
             justify-content: center;
             border-radius: 50%;
         }
-
         .status-badge {
             font-size: 0.8rem;
             padding: 0.35rem 0.8rem;
         }
-
         .action-hover {
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-
         .employer-card:hover .action-hover {
             opacity: 1;
         }
-
         .role-indicator {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             display: inline-block;
             margin-right: 5px;
+        }
+
+        .invite-modal-header {
+            background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+            color: white;
+        }
+
+        .invite-icon-container {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
         }
     </style>
 {% endblock %}
@@ -66,9 +75,10 @@
                     <p class="lead mb-0">Manage your organization's authorized representatives</p>
                 </div>
                 {% if employer_profile.is_admin %}
-                    <a href="#" class="btn btn-primary">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#addMemberModal">
                         <i class="bi bi-plus-circle me-1"></i>Add Team Member
-                    </a>
+                    </button>
                 {% endif %}
             </div>
         </div>
@@ -247,9 +257,10 @@
                                     <i class="bi bi-people display-5 text-muted mb-3"></i>
                                     <h3 class="h5">No Team Members Found</h3>
                                     <p class="text-muted">Add your first team member to get started</p>
-                                    <a href="#" class="btn btn-primary">
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                            data-bs-target="#addMemberModal">
                                         <i class="bi bi-plus-circle me-1"></i>Add Team Member
-                                    </a>
+                                    </button>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -275,4 +286,149 @@
             </div>
         {% endif %}
     </div>
+
+    <!-- Add Team Member Modal -->
+    {% if employer_profile.is_admin %}
+        <div class="modal fade" id="addMemberModal" tabindex="-1" aria-labelledby="addMemberModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header invite-modal-header">
+                        <h5 class="modal-title" id="addMemberModalLabel">
+                            <i class="bi bi-person-plus me-2"></i>Invite Team Member
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="modal-body">
+                        <div class="text-center mb-4">
+                            <div class="invite-icon-container">
+                                <i class="bi bi-envelope-plus text-white" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h3 class="h4">Invite to Your Team</h3>
+                            <p class="text-muted">Add a new member to your company account</p>
+                        </div>
+
+                        <form id="inviteMemberForm">
+                            <div class="mb-4">
+                                <label for="fullName" class="form-label fw-medium">
+                                    <i class="bi bi-person me-1"></i>Full Name
+                                </label>
+                                <input type="text" class="form-control form-control-lg"
+                                       id="fullName" name="full_name"
+                                       placeholder="Enter team member's full name" required>
+                                <div class="form-text">As it should appear on their profile</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="emailAddress" class="form-label fw-medium">
+                                    <i class="bi bi-envelope me-1"></i>Work Email Address
+                                </label>
+                                <input type="email" class="form-control form-control-lg"
+                                       id="emailAddress" name="email"
+                                       placeholder="team.member@company.com" required>
+                                <div class="form-text">They'll receive an invitation at this address</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-medium">
+                                    <i class="bi bi-person-badge me-1"></i>Role
+                                </label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check flex-grow-1">
+                                        <input class="form-check-input" type="radio" name="role" id="roleTeamMember"
+                                               value="team_member" checked>
+                                        <label class="form-check-label" for="roleTeamMember">
+                                            <span class="d-block fw-medium">Team Member</span>
+                                            <span class="small text-muted">Can view and manage job postings</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check flex-grow-1">
+                                        <input class="form-check-input" type="radio" name="role" id="roleAdmin"
+                                               value="admin">
+                                        <label class="form-check-label" for="roleAdmin">
+                                            <span class="d-block fw-medium">Administrator</span>
+                                            <span class="small text-muted">Full access to all company settings</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="sendWelcomeEmail" checked>
+                                <label class="form-check-label" for="sendWelcomeEmail">
+                                    Send welcome email with setup instructions
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-1"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="sendInvitationBtn">
+                            <i class="bi bi-send me-1"></i>Send Invitation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Send invitation button handler
+            const sendInvitationBtn = document.getElementById('sendInvitationBtn');
+            if (sendInvitationBtn) {
+                sendInvitationBtn.addEventListener('click', function () {
+                    const form = document.getElementById('inviteMemberForm');
+                    const fullName = document.getElementById('fullName').value.trim();
+                    const email = document.getElementById('emailAddress').value.trim();
+
+                    // Simple validation
+                    if (!fullName || !email) {
+                        alert('Please enter both name and email address');
+                        return;
+                    }
+
+                    // Email format validation
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        alert('Please enter a valid email address');
+                        return;
+                    }
+
+                    // Show loading state
+                    const originalText = sendInvitationBtn.innerHTML;
+                    sendInvitationBtn.innerHTML = '<i class="bi bi-arrow-repeat me-1 fa-spin"></i>Sending...';
+                    sendInvitationBtn.disabled = true;
+
+                    // Simulate API call (in real app this would be an AJAX request)
+                    setTimeout(function () {
+                        // Reset button state
+                        sendInvitationBtn.innerHTML = originalText;
+                        sendInvitationBtn.disabled = false;
+
+                        // Show success message
+                        alert(`Invitation sent to ${fullName} at ${email}`);
+
+                        // Close modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('addMemberModal'));
+                        modal.hide();
+
+                        // Clear form
+                        form.reset();
+                    }, 1500);
+                });
+            }
+        });
+    </script>
 {% endblock %}
