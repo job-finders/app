@@ -1,12 +1,12 @@
 import uuid
 from datetime import timezone
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, JSON, Text
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, JSON, Text, inspect
 from sqlalchemy.orm import relationship
 
 from src.database.constants import NAME_LEN
 from src.database.constants import utc_time
-from src.database.sql import Base  # Assuming your Base declarative is here
+from src.database.sql import Base, engine  # Assuming your Base declarative is here
 
 
 class EmployerORM(Base):
@@ -55,6 +55,18 @@ class EmployerORM(Base):
     company = relationship("CompanyORM", back_populates="employers")
     saved_candidates = relationship("SavedCandidatesORM", back_populates="saved_by_employer")
 
+    invitations = relationship("EmployerInvitationORM", back_populates="employer")
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    # noinspection PyUnresolvedReferences
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
 
     def to_dict(self, include_relationships: bool =False) -> dict:
         return {
@@ -95,5 +107,43 @@ class EmployerORM(Base):
 
             # Include nested company data & saved_candidates if loaded
             "company": self.company.to_dict(include_relationships=False) if self.company and include_relationships else None,
-            "saved_candidates": [candidate.to_dict(include_relationships=False) for candidate in self.saved_candidates] if include_relationships else []
+            "saved_candidates": [candidate.to_dict(include_relationships=False) for candidate in
+                                 self.saved_candidates] if include_relationships else [],
+            "invitations": [invitation.to_dict() for invitation in self.invitations] if include_relationships else []
+
+        }
+
+
+class EmployerInvitationORM(Base):
+    __tablename__ = "employer_invitations"
+
+    invitation_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), unique=True, index=True)
+    employer_id = Column(String(36), ForeignKey('employers.employer_id'), nullable=False, index=True)
+    email = Column(String(255), nullable=False, index=True)
+    token = Column(String(255), nullable=False, unique=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_time)
+
+    employer = relationship("EmployerORM", back_populates="invitations")
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    # noinspection PyUnresolvedReferences
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self) -> dict:
+        return {
+            "invitation_id": self.invitation_id,
+            "employer_id": self.employer_id,
+            "email": self.email,
+            "token": self.token,
+            "expires_at": self.expires_at.replace(tzinfo=timezone.utc) if self.expires_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc) if self.created_at else None,
+            "employer": self.employer.to_dict(include_relationships=False) if self.employer else None
         }

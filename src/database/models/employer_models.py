@@ -137,3 +137,14 @@ class Employer(BaseModel):
     def update_timestamp(self):
         """Update the 'updated_at' timestamp"""
         self.updated_at = utc_time()
+
+
+class EmployerInvitation(BaseModel):
+    """
+        Represents an invitation sent to an employer to join a company
+    """
+    invitation_id: str = Field(default_factory=lambda: str(uuid4()))
+    employer_id: str = Field(..., description="Employer being invited")
+    token: str = Field(..., max_length=255, description="Unique invitation token")
+    created_at: AwareDatetime = Field(default_factory=utc_time)
+    expires_at: AwareDatetime = Field(description="Token expiration time")
