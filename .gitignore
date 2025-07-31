@@ -10,6 +10,7 @@ __pycache__/
 *.pkl
 /media/
 /media
+/static/uploads/
 
 # Distribution / packaging
 .Python
@@ -170,3 +171,7 @@ jobs_cache.sqlite
 .idea/jsLibraryMappings.xml
 static/3554e950877947b59633174a3c18e6b3.txtZone.Identifier
 static/images/banner.pngZone.Identifier
+/src/main/static/uploads/MJ_API_Development_Pty_LTD/Lease_Agreement_Business_premises/verification_e0de8563-1988-49d5-b3a3-fef139718cab_16d4973c-8879-4581-bbb1-1f6628051f3b.pdf
+/src/main/static/uploads/MJ_API_Development_Pty_LTD/Lease_Agreement_Business_premises/verification_e0de8563-1988-49d5-b3a3-fef139718cab_368baa55-027d-4d4c-ab4c-b607e676016c.pdf
+/static/uploads/mj_api_development_pty_ltd/cipc_cert/verification_e0de8563-1988-49d5-b3a3-fef139718cab_329703ff-999d-4a23-89ce-6cb798cf009c.pdf
+/src/main/static/uploads/MJ_API_Development_Pty_LTD/SARS_Tax_Compliance_Status_PIN/verification_e0de8563-1988-49d5-b3a3-fef139718cab_a35b5ffb-cf31-4189-b416-e55f410c4ef4.pdf
