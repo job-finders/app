@@ -1,6 +1,8 @@
 
 from src.database import *
 from src.database.sql import Base, engine
+
+
 def boot():
     try:
         # InvoiceORM.delete_table()

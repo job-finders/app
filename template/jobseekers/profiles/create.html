@@ -412,7 +412,7 @@
             <form method="POST" class="needs-validation" novalidate enctype="multipart/form-data">
                 <!-- Personal Information -->
                 <div class="card profile-card mb-4">
-                    <div class="card-header d-flex align-items-center" data-bs-toggle="collapse" href="#personalInfo">
+                    <div class="card-header d-flex align-items-center" data-toggle="collapse" href="#personalInfo">
                         <div class="section-icon">
                             <i class="ti ti-user"></i>
                         </div>
@@ -518,7 +518,7 @@
 
                 <!-- Contact & Social -->
                 <div class="card profile-card mb-4">
-                    <div class="card-header d-flex align-items-center" data-bs-toggle="collapse" href="#socialInfo">
+                    <div class="card-header d-flex align-items-center" data-toggle="collapse" href="#socialInfo">
                         <div class="section-icon">
                             <i class="ti ti-link"></i>
                         </div>
@@ -579,7 +579,7 @@
 
                 <!-- Job Preferences -->
                 <div class="card profile-card mb-4">
-                    <div class="card-header d-flex align-items-center" data-bs-toggle="collapse" href="#jobPreferences">
+                    <div class="card-header d-flex align-items-center" data-toggle="collapse" href="#jobPreferences">
                         <div class="section-icon">
                             <i class="ti ti-briefcase"></i>
                         </div>
@@ -681,9 +681,9 @@
                 </div>
 
                 <!-- Freelance Work -->
+                <!-- Freelance Work -->
                 <div class="card profile-card mb-4">
-                    <div class="card-header d-flex align-items-center" data-bs-toggle="collapse"
-                         href="#freelanceSection">
+                    <div class="card-header d-flex align-items-center" data-toggle="collapse" href="#freelanceSection">
                         <div class="section-icon">
                             <i class="ti ti-rocket"></i>
                         </div>
@@ -758,7 +758,7 @@
 
                 <!-- Privacy & Preferences -->
                 <div class="card profile-card mb-4">
-                    <div class="card-header d-flex align-items-center" data-bs-toggle="collapse"
+                    <div class="card-header d-flex align-items-center" data-toggle="collapse"
                          href="#privacySettings">
                         <div class="section-icon">
                             <i class="ti ti-settings"></i>
@@ -919,8 +919,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const freelanceSection = document.getElementById('freelanceFields');
     if (freelanceToggle) {
         freelanceToggle.addEventListener('change', () => {
+            console.log('Freelance toggle state:', freelanceToggle.checked);
+            console.log('Freelance section display:', freelanceSection.style.display);
             freelanceSection.style.display = freelanceToggle.checked ? 'block' : 'none';
         });
+
     }
 
     const profileImageInput = document.getElementById('profile_image');

@@ -13,46 +13,123 @@ from src.utils.route_helpers import get_controller, get_service
 jobseeker_profiles_bp = Blueprint("jobseeker_profiles", __name__, url_prefix="/jobseeker/profile")
 jobseeker_logger = get_service("logger")()("JobSeekerProfileRouter")
 
+
 def parse_profile_form(form_data, user_uid):
     # Parse job titles
     job_titles = form_data.getlist("job_titles_of_interest")
-    if 'other' in job_titles:
-        job_titles.remove('other')
-        custom_job_title = form_data.get("custom_job_title", "").strip()
-        if custom_job_title:
-            job_titles.append(custom_job_title)
 
     # Parse industries
     industries = form_data.getlist("industries_of_interest")
-    if 'other' in industries:
-        industries.remove('other')
-        custom_industry = form_data.get("custom_industry", "").strip()
-        if custom_industry:
-            industries.append(custom_industry)
+
+    # Parse locations
+    locations = form_data.getlist("locations_of_interest")
+
+    # Parse freelance skills
+    freelance_skills = form_data.get("freelance_skills", "").strip()
+    freelance_skills = [skill.strip() for skill in freelance_skills.split(",") if skill.strip()]
+
+    # Parse profile image
+    profile_image = request.files.get("profile_image")
+    profile_image_url = None
+    if profile_image:
+        # Save the image and generate a URL (this part depends on your storage solution)
+        profile_image_url = save_profile_image(profile_image)
+
+    # Parse URLs
+    website = form_data.get("website", "").strip()
+    linkedin = form_data.get("linkedin", "").strip()
+    github = form_data.get("github", "").strip()
+
+    # Validate URLs
+    if website and not is_valid_url(website):
+        raise ValueError("Invalid website URL")
+    if linkedin and not is_valid_url(linkedin):
+        raise ValueError("Invalid LinkedIn URL")
+    if github and not is_valid_url(github):
+        raise ValueError("Invalid GitHub URL")
+
+    # Parse other fields
+    first_name = form_data.get("first_name")
+    last_name = form_data.get("last_name")
+    email = form_data.get("email")
+    bio = form_data.get("bio")
+    location = form_data.get("location")
+    phone = form_data.get("phone")
+    remote_preference = bool(form_data.get("remote_preference"))
+    availability = form_data.get("availability")
+    is_freelancer = bool(form_data.get("is_freelancer"))
+    hourly_rate = form_data.get("hourly_rate", "").strip()
+    freelance_experience = form_data.get("freelance_experience")
+    freelance_availability = form_data.get("freelance_availability")
+    visibility = bool(form_data.get("visibility"))
+
+    # Validate required fields
+    if not first_name:
+        raise ValueError("First name is required")
+    if not last_name:
+        raise ValueError("Last name is required")
+    if not email:
+        raise ValueError("Email is required")
+
+    # Validate hourly_rate
+    if hourly_rate and not is_valid_number(hourly_rate):
+        raise ValueError("Hourly rate must be a valid number")
 
     # Return parsed data in a dictionary format
     return {
         "user_uid": user_uid,
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
         "job_titles_of_interest": job_titles,
         "industries_of_interest": industries,
-        "locations_of_interest": form_data.getlist("locations_of_interest"),
-        "bio": form_data.get("bio"),
-        "profile_image_url": form_data.get("profile_image_url"),
-        "location": form_data.get("location"),
-        "phone": form_data.get("phone"),
-        "website": form_data.get("website"),
-        "linkedin": form_data.get("linkedin"),
-        "github": form_data.get("github"),
-        "remote_preference": bool(form_data.get("remote_preference")),
-        "availability": form_data.get("availability"),
-        "is_freelancer": bool(form_data.get("is_freelancer")),
-        "freelance_skills": form_data.getlist("freelance_skills"),
-        "hourly_rate": form_data.get("hourly_rate"),
-        "freelance_experience": form_data.get("freelance_experience"),
-        "freelance_availability": form_data.get("freelance_availability"),
-        "visibility": bool(form_data.get("visibility")),
+        "locations_of_interest": locations,
+        "bio": bio,
+        "profile_image_url": profile_image_url,
+        "location": location,
+        "phone": phone,
+        "website": website,
+        "linkedin": linkedin,
+        "github": github,
+        "remote_preference": remote_preference,
+        "availability": availability,
+        "is_freelancer": is_freelancer,
+        "freelance_skills": freelance_skills,
+        "hourly_rate": float(hourly_rate) if hourly_rate else None,
+        "freelance_experience": freelance_experience,
+        "freelance_availability": freelance_availability,
+        "visibility": visibility,
     }
 
+
+def save_profile_image(image_file):
+    # Implement your image saving logic here
+    # For example, using Flask-Uploads or saving to a cloud storage service
+    # Return the URL of the saved image
+    pass
+
+
+def is_valid_url(url):
+    # Implement your URL validation logic here
+    # For example, using a regex to check the URL format
+    import re
+    url_pattern = re.compile(r'^https?://[^\s]+$')
+    return bool(url_pattern.match(url))
+
+
+def is_valid_number(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+
+def save_profile_image(image_file):
+    # Implement your image saving logic here
+    # For example, using Flask-Uploads or saving to a cloud storage service
+    # Return the URL of the saved image
+    pass
 
 @jobseeker_profiles_bp.route("/create", methods=["GET", "POST"])
 @flask_error_handler
@@ -96,6 +173,8 @@ async def create_profile(user: User):
                 errors=e.errors(),
                 form_data=request.form
             )
+            jobseeker_logger.error(f"Validation error while creating profile: {e.errors()}")
+
             return render_template("jobseekers/profiles/create.html", **context)
 
     # Handle GET request and render the form
