@@ -133,7 +133,7 @@ class JobSeekerCV(BaseModel):
 
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
     # noinspection PyTypeHints,PyUnresolvedReferences
-    jobseeker_profile: Optional[list['JobSeekerProfile']] = Field(default_factory=list)
+    jobseeker_profile: Optional['JobSeekerProfile'] = Field(default=None)
 
     # noinspection PyMethodParameters
     @field_validator('professional_title')

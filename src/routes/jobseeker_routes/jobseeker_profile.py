@@ -23,11 +23,11 @@ def parse_profile_form(form_data, user_uid):
 
     # Parse locations
     locations = form_data.getlist("locations_of_interest")
-
+    jobseeker_logger.info(f"Parsed job titles: {job_titles}, industries: {industries}, locations: {locations}")
     # Parse freelance skills
     freelance_skills = form_data.get("freelance_skills", "").strip()
     freelance_skills = [skill.strip() for skill in freelance_skills.split(",") if skill.strip()]
-
+    jobseeker_logger.info(f"Parsed freelance skills: {freelance_skills}")
     # Parse profile image
     profile_image = request.files.get("profile_image")
     profile_image_url = None

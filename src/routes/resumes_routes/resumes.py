@@ -14,6 +14,7 @@ from flask import (
 )
 from pydantic import ValidationError
 
+from src.controllers.resumes import ResumeController
 # Authentication
 from src.authentication import jobseeker_login
 
@@ -124,6 +125,11 @@ def lenient_cv_parse(user_uid: str, data: dict) -> JobSeekerCV:
                        certifications=[Certification(**c) for c in data.get('certifications', [])], )
 
 # Add to your routes
+def _parse_ats_form_data(form, files):
+    pass
+
+
+
 @resume_routes.route("/api/ats-check", methods=["POST"])
 @flask_error_handler
 @jobseeker_login
@@ -292,7 +298,7 @@ async def upload_cv(user: User):
 @flask_error_handler
 @jobseeker_login
 async def view_cv(user: User, cv_id: str):
-    resume_controller = get_controller("resume")
+    resume_controller: ResumeController = get_controller("resume")
     cv = await resume_controller.get_cv_by_id(cv_id)
     ats_report = await _get_ats_report(cv=cv)
     context = dict(current_user=user, cv=cv, ats_report=ats_report)

@@ -27,48 +27,53 @@ class JobSeekerProfile(BaseModel):
     first_name: str
     last_name: str
     email: str
-    bio: Optional[str] = None
-    profile_image_url: Optional[HttpUrl] = None
+    bio: Optional[str] = Field(default=None)
+    profile_image_url: Optional[HttpUrl] = Field(default=None)
 
-    # --- Verification ---
-    verified_email: bool = False
-    verified_phone: bool = False
-    verified_linkedin: bool = False
-    verified_github: bool = False
-
-    # --- Contact & Location ---
-    phone: Optional[str] = None
-    location: Optional[str] = None
-    website: Optional[HttpUrl] = None
-    linkedin: Optional[HttpUrl] = None
-    github: Optional[HttpUrl] = None
-
-    # --- Preferences ---
-    job_titles_of_interest: Optional[List[str]] = []
-    industries_of_interest: Optional[List[str]] = []
-    locations_of_interest: Optional[List[str]] = []
-    remote_preference: Optional[bool] = False
-    availability: Optional[str] = None
-
-    # --- Freelance ---
-    is_freelancer: bool = False
-    freelance_skills: Optional[List[str]] = Field(default_factory=list)
-    hourly_rate: Optional[float] = None
-    freelance_experience: Optional[str] = None
-    freelance_availability: Optional[str] = None
+    has_disability: bool = Field(default=False)
 
     # --- Settings ---
-    alerts_enabled: bool = True
-    receive_deadline_reminders: bool = True
-    reminder_days_before: int = 7
-    last_reminded_at: Optional[AwareDatetime] = None
-    receive_company_updates: bool = True
-    visibility: bool = True
+    alerts_enabled: bool = Field(default=True)
+    receive_deadline_reminders: bool = Field(default=True)
+    reminder_days_before: int = Field(default=7)
+    last_reminded_at: Optional[AwareDatetime] = Field(default=None)
+    receive_company_updates: bool = Field(default=True)
+    visibility: bool = Field(default=True)
     last_updated: AwareDatetime = Field(default_factory=utc_time)
 
+
+    # --- Verification ---
+    verified_email: bool = Field(default=False)
+    verified_phone: bool = Field(default=False)
+    verified_linkedin: bool = Field(default=False)
+    verified_github: bool = Field(default=False)
+
+    # --- Contact & Location ---
+    location: Optional[str] = Field(default=None)
+    phone: Optional[str] = Field(default=None)
+    website: Optional[HttpUrl] = Field(default=None)
+    linkedin: Optional[HttpUrl] = Field(default=None)
+    github: Optional[HttpUrl] = Field(default=None)
+
+    # --- Preferences ---
+    job_titles_of_interest: Optional[List[str]] = Field(default_factory=list)
+    industries_of_interest: Optional[List[str]] = Field(default_factory=list)
+    locations_of_interest: Optional[List[str]] = Field(default_factory=list)
+    remote_preference: Optional[bool] = Field(default=False)
+    availability: Optional[str] = Field(default=None)
+    expected_salary: Optional[int] = Field(default=None)
+
+    # --- Freelance ---
+    is_freelancer: bool = Field(default=False)
+    freelance_skills: Optional[List[str]] = Field(default_factory=list)
+    hourly_rate: Optional[float] = Field(default=None)  # Ensure this can be None
+    freelance_experience: Optional[str] = Field(default=None)
+    freelance_availability: Optional[str] = Field(default=None)
+
+
     # --- Meta ---
-    ip_address: Optional[str] = None
-    device_finger_print: Optional[str] = None
+    ip_address: Optional[str] = Field(default=None)
+    device_finger_print: Optional[str] = Field(default=None)
 
     # --- Related Models ---
     applications: Optional[List['JobApplication']] = Field(default_factory=list)
@@ -78,7 +83,6 @@ class JobSeekerProfile(BaseModel):
     saved_jobs: Optional[List['SavedJob']] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
-
 
     # --- Validators ---
     @field_validator("job_titles_of_interest", "industries_of_interest", "locations_of_interest", "freelance_skills", mode="before")

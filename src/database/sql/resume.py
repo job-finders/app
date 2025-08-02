@@ -50,7 +50,7 @@ class JobSeekerCVORM(Base):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-    def to_dict(self, include_relationship: bool = False) -> dict:
+    def to_dict(self, include_relationships: bool = False) -> dict:
         return {
             "cv_id": self.cv_id,
             "user_uid": self.user_uid,
@@ -67,16 +67,20 @@ class JobSeekerCVORM(Base):
             "linkedin": self.linkedin,
             "github": self.github,
             "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
-            "experience": [exp.to_dict() for exp in self.experience] if include_relationship and self.experience else [],
-            "education": [edu.to_dict() for edu in self.education] if include_relationship and self.education else [],
-            "certifications": [cert.to_dict() for cert in self.certifications] if include_relationship and self.certifications else [],
-            "languages": [lang.to_dict() for lang in self.languages] if include_relationship and self.languages else [],
-            "projects": [proj.to_dict() for proj in self.projects] if include_relationship and self.projects else [],
-            "publications": [pub.to_dict() for pub in self.publications] if include_relationship and self.publications else [],
-            "awards": [award.to_dict() for award in self.awards] if include_relationship and self.awards else [],
-            "custom_sections": [cust.to_dict() for cust in self.custom_sections] if include_relationship and self.custom_sections else [],
-            "jobseeker_profile": [prof.to_dict() for prof in
-                                  self.jobseeker_profile] if include_relationship and self.jobseeker_profile else []
+            "experience": [exp.to_dict() for exp in
+                           self.experience] if include_relationships and self.experience else [],
+            "education": [edu.to_dict() for edu in self.education] if include_relationships and self.education else [],
+            "certifications": [cert.to_dict() for cert in
+                               self.certifications] if include_relationships and self.certifications else [],
+            "languages": [lang.to_dict() for lang in
+                          self.languages] if include_relationships and self.languages else [],
+            "projects": [proj.to_dict() for proj in self.projects] if include_relationships and self.projects else [],
+            "publications": [pub.to_dict() for pub in
+                             self.publications] if include_relationships and self.publications else [],
+            "awards": [award.to_dict() for award in self.awards] if include_relationships and self.awards else [],
+            "custom_sections": [cust.to_dict() for cust in
+                                self.custom_sections] if include_relationships and self.custom_sections else [],
+            "jobseeker_profile": self.jobseeker_profile.to_dict() if include_relationships and self.jobseeker_profile else None
         }
 
 class ExperienceORM(Base):

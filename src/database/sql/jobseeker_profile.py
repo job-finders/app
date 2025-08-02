@@ -1,4 +1,4 @@
-from datetime import timezone
+from datetime import timezone, datetime
 
 from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, inspect, Integer, JSON
 from sqlalchemy.orm import relationship
@@ -12,18 +12,28 @@ class JobSeekerProfileORM(Base):
 
     user_uid = Column(String(ID_LEN), ForeignKey("users.uid"), primary_key=True)
     email = Column(String(NAME_LEN), index=True)
-    alerts_enabled = Column(Boolean, default=False)
-    receive_deadline_reminders = Column(Boolean, default=True)
-    reminder_days_before = Column(Integer, default=3)  # Days before deadline to remind
-    last_reminded_at = Column(DateTime(timezone=True))  # Track last reminder time
-    receive_company_updates = Column(Boolean, default=True)
-
     first_name = Column(String(NAME_LEN))
     last_name = Column(String(NAME_LEN))
     gender = Column(String(24), nullable=True)
-    has_disability = Column(Boolean, default=False)
     bio = Column(Text, nullable=True)
     profile_image_url = Column(String(NAME_LEN), nullable=True)
+
+    has_disability = Column(Boolean, default=False)
+
+    alerts_enabled = Column(Boolean, default=False)
+    receive_deadline_reminders = Column(Boolean, default=True)
+    reminder_days_before = Column(Integer, default=7)  # Days before deadline to remind
+    last_reminded_at = Column(DateTime(timezone=True))  # Track last reminder time
+    receive_company_updates = Column(Boolean, default=True)
+    visibility = Column(Boolean, default=True)
+    last_updated = Column(DateTime, default=utc_time())
+
+    # --- Verification ---
+    verified_email = Column(Boolean, default=False)
+    verified_phone = Column(Boolean, default=False)
+    verified_linkedin = Column(Boolean, default=False)
+    verified_github = Column(Boolean, default=False)
+
     location = Column(String(NAME_LEN), nullable=True)
     phone = Column(String(36), nullable=True)
     website = Column(String(NAME_LEN), nullable=True)
@@ -39,14 +49,12 @@ class JobSeekerProfileORM(Base):
 
     is_freelancer = Column(Boolean, default=False)  # Added missing field
     freelance_skills = Column(JSON, default=[])  # Added missing field
-    hourly_rate = Column(Integer, nullable=True)  # Added missing field
+    hourly_rate = Column(Integer, nullable=True)  # Ensure this can be NULL
     freelance_experience = Column(Text, nullable=True)  # Added missing field
     freelance_availability = Column(String(NAME_LEN), nullable=True)  # Added missing field
 
-    visibility = Column(Boolean, default=True)
-    profile_completion = Column(String(NAME_LEN), default="0")  # or Integer if more appropriate
-    last_updated = Column(DateTime, default=utc_time)
-
+    ip_address = Column(String(NAME_LEN), nullable=True)
+    device_finger_print = Column(String(NAME_LEN), nullable=True)  # For device tracking
     # Relationships
     applications = relationship("JobApplicationORM", back_populates="jobseeker_profile")
     interested_companies = relationship("SavedCandidatesORM", back_populates="candidate")
@@ -64,43 +72,55 @@ class JobSeekerProfileORM(Base):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-    def to_dict(self, include_relationship: bool = False):
-        return {
-            "user_uid": self.user_uid,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "bio": self.bio,
-            "gender": self.gender,
-            "has_disability": self.has_disability,
-            "email": self.email,
-            "receive_deadline_reminders": self.receive_deadline_reminders,
-            "reminder_days_before": self.reminder_days_before,
-            "last_reminded_at": self.last_reminded_at.replace(tzinfo=timezone.utc).isoformat() if self.last_reminded_at else None,
-            "alerts_enabled": self.alerts_enabled,
-            "receive_company_updates": self.receive_company_updates,
-            "profile_image_url": self.profile_image_url,
-            "location": self.location,
-            "phone": self.phone,
-            "website": self.website,
-            "linkedin": self.linkedin,
-            "github": self.github,
-            "job_titles_of_interest": self.job_titles_of_interest,
-            "industries_of_interest": self.industries_of_interest,
-            "locations_of_interest": self.locations_of_interest,
-            "remote_preference": self.remote_preference,
-            "expected_salary": self.expected_salary,
-            "availability": self.availability,
-            "is_freelancer": self.is_freelancer,  # Added missing field
-            "freelance_skills": self.freelance_skills,  # Added missing field
-            "hourly_rate": self.hourly_rate,  # Added missing field
-            "freelance_experience": self.freelance_experience,  # Added missing field
-            "freelance_availability": self.freelance_availability,  # Added missing field
-            "visibility": self.visibility,
-            "profile_completion": int(self.profile_completion),
-            "last_updated": self.last_updated.replace(tzinfo=timezone.utc).isoformat() if self.last_updated else None,
-            "applications": [application.to_dict() for application in self.applications] if include_relationship else [],
-            "interested_companies": [company.to_dict() for company in self.interested_companies] if include_relationship and self.interested_companies else [],
-            "following_companies": [company_follow.to_dict() for company_follow in
-                                    self.following_companies] if include_relationship and self.following_companies else [],
-            "saved_jobs": [job.to_dict() for job in self.saved_jobs] if include_relationship and self.saved_jobs else [],
+    def to_dict(self, include_relationships: bool = False):
+        def _format_datetime(dt):
+            return dt.replace(tzinfo=timezone.utc).isoformat() if dt else None
+
+        data = {
+            'user_uid': self.user_uid,
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'gender': self.gender,
+            'bio': self.bio,
+            'profile_image_url': self.profile_image_url,
+            'has_disability': self.has_disability if self.has_disability is not None else False,
+            'alerts_enabled': self.alerts_enabled if self.alerts_enabled is not None else True,
+            'receive_deadline_reminders': self.receive_deadline_reminders if self.receive_deadline_reminders is not None else True,
+            'reminder_days_before': self.reminder_days_before if self.reminder_days_before is not None else 7,
+            'last_reminded_at': _format_datetime(self.last_reminded_at),
+            'receive_company_updates': self.receive_company_updates if bool(self.receive_company_updates) else True,
+            'visibility': self.visibility if bool(self.visibility) else True,
+            'last_updated': _format_datetime(self.last_updated),
+            'verified_email': self.verified_email if bool(self.verified_email) else False,
+            'verified_phone': self.verified_phone if bool(self.verified_phone) else False,
+            'verified_linkedin': self.verified_linkedin if bool(self.verified_linkedin) else False,
+            'verified_github': self.verified_github if bool(self.verified_github) else False,
+            'location': self.location,
+            'phone': self.phone,
+            'website': self.website,
+            'linkedin': self.linkedin,
+            'github': self.github,
+            'job_titles_of_interest': self.job_titles_of_interest,
+            'industries_of_interest': self.industries_of_interest,
+            'locations_of_interest': self.locations_of_interest,
+            'remote_preference': self.remote_preference,
+            'availability': self.availability,
+            'expected_salary': self.expected_salary,
+            'is_freelancer': self.is_freelancer,
+            'freelance_skills': self.freelance_skills,
+            'hourly_rate': self.hourly_rate,
+            'freelance_experience': self.freelance_experience,
+            'freelance_availability': self.freelance_availability,
+            'ip_address': self.ip_address,
+            'device_finger_print': self.device_finger_print
         }
+
+        if include_relationships:
+            data['applications'] = [application.to_dict() for application in self.applications]
+            data['interested_companies'] = [company.to_dict() for company in self.interested_companies]
+            data['following_companies'] = [company_follow.to_dict() for company_follow in self.following_companies]
+            data['resumes_list'] = [resume.to_dict() for resume in self.resumes_list]
+            data['saved_jobs'] = [job.to_dict() for job in self.saved_jobs]
+
+        return data

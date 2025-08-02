@@ -113,7 +113,7 @@ class ResumeController(Controllers):
             return None
 
         with self.get_session() as session:
-            cv_orm = (
+            cv_orm: JobSeekerCVORM = (
                 session.query(JobSeekerCVORM)
                 .options(
                     joinedload(JobSeekerCVORM.experience),
@@ -128,6 +128,8 @@ class ResumeController(Controllers):
 
             if not cv_orm:
                 return None
+
+            self.logger.info(f"Retrieved CV ORM: {cv_orm}")
 
             return JobSeekerCV(**cv_orm.to_dict(include_relationships=True))
 

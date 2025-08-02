@@ -39,7 +39,7 @@ class JobSeekerProfilesController(Controllers):
     def init_app(self, app: Flask):
         super().init_app(app=app)
 
-    @error_handler
+
     async def create_profile(self, profile_data: JobSeekerProfile) -> JobSeekerProfile | None:
         """Create a new JobSeekerProfile."""
         if not isinstance(profile_data,JobSeekerProfile):
@@ -56,11 +56,17 @@ class JobSeekerProfilesController(Controllers):
                 raise ValueError("Profile already exists for this user")
 
             # Merge Pydantic → ORM fields (lists become JSON arrays)
-            data = profile_data.model_dump(exclude_unset=True)
+            # exclude fields that are not needed in the ORM model
+            exclude_fields = {'applications', 'interested_companies', 'following_companies', 'resumes_list',
+                              'saved_jobs'}
+
+            data = profile_data.model_dump(exclude_unset=True, exclude=exclude_fields)
+            self.logger.info(f"Creating profile for user_uid: {data.get('user_uid', 'unknown')}")
             profile_orm = JobSeekerProfileORM(
                 **data,
                 last_updated=datetime.now(timezone.utc))
             session.add(profile_orm)
+            self.logger.info(f"Profile created for user_uid: {profile_orm.user_uid}")
             # on commit, session context manager will flush & commit
             return JobSeekerProfile(**profile_orm.to_dict()) if profile_data else None
 
