@@ -53,9 +53,10 @@ def _parse_date(date_str: str) -> date:
     return datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else None
 
 
-def _parse_cv_form_data(form_data, files):
+def _parse_cv_form_data(form_data, files, user_uid):
     """Enhanced form parser with all CV sections"""
     structured_data = {
+        'user_uid': user_uid,  # Include user_uid in the structured data
         'professional_title': form_data.get('professional_title'),
         'summary': form_data.get('summary'),
         'location': form_data.get('location'),
@@ -112,33 +113,6 @@ def _parse_cv_form_data(form_data, files):
             index += 1
 
     return structured_data
-
-
-
-# Helper functions
-def _parse_ats_form_data(form_data, files) -> dict:
-    """Lenient form parser for partial CV data"""
-    parsed = {
-        'professional_title': form_data.get('professional_title', 'Draft CV'),
-        'summary': form_data.get('summary', ''),
-        'skills': [s.strip() for s in form_data.get('skills', '').split(',') if s.strip()],
-        # Add other fields with empty defaults
-    }
-
-    # Process sections with empty defaults
-    for section in ['experience', 'education', 'certifications']:
-        parsed[section] = []
-        index = 0
-        while True:
-            prefix = f"{section}[{index}]"
-            if not form_data.get(f"{prefix}[title]"):
-                break
-            parsed[section].append({
-                field: form_data.get(f"{prefix}[{field}]", "")
-                for field in ['title', 'company', 'start_date', 'description']
-            })
-            index += 1
-    return parsed
 
 
 def lenient_cv_parse(user_uid: str, data: dict) -> JobSeekerCV:
@@ -289,18 +263,18 @@ def _format_pydantic_error(e: ValidationError) -> str:
 @flask_error_handler
 @jobseeker_login
 async def upload_cv(user: User):
-
     if request.method == "POST":
         try:
             # Parse and validate form data
-            raw_data = _parse_cv_form_data(request.form, request.files)
+            raw_data = _parse_cv_form_data(request.form, request.files, user.uid)
             cv_data = JobSeekerCV(**raw_data)
 
             # Call controller
             resumes_controller = get_controller("resume")
             result = await resumes_controller.create_cv(
                 user_uid=user.uid,
-                data=cv_data)
+                data=cv_data
+            )
 
             flash("CV created successfully!", "success")
             return redirect(url_for("jobseeker_cv.view_cv", cv_id=result['cv_id']))
@@ -309,8 +283,10 @@ async def upload_cv(user: User):
             flash(f"Validation error: {str(e)}", "danger")
         except Exception as e:
             flash(f"Error creating CV: {str(e)}", "danger")
+
     context = dict(current_user=user)
     return render_template("jobseekers/upload_cv.html", **context)
+
 
 @resume_routes.route("/view/<string:cv_id>")
 @flask_error_handler

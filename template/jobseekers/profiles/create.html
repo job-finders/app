@@ -1,210 +1,822 @@
 {% extends "jobseekers/layout/page.html" %}
 
 {% block styles %}
+    <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-    .section-card {
-        margin-bottom: 1.5rem;
-        border-radius: 0.8rem;
+    :root {
+        --primary: #4361ee;
+        --primary-light: #eef0fd;
+        --secondary: #3f37c9;
+        --success: #4cc9f0;
+        --warning: #f8961e;
+        --light: #f8f9fa;
+        --dark: #212529;
+        --border: #e2e8f0;
     }
-    .section-header {
-        background-color: #f8f9fa;
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid #dee2e6;
-    }
-    .form-icon {
-        font-size: 1.2rem;
-        margin-right: 0.5rem;
-        color: #343a40; /* Changed from #6c757d to a darker gray */
-    }
-    .dynamic-section {
-        transition: all 0.3s ease;
-    }
-.form-icon.ti-brand-linkedin,
-.form-icon.ti-brand-github {
-    color: #0a66c2; /* LinkedIn blue */
-}
 
-.form-icon.ti-brand-github {
-    color: #24292e; /* GitHub dark gray */
-}
+    body {
+        background-color: #f5f9fc;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
+    .profile-card {
+        border-radius: 16px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+        background: white;
+    }
+
+    /* Page header */
+    .page-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+        padding: 2rem 0 1rem;
+    }
+
+    .page-header h1 {
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+        font-size: 2.2rem;
+    }
+
+    .page-header p {
+        color: #64748b;
+        max-width: 600px;
+        margin: 0 auto;
+        font-size: 1.1rem;
+    }
+
+    /* Progress bar */
+    .profile-completion {
+        background: var(--primary-light);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .progress-container {
+        position: relative;
+        height: 12px;
+        background: #e9ecef;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: 0.8rem;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        border-radius: 6px;
+        transition: width 0.5s ease;
+    }
+
+    /* Section headers */
+    .card-header {
+        background: white;
+        color: var(--dark);
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .card-header:hover {
+        background-color: var(--primary-light);
+    }
+
+    .card-header h5 {
+        font-weight: 600;
+        color: var(--dark);
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .section-icon {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+        color: var(--primary);
+        background: var(--primary-light);
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Form Elements */
+    .form-control, .form-select {
+        border-radius: 12px;
+        padding: 12px 16px;
+        border: 1px solid var(--border);
+        transition: all 0.3s;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.15);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border: none;
+        border-radius: 12px;
+        padding: 14px 32px;
+        font-weight: 600;
+        transition: all 0.3s;
+        font-size: 1.1rem;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(67, 97, 238, 0.25);
+    }
+
+    /* Floating labels */
+    .floating-label {
+        position: relative;
+        margin-bottom: 1.8rem;
+    }
+
+    .floating-label input, .floating-label textarea {
+        padding-top: 28px;
+        padding-bottom: 12px;
+    }
+
+    .floating-label label {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        font-size: 0.9rem;
+        color: #6c757d;
+        pointer-events: none;
+        transition: all 0.2s;
+    }
+
+    .floating-label input:focus ~ label,
+    .floating-label input:not(:placeholder-shown) ~ label,
+    .floating-label textarea:focus ~ label,
+    .floating-label textarea:not(:placeholder-shown) ~ label {
+        top: 8px;
+        font-size: 0.8rem;
+        color: var(--primary);
+    }
+
+    /* Profile image */
+    .profile-image-container {
+        position: relative;
+        width: 140px;
+        height: 140px;
+        margin: 0 auto 2rem;
+    }
+
+    .profile-image-preview {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--primary-light);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .profile-image-upload {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        background: var(--primary);
+        color: white;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 3px 8px rgba(67, 97, 238, 0.3);
+        transition: all 0.3s;
+    }
+
+    .profile-image-upload:hover {
+        transform: scale(1.1);
+    }
+
+    .verification-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: var(--success);
+        color: white;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Keyword Pill System */
+    .keyword-input-container {
+        position: relative;
+        margin-bottom: 1.8rem;
+    }
+
+    .keyword-input-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .keyword-input {
+        flex: 1;
+        border-radius: 12px;
+        padding: 12px 16px;
+        border: 1px solid #dee2e6;
+        transition: all 0.3s;
+        font-size: 1rem;
+    }
+
+    .keyword-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.15);
+        outline: none;
+    }
+
+    .add-keyword-btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0 22px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .add-keyword-btn:hover {
+        background: var(--secondary);
+        transform: translateY(-2px);
+    }
+
+    .pills-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        min-height: 46px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px dashed #dee2e6;
+        background: #f8fafc;
+    }
+
+    .keyword-pill {
+        background: #e0e7ff;
+        color: var(--primary);
+        padding: 8px 16px;
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .remove-pill {
+        background: none;
+        border: none;
+        color: var(--primary);
+        cursor: pointer;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        padding: 0;
+        transition: all 0.2s;
+    }
+
+    .remove-pill:hover {
+        color: #dc3545;
+        transform: scale(1.1);
+    }
+
+    .empty-state {
+        color: #94a3b8;
+        font-style: italic;
+        padding: 5px 10px;
+        align-self: center;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-hint {
+        font-size: 0.9rem;
+        color: #64748b;
+        margin-top: 8px;
+        padding: 0 12px;
+    }
+
+    /* Social icons */
+    .social-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary);
+        font-size: 1.3rem;
+        z-index: 2;
+    }
+
+    .social-input {
+        padding-left: 50px !important;
+    }
+
+    /* Toggle switches */
+    .form-check.form-switch {
+        padding-left: 3.5rem;
+    }
+
+    .form-check-input {
+        width: 3rem;
+        height: 1.5rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .keyword-input-group {
+            flex-direction: column;
+        }
+
+        .add-keyword-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .profile-image-container {
+            width: 120px;
+            height: 120px;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+    <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <h2 class="mb-4 text-center">Create Your Profile</h2>
-            <form method="POST" class="needs-validation" novalidate>
-                <!-- Personal Info Section -->
-                <div class="card section-card">
-                    <div class="section-header">
-                        <h5 class="mb-0"><i class="ti ti-user form-icon"></i>Personal Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control"
-                                       value="{{ current_user.first_name }} {{ current_user.last_name }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="phone" class="form-label">Phone Number</label>
-                                <input type="tel" name="phone" id="phone" class="form-control"
-                                       placeholder="+27 12 345 6789" required>
-                                <div class="invalid-feedback">Please enter a valid phone number</div>
-                            </div>
+        <div class="col-lg-10 col-xl-8">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>
+                    {% if profile %}Update Your Professional Profile{% else %}Create Your Professional
+                        Profile{% endif %}
+                </h1>
+                <p>Complete your profile to unlock job opportunities and connect with employers</p>
+            </div>
 
-                            <div class="col-md-6">
-                                <label for="location" class="form-label">Location</label>
-                                <input type="text" name="location" id="location" class="form-control"
-                                       placeholder="City, Country">
-                            </div>
-
-                            <div class="col-12">
-                                <label for="bio" class="form-label">Professional Bio</label>
-                                <textarea name="bio" id="bio" class="form-control" rows="3"
-                                          placeholder="Tell employers about yourself..." maxlength="500"></textarea>
-                            </div>
-                        </div>
+            <!-- Profile Completion -->
+            <div class="profile-completion">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="fw-bold">Profile Completion</span>
+                    <span id="completionPercentage">
+                        {% if profile %}{{ profile.profile_completion_percentage }}%{% else %}0%{% endif %}
+                    </span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="completionProgress"
+                         style="width:
+                                 {% if profile %}{{ profile.profile_completion_percentage }}%{% else %}0%{% endif %}">
                     </div>
                 </div>
+            </div>
 
-                <!-- Social Links Section -->
-                <div class="card section-card">
-                    <div class="section-header">
-                        <h5 class="mb-0"><i class="ti ti-link form-icon"></i>Online Presence</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label for="linkedin" class="form-label">
-                                    <i class="ti ti-brand-linkedin form-icon"></i>LinkedIn
-                                </label>
-                                <input type="url" name="linkedin" class="form-control"
-                                       placeholder="https://linkedin.com/in/...">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="github" class="form-label">
-                                    <i class="ti ti-brand-github form-icon"></i>GitHub
-                                </label>
-                                <input type="url" name="github" class="form-control"
-                                       placeholder="https://github.com/...">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="website" class="form-label">
-                                    <i class="ti ti-world form-icon"></i>Website
-                                </label>
-                                <input type="url" name="website" class="form-control"
-                                       placeholder="https://example.com">
-                            </div>
+            <form method="POST" class="needs-validation" novalidate enctype="multipart/form-data">
+                <!-- Personal Information -->
+                <div class="card profile-card mb-4">
+                    <div class="card-header d-flex align-items-center" data-bs-toggle="collapse" href="#personalInfo">
+                        <div class="section-icon">
+                            <i class="ti ti-user"></i>
                         </div>
+                        <h5 class="mb-0">Personal Information</h5>
                     </div>
-                </div>
-
-<!-- Job Preferences Section -->
-<div class="card section-card">
-    <div class="section-header">
-        <h5 class="mb-0"><i class="ti ti-briefcase form-icon"></i>Job Preferences</h5>
-    </div>
-    <div class="card-body">
-
-        <!-- Job Titles -->
-        <div class="mb-4">
-            <label for="job-title-select" class="form-label">Preferred Job Title</label>
-            <div class="input-group">
-                <select id="job-title-select" class="form-select">
-                    <option disabled selected>Select a job title</option>
-                    {% for title in job_titles %}
-                        <option value="{{ title.value }}">{{ title.value }}</option>
-                    {% endfor %}
-                    <option value="other">Other</option>
-                </select>
-                <button class="btn btn-outline-primary" type="button" id="add-job-title">Add</button>
-            </div>
-            <input type="text" id="custom-job-title" class="form-control mt-2 d-none"
-                   placeholder="Enter your preferred job title">
-            <ul class="list-group list-group-sm mt-3" id="job-title-list"></ul>
-        </div>
-
-        <!-- Industries -->
-        <div class="mb-4">
-            <label for="industry-select" class="form-label">Preferred Industry</label>
-            <div class="input-group">
-                <select id="industry-select" class="form-select">
-                    <option disabled selected>Select an industry</option>
-                    {% for industry in industries %}
-                        <option value="{{ industry.value }}">{{ industry.value }}</option>
-                    {% endfor %}
-                    <option value="other">Other</option>
-                </select>
-                <button class="btn btn-outline-primary" type="button" id="add-industry">Add</button>
-            </div>
-            <input type="text" id="custom-industry" class="form-control mt-2 d-none"
-                   placeholder="Enter your preferred industry">
-            <ul class="list-group list-group-sm mt-3" id="industry-list"></ul>
-        </div>
-
-        <!-- Remote Work Toggle -->
-        <div class="form-check form-switch mt-4">
-            <input type="checkbox" name="remote_preference"
-                   class="form-check-input" id="remote_preference" role="switch">
-            <label class="form-check-label" for="remote_preference">
-                Open to Remote Work
-            </label>
-        </div>
-    </div>
-</div>
-
-
-                <!-- Freelance Section -->
-                <div class="card section-card dynamic-section" id="freelanceSection">
-                    <div class="section-header">
-                        <h5 class="mb-0"><i class="ti ti-rocket form-icon"></i>Freelance Work</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Skills</label>
-                                <input type="text" name="freelance_skills" class="form-control"
-                                       placeholder="Separate skills with commas">
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">Hourly Rate</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">ZAR</span>
-                                    <input type="number" name="hourly_rate" class="form-control"
-                                           step="50" min="0">
+                    <div class="collapse show" id="personalInfo">
+                        <div class="card-body">
+                            <!-- Profile Image -->
+                            <div class="profile-image-container">
+                                {% if profile and profile.profile_image_url %}
+                                    <img src="{{ profile.profile_image_url }}" class="profile-image-preview"
+                                         id="profileImagePreview">
+                                    {% if profile.verified_email or profile.verified_phone %}
+                                        <div class="verification-badge" title="Verified Profile">
+                                            <i class="ti ti-check"></i>
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="profile-image-preview bg-light d-flex align-items-center justify-content-center">
+                                        <i class="ti ti-user text-muted" style="font-size: 3.5rem;"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="profile-image-upload">
+                                    <i class="ti ti-camera"></i>
+                                    <input type="file" id="profile_image" name="profile_image"
+                                           accept="image/*" class="d-none">
                                 </div>
                             </div>
 
-                            <div class="col-12">
-                                <label class="form-label">Availability</label>
-                                <input type="text" name="freelance_availability" class="form-control"
-                                       placeholder="e.g. 10 hrs/week">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <input type="text" class="form-control" id="first_name" name="first_name"
+                                               placeholder=" " value="{{ profile.first_name if profile else '' }}"
+                                               required>
+                                        <label for="first_name">First Name</label>
+                                        <div class="invalid-feedback">Please enter your first name</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <input type="text" class="form-control" id="last_name" name="last_name"
+                                               placeholder=" " value="{{ profile.last_name if profile else '' }}"
+                                               required>
+                                        <label for="last_name">Last Name</label>
+                                        <div class="invalid-feedback">Please enter your last name</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <input type="email" class="form-control" id="email" name="email"
+                                               placeholder=" " value="{{ current_user.email }}" readonly>
+                                        <label for="email">Email</label>
+                                        {% if profile and profile.verified_email %}
+                                            <div class="form-text text-success">
+                                                <i class="ti ti-check"></i> Email verified
+                                            </div>
+                                        {% else %}
+                                            <div class="form-text text-warning">
+                                                <i class="ti ti-alert-circle"></i> Email not verified
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <input type="tel" class="form-control" id="phone" name="phone"
+                                               placeholder=" " value="{{ profile.phone if profile else '' }}">
+                                        <label for="phone">Phone Number</label>
+                                        {% if profile and profile.verified_phone %}
+                                            <div class="form-text text-success">
+                                                <i class="ti ti-check"></i> Phone verified
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="floating-label">
+                                        <input type="text" class="form-control" id="location" name="location"
+                                               placeholder=" " value="{{ profile.location if profile else '' }}">
+                                        <label for="location">Location (City, Country)</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="floating-label">
+                                        <textarea class="form-control" id="bio" name="bio" placeholder=" "
+                                                  rows="4">{{ profile.bio if profile else '' }}</textarea>
+                                        <label for="bio">Professional Bio</label>
+                                        <div class="form-text">Briefly describe your professional background and
+                                            skills
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Visibility & Submit -->
-                <div class="card section-card">
-                    <div class="card-body">
-                        <div class="form-check form-switch">
-                            <input type="checkbox" name="visibility" class="form-check-input"
-                                   id="visibility" checked role="switch">
-                            <label class="form-check-label" for="visibility">
-                                Make my profile visible to employers
-                            </label>
+                <!-- Contact & Social -->
+                <div class="card profile-card mb-4">
+                    <div class="card-header d-flex align-items-center" data-bs-toggle="collapse" href="#socialInfo">
+                        <div class="section-icon">
+                            <i class="ti ti-link"></i>
                         </div>
-                        <div class="d-grid mt-4">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="ti ti-device-floppy me-2"></i>Create Profile
-                            </button>
+                        <h5 class="mb-0">Online Presence</h5>
+                    </div>
+                    <div class="collapse show" id="socialInfo">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <div class="position-relative">
+                                            <i class="ti ti-brand-linkedin social-icon"></i>
+                                            <input type="url" class="form-control social-input" id="linkedin"
+                                                   name="linkedin"
+                                                   placeholder=" " value="{{ profile.linkedin if profile else '' }}">
+                                        </div>
+                                        <label for="linkedin">LinkedIn URL</label>
+                                        {% if profile and profile.verified_linkedin %}
+                                            <div class="form-text text-success">
+                                                <i class="ti ti-check"></i> LinkedIn verified
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <div class="position-relative">
+                                            <i class="ti ti-brand-github social-icon"></i>
+                                            <input type="url" class="form-control social-input" id="github"
+                                                   name="github"
+                                                   placeholder=" " value="{{ profile.github if profile else '' }}">
+                                        </div>
+                                        <label for="github">GitHub URL</label>
+                                        {% if profile and profile.verified_github %}
+                                            <div class="form-text text-success">
+                                                <i class="ti ti-check"></i> GitHub verified
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="floating-label">
+                                        <div class="position-relative">
+                                            <i class="ti ti-world social-icon"></i>
+                                            <input type="url" class="form-control social-input" id="website"
+                                                   name="website"
+                                                   placeholder=" " value="{{ profile.website if profile else '' }}">
+                                        </div>
+                                        <label for="website">Personal Website/Portfolio</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Job Preferences -->
+                <div class="card profile-card mb-4">
+                    <div class="card-header d-flex align-items-center" data-bs-toggle="collapse" href="#jobPreferences">
+                        <div class="section-icon">
+                            <i class="ti ti-briefcase"></i>
+                        </div>
+                        <h5 class="mb-0">Job Preferences</h5>
+                    </div>
+                    <div class="collapse show" id="jobPreferences">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <!-- Job Titles of Interest -->
+                                <div class="col-12">
+                                    <div class="keyword-input-container">
+                                        <label class="form-label">Job Titles of Interest</label>
+                                        <div class="keyword-input-group">
+                                            <input type="text" class="keyword-input"
+                                                   id="job-titles-input"
+                                                   placeholder="Enter a job title (e.g., Software Engineer)">
+                                            <button class="add-keyword-btn" type="button"
+                                                    data-target="job-titles-input">
+                                                <i class="ti ti-plus"></i> Add
+                                            </button>
+                                        </div>
+                                        <div class="pills-container" id="job-titles-pills">
+                                            <div class="empty-state">No job titles added yet</div>
+                                        </div>
+                                        <input type="hidden" name="job_titles_of_interest"
+                                               id="job-titles-hidden"
+                                               value="{{ profile.job_titles_of_interest|join(',') if profile else '' }}">
+                                        <div class="form-hint">Add job titles that match your career interests</div>
+                                    </div>
+                                </div>
+
+                                <!-- Industries of Interest -->
+                                <div class="col-12">
+                                    <div class="keyword-input-container">
+                                        <label class="form-label">Industries of Interest</label>
+                                        <div class="keyword-input-group">
+                                            <input type="text" class="keyword-input"
+                                                   id="industries-input"
+                                                   placeholder="Enter an industry (e.g., Technology)">
+                                            <button class="add-keyword-btn" type="button"
+                                                    data-target="industries-input">
+                                                <i class="ti ti-plus"></i> Add
+                                            </button>
+                                        </div>
+                                        <div class="pills-container" id="industries-pills">
+                                            <div class="empty-state">No industries added yet</div>
+                                        </div>
+                                        <input type="hidden" name="industries_of_interest"
+                                               id="industries-hidden"
+                                               value="{{ profile.industries_of_interest|join(',') if profile else '' }}">
+                                        <div class="form-hint">Add industries you're interested in working in</div>
+                                    </div>
+                                </div>
+
+                                <!-- Preferred Locations -->
+                                <div class="col-12">
+                                    <div class="keyword-input-container">
+                                        <label class="form-label">Preferred Locations</label>
+                                        <div class="keyword-input-group">
+                                            <input type="text" class="keyword-input"
+                                                   id="locations-input"
+                                                   placeholder="Enter a location (e.g., Cape Town)">
+                                            <button class="add-keyword-btn" type="button" data-target="locations-input">
+                                                <i class="ti ti-plus"></i> Add
+                                            </button>
+                                        </div>
+                                        <div class="pills-container" id="locations-pills">
+                                            <div class="empty-state">No locations added yet</div>
+                                        </div>
+                                        <input type="hidden" name="locations_of_interest"
+                                               id="locations-hidden"
+                                               value="{{ profile.locations_of_interest|join(',') if profile else '' }}">
+                                        <div class="form-hint">Add locations where you'd like to work</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input type="checkbox" name="remote_preference" class="form-check-input"
+                                               id="remote_preference"
+                                               {% if profile and profile.remote_preference %}checked{% endif %}>
+                                        <label class="form-check-label" for="remote_preference">
+                                            Open to Remote Work
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <input type="text" class="form-control" id="availability" name="availability"
+                                               placeholder=" " value="{{ profile.availability if profile else '' }}">
+                                        <label for="availability">Availability</label>
+                                        <div class="form-text">When can you start? (e.g., Immediately, 1 month)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Freelance Work -->
+                <div class="card profile-card mb-4">
+                    <div class="card-header d-flex align-items-center" data-bs-toggle="collapse"
+                         href="#freelanceSection">
+                        <div class="section-icon">
+                            <i class="ti ti-rocket"></i>
+                        </div>
+                        <h5 class="mb-0">Freelance Work</h5>
+                    </div>
+                    <div class="collapse" id="freelanceSection">
+                        <div class="card-body">
+                            <div class="form-check form-switch mb-4">
+                                <input type="checkbox" class="form-check-input" id="is_freelancer"
+                                       name="is_freelancer"
+                                       {% if profile and profile.is_freelancer %}checked{% endif %}>
+                                <label class="form-check-label" for="is_freelancer">Available for freelance work</label>
+                            </div>
+
+                            <div id="freelanceFields"
+                                 style="display: {% if profile and profile.is_freelancer %}block{% else %}none{% endif %}">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="floating-label">
+                                            <input type="text" class="form-control" id="freelance_skills"
+                                                   name="freelance_skills"
+                                                   placeholder=" "
+                                                   value="{{ profile.freelance_skills|join(', ') if profile else '' }}">
+                                            <label for="freelance_skills">Freelance Skills</label>
+                                            <div class="form-text">Separate skills with commas (e.g., Web Development,
+                                                UI/UX Design)
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="floating-label">
+                                            <div class="input-group">
+                                                <span class="input-group-text">ZAR</span>
+                                                <input type="number" class="form-control" id="hourly_rate"
+                                                       name="hourly_rate"
+                                                       placeholder=" "
+                                                       value="{{ profile.hourly_rate if profile else '' }}" step="50"
+                                                       min="0">
+                                            </div>
+                                            <label for="hourly_rate">Hourly Rate</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="floating-label">
+                                            <input type="text" class="form-control" id="freelance_availability"
+                                                   name="freelance_availability" placeholder=" "
+                                                   value="{{ profile.freelance_availability if profile else '' }}">
+                                            <label for="freelance_availability">Freelance Availability</label>
+                                            <div class="form-text">Hours per week (e.g., 10-20 hours)</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="floating-label">
+                                            <textarea class="form-control" id="freelance_experience"
+                                                      name="freelance_experience"
+                                                      placeholder=" "
+                                                      rows="4">{{ profile.freelance_experience if profile else '' }}</textarea>
+                                            <label for="freelance_experience">Freelance Experience</label>
+                                            <div class="form-text">Describe your freelance experience and notable
+                                                projects
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy & Preferences -->
+                <div class="card profile-card mb-4">
+                    <div class="card-header d-flex align-items-center" data-bs-toggle="collapse"
+                         href="#privacySettings">
+                        <div class="section-icon">
+                            <i class="ti ti-settings"></i>
+                        </div>
+                        <h5 class="mb-0">Privacy & Preferences</h5>
+                    </div>
+                    <div class="collapse show" id="privacySettings">
+                        <div class="card-body">
+                            <div class="form-check form-switch mb-3">
+                                <input type="checkbox" name="visibility" class="form-check-input"
+                                       id="visibility" {% if not profile or profile.visibility %}checked{% endif %}>
+                                <label class="form-check-label" for="visibility">
+                                    Make my profile visible to employers
+                                </label>
+                            </div>
+
+                            <div class="form-check form-switch mb-3">
+                                <input type="checkbox" name="alerts_enabled" class="form-check-input"
+                                       id="alerts_enabled"
+                                       {% if not profile or profile.alerts_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="alerts_enabled">
+                                    Enable job alerts
+                                </label>
+                            </div>
+
+                            <div class="form-check form-switch mb-3">
+                                <input type="checkbox" name="receive_deadline_reminders" class="form-check-input"
+                                       id="receive_deadline_reminders"
+                                       {% if not profile or profile.receive_deadline_reminders %}checked{% endif %}>
+                                <label class="form-check-label" for="receive_deadline_reminders">
+                                    Receive deadline reminders
+                                </label>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Reminder days before deadline</label>
+                                <input type="number" class="form-control" name="reminder_days_before"
+                                       min="1" max="30" value="{{ profile.reminder_days_before if profile else 7 }}">
+                            </div>
+
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="receive_company_updates" class="form-check-input"
+                                       id="receive_company_updates"
+                                       {% if not profile or profile.receive_company_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="receive_company_updates">
+                                    Receive company updates
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg py-3">
+                        <i class="ti ti-device-floppy me-2"></i>
+                        {% if profile %}Update Profile{% else %}Create Profile{% endif %}
+                    </button>
                 </div>
             </form>
         </div>
@@ -213,116 +825,177 @@
 {% endblock %}
 
 {% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Toggle freelance section
-    const freelanceCheckbox = document.createElement('div');
-    freelanceCheckbox.innerHTML = `
-        <div class="form-check form-switch mb-3">
-            <input type="checkbox" class="form-check-input" id="is_freelancer">
-            <label class="form-check-label" for="is_freelancer">Available for freelance work</label>
-        </div>
-    `;
-    document.querySelector('#freelanceSection').parentNode.insertBefore(freelanceCheckbox, document.querySelector('#freelanceSection'));
+    initPillSystem('job-titles-input', 'job-titles-pills', 'job-titles-hidden');
+    initPillSystem('industries-input', 'industries-pills', 'industries-hidden');
+    initPillSystem('locations-input', 'locations-pills', 'locations-hidden');
 
-    document.getElementById('is_freelancer').addEventListener('change', (e) => {
-        document.getElementById('freelanceSection').style.display = e.target.checked ? 'block' : 'none';
-    });
+    function initPillSystem(inputId, pillsId, hiddenId) {
+        const input = document.getElementById(inputId);
+        const pillsContainer = document.getElementById(pillsId);
+        const hiddenInput = document.getElementById(hiddenId);
+        const addBtn = document.querySelector(`[data-target="${inputId}"]`);
 
-    // Multi-select enhancements
-    document.querySelectorAll('select[multiple]').forEach(select => {
-        select.addEventListener('focus', () => select.size = 5);
-        select.addEventListener('blur', () => select.size = 1);
-        select.addEventListener('change', () => {
-            select.title = Array.from(select.selectedOptions).map(opt => opt.text).join(', ');
+        const initialValues = hiddenInput.value ? hiddenInput.value.split(',') : [];
+        initialValues.forEach(value => {
+            if (value.trim()) addPill(value.trim(), pillsContainer, hiddenInput);
         });
-    });
 
-    // Form validation
-    const forms = document.querySelectorAll('.needs-validation');
-    Array.from(forms).forEach(form => {
-        form.addEventListener('submit', event => {
+        addBtn.addEventListener('click', () => {
+            addKeyword(input, pillsContainer, hiddenInput);
+        });
+
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addKeyword(input, pillsContainer, hiddenInput);
+            }
+        });
+
+        input.addEventListener('blur', () => {
+            const values = input.value.split(',');
+            if (values.length > 1) {
+                values.forEach(value => {
+                    if (value.trim()) addPill(value.trim(), pillsContainer, hiddenInput);
+                });
+                input.value = '';
+            }
+        });
+    }
+
+    function addKeyword(input, pillsContainer, hiddenInput) {
+        const value = input.value.trim();
+        if (value) {
+            if (value.includes(',')) {
+                value.split(',').forEach(v => {
+                    if (v.trim()) addPill(v.trim(), pillsContainer, hiddenInput);
+                });
+            } else {
+                addPill(value, pillsContainer, hiddenInput);
+            }
+            input.value = '';
+            input.focus();
+        }
+    }
+
+    function addPill(value, pillsContainer, hiddenInput) {
+        const emptyState = pillsContainer.querySelector('.empty-state');
+        if (emptyState) emptyState.remove();
+
+        const pill = document.createElement('div');
+        pill.className = 'keyword-pill';
+        pill.innerHTML = `
+            <span>${value}</span>
+            <button class="remove-pill" type="button">
+                <i class="ti ti-x"></i>
+            </button>
+        `;
+
+        const removeBtn = pill.querySelector('.remove-pill');
+        removeBtn.addEventListener('click', () => {
+            pill.remove();
+            updateHiddenInput(pillsContainer, hiddenInput);
+            if (pillsContainer.children.length === 0) {
+                pillsContainer.innerHTML = '<div class="empty-state">No items added yet</div>';
+            }
+            updateProfileCompletion();
+        });
+
+        pillsContainer.appendChild(pill);
+        updateHiddenInput(pillsContainer, hiddenInput);
+        updateProfileCompletion();
+    }
+
+    function updateHiddenInput(pillsContainer, hiddenInput) {
+        const pills = Array.from(pillsContainer.querySelectorAll('.keyword-pill span'));
+        const values = pills.map(pill => pill.textContent.trim());
+        hiddenInput.value = values.join(',');
+    }
+
+    const freelanceToggle = document.getElementById('is_freelancer');
+    const freelanceSection = document.getElementById('freelanceFields');
+    if (freelanceToggle) {
+        freelanceToggle.addEventListener('change', () => {
+            freelanceSection.style.display = freelanceToggle.checked ? 'block' : 'none';
+        });
+    }
+
+    const profileImageInput = document.getElementById('profile_image');
+    const profileImagePreview = document.getElementById('profileImagePreview');
+    if (profileImageInput) {
+        profileImageInput.addEventListener('change', function () {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    if (profileImagePreview) {
+                        profileImagePreview.src = e.target.result;
+                    } else {
+                        const previewContainer = document.querySelector('.profile-image-container');
+                        if (previewContainer) {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.className = 'profile-image-preview';
+                            img.id = 'profileImagePreview';
+                            previewContainer.insertBefore(img, previewContainer.firstChild);
+                        }
+                    }
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+        document.querySelector('.profile-image-upload').addEventListener('click', function () {
+            profileImageInput.click();
+        });
+    }
+
+    const form = document.querySelector('.needs-validation');
+    if (form) {
+        form.addEventListener('submit', (event) => {
             if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
             }
             form.classList.add('was-validated');
-        }, false);
-    });
-});
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Elements
-    const jobSelect = document.getElementById('job-title-select');
-    const industrySelect = document.getElementById('industry-select');
-    const customJobInput = document.getElementById('custom-job-title');
-    const customIndustryInput = document.getElementById('custom-industry');
-    const jobList = document.getElementById('job-title-list');
-    const industryList = document.getElementById('industry-list');
-    const addJobBtn = document.getElementById('add-job-title');
-    const addIndustryBtn = document.getElementById('add-industry');
-
-    // Helper: Add item to a list
-    function addItemToList(value, listElement) {
-        const existingItems = Array.from(listElement.children).map(item => item.textContent.trim());
-        if (!value || existingItems.includes(value)) return;
-
-        const li = document.createElement('li');
-        li.className = 'list-group-item d-flex justify-content-between align-items-center';
-        li.textContent = value;
-
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'btn btn-sm btn-outline-danger';
-        removeBtn.innerHTML = '<i class="ti ti-x"></i>';
-        removeBtn.onclick = () => li.remove();
-
-        li.appendChild(removeBtn);
-        listElement.appendChild(li);
+        });
     }
 
-    // Job title dropdown change
-    jobSelect.addEventListener('change', () => {
-        customJobInput.classList.toggle('d-none', jobSelect.value !== 'other');
-        if (jobSelect.value !== 'other') customJobInput.value = '';
+    function updateProfileCompletion() {
+        const fields = [
+            'first_name', 'last_name', 'phone', 'location', 'bio',
+            'job-titles-hidden', 'industries-hidden', 'locations-hidden'
+        ];
+        let completed = 0;
+        fields.forEach(id => {
+            const element = document.getElementById(id);
+            if (element && element.value.trim() !== '') completed++;
+        });
+        const percentage = Math.min(100, Math.round((completed / fields.length) * 100));
+        document.getElementById('completionPercentage').textContent = `${percentage}%`;
+        document.getElementById('completionProgress').style.width = `${percentage}%`;
+    }
+
+    document.querySelectorAll('input, textarea').forEach(input => {
+        input.addEventListener('input', updateProfileCompletion);
     });
 
-    // Industry dropdown change
-    industrySelect.addEventListener('change', () => {
-        customIndustryInput.classList.toggle('d-none', industrySelect.value !== 'other');
-        if (industrySelect.value !== 'other') customIndustryInput.value = '';
+    document.querySelectorAll('.form-floating input, .form-floating textarea').forEach(input => {
+        // Fix floating label overlap if field already filled
+        if (input.value.trim() !== '') {
+            input.classList.add('not-empty');
+        }
+        input.addEventListener('input', () => {
+            if (input.value.trim() !== '') {
+                input.classList.add('not-empty');
+            } else {
+                input.classList.remove('not-empty');
+            }
+        });
     });
 
-    // Add Job Title
-    addJobBtn.addEventListener('click', () => {
-        const value = jobSelect.value === 'other'
-            ? customJobInput.value.trim()
-            : jobSelect.value;
-
-        addItemToList(value, jobList);
-
-        // Reset
-        jobSelect.selectedIndex = 0;
-        customJobInput.classList.add('d-none');
-        customJobInput.value = '';
-    });
-
-    // Add Industry
-    addIndustryBtn.addEventListener('click', () => {
-        const value = industrySelect.value === 'other'
-            ? customIndustryInput.value.trim()
-            : industrySelect.value;
-
-        addItemToList(value, industryList);
-
-        // Reset
-        industrySelect.selectedIndex = 0;
-        customIndustryInput.classList.add('d-none');
-        customIndustryInput.value = '';
-    });
+    updateProfileCompletion();
 });
-
-
-
 </script>
 {% endblock %}

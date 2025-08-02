@@ -20,96 +20,102 @@
                         <input type="hidden" name="form_type" value="employer">
 
                         <div class="row">
-                            <!-- Left Column -->
+                            <!-- Left Column - Professional Information -->
                             <div class="col-md-6">
-                                <h3 class="h5 mb-3">Professional Information</h3>
-
-                                <div class="mb-3">
-                                    <label for="full_name" class="form-label">Full Name</label>
-                                    <input type="text" class="form-control" id="full_name" name="full_name"
-                                           maxlength="100" value="{{ employer_profile.full_name or '' }}">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="job_title" class="form-label">Job Title</label>
-                                    <input type="text" class="form-control" id="job_title" name="job_title"
-                                           maxlength="100" value="{{ employer_profile.job_title or '' }}">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="department" class="form-label">Department</label>
-                                    <input type="text" class="form-control" id="department" name="department"
-                                           maxlength="100" value="{{ employer_profile.department or '' }}">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="hire_date" class="form-label">Hire Date</label>
-                                    <input type="date" class="form-control" id="hire_date" name="hire_date"
-                                           value="{{ employer_profile.hire_date.strftime('%Y-%m-%d') if employer_profile.hire_date else '' }}">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="bio" class="form-label">Bio</label>
-                                    <textarea class="form-control" id="bio" name="bio"
-                                              rows="3">{{ employer_profile.bio or '' }}</textarea>
-                                </div>
-
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" value="true"
-                                           id="hiring_authority" name="hiring_authority"
-                                           {% if employer_profile.hiring_authority %}checked{% endif %}>
-                                    <label class="form-check-label" for="hiring_authority">
-                                        I have hiring authority
-                                    </label>
-                                </div>
+                                {{ form_section(
+                                    title="Professional Information",
+                                    fields=[
+                                        form_input(
+                                            name="full_name",
+                                            label="Full Name",
+                                            value=employer_profile.full_name or '',
+                                            maxlength=100
+                                        ),
+                                        form_input(
+                                            name="job_title",
+                                            label="Job Title",
+                                            value=employer_profile.job_title or '',
+                                            maxlength=100
+                                        ),
+                                        form_input(
+                                            name="department",
+                                            label="Department",
+                                            value=employer_profile.department or '',
+                                            maxlength=100
+                                        ),
+                                        form_input(
+                                            name="hire_date",
+                                            label="Hire Date",
+                                            type="date",
+                                            value=employer_profile.hire_date.strftime('%Y-%m-%d') if employer_profile.hire_date else ''
+                                        ),
+                                        form_textarea(
+                                            name="bio",
+                                            label="Bio",
+                                            value=employer_profile.bio or '',
+                                            rows=3
+                                        ),
+                                        form_checkbox(
+                                            name="hiring_authority",
+                                            label="I have hiring authority",
+                                            checked=employer_profile.hiring_authority if employer_profile else false
+                                        )
+                                    ]
+                                ) }}
                             </div>
 
-                            <!-- Right Column -->
+                            <!-- Right Column - Contact & Social -->
                             <div class="col-md-6">
-                                <h3 class="h5 mb-3">Contact & Social</h3>
-
-                                <div class="mb-3">
-                                    <label for="company_email" class="form-label">Company Email</label>
-                                    <input type="email" class="form-control" id="company_email" name="company_email"
-                                           value="{{ employer_profile.company_email or current_user.email }}">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="personal_email" class="form-label">Personal Email</label>
-                                    <input type="email" class="form-control" id="personal_email" name="personal_email"
-                                           value="{{ employer_profile.personal_email or '' }}">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="phone_number" class="form-label">Phone</label>
-                                    <input type="tel" class="form-control" id="phone_number" name="phone_number"
-                                           maxlength="20" placeholder="+27XXXXXXXXX"
-                                           value="{{ employer_profile.phone_number or '' }}">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="alternate_phone" class="form-label">Alternate Phone</label>
-                                    <input type="tel" class="form-control" id="alternate_phone" name="alternate_phone"
-                                           maxlength="20" value="{{ employer_profile.alternate_phone or '' }}">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="linkedin_url" class="form-label">LinkedIn</label>
-                                    <input type="url" class="form-control" id="linkedin_url" name="linkedin_url"
-                                           value="{{ employer_profile.linkedin_url or '' }}">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="twitter_handle" class="form-label">Twitter Handle</label>
-                                    <input type="text" class="form-control" id="twitter_handle" name="twitter_handle"
-                                           maxlength="50" value="{{ employer_profile.twitter_handle or '' }}">
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="signature" class="form-label">Email Signature</label>
-                                    <input type="text" class="form-control" id="signature" name="signature"
-                                           maxlength="255" value="{{ employer_profile.signature or '' }}">
-                                </div>
+                                {{ form_section(
+                                    title="Contact & Social",
+                                    fields=[
+                                        form_input(
+                                            name="company_email",
+                                            label="Company Email",
+                                            type="email",
+                                            value=employer_profile.company_email or current_user.email
+                                        ),
+                                        form_input(
+                                            name="personal_email",
+                                            label="Personal Email",
+                                            type="email",
+                                            value=employer_profile.personal_email or ''
+                                        ),
+                                        form_input(
+                                            name="phone_number",
+                                            label="Phone",
+                                            type="tel",
+                                            value=employer_profile.phone_number or '',
+                                            maxlength=20,
+                                            placeholder="+27XXXXXXXXX"
+                                        ),
+                                        form_input(
+                                            name="alternate_phone",
+                                            label="Alternate Phone",
+                                            type="tel",
+                                            value=employer_profile.alternate_phone or '',
+                                            maxlength=20
+                                        ),
+                                        form_input(
+                                            name="linkedin_url",
+                                            label="LinkedIn",
+                                            type="url",
+                                            value=employer_profile.linkedin_url or ''
+                                        ),
+                                        form_input(
+                                            name="twitter_handle",
+                                            label="Twitter Handle",
+                                            value=employer_profile.twitter_handle or '',
+                                            maxlength=50
+                                        ),
+                                        form_input(
+                                            name="signature",
+                                            label="Email Signature",
+                                            value=employer_profile.signature or '',
+                                            maxlength=255
+                                        )
+                                    ]
+                                ) }}
                             </div>
                         </div>
 
@@ -119,10 +125,67 @@
                             </button>
                         </div>
                     </form>
-
                 </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
+{% macro form_section(title, fields) %}
+    <div class="mb-4">
+        <h3 class="h5 mb-3">{{ title }}</h3>
+        {% for field in fields %}
+            {{ field }}
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+{% macro form_input(name, label, type='text', value='', placeholder='', required=False, help_text=None, maxlength=None) %}
+    <div class="mb-3">
+        <label for="{{ name }}" class="form-label">{{ label }}</label>
+        <input type="{{ type }}"
+               class="form-control"
+               id="{{ name }}"
+               name="{{ name }}"
+               value="{{ value }}"
+               {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+               {% if required %}required{% endif %}
+               {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}>
+        {% if help_text %}
+            <div class="form-text">{{ help_text }}</div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro form_textarea(name, label, value='', placeholder='', required=False, help_text=None, rows=3) %}
+    <div class="mb-3">
+        <label for="{{ name }}" class="form-label">{{ label }}</label>
+        <textarea class="form-control"
+                  id="{{ name }}"
+                  name="{{ name }}"
+                  rows="{{ rows }}"
+                  {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+                  {% if required %}required{% endif %}>{{ value }}</textarea>
+        {% if help_text %}
+            <div class="form-text">{{ help_text }}</div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro form_checkbox(name, label, checked=False, help_text=None) %}
+    <div class="form-check mb-3">
+        <input class="form-check-input"
+               type="checkbox"
+               id="{{ name }}"
+               name="{{ name }}"
+               value="true"
+               {% if checked %}checked{% endif %}>
+        <label class="form-check-label" for="{{ name }}">
+            {{ label }}
+        </label>
+        {% if help_text %}
+            <div class="form-text">{{ help_text }}</div>
+        {% endif %}
+    </div>
+{% endmacro %}

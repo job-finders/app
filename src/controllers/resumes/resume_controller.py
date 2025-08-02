@@ -1,6 +1,7 @@
 # Standard Library
 import uuid
 from datetime import timedelta
+from typing import Type
 
 # Flask Core
 from flask import url_for
@@ -8,6 +9,7 @@ from flask import url_for
 # SQLAlchemy ORM
 from sqlalchemy.orm import joinedload
 
+from src.database.sql import Session
 from src.database import JobApplicationORM
 # Controllers
 from src.controllers.controller import Controllers, error_handler
@@ -41,6 +43,16 @@ from src.utils.route_helpers import get_service
 
 
 class ResumeController(Controllers):
+    SECTION_MODELS: dict[str, Type] = {
+        'experience': ExperienceORM,
+        'education': EducationORM,
+        'certifications': CertificationORM,
+        'languages': LanguageORM,
+        'projects': ProjectORM,
+        'publications': PublicationORM,
+        'awards': AwardORM,
+        'custom_sections': CustomSectionORM
+    }
     def __init__(self, factory):
         super().__init__(factory)
 
@@ -50,50 +62,49 @@ class ResumeController(Controllers):
     @error_handler
     async def create_cv(self, user_uid: str, data: JobSeekerCV) -> dict:
         # Create a new Resume with related entries (experience, education, etc.)
-        if not(isinstance(user_uid, str) and user_uid.strip()):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
             return {}
         if not isinstance(data, JobSeekerCV):
             return {}
-            
+
         with self.get_session() as session:
             cv_id = str(uuid.uuid4())
             # Excluding - all items which will be saved later through save related items.
             _excluded_items = {'experience', 'education', 'certifications',
-            'languages', 'projects', 'publications', 'awards', 'custom_sections'}
-            cv = JobSeekerCVORM(**data.model_dump(exclude=_excluded_items))
+                               'languages', 'projects', 'publications', 'awards', 'custom_sections',
+                               'jobseeker_profile'}
+
+            self.logger.info(f"will now attempt to build the model")
+
+            # Convert Pydantic model data to SQLAlchemy model instance
+            cv_data = data.model_dump(exclude=_excluded_items)
+            cv = JobSeekerCVORM(**cv_data)
+            self.logger.info(f"CV model built successfully: {cv}")
 
             session.add(cv)
-            await self._save_related_entries(session=session, cv_id=cv_id, data=data)
-            return {"cv_id": cv_id, "status": "created"}
+            self.logger.info(f"CV added to session: {cv}")
 
-    # noinspection DuplicatedCode
+        await self._save_related_entries(cv_id=cv_id, data=data)
+        return {"cv_id": cv_id, "status": "created"}
+
     @error_handler
-    async def _save_related_entries(self, session, cv_id: str, data: JobSeekerCV):
+    async def _save_related_entries(self, cv_id: str, data: JobSeekerCV):
         # Save nested resume data like experience, education, etc.
-        for exp in data.experience:
-            session.add(ExperienceORM(cv_id=cv_id, **exp.model_dump()))
+        with self.get_session() as session:
+            for section_name, section_data in data.model_dump(exclude={'user_uid'}).items():
+                if section_name in self.SECTION_MODELS:
+                    await self.save_section(session=session, cv_id=cv_id, section_name=section_name,
+                                            section_data=section_data)
 
-        for edu in data.education:
-            session.add(EducationORM(cv_id=cv_id, **edu.model_dump()))
+    @error_handler
+    async def save_section(self, session: Session, cv_id: str, section_name: str, section_data: list[dict]):
+        # Save a specific section's data to the database
+        if section_name not in self.SECTION_MODELS:
+            raise ValueError(f"Unknown section name: {section_name}")
 
-        for cert in data.certifications:
-            session.add(CertificationORM(cv_id=cv_id, **cert.model_dump()))
-
-        for lang in data.languages:
-            session.add(LanguageORM(cv_id=cv_id, **lang.model_dump()))
-
-        for proj in data.projects:
-            session.add(ProjectORM(cv_id=cv_id, **proj.model_dump()))
-
-        for pub in data.publications:
-            session.add(PublicationORM(cv_id=cv_id, **pub.model_dump()))
-
-        for award in data.awards:
-            session.add(AwardORM(cv_id=cv_id, **award.model_dump()))
-
-        for section in data.custom_sections:
-            session.add(CustomSectionORM(cv_id=cv_id, **section.model_dump()))
-
+        model_class = self.SECTION_MODELS[section_name]
+        for item_data in section_data:
+            session.add(model_class(cv_id=cv_id, **item_data))
 
     @error_handler
     async def get_cv_by_id(self, cv_id: str) -> JobSeekerCV | None:

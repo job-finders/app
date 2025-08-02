@@ -1,244 +1,458 @@
 {% extends "jobseekers/layout/page.html" %}
+
+{% block styles %}
+    <style>
+        .skill-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 0.8rem;
+            font-size: 0.9rem;
+            border-radius: 20px;
+            cursor: default;
+            transition: all 0.2s;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .remove-skill {
+            margin-left: 0.5rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .remove-skill:hover {
+            color: #ff6b6b;
+        }
+
+        .repeater-item {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            background-color: #f8f9fa;
+        }
+
+        .repeater-template {
+            display: none;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
-  <div class="card shadow-sm mb-4">
-    <div class="card-header bg-light">
-      <h4 class="font-weight-bold text-info">
-        <i class="ti-file mr-2"></i>Build Your Professional CV
+    <div class="card shadow-sm mb-4 border-0 rounded-lg">
+        <div class="card-header bg-primary text-white py-3">
+            <h4 class="fw-bold mb-0">
+                <i class="ti-file me-2"></i>Build Your Professional CV
       </h4>
     </div>
-    <div class="card-body">
-      <form method="post" enctype="multipart/form-data">
+        <div class="card-body p-4">
+            <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
         <!-- Basic Information Section -->
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="font-weight-bold">
-              <i class="ti-user mr-2"></i>Basic Information
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light py-3">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="ti-user me-2"></i>Basic Information
             </h5>
           </div>
           <div class="card-body">
-            <div class="row">
-              <div class="col-md-12 mb-3">
-                <label class="font-weight-bold">Professional Title</label>
-                <input type="text" class="form-control" name="professional_title" required>
-                <small class="text-muted">E.g. "Senior Software Engineer"</small>
+              <div class="row g-3">
+                  <div class="col-md-12">
+                      <label class="form-label fw-bold">Professional Title</label>
+                      <input type="text" class="form-control form-control-lg"
+                             name="professional_title" placeholder="e.g. Senior Software Engineer" required>
+                      <div class="invalid-feedback">Please enter your professional title</div>
               </div>
-              <div class="col-md-12 mb-3">
-                <label class="font-weight-bold">Summary</label>
-                <textarea class="form-control" name="summary" rows="3"></textarea>
-                <small class="text-muted">Brief overview of your professional experience</small>
+                  <div class="col-md-12">
+                      <label class="form-label fw-bold">Summary</label>
+                      <textarea class="form-control" name="summary" rows="5"
+                                placeholder="Brief overview of your professional experience"></textarea>
               </div>
             </div>
           </div>
         </div>
+
         <!-- Contact Information -->
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="font-weight-bold">
-              <i class="ti-location-pin mr-2"></i>Contact Details
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light py-3">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="ti-location-pin me-2"></i>Contact Details
             </h5>
           </div>
           <div class="card-body">
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="font-weight-bold">Phone</label>
-                <input type="tel" class="form-control" name="phone">
+              <div class="row g-3">
+                  <div class="col-md-6">
+                      <label class="form-label fw-bold">Phone</label>
+                      <input type="tel" class="form-control" name="phone" placeholder="+27 555 4567">
+                  </div>
+                  <div class="col-md-6">
+                      <label class="form-label fw-bold">Location</label>
+                      <input type="text" class="form-control" name="location" placeholder="City, Country">
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="font-weight-bold">Location</label>
-                <input type="text" class="form-control" name="location">
+                  <div class="col-md-6">
+                      <label class="form-label fw-bold">Website</label>
+                      <input type="url" class="form-control" name="website" placeholder="https://yourwebsite.com">
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="font-weight-bold">Website</label>
-                <input type="url" class="form-control" name="website">
+                  <div class="col-md-6">
+                      <label class="form-label fw-bold">LinkedIn</label>
+                      <div class="input-group">
+                          <span class="input-group-text"><i class="ti-linkedin"></i></span>
+                          <input type="url" class="form-control" name="linkedin"
+                                 placeholder="https://linkedin.com/in/yourname">
+                      </div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="font-weight-bold">LinkedIn</label>
-                <input type="url" class="form-control" name="linkedin">
+                  <div class="col-md-6">
+                      <label class="form-label fw-bold">GitHub</label>
+                      <div class="input-group">
+                          <span class="input-group-text"><i class="ti-github"></i></span>
+                          <input type="url" class="form-control" name="github"
+                                 placeholder="https://github.com/yourusername">
+                      </div>
+                  </div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="font-weight-bold">GitHub</label>
-                <input type="url" class="form-control" name="github">
-              </div>
-            </div>
           </div>
-        </div>
-        <!-- Skills Section -->
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="font-weight-bold">
-              <i class="ti-star mr-2"></i>Skills
+                </div>
+
+                <!-- Skills Section -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light py-3">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="ti-star me-2"></i>Skills
             </h5>
           </div>
           <div class="card-body">
             <div class="mb-3">
-              <label class="font-weight-bold">Add Skills</label>
-              <input type="text" class="form-control" name="skills"
-                     placeholder="Comma separated list (e.g. Python, Project Management, CAD Design)">
+                <label class="form-label fw-bold">Add Skills</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="skill-input"
+                           placeholder="Enter a skill and press Enter">
+                    <button class="btn btn-primary" type="button" id="add-skill-btn">
+                        <i class="ti-plus me-1"></i> Add
+                    </button>
+                </div>
               <small class="text-muted">Add at least 3 key skills</small>
+
+                <!-- Hidden input to store the CSV skills -->
+                <input type="hidden" name="skills" id="skills-csv">
+
+                <!-- Skills display container -->
+                <div class="mt-3" id="skills-container"></div>
             </div>
           </div>
         </div>
+
         <!-- Experience Section -->
-        <div class="card mb-4">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="font-weight-bold">
-              <i class="ti-briefcase mr-2"></i>Work Experience
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="ti-briefcase me-2"></i>Work Experience
             </h5>
-            <button type="button" class="btn btn-sm btn-outline-success add-experience">
-              <i class="ti-plus"></i> Add Position
+                        <button type="button" class="btn btn-sm btn-success add-experience">
+                            <i class="ti-plus me-1"></i> Add Position
             </button>
           </div>
-          <div class="card-body experience-section">
-            <div class="experience-item mb-3">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label>Job Title</label>
-                  <input type="text" class="form-control" name="experience[0][job_title]">
+                    <div class="card-body" id="experience-section">
+                        <!-- Experience Template (Hidden) -->
+                        <div class="repeater-template experience-item">
+                            <div class="repeater-item">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Job Title</label>
+                                        <input type="text" class="form-control" name="experience[][job_title]" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Company</label>
+                                        <input type="text" class="form-control" name="experience[][company]" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Start Date</label>
+                                        <input type="month" class="form-control" name="experience[][start_date]"
+                                               required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">End Date</label>
+                                        <input type="month" class="form-control" name="experience[][end_date]">
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="experience[][current]">
+                                            <label class="form-check-label small">Currently working here</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Location</label>
+                                        <input type="text" class="form-control" name="experience[][location]"
+                                               placeholder="City, Country">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Description</label>
+                                        <textarea class="form-control" name="experience[][description]" rows="2"
+                                                  placeholder="Describe your responsibilities and achievements"></textarea>
+                                    </div>
                 </div>
-                <div class="col-md-6 mb-3">
-                  <label>Company</label>
-                  <input type="text" class="form-control" name="experience[0][company]">
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label>Start Date</label>
-                  <input type="date" class="form-control" name="experience[0][start_date]">
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label>End Date</label>
-                  <input type="date" class="form-control" name="experience[0][end_date]">
-                </div>
-                <div class="col-12 mb-3">
-                  <label>Description</label>
-                  <textarea class="form-control" name="experience[0][description]" rows="2"></textarea>
-                </div>
-              </div>
-              <hr class="my-3">
-            </div>
+                                <div class="text-end mt-3">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                                        <i class="ti-trash me-1"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Experience Items Container -->
+                        <div id="experience-items"></div>
           </div>
         </div>
+
         <!-- Education Section -->
-        <div class="card mb-4">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="font-weight-bold">
-              <i class="ti-book mr-2"></i>Education
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="ti-book me-2"></i>Education
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-primary add-education">
+                            <i class="ti-plus me-1"></i> Add Education
+                        </button>
+                    </div>
+                    <div class="card-body" id="education-section">
+                        <!-- Education Template (Hidden) -->
+                        <div class="repeater-template education-item">
+                            <div class="repeater-item">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Institution</label>
+                                        <input type="text" class="form-control" name="education[][institution]"
+                                               required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Qualification</label>
+                                        <input type="text" class="form-control" name="education[][qualification]"
+                                               required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Field of Study</label>
+                                        <input type="text" class="form-control" name="education[][field_of_study]"
+                                               required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Start Date</label>
+                                        <input type="month" class="form-control" name="education[][start_date]"
+                                               required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">End Date</label>
+                                        <input type="month" class="form-control" name="education[][end_date]">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Description</label>
+                                        <textarea class="form-control" name="education[][description]" rows="2"
+                                                  placeholder="Relevant coursework, achievements"></textarea>
+                                    </div>
+                                </div>
+                                <div class="text-end mt-3">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                                        <i class="ti-trash me-1"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Education Items Container -->
+                        <div id="education-items"></div>
+                    </div>
+                </div>
+
+                <!-- Languages Section -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="ti-world me-2"></i>Languages
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-warning add-language">
+                            <i class="ti-plus me-1"></i> Add Language
+                        </button>
+                    </div>
+                    <div class="card-body" id="language-section">
+                        <!-- Language Template (Hidden) -->
+                        <div class="repeater-template language-item">
+                            <div class="repeater-item">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Language</label>
+                                        <input type="text" class="form-control" name="languages[][name]" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Proficiency</label>
+                                        <select class="form-select" name="languages[][proficiency]" required>
+                                            <option value="">Select Level</option>
+                                            <option value="Beginner">Beginner</option>
+                                            <option value="Intermediate">Intermediate</option>
+                                            <option value="Fluent">Fluent</option>
+                                            <option value="Native">Native</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="text-end mt-3">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                                        <i class="ti-trash me-1"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Language Items Container -->
+                        <div id="language-items"></div>
+                    </div>
+                </div>
+
+                <!-- Projects Section -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="ti-package me-2"></i>Projects
             </h5>
-            <button type="button" class="btn btn-sm btn-outline-primary add-education">
-              <i class="ti-plus"></i> Add Education
+                        <button type="button" class="btn btn-sm btn-info add-project">
+                            <i class="ti-plus me-1"></i> Add Project
             </button>
           </div>
-          <div class="card-body education-section">
-            <div class="education-item mb-3">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label>Institution</label>
-                  <input type="text" class="form-control" name="education[0][institution]" required>
+                    <div class="card-body" id="project-section">
+                        <!-- Project Template (Hidden) -->
+                        <div class="repeater-template project-item">
+                            <div class="repeater-item">
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label">Project Title</label>
+                                        <input type="text" class="form-control" name="projects[][title]" required>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Description</label>
+                                        <textarea class="form-control" name="projects[][description]" rows="2"
+                                                  required></textarea>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Technologies Used</label>
+                                        <input type="text" class="form-control" name="projects[][technologies]"
+                                               placeholder="Comma separated list of technologies">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Project Link</label>
+                                        <input type="url" class="form-control" name="projects[][link]"
+                                               placeholder="https://project-url.com">
+                                    </div>
                 </div>
-                <div class="col-md-6 mb-3">
-                  <label>Qualification</label>
-                  <input type="text" class="form-control" name="education[0][qualification]" required>
+                                <div class="text-end mt-3">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                                        <i class="ti-trash me-1"></i> Remove
+                                    </button>
                 </div>
-                <div class="col-md-6 mb-3">
-                  <label>Field of Study</label>
-                  <input type="text" class="form-control" name="education[0][field_of_study]" required>
+                            </div>
+                        </div>
+
+                        <!-- Project Items Container -->
+                        <div id="project-items"></div>
+                    </div>
                 </div>
-                <div class="col-md-6 mb-3">
-                  <label>Start Date</label>
-                  <input type="date" class="form-control" name="education[0][start_date]" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label>End Date</label>
-                  <input type="date" class="form-control" name="education[0][end_date]">
-                </div>
-                <div class="col-12 mb-3">
-                  <label>Description</label>
-                  <textarea class="form-control" name="education[0][description]" rows="2"></textarea>
-                </div>
-              </div>
-              <hr class="my-3">
+
+                <!-- Portfolio Links Section -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light py-3">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="ti-link me-2"></i>Portfolio Links
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Portfolio URLs</label>
+                            <input type="text" class="form-control" name="portfolio_links"
+                                   placeholder="https://your-portfolio.com, https://another-example.com">
+                            <small class="text-muted">Enter URLs separated by commas</small>
             </div>
           </div>
         </div>
+
         <!-- Certifications Section -->
-        <div class="card mb-4">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="font-weight-bold">
-              <i class="ti-medall mr-2"></i>Certifications
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="ti-medall me-2"></i>Certifications
             </h5>
             <button type="button" class="btn btn-sm btn-outline-info add-certification">
-              <i class="ti-plus"></i> Add Certification
+                <i class="ti-plus me-1"></i> Add Certification
             </button>
           </div>
-          <div class="card-body certification-section">
-            <div class="certification-item mb-3">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label>Certification Name</label>
-                  <input type="text" class="form-control" name="certifications[0][name]" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label>Issuing Organization</label>
-                  <input type="text" class="form-control" name="certifications[0][issuer]" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label>Issue Date</label>
-                  <input type="date" class="form-control" name="certifications[0][issue_date]" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label>Expiry Date</label>
-                  <input type="date" class="form-control" name="certifications[0][expiry_date]">
-                </div>
-                <div class="col-12 mb-3">
-                  <label>Certificate File</label>
-                  <div class="custom-file">
-                    <input type="file" class="custom-file-input"
-                           name="certifications[0][file]"
-                           accept=".pdf,.jpg,.png,.doc,.docx" required>
-                    <label class="custom-file-label">Choose file (PDF, Word, Images)</label>
+                    <div class="card-body" id="certification-section">
+                        <!-- Certification Template (Hidden) -->
+                        <div class="repeater-template certification-item">
+                            <div class="repeater-item">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Certification Name</label>
+                                        <input type="text" class="form-control" name="certifications[][name]" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Issuing Organization</label>
+                                        <input type="text" class="form-control" name="certifications[][issuer]"
+                                               required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Issue Date</label>
+                                        <input type="month" class="form-control" name="certifications[][issue_date]"
+                                               required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Expiry Date</label>
+                                        <input type="month" class="form-control" name="certifications[][expiry_date]">
                   </div>
-                </div>
-              </div>
-              <div class="text-right">
-                <button type="button" class="btn btn-sm btn-outline-danger remove-item">
-                  <i class="ti-trash"></i> Remove
-                </button>
-              </div>
-              <hr class="my-3">
-            </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Credential URL</label>
+                                        <input type="url" class="form-control" name="certifications[][credential_url]"
+                                               placeholder="https://credential-url.com">
+                                    </div>
+                                </div>
+                                <div class="text-end mt-3">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                                        <i class="ti-trash me-1"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Certification Items Container -->
+                        <div id="certification-items"></div>
           </div>
         </div>
+
         <!-- File Upload Section -->
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="font-weight-bold">
-              <i class="ti-upload mr-2"></i>Documents
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-light py-3">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="ti-upload me-2"></i>Documents
             </h5>
           </div>
           <div class="card-body">
-            <div class="mb-3">
-              <label class="font-weight-bold">Upload Resume (PDF)</label>
+              <div class="mb-4">
+                  <label class="form-label fw-bold">Upload Resume (PDF)</label>
               <div class="custom-file">
-                <input type="file" class="custom-file-input" name="resume" accept=".pdf">
-                <label class="custom-file-label">Choose file</label>
+                  <input type="file" class="form-control" id="resumeUpload" name="resume" accept=".pdf">
               </div>
             </div>
             <div class="mb-3">
-              <label class="font-weight-bold">Profile Photo</label>
+                <label class="form-label fw-bold">Profile Photo</label>
               <div class="custom-file">
-                <input type="file" class="custom-file-input" name="profile_image" accept="image/*">
-                <label class="custom-file-label">Choose image</label>
+                  <input type="file" class="form-control" id="profileImage" name="profile_image" accept="image/*">
               </div>
+                <small class="text-muted">Recommended size: 300x300 pixels</small>
             </div>
           </div>
         </div>
+
         <!-- Form Controls -->
-        <div class="d-flex justify-content-end mt-4">
-          <a href="{{ url_for('jobseekers.dashboard') }}"
-             class="btn btn-outline-secondary mr-3">
-            <i class="ti-close"></i> Cancel
+                <div class="d-flex justify-content-end mt-4 gap-2">
+                    <a href="#" class="btn btn-lg btn-outline-secondary">
+                        <i class="ti-close me-2"></i> Cancel
           </a>
-          <button type="submit" class="btn btn-primary">
-            <i class="ti-save"></i> Save CV
+                    <button type="submit" class="btn btn-lg btn-primary">
+                        <i class="ti-save me-2"></i> Save CV
           </button>
         </div>
       </form>
@@ -246,71 +460,121 @@
   </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script>
-  // Experience Section
-  document.querySelector('.add-experience').addEventListener('click', function() {
-    const clone = document.querySelector('.experience-item').cloneNode(true);
-    const index = document.querySelectorAll('.experience-item').length;
-    clone.querySelectorAll('input, textarea').forEach(el => {
-      el.name = el.name.replace('[0]', `[${index}]`);
-      el.value = '';
+    document.addEventListener('DOMContentLoaded', function () {
+        // ================== Skills Management ==================
+        const skillInput = document.getElementById('skill-input');
+        const skillsContainer = document.getElementById('skills-container');
+        const skillsField = document.getElementById('skills-csv');
+        const addSkillBtn = document.getElementById('add-skill-btn');
+
+        // Add skill function
+        const addSkill = (skill) => {
+            skill = skill.trim();
+            if (!skill) return;
+
+            // Create skill pill
+            const pill = document.createElement('span');
+            pill.className = 'skill-pill badge bg-primary';
+            pill.innerHTML = `${skill} <span class="remove-skill">×</span>`;
+
+            // Add remove functionality
+            pill.querySelector('.remove-skill').addEventListener('click', function () {
+                pill.remove();
+                updateSkillsField();
     });
-    document.querySelector('.experience-section').appendChild(clone);
+
+            skillsContainer.appendChild(pill);
+            updateSkillsField();
+        };
+
+        // Update hidden field with CSV skills
+        const updateSkillsField = () => {
+            const skills = Array.from(skillsContainer.querySelectorAll('.skill-pill'))
+                .map(pill => pill.textContent.replace('×', '').trim());
+            skillsField.value = skills.join(',');
+        };
+
+        // Event listeners for skills
+        addSkillBtn.addEventListener('click', () => {
+            addSkill(skillInput.value);
+            skillInput.value = '';
+            skillInput.focus();
+        });
+
+        skillInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addSkill(skillInput.value);
+                skillInput.value = '';
+            }
   });
 
-  // Education Section (Add this)
-  document.querySelector('.add-education').addEventListener('click', function() {
-    const clone = document.querySelector('.education-item').cloneNode(true);
-    const index = document.querySelectorAll('.education-item').length;
-    clone.querySelectorAll('input, textarea').forEach(el => {
-      el.name = el.name.replace('[0]', `[${index}]`);
-      el.value = '';
+        // ================== Repeater System ==================
+        const repeaterSections = {
+            'experience': {
+                addBtn: '.add-experience',
+                container: '#experience-items',
+                template: '.experience-item'
+            },
+            'education': {
+                addBtn: '.add-education',
+                container: '#education-items',
+                template: '.education-item'
+            },
+            'language': {
+                addBtn: '.add-language',
+                container: '#language-items',
+                template: '.language-item'
+            },
+            'project': {
+                addBtn: '.add-project',
+                container: '#project-items',
+                template: '.project-item'
+            },
+            'certification': {
+                addBtn: '.add-certification',
+                container: '#certification-items',
+                template: '.certification-item'
+            }
+        };
+
+        // Only initialize once per section
+        const initialized = new Set();
+
+        Object.entries(repeaterSections).forEach(([key, config]) => {
+            const addBtn = document.querySelector(config.addBtn);
+            const container = document.querySelector(config.container);
+            const template = document.querySelector(config.template);
+
+            if (!addBtn || !container || !template || initialized.has(container)) return;
+            initialized.add(container);
+
+            // Add first item on page load
+            addRepeaterItem(container, template);
+
+            // Button click to add more
+            addBtn.addEventListener('click', () => {
+                addRepeaterItem(container, template);
     });
-    document.querySelector('.education-section').appendChild(clone);
   });
 
-  // Certifications Section
-  document.querySelector('.add-certification').addEventListener('click', function() {
-    const template = document.querySelector('.certification-item');
+        function addRepeaterItem(container, template) {
     const clone = template.cloneNode(true);
-    const index = document.querySelectorAll('.certification-item').length;
+            clone.classList.remove('repeater-template');
+            clone.style.display = 'block';
 
-    // Update all inputs
-    clone.querySelectorAll('input').forEach(el => {
-      if(el.type !== 'file') {
-        el.name = el.name.replace('[0]', `[${index}]`);
-        el.value = '';
-      } else {
-        // Special handling for file inputs
-        el.name = `certifications[${index}][file]`;
-        el.value = '';
-        el.nextElementSibling.textContent = 'Choose file (PDF, Word, Images)';
-      }
+            const removeBtn = clone.querySelector('.remove-item');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function () {
+                    clone.remove();
+                });
+            }
+
+            container.appendChild(clone);
+        }
     });
-
-    // Add remove functionality
-    clone.querySelector('.remove-item').addEventListener('click', function() {
-      this.closest('.certification-item').remove();
-    });
-
-    document.querySelector('.certification-section').appendChild(clone);
-  });
-
-  // Initialize remove buttons
-  document.querySelectorAll('.remove-item').forEach(btn => {
-    btn.addEventListener('click', function() {
-      this.closest('.certification-item').remove();
-    });
-  });
-
-  // Handle file input labels
-  document.querySelectorAll('.custom-file-input').forEach(input => {
-    input.addEventListener('change', function(e) {
-      const fileName = e.target.files[0]?.name || 'Choose file';
-      this.nextElementSibling.textContent = fileName;
-    });
-  });
 </script>
-
 {% endblock %}

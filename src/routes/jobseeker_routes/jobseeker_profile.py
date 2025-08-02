@@ -8,9 +8,10 @@ from src.database.models import User, JobSeekerProfile
 # Routes
 from src.routes import flask_error_handler
 # Utilities
-from src.utils.route_helpers import get_controller
+from src.utils.route_helpers import get_controller, get_service
 
 jobseeker_profiles_bp = Blueprint("jobseeker_profiles", __name__, url_prefix="/jobseeker/profile")
+jobseeker_logger = get_service("logger")()("JobSeekerProfileRouter")
 
 def parse_profile_form(form_data, user_uid):
     # Parse job titles
@@ -63,7 +64,7 @@ async def create_profile(user: User):
     :return:
     """
     # Fetch config options for form
-
+    jobseeker_logger.info(f"Creating profile for user: {user.uid}")
     job_seeker_profile_controller = get_controller('job_seeker_profile')
 
     locations = await job_seeker_profile_controller.get_default_work_locations()
@@ -75,8 +76,12 @@ async def create_profile(user: User):
             # Parse the form data using the parse_profile_form function
             parsed_data = parse_profile_form(request.form, user.uid)
             # Create JobSeekerProfile instance from parsed data
+            jobseeker_logger.info(f"Parsed data for profile creation: {parsed_data}")
+
             profile_data = JobSeekerProfile(**parsed_data)
-            jobseeker_profile = await job_seeker_profile_controller.create_profile(profile_data)
+            jobseeker_logger.info(f"Creating profile for user: {user.uid} with data: {profile_data}")
+
+            jobseeker_profile = await job_seeker_profile_controller.create_profile(profile_data=profile_data)
             if jobseeker_profile:
                 flash("Profile created successfully.", "success")
                 return redirect(url_for("jobseeker_profiles.view_profile"))
