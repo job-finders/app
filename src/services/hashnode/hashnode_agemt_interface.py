@@ -36,7 +36,6 @@ class HashnodeAgentCommandRegistry:
     def __init__(self, service: HashnodeService):
         """
         Initialize the command registry with a HashnodeService instance.
-
         Args:
             service (HashnodeService): An instance of the HashnodeService, which handles the actual API interaction logic.
         """
@@ -78,11 +77,9 @@ class HashnodeAgentCommandRegistry:
         - `fn`: The asynchronous callable function implementing the command.
         - `description`: A human-readable explanation of what the command does.
         - `input_model`: The expected input data model (typically a Pydantic model) defining required and optional parameters.
-
         ---
         Returns:
             dict[str, dict]: A mapping where keys are command names (str), and values are command metadata dictionaries.
-
         Example return value structure:
         {
             "get_user_info": {

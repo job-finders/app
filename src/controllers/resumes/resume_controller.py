@@ -76,20 +76,28 @@ class ResumeController(Controllers):
             self.logger.info(f"will now attempt to build the model")
 
             # Convert Pydantic model data to SQLAlchemy model instance
+            # The field_serializer decorators will automatically handle HttpUrl conversion
             cv_data = data.model_dump(exclude=_excluded_items)
+
             cv_orm = JobSeekerCVORM(**cv_data)
             self.logger.info(
                 f"CV model built successfully (Without Relationships): {cv_orm.to_dict(include_relationships=True)}")
 
             session.add(cv_orm)
             session.commit()  # Commit the session to persist the CV
+            session.refresh(cv_orm)  # Refresh to get the generated cv_id
+
             self.logger.info(f"CV added to session: {data}")
 
-            await self._save_related_entries(session=session, data=data)
-            return JobSeekerCV(**cv_orm.to_dict())
+            # Pass the cv_id to save_related_entries
+            await self._save_related_entries(session=session, data=data, cv_id=cv_orm.cv_id)
+
+            # Refresh the CV with all relationships
+            session.refresh(cv_orm)
+            return JobSeekerCV(**cv_orm.to_dict(include_relationships=True))
 
     @error_handler
-    async def _save_related_entries(self, session: Session, data: JobSeekerCV):
+    async def _save_related_entries(self, session: Session, data: JobSeekerCV, cv_id: str):
         # Save nested resume data like experience, education, etc.
         # Explicitly retrieve and save each section
         sections = [
@@ -108,21 +116,42 @@ class ResumeController(Controllers):
                 await self.save_section(
                     session=session,
                     section_name=section_name,
-                    section_data=section_items
+                    section_data=section_items,
+                    cv_id=cv_id  # Pass the cv_id to save_section
                 )
 
     @error_handler
-    async def save_section(self, session: Session, section_name: str, section_data):
+    async def save_section(self, session: Session, section_name: str, section_data, cv_id: str):
         # Save a specific section's data to the database
         if section_name not in self.SECTION_MODELS.keys():
             raise ValueError(f"Unknown section name: {section_name}")
 
         model_class = self.SECTION_MODELS[section_name]
-        for item in section_data:
-            # Convert Pydantic model to dictionary
-            item_data = item.model_dump(exclude={'cv'})
-            session.add(model_class(**item_data))
-        session.commit()  # Commit the session to persist the section data
+
+        try:
+            for item in section_data:
+                # Convert Pydantic model to dictionary
+                # The field_serializer decorators will automatically handle HttpUrl conversion
+                item_data = item.model_dump(exclude={'cv'})
+
+                # Set the cv_id for the foreign key relationship
+                item_data['cv_id'] = cv_id
+
+                # Generate a unique ID if not present or empty
+                if not item_data.get('id') or item_data['id'] == '':
+                    import uuid
+                    item_data['id'] = str(uuid.uuid4())
+
+                self.logger.info(f"Adding {section_name} item with cv_id: {cv_id}")
+                session.add(model_class(**item_data))
+
+            session.commit()  # Commit the session to persist the section data
+            self.logger.info(f"Successfully saved {len(section_data)} items for section: {section_name}")
+
+        except Exception as e:
+            self.logger.error(f"Error saving {section_name}: {str(e)}")
+            session.rollback()  # Rollback on error
+            raise
 
     @error_handler
     async def get_cv_by_id(self, cv_id: str) -> JobSeekerCV | None:

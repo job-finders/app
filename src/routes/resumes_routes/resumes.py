@@ -318,9 +318,16 @@ async def view_cv(user: User, cv_id: str):
     cv = await resume_controller.get_cv_by_id(cv_id)
     resume_logger.info(f"CV IN ROUTER +++++++++++++++++++++++++++++++++: {cv}")
     ats_report = await _get_ats_report(cv=cv)
-    context = dict(current_user=user, cv=cv, ats_report=ats_report)
-    return render_template("jobseekers/cv/view_cv.html", **context)
 
+    # Convert CV to dictionary for JSON serialization in templates
+    cv_dict = cv.model_dump() if cv else None
+
+    context = dict(
+        current_user=user,
+        cv=cv_dict,  # Keep original for complex operations
+        ats_report=ats_report
+    )
+    return render_template("jobseekers/cv/view_cv.html", **context)
 
 @resume_routes.route("/delete/<string:cv_id>", methods=["POST"])
 @flask_error_handler

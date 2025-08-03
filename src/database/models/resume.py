@@ -1,8 +1,8 @@
 import uuid
 from datetime import date
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Any
 
-from pydantic import BaseModel, Field, HttpUrl, ConfigDict, field_validator, AwareDatetime
+from pydantic import BaseModel, Field, HttpUrl, ConfigDict, field_validator, AwareDatetime, field_serializer
 from src.database.constants import utc_time
 
 
@@ -17,13 +17,13 @@ class Experience(BaseModel):
     location: Optional[str] = None
     description: Optional[str] = None
 
-    # Add this configuration to ignore extra fields
     model_config = ConfigDict(
-        extra='ignore',  # Ignore extra fields during instantiation
-        from_attributes=True  # Allow ORM mode
+        extra='ignore',
+        from_attributes=True
     )
 
     @field_validator('job_title', 'company')
+    @classmethod
     def not_empty(cls, v):
         if not v.strip():
             raise ValueError("Field cannot be empty")
@@ -41,13 +41,13 @@ class Education(BaseModel):
     end_date: Optional[date] = None
     description: Optional[str] = None
 
-    # Add this configuration to ignore extra fields
     model_config = ConfigDict(
-        extra='ignore',  # Ignore extra fields during instantiation
-        from_attributes=True  # Allow ORM mode
+        extra='ignore',
+        from_attributes=True
     )
 
     @field_validator('institution', 'qualification', 'field_of_study')
+    @classmethod
     def not_empty(cls, v):
         if not v.strip():
             raise ValueError("Field cannot be empty")
@@ -64,11 +64,15 @@ class Certification(BaseModel):
     expiry_date: Optional[date] = None
     credential_url: Optional[HttpUrl] = None
 
-    # Add this configuration to ignore extra fields
     model_config = ConfigDict(
-        extra='ignore',  # Ignore extra fields during instantiation
-        from_attributes=True  # Allow ORM mode
+        extra='ignore',
+        from_attributes=True
     )
+
+    @field_serializer('credential_url')
+    def serialize_credential_url(self, value: Optional[HttpUrl]) -> Optional[str]:
+        return str(value) if value else None
+
 
 # Language
 class Language(BaseModel):
@@ -77,77 +81,80 @@ class Language(BaseModel):
     name: str
     proficiency: str  # e.g., Beginner, Intermediate, Fluent, Native
 
-    # Add this configuration to ignore extra fields
     model_config = ConfigDict(
-        extra='ignore',  # Ignore extra fields during instantiation
-        from_attributes=True  # Allow ORM mode
+        extra='ignore',
+        from_attributes=True
     )
+
 
 # Publication (for academics)
 class Publication(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     cv_id: str  # FK to JobSeekerCV.cv_id
-
     title: str
     publisher: Optional[str]
     date: Optional[date]
     link: Optional[HttpUrl]
 
-    # Add this configuration to ignore extra fields
     model_config = ConfigDict(
-        extra='ignore',  # Ignore extra fields during instantiation
-        from_attributes=True  # Allow ORM mode
+        extra='ignore',
+        from_attributes=True
     )
+
+    @field_serializer('link')
+    def serialize_link(self, value: Optional[HttpUrl]) -> Optional[str]:
+        return str(value) if value else None
+
 
 # Project (for technical/creative fields)
 class Project(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     cv_id: str  # FK to JobSeekerCV.cv_id
-
     title: str
     description: str
     technologies: Optional[List[str]] = []
     link: Optional[HttpUrl] = None
 
-    # Add this configuration to ignore extra fields
     model_config = ConfigDict(
-        extra='ignore',  # Ignore extra fields during instantiation
-        from_attributes=True  # Allow ORM mode
+        extra='ignore',
+        from_attributes=True
     )
+
+    @field_serializer('link')
+    def serialize_link(self, value: Optional[HttpUrl]) -> Optional[str]:
+        return str(value) if value else None
+
 
 # Award or Honor
 class Award(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     cv_id: str  # FK to JobSeekerCV.cv_id
-
     title: str
     issuer: Optional[str]
     date: Optional[date]
     description: Optional[str] = None
 
-    # Add this configuration to ignore extra fields
     model_config = ConfigDict(
-        extra='ignore',  # Ignore extra fields during instantiation
-        from_attributes=True  # Allow ORM mode
+        extra='ignore',
+        from_attributes=True
     )
+
 
 # Custom Section for extra content
 class CustomSection(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     cv_id: str  # FK to JobSeekerCV.cv_id
-
     title: str
     content: Union[str, List[str]]  # Supports plain text or bullet lists
 
-    # Add this configuration to ignore extra fields
     model_config = ConfigDict(
-        extra='ignore',  # Ignore extra fields during instantiation
-        from_attributes=True  # Allow ORM mode
+        extra='ignore',
+        from_attributes=True
     )
 
 
 class SavedCV(BaseModel):
-    save_id: str = Field(default_factory= lambda : str(uuid.uuid4()))
+    save_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     employer_id: str
     cv_id: str
     saved_at: AwareDatetime = Field(default_factory=utc_time())
@@ -156,18 +163,17 @@ class SavedCV(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-
 class JobSeekerCV(BaseModel):
     cv_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_uid: str  # FK to User.uid
     is_primary: bool = Field(default=False)
     professional_title: str
     summary: Optional[str] = None
-    location: Optional[str] = None  # New field for location
-    phone: Optional[str] = None  # New field for phone
-    website: Optional[str] = None  # New field for website
-    linkedin: Optional[str] = None  # New field for linkedin
-    github: Optional[str] = None  # New field for github
+    location: Optional[str] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
     skills: List[str]
     experience: List[Experience] = []
     education: List[Education] = []
@@ -180,27 +186,42 @@ class JobSeekerCV(BaseModel):
 
     # Media and links
     portfolio_links: Optional[List[HttpUrl]] = []
-    resume_file_url: Optional[HttpUrl] = None  # Link to uploaded original resume
+    resume_file_url: Optional[HttpUrl] = None
     profile_image_url: Optional[HttpUrl] = None
 
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
-    # noinspection PyTypeHints,PyUnresolvedReferences
     jobseeker_profile: Optional['JobSeekerProfile'] = Field(default=None)
 
-    # noinspection PyMethodParameters
+    model_config = ConfigDict(from_attributes=True)
+
+    # Serialize HttpUrl fields to strings
+    @field_serializer('portfolio_links')
+    def serialize_portfolio_links(self, value: Optional[List[HttpUrl]]) -> Optional[List[str]]:
+        return [str(link) for link in value] if value else []
+
+    @field_serializer('resume_file_url')
+    def serialize_resume_file_url(self, value: Optional[HttpUrl]) -> Optional[str]:
+        return str(value) if value else None
+
+    @field_serializer('profile_image_url')
+    def serialize_profile_image_url(self, value: Optional[HttpUrl]) -> Optional[str]:
+        return str(value) if value else None
+
     @field_validator('professional_title')
+    @classmethod
     def title_must_not_be_empty(cls, v):
         if not v.strip():
             raise ValueError("Professional title cannot be empty")
         return v
 
-    # noinspection PyMethodParameters
     @field_validator('skills')
+    @classmethod
     def skills_must_have_values(cls, v):
         if not v or not all(s.strip() for s in v):
             raise ValueError("At least one valid skill must be provided")
         return v
 
+    # Rest of your methods remain the same...
     @property
     def ats_description(self) -> str:
         """
@@ -379,8 +400,6 @@ class JobSeekerCV(BaseModel):
         percent = int((score / max_score) * 100) if max_score else 0
         return min(percent, 100)
 
-
-
     @property
     def trust_score(self) -> int:
         score = 0
@@ -426,6 +445,3 @@ class JobSeekerCV(BaseModel):
         if any(e.description for e in self.experience or []): score += 5
 
         return min(int(score), 100)
-
-
-    model_config = ConfigDict(from_attributes=True)

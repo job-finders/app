@@ -155,8 +155,13 @@
           </div>
                     <div class="card-body" id="experience-section">
                         <!-- Experience Template (Hidden) -->
+                        <!-- Experience Template (Updated) -->
                         <div class="repeater-template experience-item">
                             <div class="repeater-item">
+                                <!-- Hidden ID fields -->
+                                <input type="hidden" name="experience[][id]" value="">
+                                <input type="hidden" name="experience[][cv_id]" value="">
+
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label">Job Title</label>
@@ -190,7 +195,7 @@
                                         <textarea class="form-control" name="experience[][description]" rows="2"
                                                   placeholder="Describe your responsibilities and achievements"></textarea>
                                     </div>
-                </div>
+                                </div>
                                 <div class="text-end mt-3">
                                     <button type="button" class="btn btn-sm btn-outline-danger remove-item">
                                         <i class="ti-trash me-1"></i> Remove
@@ -198,6 +203,7 @@
                                 </div>
                             </div>
                         </div>
+
 
                         <!-- Experience Items Container -->
                         <div id="experience-items"></div>
@@ -218,6 +224,10 @@
                         <!-- Education Template (Hidden) -->
                         <div class="repeater-template education-item">
                             <div class="repeater-item">
+                                <!-- Hidden ID fields -->
+                                <input type="hidden" name="education[][id]" value="">
+                                <input type="hidden" name="education[][cv_id]" value="">
+
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label">Institution</label>
@@ -257,6 +267,7 @@
                             </div>
                         </div>
 
+
                         <!-- Education Items Container -->
                         <div id="education-items"></div>
                     </div>
@@ -274,8 +285,13 @@
                     </div>
                     <div class="card-body" id="language-section">
                         <!-- Language Template (Hidden) -->
+                        <!-- Language Template (Updated) -->
                         <div class="repeater-template language-item">
                             <div class="repeater-item">
+                                <!-- Hidden ID fields -->
+                                <input type="hidden" name="languages[][id]" value="">
+                                <input type="hidden" name="languages[][cv_id]" value="">
+
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label">Language</label>
@@ -317,8 +333,13 @@
           </div>
                     <div class="card-body" id="project-section">
                         <!-- Project Template (Hidden) -->
+                        <!-- Project Template (Updated) -->
                         <div class="repeater-template project-item">
                             <div class="repeater-item">
+                                <!-- Hidden ID fields -->
+                                <input type="hidden" name="projects[][id]" value="">
+                                <input type="hidden" name="projects[][cv_id]" value="">
+
                                 <div class="row g-3">
                                     <div class="col-md-12">
                                         <label class="form-label">Project Title</label>
@@ -339,14 +360,15 @@
                                         <input type="url" class="form-control" name="projects[][link]"
                                                placeholder="https://project-url.com">
                                     </div>
-                </div>
+                                </div>
                                 <div class="text-end mt-3">
                                     <button type="button" class="btn btn-sm btn-outline-danger remove-item">
                                         <i class="ti-trash me-1"></i> Remove
                                     </button>
-                </div>
+                                </div>
                             </div>
                         </div>
+
 
                         <!-- Project Items Container -->
                         <div id="project-items"></div>
@@ -382,7 +404,45 @@
           </div>
                     <div class="card-body" id="certification-section">
                         <!-- Certification Template (Hidden) -->
+                        <!-- Certification Template (Updated) -->
                         <div class="repeater-template certification-item">
+                            <div class="repeater-item">
+                                <!-- Hidden ID fields -->
+                                <input type="hidden" name="certifications[][id]" value="">
+                                <input type="hidden" name="certifications[][cv_id]" value="">
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Certification Name</label>
+                                        <input type="text" class="form-control" name="certifications[][name]" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Issuing Organization</label>
+                                        <input type="text" class="form-control" name="certifications[][issuer]"
+                                               required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Issue Date</label>
+                                        <input type="month" class="form-control" name="certifications[][issue_date]"
+                                               required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Expiry Date</label>
+                                        <input type="month" class="form-control" name="certifications[][expiry_date]">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Credential URL</label>
+                                        <input type="url" class="form-control" name="certifications[][credential_url]"
+                                               placeholder="https://credential-url.com">
+                                    </div>
+                                </div>
+                                <div class="text-end mt-3">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                                        <i class="ti-trash me-1"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                             <div class="repeater-item">
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -445,9 +505,10 @@
             </div>
           </div>
         </div>
-
+        <!-- Add this hidden field for CV ID -->
+        <input type="hidden" name="cv_id" value="{{ cv.id if cv else '' }}">
         <!-- Form Controls -->
-                <div class="d-flex justify-content-end mt-4 gap-2">
+        <div class="d-flex justify-content-end mt-4 gap-2">
                     <a href="#" class="btn btn-lg btn-outline-secondary">
                         <i class="ti-close me-2"></i> Cancel
           </a>
@@ -464,53 +525,55 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Get CV ID from a hidden field or data attribute (you'll need to add this to your template)
+        const cvId = document.querySelector('input[name="cv_id"]')?.value || '';
+
         // ================== Skills Management ==================
         const skillInput = document.getElementById('skill-input');
         const skillsContainer = document.getElementById('skills-container');
         const skillsField = document.getElementById('skills-csv');
         const addSkillBtn = document.getElementById('add-skill-btn');
 
-        // Add skill function
         const addSkill = (skill) => {
             skill = skill.trim();
             if (!skill) return;
 
-            // Create skill pill
             const pill = document.createElement('span');
             pill.className = 'skill-pill badge bg-primary';
             pill.innerHTML = `${skill} <span class="remove-skill">×</span>`;
 
-            // Add remove functionality
             pill.querySelector('.remove-skill').addEventListener('click', function () {
                 pill.remove();
                 updateSkillsField();
-    });
+            });
 
             skillsContainer.appendChild(pill);
             updateSkillsField();
         };
 
-        // Update hidden field with CSV skills
         const updateSkillsField = () => {
             const skills = Array.from(skillsContainer.querySelectorAll('.skill-pill'))
                 .map(pill => pill.textContent.replace('×', '').trim());
             skillsField.value = skills.join(',');
         };
 
-        // Event listeners for skills
+        if (addSkillBtn) {
         addSkillBtn.addEventListener('click', () => {
             addSkill(skillInput.value);
             skillInput.value = '';
             skillInput.focus();
         });
+        }
 
+        if (skillInput) {
         skillInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 addSkill(skillInput.value);
                 skillInput.value = '';
             }
-  });
+        });
+        }
 
         // ================== Repeater System ==================
         const repeaterSections = {
@@ -541,47 +604,52 @@
             }
         };
 
-        // Only initialize once per section
-        const initialized = new Set();
-
         Object.entries(repeaterSections).forEach(([key, config]) => {
             const addBtn = document.querySelector(config.addBtn);
             const container = document.querySelector(config.container);
             const template = document.querySelector(config.template);
 
-            if (!addBtn || !container || !template || initialized.has(container)) return;
-            initialized.add(container);
+            if (!addBtn || !container || !template) {
+                console.warn(`Missing elements for ${key} section`);
+                return;
+            }
 
             // Add first item on page load
             addRepeaterItem(container, template);
 
-            // Button click to add more
-            addBtn.addEventListener('click', () => {
+            addBtn.addEventListener('click', (e) => {
+                e.preventDefault();
                 addRepeaterItem(container, template);
-    });
-  });
+            });
+        });
 
         function addRepeaterItem(container, template) {
-    const clone = template.cloneNode(true);
+            const clone = template.cloneNode(true);
             clone.classList.remove('repeater-template');
             clone.style.display = 'block';
 
-            // Get current item count to use as index
             const index = container.children.length;
 
-            // Update all field names with current index
+            // Update all field names and handle ID fields
             clone.querySelectorAll('input, select, textarea').forEach(el => {
-                if (el.name) {
-                    // Replace empty brackets with current index
-                    el.name = el.name.replace('[]', `[${index}]`);
+                if (el.name && el.name.includes('[]')) {
+                    const newName = el.name.replace('[]', `[${index}]`);
+                    el.name = newName;
+
+                    // Handle ID fields - set empty for new items, or existing ID for edits
+                    if (newName.includes('[id]')) {
+                        el.value = ''; // Empty for new items
+                    } else if (newName.includes('[cv_id]')) {
+                        el.value = cvId; // Set the CV ID
+                    }
                 }
             });
 
             const removeBtn = clone.querySelector('.remove-item');
             if (removeBtn) {
-                removeBtn.addEventListener('click', function () {
+                removeBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
                     clone.remove();
-                    // Reindex remaining items after removal
                     reindexSectionItems(container);
                 });
             }
@@ -589,16 +657,50 @@
             container.appendChild(clone);
         }
 
-// Reindex items after removal
         function reindexSectionItems(container) {
             container.querySelectorAll('.repeater-item').forEach((item, index) => {
                 item.querySelectorAll('input, select, textarea').forEach(el => {
                     if (el.name) {
-                        el.name = el.name.replace(/\[\d+\]/g, `[${index}]`);
+                        const baseName = el.name.replace(/\[\d+\]/g, '');
+                        el.name = baseName.replace('[]', `[${index}]`);
+
+                        // Maintain CV ID after reindexing
+                        if (el.name.includes('[cv_id]')) {
+                            el.value = cvId;
+                        }
                     }
                 });
             });
         }
 
+        // ================== Form Validation ==================
+        {#const forms = document.querySelectorAll('.needs-validation');#}
+        {#Array.from(forms).forEach(form => {#}
+        {#    form.addEventListener('submit', event => {#}
+        {#        if (!form.checkValidity()) {#}
+        {#            event.preventDefault();#}
+        {#            event.stopPropagation();#}
+        {#        }#}
+        {#        form.classList.add('was-validated');#}
+        {#    });#}
+        {#})
+            ;
+            #}
+
+            // Handle current job checkbox
+            document.addEventListener('change', function (e) {
+                if (e.target.name && e.target.name.includes('[current]')) {
+                    const endDateInput = e.target.closest('.repeater-item').querySelector('input[name*="[end_date]"]');
+                    if (endDateInput) {
+                        endDateInput.disabled = e.target.checked;
+                        if (e.target.checked) {
+                            endDateInput.value = '';
+                        }
+                    }
+                }
+            });
+        }
+    )
+        ;
 </script>
 {% endblock %}

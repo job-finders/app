@@ -84,7 +84,8 @@ class BlogAgentController(Controllers):
     async def cron_topic_generator(self) -> int:
         """00:05 UTC – discover topics & persist them (canonical)."""
         sitemap = await self.fetch_hashnode_sitemap()
-        topics = await self.agents["topic_discovery"].run(sitemap)
+        topics = await self.agents["topic_discovery"].run(sitemap=sitemap, user_role=UserRole.SYSTEM_ADMIN,
+                                                          task_type=TaskType.STRATEGY.value)
         with self.get_session() as session:
             for topic in topics:
                 if not session.query(BlogTopicORM).filter_by(title=topic.title).first():
@@ -98,8 +99,10 @@ class BlogAgentController(Controllers):
             for topic in session.query(BlogTopicORM).all():
                 if session.query(ArticleORM).filter_by(topic_id=topic.id).first():
                     continue
-                outline = await self.agents["article_planner"].run(topic)
-                content = await self.agents["content_generator"].run(outline)
+                outline = await self.agents["article_planner"].run(topic=topic, user_role=UserRole.SYSTEM_ADMIN,
+                                                                   task_type=TaskType.PLAN.value)
+                content = await self.agents["content_generator"].run(outline=outline, user_role=UserRole.SYSTEM_ADMIN,
+                                                                     task_type=TaskType.WRITING.value)
                 cover = await generate_cover_image(content.title)
                 social = await generate_social_card(content.title)
 
