@@ -129,7 +129,7 @@ class ResumeController(Controllers):
             if not cv_orm:
                 return None
 
-            self.logger.info(f"Retrieved CV ORM: {cv_orm}")
+            self.logger.info(f"Retrieved CV ORM: {cv_orm.to_dict()}")
 
             return JobSeekerCV(**cv_orm.to_dict(include_relationships=True))
 

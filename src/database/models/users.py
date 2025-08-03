@@ -14,6 +14,8 @@ class RolesEnum(Enum):
     EMPLOYER = "employer"
     JOBSEEKER = "seeker"
     ADMIN = "admin"
+    RECRUITER = "recruiter"
+    HR_MANAGER = "hr_manager"
     SYSTEM_ADMIN = "system_admin"
 
 

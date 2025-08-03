@@ -168,7 +168,7 @@ async def ats_check(user: User):
 @flask_error_handler
 @jobseeker_login
 async def edit_cv(user: User, cv_id: str):
-    resume_controller = get_controller('resume')
+    resume_controller: ResumeController = get_controller('resume')
     if request.method == "POST":
         try:
             start_time = utc_time()

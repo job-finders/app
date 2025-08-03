@@ -7,6 +7,7 @@ from typing import Any, Dict, Type
 
 from pydantic import BaseModel
 
+
 from src.cache.cache_redis import cached
 from src.agents.memory import AgentMemoryStore
 from src.agents.openrouter_client import OpenRouterClient
@@ -29,9 +30,10 @@ class ModelType(str, Enum):
 class UserRole(str, Enum):
     JOB_SEEKER = "job_seeker"
     EMPLOYER = "employer"
-    HR_MANAGER = "hr_manager"
     RECRUITER = "recruiter"
+    HR_MANAGER = "hr_manager"
     ADMIN = "admin"
+    SYSTEM_ADMIN = "system_admin"
 
 
 class UsageTier(Enum):

@@ -35,14 +35,14 @@
             <div class="mb-4">
               <h4 class="text-info border-bottom pb-2">Sections</h4>
 
-              {{ sections.edit_experience(cv.experience) }}
-              {{ sections.edit_education(cv.education) }}
-              {{ sections.edit_certifications(cv.certifications) }}
-              {{ sections.edit_languages(cv.languages) }}
-              {{ sections.edit_projects(cv.projects) }}
-              {{ sections.edit_publications(cv.publications) }}
-              {{ sections.edit_awards(cv.awards) }}
-              {{ sections.edit_custom_sections(cv.custom_sections) }}
+                {{ sections.render_experience(cv.experience) }}
+                {{ sections.render_education(cv.education) }}
+                {{ sections.render_certifications(cv.certifications) }}
+                {{ sections.render_languages(cv.languages) }}
+                {{ sections.render_projects(cv.projects) }}
+                {{ sections.render_publications(cv.publications) }}
+                {{ sections.render_awards(cv.awards) }}
+                {{ sections.render_custom_sections(cv.custom_sections) }}
 
             </div>
           </div>
