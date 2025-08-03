@@ -396,7 +396,7 @@ class SavedCVORM(Base):
     def to_dict(self):
         return {
             'id': self.id,
-            'employer_uid': self.employer_uid,
+            'employer_id': self.employer_id,
             'cv_id': self.cv_id,
             'notes': self.notes,
             'saved_at': self.saved_at.isoformat() if self.saved_at else None

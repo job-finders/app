@@ -34,7 +34,19 @@
             </div>{% endif %}
           </div>
 
-          <!-- Dynamic Sections -->
+            <!-- Debugging: Print the data to verify -->
+            <div class="debug-info">
+                <pre>Experience: {{ cv.experience|tojson }}</pre>
+                <pre>Education: {{ cv.education|tojson }}</pre>
+                <pre>Certifications: {{ cv.certifications|tojson }}</pre>
+                <pre>Languages: {{ cv.languages|tojson }}</pre>
+                <pre>Projects: {{ cv.projects|tojson }}</pre>
+                <pre>Publications: {{ cv.publications|tojson }}</pre>
+                <pre>Awards: {{ cv.awards|tojson }}</pre>
+                <pre>Custom Sections: {{ cv.custom_sections|tojson }}</pre>
+            </div>
+
+            <!-- Dynamic Sections -->
           {{ cv_sections.render_experience(cv.experience) }}
           {{ cv_sections.render_education(cv.education) }}
           {{ cv_sections.render_certifications(cv.certifications) }}

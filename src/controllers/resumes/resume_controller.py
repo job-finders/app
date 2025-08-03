@@ -60,7 +60,7 @@ class ResumeController(Controllers):
         super().init_app(app)
 
     @error_handler
-    async def create_cv(self, user_uid: str, data: JobSeekerCV) -> dict:
+    async def create_cv(self, user_uid: str, data: JobSeekerCV) -> JobSeekerCV:
         # Create a new Resume with related entries (experience, education, etc.)
         if not (isinstance(user_uid, str) and user_uid.strip()):
             return {}
@@ -68,7 +68,6 @@ class ResumeController(Controllers):
             return {}
 
         with self.get_session() as session:
-            cv_id = str(uuid.uuid4())
             # Excluding - all items which will be saved later through save related items.
             _excluded_items = {'experience', 'education', 'certifications',
                                'languages', 'projects', 'publications', 'awards', 'custom_sections',
@@ -78,41 +77,61 @@ class ResumeController(Controllers):
 
             # Convert Pydantic model data to SQLAlchemy model instance
             cv_data = data.model_dump(exclude=_excluded_items)
-            cv = JobSeekerCVORM(**cv_data)
-            self.logger.info(f"CV model built successfully: {cv}")
+            cv_orm = JobSeekerCVORM(**cv_data)
+            self.logger.info(
+                f"CV model built successfully (Without Relationships): {cv_orm.to_dict(include_relationships=True)}")
 
-            session.add(cv)
-            self.logger.info(f"CV added to session: {cv}")
+            session.add(cv_orm)
+            session.commit()  # Commit the session to persist the CV
+            self.logger.info(f"CV added to session: {data}")
 
-        await self._save_related_entries(cv_id=cv_id, data=data)
-        return {"cv_id": cv_id, "status": "created"}
+            await self._save_related_entries(session=session, data=data)
+            return JobSeekerCV(**cv_orm.to_dict())
 
     @error_handler
-    async def _save_related_entries(self, cv_id: str, data: JobSeekerCV):
+    async def _save_related_entries(self, session: Session, data: JobSeekerCV):
         # Save nested resume data like experience, education, etc.
-        with self.get_session() as session:
-            for section_name, section_data in data.model_dump(exclude={'user_uid'}).items():
-                if section_name in self.SECTION_MODELS:
-                    await self.save_section(session=session, cv_id=cv_id, section_name=section_name,
-                                            section_data=section_data)
+        # Explicitly retrieve and save each section
+        sections = [
+            ('experience', data.experience if data.experience else []),
+            ('education', data.education if data.education else []),
+            ('certifications', data.certifications if data.certifications else []),
+            ('languages', data.languages if data.languages else []),
+            ('projects', data.projects if data.projects else []),
+            ('publications', data.publications if data.publications else []),
+            ('awards', data.awards if data.awards else []),
+            ('custom_sections', data.custom_sections if data.custom_sections else [])
+        ]
+
+        for section_name, section_items in sections:
+            if section_items:
+                await self.save_section(
+                    session=session,
+                    section_name=section_name,
+                    section_data=section_items
+                )
 
     @error_handler
-    async def save_section(self, session: Session, cv_id: str, section_name: str, section_data: list[dict]):
+    async def save_section(self, session: Session, section_name: str, section_data):
         # Save a specific section's data to the database
-        if section_name not in self.SECTION_MODELS:
+        if section_name not in self.SECTION_MODELS.keys():
             raise ValueError(f"Unknown section name: {section_name}")
 
         model_class = self.SECTION_MODELS[section_name]
-        for item_data in section_data:
-            session.add(model_class(cv_id=cv_id, **item_data))
+        for item in section_data:
+            # Convert Pydantic model to dictionary
+            item_data = item.model_dump(exclude={'cv'})
+            session.add(model_class(**item_data))
+        session.commit()  # Commit the session to persist the section data
 
     @error_handler
     async def get_cv_by_id(self, cv_id: str) -> JobSeekerCV | None:
         """return cv / resume with all its related fields"""
-        if not(isinstance(cv_id, str) and cv_id.strip()):
+        if not (isinstance(cv_id, str) and cv_id.strip()):
             return None
 
         with self.get_session() as session:
+            # Load the CV ORM object with all related fields
             cv_orm: JobSeekerCVORM = (
                 session.query(JobSeekerCVORM)
                 .options(
@@ -124,14 +143,25 @@ class ResumeController(Controllers):
                     joinedload(JobSeekerCVORM.publications),
                     joinedload(JobSeekerCVORM.awards),
                     joinedload(JobSeekerCVORM.custom_sections),
-                ).filter(JobSeekerCVORM.cv_id == cv_id).first())
-
+                )
+                .filter(JobSeekerCVORM.cv_id == cv_id)
+                .first()
+            )
             if not cv_orm:
                 return None
 
-            self.logger.info(f"Retrieved CV ORM: {cv_orm.to_dict()}")
+            # Log the retrieved CV ORM object
+            self.logger.info(f"Retrieved CV ORM: {cv_orm.to_dict(include_relationships=True)}")
 
-            return JobSeekerCV(**cv_orm.to_dict(include_relationships=True))
+            # Convert the CV ORM object to a Pydantic model
+            jobseeker_cv = JobSeekerCV(**cv_orm.to_dict(include_relationships=True))
+
+            # Log the Pydantic model to ensure it is correctly populated
+            self.logger.info(f"PYDANTIC MODEL ================================")
+            self.logger.info(f"{jobseeker_cv}")
+
+            return jobseeker_cv
+
 
     @error_handler
     async def get_successful_resumes_by_job(

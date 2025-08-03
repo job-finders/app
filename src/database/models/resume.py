@@ -8,6 +8,8 @@ from src.database.constants import utc_time
 
 # Experience
 class Experience(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cv_id: str  # FK to JobSeekerCV.cv_id
     job_title: str
     company: str
     start_date: date
@@ -15,7 +17,11 @@ class Experience(BaseModel):
     location: Optional[str] = None
     description: Optional[str] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    # Add this configuration to ignore extra fields
+    model_config = ConfigDict(
+        extra='ignore',  # Ignore extra fields during instantiation
+        from_attributes=True  # Allow ORM mode
+    )
 
     @field_validator('job_title', 'company')
     def not_empty(cls, v):
@@ -26,6 +32,8 @@ class Experience(BaseModel):
 
 # Education
 class Education(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cv_id: str  # FK to JobSeekerCV.cv_id
     institution: str
     qualification: str
     field_of_study: str
@@ -33,7 +41,11 @@ class Education(BaseModel):
     end_date: Optional[date] = None
     description: Optional[str] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    # Add this configuration to ignore extra fields
+    model_config = ConfigDict(
+        extra='ignore',  # Ignore extra fields during instantiation
+        from_attributes=True  # Allow ORM mode
+    )
 
     @field_validator('institution', 'qualification', 'field_of_study')
     def not_empty(cls, v):
@@ -44,54 +56,94 @@ class Education(BaseModel):
 
 # Certification
 class Certification(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cv_id: str  # FK to JobSeekerCV.cv_id
     name: str
     issuer: str
     issue_date: date
     expiry_date: Optional[date] = None
     credential_url: Optional[HttpUrl] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    # Add this configuration to ignore extra fields
+    model_config = ConfigDict(
+        extra='ignore',  # Ignore extra fields during instantiation
+        from_attributes=True  # Allow ORM mode
+    )
 
 # Language
 class Language(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cv_id: str  # FK to JobSeekerCV.cv_id
     name: str
     proficiency: str  # e.g., Beginner, Intermediate, Fluent, Native
 
-    model_config = ConfigDict(from_attributes=True)
+    # Add this configuration to ignore extra fields
+    model_config = ConfigDict(
+        extra='ignore',  # Ignore extra fields during instantiation
+        from_attributes=True  # Allow ORM mode
+    )
 
 # Publication (for academics)
 class Publication(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cv_id: str  # FK to JobSeekerCV.cv_id
+
     title: str
     publisher: Optional[str]
     date: Optional[date]
     link: Optional[HttpUrl]
 
-    model_config = ConfigDict(from_attributes=True)
+    # Add this configuration to ignore extra fields
+    model_config = ConfigDict(
+        extra='ignore',  # Ignore extra fields during instantiation
+        from_attributes=True  # Allow ORM mode
+    )
 
 # Project (for technical/creative fields)
 class Project(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cv_id: str  # FK to JobSeekerCV.cv_id
+
     title: str
     description: str
     technologies: Optional[List[str]] = []
     link: Optional[HttpUrl] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    # Add this configuration to ignore extra fields
+    model_config = ConfigDict(
+        extra='ignore',  # Ignore extra fields during instantiation
+        from_attributes=True  # Allow ORM mode
+    )
 
 # Award or Honor
 class Award(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cv_id: str  # FK to JobSeekerCV.cv_id
+
     title: str
     issuer: Optional[str]
     date: Optional[date]
     description: Optional[str] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    # Add this configuration to ignore extra fields
+    model_config = ConfigDict(
+        extra='ignore',  # Ignore extra fields during instantiation
+        from_attributes=True  # Allow ORM mode
+    )
 
 # Custom Section for extra content
 class CustomSection(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cv_id: str  # FK to JobSeekerCV.cv_id
+
     title: str
     content: Union[str, List[str]]  # Supports plain text or bullet lists
 
-    model_config = ConfigDict(from_attributes=True)
+    # Add this configuration to ignore extra fields
+    model_config = ConfigDict(
+        extra='ignore',  # Ignore extra fields during instantiation
+        from_attributes=True  # Allow ORM mode
+    )
 
 
 class SavedCV(BaseModel):

@@ -14,6 +14,7 @@ from flask import (
 )
 from pydantic import ValidationError
 
+
 from src.controllers.resumes import ResumeController
 # Authentication
 from src.authentication import jobseeker_login
@@ -39,7 +40,7 @@ from src.database.constants import utc_time
 from src.routes import flask_error_handler
 
 # Utilities
-from src.utils.route_helpers import get_controller
+from src.utils.route_helpers import get_controller, get_service
 
 resume_routes = Blueprint(
     "jobseeker_cv",
@@ -55,9 +56,8 @@ def _parse_date(date_str: str) -> date:
 
 
 def _parse_cv_form_data(form_data, files, user_uid):
-    """Enhanced form parser with all CV sections"""
     structured_data = {
-        'user_uid': user_uid,  # Include user_uid in the structured data
+        'user_uid': user_uid,
         'professional_title': form_data.get('professional_title'),
         'summary': form_data.get('summary'),
         'location': form_data.get('location'),
@@ -65,9 +65,10 @@ def _parse_cv_form_data(form_data, files, user_uid):
         'website': form_data.get('website'),
         'linkedin': form_data.get('linkedin'),
         'github': form_data.get('github'),
-        'skills': [s.strip() for s in form_data.get('skills', '').split(',') if s.strip()], }
+        'skills': [s.strip() for s in form_data.get('skills', '').split(',') if s.strip()],
+        'portfolio_links': [link.strip() for link in form_data.get('portfolio_links', '').split(',') if link.strip()],
+    }
 
-    # Process all sections dynamically using Pydantic v2 syntax
     sections = {
         'experience': Experience,
         'education': Education,
@@ -78,39 +79,47 @@ def _parse_cv_form_data(form_data, files, user_uid):
         'awards': Award,
         'custom_sections': CustomSection
     }
-    resume_controller = get_controller('resume')
+
+    def _parse_date(date_str):
+        """Parse date from YYYY-MM format"""
+        if not date_str:
+            return None
+        try:
+            return datetime.strptime(date_str, "%Y-%m").date()
+        except ValueError:
+            return None
+
     for section, model in sections.items():
         structured_data[section] = []
         index = 0
 
+        # Keep processing while we find items with this index
         while True:
-            prefix = f"{section}[{index}]"
-            field_data = {}
+            item_data = {}
+            has_data = False
 
-            # Use model.model_fields instead of __fields__
-            # noinspection PyTypeChecker
-            for field_name in model.model_fields:
-                form_key = f"{prefix}[{field_name}]"
-                value = form_data.get(form_key)
+            # Get all fields for this section item
+            for field in model.model_fields:
+                key = f"{section}[{index}][{field}]"
+                value = form_data.get(key)
+
+                if value:
+                    has_data = True
 
                 # Handle special field types
-                if 'date' in field_name and value:
-                    field_data[field_name] = _parse_date(value)
-                elif field_name == 'technologies' and value:
-                    field_data[field_name] = [t.strip() for t in value.split(',')]
+                if 'date' in field and value:
+                    item_data[field] = _parse_date(value)
+                elif field == 'technologies' and value:
+                    item_data[field] = [t.strip() for t in value.split(',')]
                 else:
-                    field_data[field_name] = value
-            # Check if we have at least one field with data
-            if not any(field_data.values()):
-                break
-            # Handle file uploads for certifications
-            if section == 'certifications':
-                file = files.get(f"{prefix}[file]")
-                if file and file.filename != '':
-                    file_url = resume_controller.store_certificate_file(file)
-                    field_data['credential_url'] = file_url
+                    item_data[field] = value
 
-            structured_data[section].append(field_data)
+            # Stop if no data found for this index
+            if not has_data:
+                break
+
+            # Add to section data
+            structured_data[section].append(item_data)
             index += 1
 
     return structured_data
@@ -272,8 +281,14 @@ async def upload_cv(user: User):
     if request.method == "POST":
         try:
             # Parse and validate form data
+            resume_logger = get_service("logger")()("CREATE_CV_ROUTE:")
             raw_data = _parse_cv_form_data(request.form, request.files, user.uid)
+            resume_logger.info("---------------------------------------------------------------------")
+            resume_logger.info(f" CV RAW data: {raw_data}")
             cv_data = JobSeekerCV(**raw_data)
+            resume_logger.info("---------------------------------------------------------------------")
+            resume_logger.info(f"Parsed CV data: {cv_data}")
+            resume_logger.info("---------------------------------------------------------------------")
 
             # Call controller
             resumes_controller = get_controller("resume")
@@ -299,7 +314,9 @@ async def upload_cv(user: User):
 @jobseeker_login
 async def view_cv(user: User, cv_id: str):
     resume_controller: ResumeController = get_controller("resume")
+    resume_logger = get_service("logger")()("VIEW_CV_ROUTE:")
     cv = await resume_controller.get_cv_by_id(cv_id)
+    resume_logger.info(f"CV IN ROUTER +++++++++++++++++++++++++++++++++: {cv}")
     ats_report = await _get_ats_report(cv=cv)
     context = dict(current_user=user, cv=cv, ats_report=ats_report)
     return render_template("jobseekers/cv/view_cv.html", **context)

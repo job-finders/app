@@ -1,6 +1,31 @@
 {% extends "jobseekers/layout/page.html" %}
 {% import 'jobseekers/cv/partials/_cv_sections.html' as sections %}
 
+{% block styles %}
+    <style>
+        .sticky-top {
+            top: 20px;
+            z-index: 1000;
+        }
+
+        .ats-score-preview {
+            font-size: 1.1rem;
+            padding: 0.5rem 1rem;
+        }
+
+        [data-ats-highlight="true"] {
+            border-left: 3px solid #17a2b8;
+            background-color: rgba(23, 162, 184, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            .form-group input, .form-group textarea {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
   <div class="row">
@@ -129,27 +154,6 @@
 </div>
 {% endblock %}
 
-{% block styles %}
-<style>
-  .sticky-top {
-    top: 20px;
-    z-index: 1000;
-  }
-  .ats-score-preview {
-    font-size: 1.1rem;
-    padding: 0.5rem 1rem;
-  }
-  [data-ats-highlight="true"] {
-    border-left: 3px solid #17a2b8;
-    background-color: rgba(23, 162, 184, 0.05);
-  }
-  @media (max-width: 768px) {
-    .form-group input, .form-group textarea {
-      font-size: 0.9rem;
-    }
-  }
-</style>
-{% endblock %}
 
 {% block scripts %}
 <script>

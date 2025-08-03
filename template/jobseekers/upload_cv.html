@@ -566,15 +566,39 @@
             clone.classList.remove('repeater-template');
             clone.style.display = 'block';
 
+            // Get current item count to use as index
+            const index = container.children.length;
+
+            // Update all field names with current index
+            clone.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.name) {
+                    // Replace empty brackets with current index
+                    el.name = el.name.replace('[]', `[${index}]`);
+                }
+            });
+
             const removeBtn = clone.querySelector('.remove-item');
             if (removeBtn) {
                 removeBtn.addEventListener('click', function () {
                     clone.remove();
+                    // Reindex remaining items after removal
+                    reindexSectionItems(container);
                 });
             }
 
             container.appendChild(clone);
         }
-    });
+
+// Reindex items after removal
+        function reindexSectionItems(container) {
+            container.querySelectorAll('.repeater-item').forEach((item, index) => {
+                item.querySelectorAll('input, select, textarea').forEach(el => {
+                    if (el.name) {
+                        el.name = el.name.replace(/\[\d+\]/g, `[${index}]`);
+                    }
+                });
+            });
+        }
+
 </script>
 {% endblock %}
