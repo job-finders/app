@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from typing import TypedDict, List, Tuple
 # Flask Core
 from flask import Blueprint, render_template, request
+
+from src.controllers.jobs import JobsSearchController
 # Authentication
 from src.authentication import user_details
 # Domain Models
@@ -145,7 +147,7 @@ async def list_jobs(user: User):
     Example:
         GET /browse-jobs?page=2
     """
-    job_search_controller = get_controller('jobs_search')
+    job_search_controller: JobsSearchController = get_controller('jobs_search')
     
     # Advanced parsing with type conversion and validation
     page, page_size = await parse_pagination_params()
