@@ -1,10 +1,9 @@
-
 {% macro render_experience(experience) %}
 {% if experience %}
 <div class="mb-4">
   <h4 class="text-info"><i class="ti-briefcase mr-2"></i>Experience</h4>
   {% for exp in experience %}
-  <div class="card mb-3">
+      <div class="card mb-3 shadow-sm">
     <div class="card-body">
       <h5 class="font-weight-bold">{{ exp.job_title }}</h5>
       <div class="row text-muted small mb-2">
@@ -12,7 +11,7 @@
           <i class="ti-home"></i> {{ exp.company }}
         </div>
         <div class="col-12 col-md-6 text-md-right">
-          {{ exp.start_date.strftime('%b %Y') }} -
+            {{ exp.start_date.strftime('%b %Y') }} -
           {{ exp.end_date.strftime('%b %Y') if exp.end_date else 'Present' }}
         </div>
       </div>
@@ -36,7 +35,7 @@
 <div class="mb-4">
   <h4 class="text-info"><i class="ti-book mr-2"></i>Education</h4>
   {% for edu in education %}
-  <div class="card mb-3">
+      <div class="card mb-3 shadow-sm">
     <div class="card-body">
       <h5 class="font-weight-bold">{{ edu.qualification }}</h5>
       <div class="row text-muted small mb-2">
@@ -44,7 +43,7 @@
           <i class="ti-medal"></i> {{ edu.institution }}
         </div>
         <div class="col-12 col-md-6 text-md-right">
-          {{ edu.start_date.strftime('%b %Y') }} -
+            {{ edu.start_date.strftime('%b %Y') }} -
           {{ edu.end_date.strftime('%b %Y') if edu.end_date else 'Present' }}
         </div>
       </div>
@@ -68,7 +67,7 @@
 <div class="mb-4">
   <h4 class="text-info"><i class="ti-medall mr-2"></i>Certifications</h4>
   {% for cert in certifications %}
-  <div class="card mb-3">
+      <div class="card mb-3 shadow-sm">
     <div class="card-body">
       <h5 class="font-weight-bold">{{ cert.name }}</h5>
       <div class="row text-muted small mb-2">
@@ -76,7 +75,7 @@
           <i class="ti-crown"></i> {{ cert.issuer }}
         </div>
         <div class="col-12 col-md-6 text-md-right">
-          {{ cert.issue_date.strftime('%b %Y') }} -
+            {{ cert.issue_date.strftime('%b %Y') }} -
           {{ cert.expiry_date.strftime('%b %Y') if cert.expiry_date else 'No Expiry' }}
         </div>
       </div>
@@ -117,7 +116,7 @@
 <div class="mb-4">
   <h4 class="text-info"><i class="ti-layout mr-2"></i>Projects</h4>
   {% for project in projects %}
-  <div class="card mb-3">
+      <div class="card mb-3 shadow-sm">
     <div class="card-body">
       <h5 class="font-weight-bold">{{ project.title }}</h5>
       {% if project.technologies %}
@@ -145,7 +144,7 @@
 <div class="mb-4">
   <h4 class="text-info"><i class="ti-notepad mr-2"></i>Publications</h4>
   {% for pub in publications %}
-  <div class="card mb-3">
+      <div class="card mb-3 shadow-sm">
     <div class="card-body">
       <h5 class="font-weight-bold">{{ pub.title }}</h5>
       <div class="row text-muted small mb-2">
@@ -173,7 +172,7 @@
 <div class="mb-4">
   <h4 class="text-info"><i class="ti-cup mr-2"></i>Awards</h4>
   {% for award in awards %}
-  <div class="card mb-3">
+      <div class="card mb-3 shadow-sm">
     <div class="card-body">
       <h5 class="font-weight-bold">{{ award.title }}</h5>
       <div class="row text-muted small mb-2">
@@ -199,7 +198,7 @@
 <div class="mb-4">
   <h4 class="text-info"><i class="ti-layout-grid3 mr-2"></i>Additional Information</h4>
   {% for section in custom_sections %}
-  <div class="card mb-3">
+      <div class="card mb-3 shadow-sm">
     <div class="card-body">
       <h5 class="font-weight-bold">{{ section.title }}</h5>
       {% if section.content is string %}
@@ -216,4 +215,38 @@
   {% endfor %}
 </div>
 {% endif %}
+{% endmacro %}
+
+{% macro render_skills(skills) %}
+    {% if skills %}
+        <div class="mb-4">
+            <h4 class="text-info"><i class="ti-tools mr-2"></i>Skills</h4>
+            <div class="row">
+                {% for skill in skills %}
+                    <div class="col-6 col-md-4 col-lg-3 mb-2">
+                        <div class="d-flex align-items-center">
+                            <span class="font-weight-bold mr-2">{{ skill }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+{% macro render_portfolio_links(portfolio_links) %}
+    {% if portfolio_links %}
+        <div class="mb-4">
+            <h4 class="text-info"><i class="ti-link mr-2"></i>Portfolio Links</h4>
+            <div class="row">
+                {% for link in portfolio_links %}
+                    <div class="col-12 mb-2">
+                        <a href="{{ link }}" class="btn btn-sm btn-outline-info" target="_blank">
+                            <i class="ti-link"></i> View Portfolio
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 {% endmacro %}

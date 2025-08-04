@@ -168,7 +168,6 @@ class BlogAgentController(Controllers):
                 if not scheduled.hashnode_post_id:
                     self.logger.warning(f"Scheduled post {scheduled.id} has no hashnode_post_id set.")
                     continue
-
                 try:
                     metrics = await self.hashnode.get_post_analytics(pub_id, scheduled.hashnode_post_id)
                     if not metrics:

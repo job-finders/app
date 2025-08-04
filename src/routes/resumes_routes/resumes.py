@@ -292,13 +292,14 @@ async def upload_cv(user: User):
 
             # Call controller
             resumes_controller = get_controller("resume")
-            result = await resumes_controller.create_cv(
-                user_uid=user.uid,
-                data=cv_data
-            )
+            resume: JobSeekerCV | None = await resumes_controller.create_cv(user_uid=user.uid, data=cv_data)
+            if not resume:
+                resume_logger.error("Failed to create CV - controller returned None")
+                flash("Failed to create CV. Please try again.", "danger")
+                return redirect(url_for("jobseeker_cv.upload_cv"))
 
             flash("CV created successfully!", "success")
-            return redirect(url_for("jobseeker_cv.view_cv", cv_id=result['cv_id']))
+            return redirect(url_for("jobseeker_cv.view_cv", cv_id=resume.cv_id))
 
         except ValidationError as e:
             flash(f"Validation error: {str(e)}", "danger")
@@ -319,12 +320,9 @@ async def view_cv(user: User, cv_id: str):
     resume_logger.info(f"CV IN ROUTER +++++++++++++++++++++++++++++++++: {cv}")
     ats_report = await _get_ats_report(cv=cv)
 
-    # Convert CV to dictionary for JSON serialization in templates
-    cv_dict = cv.model_dump() if cv else None
-
     context = dict(
         current_user=user,
-        cv=cv_dict,  # Keep original for complex operations
+        cv=cv,  # Keep original for complex operations
         ats_report=ats_report
     )
     return render_template("jobseekers/cv/view_cv.html", **context)
