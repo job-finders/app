@@ -445,3 +445,126 @@ class JobSeekerCV(BaseModel):
         if any(e.description for e in self.experience or []): score += 5
 
         return min(int(score), 100)
+
+    @property
+    def relevance_score(self, job_posting_keywords: List[str]) -> int:
+        """
+        Calculates the relevance of the CV to a specific job posting based on keyword matching.
+        """
+        score = 0
+        max_score = 100
+
+        # Check for keyword matches in summary, skills, experience, and education
+        cv_text = f"{self.summary} {' '.join(self.skills)} {' '.join([exp.description for exp in self.experience if exp.description])} {' '.join([edu.description for edu in self.education if edu.description])}"
+        cv_text = cv_text.lower()
+
+        keyword_matches = sum(1 for keyword in job_posting_keywords if keyword.lower() in cv_text)
+        score = (keyword_matches / len(job_posting_keywords)) * 100
+
+        return min(int(score), 100)
+
+    @property
+    def experience_quality_score(self) -> int:
+        """
+        Evaluates the quality of work experience based on duration, job titles, and descriptions.
+        """
+        score = 0
+        max_score = 100
+
+        if not self.experience:
+            return 0
+
+        total_duration = 0
+        for exp in self.experience:
+            if exp.end_date:
+                total_duration += (exp.end_date - exp.start_date).days
+            else:
+                total_duration += (date.today() - exp.start_date).days
+
+        avg_duration = total_duration / len(self.experience)
+        score += (avg_duration / 365) * 20  # Assuming 20 points for experience duration
+
+        has_descriptions = all(
+            isinstance(e.description, str) and len(e.description.strip()) > 30
+            for e in self.experience if e and hasattr(e, "description")
+        )
+        if has_descriptions:
+            score += 20
+
+        return min(int(score), 100)
+
+    @property
+    def education_quality_score(self) -> int:
+        """
+        Evaluates the quality of education based on institution prestige, degrees, and GPA.
+        """
+        score = 0
+        max_score = 100
+
+        if not self.education:
+            return 0
+
+        # Placeholder for institution prestige (could be a predefined list or API call)
+        institution_prestige = {"Harvard University": 10, "MIT": 10, "Stanford University": 10, "Other": 5}
+
+        for edu in self.education:
+            score += institution_prestige.get(edu.institution, 5)
+            if "Master" in edu.qualification or "PhD" in edu.qualification:
+                score += 10
+            if edu.description and "GPA" in edu.description:
+                score += 10
+
+        return min(int(score / len(self.education)), 100)
+
+    @property
+    def skills_relevance_score(self, job_posting_skills: List[str]) -> int:
+        """
+        Evaluates the relevance of skills to a specific job posting.
+        """
+        score = 0
+        max_score = 100
+
+        if not self.skills:
+            return 0
+
+        skill_matches = sum(1 for skill in job_posting_skills if skill in self.skills)
+        score = (skill_matches / len(job_posting_skills)) * 100
+
+        return min(int(score), 100)
+
+    @property
+    def custom_section_quality_score(self) -> int:
+        """
+        Evaluates the quality of custom sections based on content completeness and relevance.
+        """
+        score = 0
+        max_score = 100
+
+        if not self.custom_sections:
+            return 0
+
+        for section in self.custom_sections:
+            if isinstance(section.content, str) and len(section.content.strip()) > 50:
+                score += 20
+            elif isinstance(section.content, list) and len(section.content) > 3:
+                score += 20
+
+        return min(int(score / len(self.custom_sections)), 100)
+
+    @property
+    def overall_quality_score(self, job_posting_keywords: List[str], job_posting_skills: List[str]) -> int:
+        """
+        Combines multiple quality metrics into a single overall quality score.
+        """
+        score = 0
+        max_score = 100
+
+        score += self.resume_completion_percentage * 0.2
+        score += self.trust_score * 0.2
+        score += self.relevance_score(job_posting_keywords) * 0.2
+        score += self.experience_quality_score * 0.2
+        score += self.education_quality_score * 0.1
+        score += self.skills_relevance_score(job_posting_skills) * 0.1
+        score += self.custom_section_quality_score * 0.1
+
+        return min(int(score), 100)
