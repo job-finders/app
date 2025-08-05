@@ -346,3 +346,397 @@ async def list_cvs(user: User):
     cvs = await resume_controller.list_cvs_for_user(user_uid=user.uid)
     context = dict(current_user=user, cvs=cvs)
     return render_template("jobseekers/cv/cv_list.html", **context)
+
+
+# --------------------------------------------------------------------------------------------------
+# -----------------------------------SECTION EDIT ROUTES--------------------------------------------
+# --------------------------------------------------------------------------------------------------
+
+@resume_routes.route("/add/experience", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_experience(user: User):
+    try:
+        form_data = request.form
+        experience_data = {
+            'job_title': form_data.get('job_title'),
+            'company': form_data.get('company'),
+            'start_date': _parse_date(form_data.get('start_date')),
+            'end_date': _parse_date(form_data.get('end_date')),
+            'location': form_data.get('location'),
+            'description': form_data.get('description')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.add_experience(user.uid, experience_data)
+        flash("Experience added successfully!", "success")
+    except Exception as e:
+        flash(f"Error adding experience: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/experience/<string:exp_id>", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def edit_experience(user: User, exp_id: str):
+    try:
+        form_data = request.form
+        experience_data = {
+            'job_title': form_data.get('job_title'),
+            'company': form_data.get('company'),
+            'start_date': _parse_date(form_data.get('start_date')),
+            'end_date': _parse_date(form_data.get('end_date')),
+            'location': form_data.get('location'),
+            'description': form_data.get('description')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.update_experience(exp_id, experience_data)
+        flash("Experience updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating experience: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/add/education", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_education(user: User):
+    try:
+        form_data = request.form
+        education_data = {
+            'qualification': form_data.get('qualification'),
+            'institution': form_data.get('institution'),
+            'start_date': _parse_date(form_data.get('start_date')),
+            'end_date': _parse_date(form_data.get('end_date')),
+            'field_of_study': form_data.get('field_of_study'),
+            'description': form_data.get('description')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.add_education(user.uid, education_data)
+        flash("Education added successfully!", "success")
+    except Exception as e:
+        flash(f"Error adding education: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/education/<string:edu_id>", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def edit_education(user: User, edu_id: str):
+    try:
+        form_data = request.form
+        education_data = {
+            'qualification': form_data.get('qualification'),
+            'institution': form_data.get('institution'),
+            'start_date': _parse_date(form_data.get('start_date')),
+            'end_date': _parse_date(form_data.get('end_date')),
+            'field_of_study': form_data.get('field_of_study'),
+            'description': form_data.get('description')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.update_education(edu_id, education_data)
+        flash("Education updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating education: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/add/certification", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_certification(user: User):
+    try:
+        form_data = request.form
+        certification_data = {
+            'name': form_data.get('name'),
+            'issuer': form_data.get('issuer'),
+            'issue_date': _parse_date(form_data.get('issue_date')),
+            'expiry_date': _parse_date(form_data.get('expiry_date')),
+            'credential_url': form_data.get('credential_url')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.add_certification(user.uid, certification_data)
+        flash("Certification added successfully!", "success")
+    except Exception as e:
+        flash(f"Error adding certification: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/certification/<string:cert_id>", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def edit_certification(user: User, cert_id: str):
+    try:
+        form_data = request.form
+        certification_data = {
+            'name': form_data.get('name'),
+            'issuer': form_data.get('issuer'),
+            'issue_date': _parse_date(form_data.get('issue_date')),
+            'expiry_date': _parse_date(form_data.get('expiry_date')),
+            'credential_url': form_data.get('credential_url')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.update_certification(cert_id, certification_data)
+        flash("Certification updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating certification: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/add/language", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_language(user: User):
+    try:
+        form_data = request.form
+        language_data = {
+            'name': form_data.get('name'),
+            'proficiency': form_data.get('proficiency')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.add_language(user.uid, language_data)
+        flash("Language added successfully!", "success")
+    except Exception as e:
+        flash(f"Error adding language: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/language/<string:lang_id>", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def edit_language(user: User, lang_id: str):
+    try:
+        form_data = request.form
+        language_data = {
+            'name': form_data.get('name'),
+            'proficiency': form_data.get('proficiency')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.update_language(lang_id, language_data)
+        flash("Language updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating language: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/add/project", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_project(user: User):
+    try:
+        form_data = request.form
+        project_data = {
+            'title': form_data.get('title'),
+            'description': form_data.get('description'),
+            'technologies': [tech.strip() for tech in form_data.get('technologies', '').split(',')],
+            'link': form_data.get('link')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.add_project(user.uid, project_data)
+        flash("Project added successfully!", "success")
+    except Exception as e:
+        flash(f"Error adding project: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/project/<string:project_id>", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def edit_project(user: User, project_id: str):
+    try:
+        form_data = request.form
+        project_data = {
+            'title': form_data.get('title'),
+            'description': form_data.get('description'),
+            'technologies': [tech.strip() for tech in form_data.get('technologies', '').split(',')],
+            'link': form_data.get('link')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.update_project(project_id, project_data)
+        flash("Project updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating project: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/add/publication", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_publication(user: User):
+    try:
+        form_data = request.form
+        publication_data = {
+            'title': form_data.get('title'),
+            'publisher': form_data.get('publisher'),
+            'date': _parse_date(form_data.get('date')),
+            'link': form_data.get('link')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.add_publication(user.uid, publication_data)
+        flash("Publication added successfully!", "success")
+    except Exception as e:
+        flash(f"Error adding publication: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/publication/<string:pub_id>", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def edit_publication(user: User, pub_id: str):
+    try:
+        form_data = request.form
+        publication_data = {
+            'title': form_data.get('title'),
+            'publisher': form_data.get('publisher'),
+            'date': _parse_date(form_data.get('date')),
+            'link': form_data.get('link')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.update_publication(pub_id, publication_data)
+        flash("Publication updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating publication: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/add/award", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_award(user: User):
+    try:
+        form_data = request.form
+        award_data = {
+            'title': form_data.get('title'),
+            'issuer': form_data.get('issuer'),
+            'date': _parse_date(form_data.get('date')),
+            'description': form_data.get('description')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.add_award(user.uid, award_data)
+        flash("Award added successfully!", "success")
+    except Exception as e:
+        flash(f"Error adding award: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/award/<string:award_id>", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def edit_award(user: User, award_id: str):
+    try:
+        form_data = request.form
+        award_data = {
+            'title': form_data.get('title'),
+            'issuer': form_data.get('issuer'),
+            'date': _parse_date(form_data.get('date')),
+            'description': form_data.get('description')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.update_award(award_id, award_data)
+        flash("Award updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating award: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/add/custom_section", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_custom_section(user: User):
+    try:
+        form_data = request.form
+        custom_section_data = {
+            'title': form_data.get('title'),
+            'content': form_data.get('content')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.add_custom_section(user.uid, custom_section_data)
+        flash("Custom section added successfully!", "success")
+    except Exception as e:
+        flash(f"Error adding custom section: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/custom_section/<string:section_id>", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def edit_custom_section(user: User, section_id: str):
+    try:
+        form_data = request.form
+        custom_section_data = {
+            'title': form_data.get('title'),
+            'content': form_data.get('content')
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.update_custom_section(section_id, custom_section_data)
+        flash("Custom section updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating custom section: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/add/skill", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_skill(user: User):
+    try:
+        form_data = request.form
+        skills_data = {
+            'skills': [skill.strip() for skill in form_data.get('skills', '').split(',')]
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.add_skills(user.uid, skills_data)
+        flash("Skill added successfully!", "success")
+    except Exception as e:
+        flash(f"Error adding skill: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/skills", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def edit_skills(user: User):
+    try:
+        form_data = request.form
+        skills_data = {
+            'skills': [skill.strip() for skill in form_data.get('skills', '').split(',')]
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.update_skills(user.uid, skills_data)
+        flash("Skills updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating skills: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/add/portfolio_link", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_portfolio_link(user: User):
+    try:
+        form_data = request.form
+        portfolio_links_data = {
+            'portfolio_links': [link.strip() for link in form_data.get('portfolio_links', '').split(',')]
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.add_portfolio_links(user.uid, portfolio_links_data)
+        flash("Portfolio link added successfully!", "success")
+    except Exception as e:
+        flash(f"Error adding portfolio link: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/portfolio_links", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def edit_portfolio_links(user: User):
+    try:
+        form_data = request.form
+        portfolio_links_data = {
+            'portfolio_links': [link.strip() for link in form_data.get('portfolio_links', '').split(',')]
+        }
+        resume_controller = get_controller('resume')
+        await resume_controller.update_portfolio_links(user.uid, portfolio_links_data)
+        flash("Portfolio links updated successfully!", "success")
+    except Exception as e:
+        flash(f"Error updating portfolio links: {str(e)}", "danger")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))

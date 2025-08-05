@@ -1,0 +1,1376 @@
+{% macro render_experience(experience) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-briefcase"></i>Experience
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addExperienceModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if experience %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for exp in experience %}
+                    <div class="col">
+                        <div class="section-card">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-1">{{ exp.job_title }}</h5>
+                                    <div class="d-flex align-items-center text-muted mb-2">
+                                        <i class="ti-home mr-2"></i>
+                                        <span class="font-weight-medium">{{ exp.company }}</span>
+                                    </div>
+                                    {% if exp.location %}
+                                        <div class="d-flex align-items-center text-muted small">
+                                            <i class="ti-location-pin mr-2"></i>
+                                            <span>{{ exp.location }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right">
+                                <span class="modern-badge">
+                                    {{ exp.start_date.strftime('%b %Y') }} -
+                                    {{ exp.end_date.strftime('%b %Y') if exp.end_date else 'Present' }}
+                                </span>
+                                </div>
+                            </div>
+                            {% if exp.description %}
+                                <div class="text-muted" style="line-height: 1.6;">
+                                    {{ exp.description }}
+                                </div>
+                            {% endif %}
+                            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
+                                    data-target="#editExperienceModal{{ exp.id }}">
+                                <i class="ti-pencil"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Experience Added</h4>
+                <p class="text-muted">Add your first experience entry</p>
+                <button type="button" class="btn btn-primary btn-lg" data-toggle="modal"
+                        data-target="#addExperienceModal">
+                    <i class="ti-plus mr-2"></i>Add Experience
+                </button>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Experience Modal -->
+    <div class="modal fade" id="addExperienceModal" tabindex="-1" role="dialog"
+         aria-labelledby="addExperienceModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addExperienceModalLabel">Add Experience</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_experience') }}">
+                        <!-- Form fields for adding experience -->
+                        <div class="form-group">
+                            <label for="job_title">Job Title</label>
+                            <input type="text" class="form-control" id="job_title" name="job_title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="company">Company</label>
+                            <input type="text" class="form-control" id="company" name="company" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="start_date">Start Date</label>
+                            <input type="month" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end_date">End Date</label>
+                            <input type="month" class="form-control" id="end_date" name="end_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="location">Location</label>
+                            <input type="text" class="form-control" id="location" name="location">
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Experience Modal -->
+    {% for exp in experience %}
+        <div class="modal fade" id="editExperienceModal{{ exp.id }}" tabindex="-1" role="dialog"
+             aria-labelledby="editExperienceModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editExperienceModalLabel">Edit Experience</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_experience', exp_id=exp.id) }}">
+                            <!-- Form fields for editing experience -->
+                            <div class="form-group">
+                                <label for="job_title">Job Title</label>
+                                <input type="text" class="form-control" id="job_title" name="job_title"
+                                       value="{{ exp.job_title }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="company">Company</label>
+                                <input type="text" class="form-control" id="company" name="company"
+                                       value="{{ exp.company }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="start_date">Start Date</label>
+                                <input type="month" class="form-control" id="start_date" name="start_date"
+                                       value="{{ exp.start_date.strftime('%Y-%m') }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="end_date">End Date</label>
+                                <input type="month" class="form-control" id="end_date" name="end_date"
+                                       value="{{ exp.end_date.strftime('%Y-%m') if exp.end_date }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="location">Location</label>
+                                <input type="text" class="form-control" id="location" name="location"
+                                       value="{{ exp.location }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <textarea class="form-control" id="description" name="description"
+                                          rows="3">{{ exp.description }}</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endmacro %}
+
+
+
+{% macro render_education(education) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-book"></i>Education
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addEducationModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if education %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for edu in education %}
+                    <div class="col">
+                        <div class="section-card">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-1">{{ edu.qualification }}</h5>
+                                    <div class="d-flex align-items-center text-muted mb-2">
+                                        <i class="ti-medal mr-2"></i>
+                                        <span class="font-weight-medium">{{ edu.institution }}</span>
+                                    </div>
+                                    {% if edu.field_of_study %}
+                                        <div class="d-flex align-items-center text-muted small">
+                                            <i class="ti-bookmark-alt mr-2"></i>
+                                            <span>{{ edu.field_of_study }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right">
+                                <span class="modern-badge">
+                                    {{ edu.start_date.strftime('%b %Y') }} -
+                                    {{ edu.end_date.strftime('%b %Y') if edu.end_date else 'Present' }}
+                                </span>
+                                </div>
+                            </div>
+                            {% if edu.description %}
+                                <div class="text-muted" style="line-height: 1.6;">
+                                    {{ edu.description }}
+                                </div>
+                            {% endif %}
+                            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
+                                    data-target="#editEducationModal{{ edu.id }}">
+                                <i class="ti-pencil"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Education Added</h4>
+                <p class="text-muted">Add your first education entry</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Education Modal -->
+    <div class="modal fade" id="addEducationModal" tabindex="-1" role="dialog" aria-labelledby="addEducationModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addEducationModalLabel">Add Education</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_education') }}">
+                        <!-- Form fields for adding education -->
+                        <div class="form-group">
+                            <label for="qualification">Qualification</label>
+                            <input type="text" class="form-control" id="qualification" name="qualification" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="institution">Institution</label>
+                            <input type="text" class="form-control" id="institution" name="institution" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="start_date">Start Date</label>
+                            <input type="month" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end_date">End Date</label>
+                            <input type="month" class="form-control" id="end_date" name="end_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="field_of_study">Field of Study</label>
+                            <input type="text" class="form-control" id="field_of_study" name="field_of_study">
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Education Modal -->
+    {% for edu in education %}
+        <div class="modal fade" id="editEducationModal{{ edu.id }}" tabindex="-1" role="dialog"
+             aria-labelledby="editEducationModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editEducationModalLabel">Edit Education</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_education', edu_id=edu.id) }}">
+                            <!-- Form fields for editing education -->
+                            <div class="form-group">
+                                <label for="qualification">Qualification</label>
+                                <input type="text" class="form-control" id="qualification" name="qualification"
+                                       value="{{ edu.qualification }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="institution">Institution</label>
+                                <input type="text" class="form-control" id="institution" name="institution"
+                                       value="{{ edu.institution }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="start_date">Start Date</label>
+                                <input type="month" class="form-control" id="start_date" name="start_date"
+                                       value="{{ edu.start_date.strftime('%Y-%m') }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="end_date">End Date</label>
+                                <input type="month" class="form-control" id="end_date" name="end_date"
+                                       value="{{ edu.end_date.strftime('%Y-%m') if edu.end_date }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="field_of_study">Field of Study</label>
+                                <input type="text" class="form-control" id="field_of_study" name="field_of_study"
+                                       value="{{ edu.field_of_study }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <textarea class="form-control" id="description" name="description"
+                                          rows="3">{{ edu.description }}</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endmacro %}
+
+
+
+{% macro render_certifications(certifications) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-medall"></i>Certifications
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addCertificationModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if certifications %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for cert in certifications %}
+                    <div class="col">
+                        <div class="section-card">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-1">{{ cert.name }}</h5>
+                                    <div class="d-flex align-items-center text-muted mb-2">
+                                        <i class="ti-crown mr-2"></i>
+                                        <span class="font-weight-medium">{{ cert.issuer }}</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                <span class="modern-badge">
+                                    {{ cert.issue_date.strftime('%b %Y') }} -
+                                    {{ cert.expiry_date.strftime('%b %Y') if cert.expiry_date else 'No Expiry' }}
+                                </span>
+                                </div>
+                            </div>
+                            {% if cert.credential_url %}
+                                <div class="mt-3">
+                                    <a href="{{ cert.credential_url }}" class="btn btn-sm btn-outline-primary"
+                                       target="_blank">
+                                        <i class="ti-link mr-1"></i> Verify Credential
+                                    </a>
+                                </div>
+                            {% endif %}
+                            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
+                                    data-target="#editCertificationModal{{ cert.id }}">
+                                <i class="ti-pencil"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Certifications Added</h4>
+                <p class="text-muted">Add your first certification</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Certification Modal -->
+    <div class="modal fade" id="addCertificationModal" tabindex="-1" role="dialog"
+         aria-labelledby="addCertificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCertificationModalLabel">Add Certification</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_certification') }}">
+                        <!-- Form fields for adding certification -->
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="issuer">Issuer</label>
+                            <input type="text" class="form-control" id="issuer" name="issuer" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="issue_date">Issue Date</label>
+                            <input type="month" class="form-control" id="issue_date" name="issue_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expiry_date">Expiry Date</label>
+                            <input type="month" class="form-control" id="expiry_date" name="expiry_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="credential_url">Credential URL</label>
+                            <input type="url" class="form-control" id="credential_url" name="credential_url">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Certification Modal -->
+    {% for cert in certifications %}
+        <div class="modal fade" id="editCertificationModal{{ cert.id }}" tabindex="-1" role="dialog"
+             aria-labelledby="editCertificationModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editCertificationModalLabel">Edit Certification</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_certification', cert_id=cert.id) }}">
+                            <!-- Form fields for editing certification -->
+                            <div class="form-group">
+                                <label for="name">Name</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ cert.name }}"
+                                       required>
+                            </div>
+                            <div class="form-group">
+                                <label for="issuer">Issuer</label>
+                                <input type="text" class="form-control" id="issuer" name="issuer"
+                                       value="{{ cert.issuer }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="issue_date">Issue Date</label>
+                                <input type="month" class="form-control" id="issue_date" name="issue_date"
+                                       value="{{ cert.issue_date.strftime('%Y-%m') }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="expiry_date">Expiry Date</label>
+                                <input type="month" class="form-control" id="expiry_date" name="expiry_date"
+                                       value="{{ cert.expiry_date.strftime('%Y-%m') if cert.expiry_date }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="credential_url">Credential URL</label>
+                                <input type="url" class="form-control" id="credential_url" name="credential_url"
+                                       value="{{ cert.credential_url }}">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endmacro %}
+
+
+{% macro render_languages(languages) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-world"></i>Languages
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addLanguageModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if languages %}
+            <div class="section-card">
+                <div class="row">
+                    {% for lang in languages %}
+                        <div class="col-6 col-md-4 col-xl-3 mb-3">
+                            <div class="d-flex flex-column align-items-center text-center p-3 bg-light rounded">
+                                <span class="font-weight-bold text-dark mb-1">{{ lang.name }}</span>
+                                <span class="modern-badge badge-success">{{ lang.proficiency }}</span>
+                            </div>
+                            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
+                                    data-target="#editLanguageModal{{ lang.id }}">
+                                <i class="ti-pencil"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Languages Added</h4>
+                <p class="text-muted">Add your first language</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Language Modal -->
+    <div class="modal fade" id="addLanguageModal" tabindex="-1" role="dialog" aria-labelledby="addLanguageModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addLanguageModalLabel">Add Language</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_language') }}">
+                        <!-- Form fields for adding language -->
+                        <div class="form-group">
+                            <label for="name">Language</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="proficiency">Proficiency</label>
+                            <select class="form-control" id="proficiency" name="proficiency">
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Fluent">Fluent</option>
+                                <option value="Native">Native</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Language Modal -->
+    {% for lang in languages %}
+        <div class="modal fade" id="editLanguageModal{{ lang.id }}" tabindex="-1" role="dialog"
+             aria-labelledby="editLanguageModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editLanguageModalLabel">Edit Language</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_language', lang_id=lang.id) }}">
+                            <!-- Form fields for editing language -->
+                            <div class="form-group">
+                                <label for="name">Language</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ lang.name }}"
+                                       required>
+                            </div>
+                            <div class="form-group">
+                                <label for="proficiency">Proficiency</label>
+                                <select class="form-control" id="proficiency" name="proficiency">
+                                    <option value="Beginner" {% if lang.proficiency == 'Beginner' %}selected{% endif %}>
+                                        Beginner
+                                    </option>
+                                    <option value="Intermediate"
+                                            {% if lang.proficiency == 'Intermediate' %}selected{% endif %}>Intermediate
+                                    </option>
+                                    <option value="Fluent" {% if lang.proficiency == 'Fluent' %}selected{% endif %}>
+                                        Fluent
+                                    </option>
+                                    <option value="Native" {% if lang.proficiency == 'Native' %}selected{% endif %}>
+                                        Native
+                                    </option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endmacro %}
+
+
+
+
+{% macro render_projects(projects) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-layout"></i>Projects
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addProjectModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if projects %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for project in projects %}
+                    <div class="col">
+                        <div class="section-card">
+                            <h5 class="font-weight-bold text-dark mb-2">{{ project.title }}</h5>
+                            {% if project.technologies %}
+                                <div class="mb-3">
+                                    {% for tech in project.technologies %}
+                                        <span class="modern-badge mr-2 mb-1">{{ tech }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="text-muted mb-3" style="line-height: 1.6;">
+                                {{ project.description }}
+                            </div>
+                            {% if project.link %}
+                                <a href="{{ project.link }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <i class="ti-link mr-1"></i> View Project
+                                </a>
+                            {% endif %}
+                            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
+                                    data-target="#editProjectModal{{ project.id }}">
+                                <i class="ti-pencil"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Projects Added</h4>
+                <p class="text-muted">Add your first project</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Project Modal -->
+    <div class="modal fade" id="addProjectModal" tabindex="-1" role="dialog" aria-labelledby="addProjectModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addProjectModalLabel">Add Project</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_project') }}">
+                        <!-- Form fields for adding project -->
+                        <div class="form-group">
+                            <label for="title">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="technologies">Technologies</label>
+                            <input type="text" class="form-control" id="technologies" name="technologies">
+                        </div>
+                        <div class="form-group">
+                            <label for="link">Link</label>
+                            <input type="url" class="form-control" id="link" name="link">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Project Modal -->
+    {% for project in projects %}
+        <div class="modal fade" id="editProjectModal{{ project.id }}" tabindex="-1" role="dialog"
+             aria-labelledby="editProjectModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editProjectModalLabel">Edit Project</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_project', project_id=project.id) }}">
+                            <!-- Form fields for editing project -->
+                            <div class="form-group">
+                                <label for="title">Title</label>
+                                <input type="text" class="form-control" id="title" name="title"
+                                       value="{{ project.title }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <textarea class="form-control" id="description" name="description"
+                                          rows="3">{{ project.description }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="technologies">Technologies</label>
+                                <input type="text" class="form-control" id="technologies" name="technologies"
+                                       value="{{ project.technologies }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="link">Link</label>
+                                <input type="url" class="form-control" id="link" name="link" value="{{ project.link }}">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endmacro %}
+
+
+
+
+{% macro render_publications(publications) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-notepad"></i>Publications
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addPublicationModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if publications %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for pub in publications %}
+                    <div class="col">
+                        <div class="section-card">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-1">{{ pub.title }}</h5>
+                                    {% if pub.publisher %}
+                                        <div class="d-flex align-items-center text-muted mb-2">
+                                            <i class="ti-agenda mr-2"></i>
+                                            <span class="font-weight-medium">{{ pub.publisher }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right">
+                                <span class="modern-badge">
+                                    {{ pub.date.strftime('%b %Y') if pub.date else 'No Date' }}
+                                </span>
+                                </div>
+                            </div>
+                            {% if pub.link %}
+                                <a href="{{ pub.link }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <i class="ti-link mr-1"></i> Read Publication
+                                </a>
+                            {% endif %}
+                            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
+                                    data-target="#editPublicationModal{{ pub.id }}">
+                                <i class="ti-pencil"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Publications Added</h4>
+                <p class="text-muted">Add your first publication</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Publication Modal -->
+    <div class="modal fade" id="addPublicationModal" tabindex="-1" role="dialog"
+         aria-labelledby="addPublicationModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPublicationModalLabel">Add Publication</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_publication') }}">
+                        <!-- Form fields for adding publication -->
+                        <div class="form-group">
+                            <label for="title">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="publisher">Publisher</label>
+                            <input type="text" class="form-control" id="publisher" name="publisher">
+                        </div>
+                        <div class="form-group">
+                            <label for="date">Date</label>
+                            <input type="month" class="form-control" id="date" name="date">
+                        </div>
+                        <div class="form-group">
+                            <label for="link">Link</label>
+                            <input type="url" class="form-control" id="link" name="link">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Publication Modal -->
+    {% for pub in publications %}
+        <div class="modal fade" id="editPublicationModal{{ pub.id }}" tabindex="-1" role="dialog"
+             aria-labelledby="editPublicationModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editPublicationModalLabel">Edit Publication</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_publication', pub_id=pub.id) }}">
+                            <!-- Form fields for editing publication -->
+                            <div class="form-group">
+                                <label for="title">Title</label>
+                                <input type="text" class="form-control" id="title" name="title" value="{{ pub.title }}"
+                                       required>
+                            </div>
+                            <div class="form-group">
+                                <label for="publisher">Publisher</label>
+                                <input type="text" class="form-control" id="publisher" name="publisher"
+                                       value="{{ pub.publisher }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="date">Date</label>
+                                <input type="month" class="form-control" id="date" name="date"
+                                       value="{{ pub.date.strftime('%Y-%m') if pub.date }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="link">Link</label>
+                                <input type="url" class="form-control" id="link" name="link" value="{{ pub.link }}">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endmacro %}
+
+
+
+
+
+{% macro render_awards(awards) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-cup"></i>Awards
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addAwardModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if awards %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for award in awards %}
+                    <div class="col">
+                        <div class="section-card">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="font-weight-bold text-dark mb-1">{{ award.title }}</h5>
+                                    {% if award.issuer %}
+                                        <div class="d-flex align-items-center text-muted mb-2">
+                                            <i class="ti-star mr-2"></i>
+                                            <span class="font-weight-medium">{{ award.issuer }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right">
+                                <span class="modern-badge">
+                                    {{ award.date.strftime('%b %Y') if award.date else 'No Date' }}
+                                </span>
+                                </div>
+                            </div>
+                            {% if award.description %}
+                                <div class="text-muted" style="line-height: 1.6;">
+                                    {{ award.description }}
+                                </div>
+                            {% endif %}
+                            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
+                                    data-target="#editAwardModal{{ award.id }}">
+                                <i class="ti-pencil"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Awards Added</h4>
+                <p class="text-muted">Add your first award</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Award Modal -->
+    <div class="modal fade" id="addAwardModal" tabindex="-1" role="dialog" aria-labelledby="addAwardModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAwardModalLabel">Add Award</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_award') }}">
+                        <!-- Form fields for adding award -->
+                        <div class="form-group">
+                            <label for="title">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="issuer">Issuer</label>
+                            <input type="text" class="form-control" id="issuer" name="issuer">
+                        </div>
+                        <div class="form-group">
+                            <label for="date">Date</label>
+                            <input type="month" class="form-control" id="date" name="date">
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Award Modal -->
+    {% for award in awards %}
+        <div class="modal fade" id="editAwardModal{{ award.id }}" tabindex="-1" role="dialog"
+             aria-labelledby="editAwardModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editAwardModalLabel">Edit Award</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_award', award_id=award.id) }}">
+                            <!-- Form fields for editing award -->
+                            <div class="form-group">
+                                <label for="title">Title</label>
+                                <input type="text" class="form-control" id="title" name="title"
+                                       value="{{ award.title }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="issuer">Issuer</label>
+                                <input type="text" class="form-control" id="issuer" name="issuer"
+                                       value="{{ award.issuer }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="date">Date</label>
+                                <input type="month" class="form-control" id="date" name="date"
+                                       value="{{ award.date.strftime('%Y-%m') if award.date }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <textarea class="form-control" id="description" name="description"
+                                          rows="3">{{ award.description }}</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endmacro %}
+
+
+
+
+{% macro render_custom_sections(custom_sections) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-layout-grid3"></i>Additional Information
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addCustomSectionModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if custom_sections %}
+            <div class="section-card">
+                {% for section in custom_sections %}
+                    <div class="d-flex flex-column align-items-center mb-3">
+                        <h5 class="font-weight-bold text-dark mb-3">{{ section.title }}</h5>
+                        {% if section.content is string %}
+                            <div class="text-muted" style="line-height: 1.6;">
+                                {{ section.content }}
+                            </div>
+                        {% else %}
+                            <ul class="list-unstyled mb-0">
+                                {% for item in section.content %}
+                                    <li class="d-flex align-items-start mb-2">
+                                        <i class="ti-check text-primary mr-2 mt-1" style="font-size: 0.8rem;"></i>
+                                        <span class="text-muted">{{ item }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
+                                data-target="#editCustomSectionModal{{ section.id }}">
+                            <i class="ti-pencil"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Additional Information Added</h4>
+                <p class="text-muted">Add your first custom section</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Custom Section Modal -->
+    <div class="modal fade" id="addCustomSectionModal" tabindex="-1" role="dialog"
+         aria-labelledby="addCustomSectionModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCustomSectionModalLabel">Add Custom Section</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_custom_section') }}">
+                        <!-- Form fields for adding custom section -->
+                        <div class="form-group">
+                            <label for="title">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="content">Content</label>
+                            <textarea class="form-control" id="content" name="content" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Custom Section Modal -->
+    {% for section in custom_sections %}
+        <div class="modal fade" id="editCustomSectionModal{{ section.id }}" tabindex="-1" role="dialog"
+             aria-labelledby="editCustomSectionModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editCustomSectionModalLabel">Edit Custom Section</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST"
+                              action="{{ url_for('jobseeker_cv.edit_custom_section', section_id=section.id) }}">
+                            <!-- Form fields for editing custom section -->
+                            <div class="form-group">
+                                <label for="title">Title</label>
+                                <input type="text" class="form-control" id="title" name="title"
+                                       value="{{ section.title }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="content">Content</label>
+                                <textarea class="form-control" id="content" name="content"
+                                          rows="3">{{ section.content }}</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endmacro %}
+
+
+{% macro render_skills(skills) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-tools"></i>Skills
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addSkillModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if skills %}
+            <div class="section-card">
+                <div class="skills-container">
+                    {% for skill in skills %}
+                        <span class="skill-pill">
+                        <i class="ti-check-box skill-check"></i>
+                        {{ skill }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Skills Added</h4>
+                <p class="text-muted">Add your first skill</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Skill Modal -->
+    <div class="modal fade" id="addSkillModal" tabindex="-1" role="dialog" aria-labelledby="addSkillModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addSkillModalLabel">Add Skill</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_skill') }}">
+                        <!-- Form fields for adding skill -->
+                        <div class="form-group">
+                            <label for="skill">Skill</label>
+                            <input type="text" class="form-control" id="skill" name="skill" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+
+{% macro render_portfolio_links(portfolio_links) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-link"></i>Portfolio Links
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addPortfolioLinkModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if portfolio_links %}
+            <div class="section-card">
+                <div class="row">
+                    {% for link in portfolio_links %}
+                        <div class="col-12 col-md-6 mb-3">
+                            <a href="{{ link }}"
+                               class="btn btn-outline-primary btn-block d-flex align-items-center justify-content-center py-3"
+                               target="_blank">
+                                <i class="ti-link mr-2"></i>
+                                <span>View Portfolio</span>
+                                <i class="ti-external-link ml-2" style="font-size: 0.8rem;"></i>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Portfolio Links Added</h4>
+                <p class="text-muted">Add your first portfolio link</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Portfolio Link Modal -->
+    <div class="modal fade" id="addPortfolioLinkModal" tabindex="-1" role="dialog"
+         aria-labelledby="addPortfolioLinkModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPortfolioLinkModalLabel">Add Portfolio Link</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_portfolio_link') }}">
+                        <!-- Form fields for adding portfolio link -->
+                        <div class="form-group">
+                            <label for="link">Link</label>
+                            <input type="url" class="form-control" id="link" name="link" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+
+
+{% macro render_certifications(certifications) %}
+    <div class="cv-section">
+        <h4 class="section-title d-flex justify-content-between align-items-center">
+            <i class="ti-medall"></i>Certifications
+            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addCertificationModal">
+                <i class="ti-plus"></i>
+            </button>
+        </h4>
+        {% if certifications %}
+            {% for cert in certifications %}
+                <div class="section-card">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="font-weight-bold text-dark mb-1">{{ cert.name }}</h5>
+                            <div class="d-flex align-items-center text-muted mb-2">
+                                <i class="ti-crown mr-2"></i>
+                                <span class="font-weight-medium">{{ cert.issuer }}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                        <span class="modern-badge">
+                            {{ cert.issue_date.strftime('%b %Y') }} -
+                            {{ cert.expiry_date.strftime('%b %Y') if cert.expiry_date else 'No Expiry' }}
+                        </span>
+                        </div>
+                    </div>
+                    {% if cert.credential_url %}
+                        <div class="mt-3">
+                            <a href="{{ cert.credential_url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="ti-link mr-1"></i> Verify Credential
+                            </a>
+                        </div>
+                    {% endif %}
+                    <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
+                            data-target="#editCertificationModal{{ cert.id }}">
+                        <i class="ti-pencil"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-4">
+                    <i class="ti-files"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Certifications Added</h4>
+                <p class="text-muted">Add your first certification</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Certification Modal -->
+    <div class="modal fade" id="addCertificationModal" tabindex="-1" role="dialog"
+         aria-labelledby="addCertificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCertificationModalLabel">Add Certification</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_certification') }}">
+                        <!-- Form fields for adding certification -->
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="issuer">Issuer</label>
+                            <input type="text" class="form-control" id="issuer" name="issuer" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="issue_date">Issue Date</label>
+                            <input type="month" class="form-control" id="issue_date" name="issue_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expiry_date">Expiry Date</label>
+                            <input type="month" class="form-control" id="expiry_date" name="expiry_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="credential_url">Credential URL</label>
+                            <input type="url" class="form-control" id="credential_url" name="credential_url">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Certification Modal -->
+    {% for cert in certifications %}
+        <div class="modal fade" id="editCertificationModal{{ cert.id }}" tabindex="-1" role="dialog"
+             aria-labelledby="editCertificationModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editCertificationModalLabel">Edit Certification</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_certification', cert_id=cert.id) }}">
+                            <!-- Form fields for editing certification -->
+                            <div class="form-group">
+                                <label for="name">Name</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ cert.name }}"
+                                       required>
+                            </div>
+                            <div class="form-group">
+                                <label for="issuer">Issuer</label>
+                                <input type="text" class="form-control" id="issuer" name="issuer"
+                                       value="{{ cert.issuer }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="issue_date">Issue Date</label>
+                                <input type="month" class="form-control" id="issue_date" name="issue_date"
+                                       value="{{ cert.issue_date.strftime('%Y-%m') }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="expiry_date">Expiry Date</label>
+                                <input type="month" class="form-control" id="expiry_date" name="expiry_date"
+                                       value="{{ cert.expiry_date.strftime('%Y-%m') if cert.expiry_date }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="credential_url">Credential URL</label>
+                                <input type="url" class="form-control" id="credential_url" name="credential_url"
+                                       value="{{ cert.credential_url }}">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endmacro %}
+
+
+
+
+
+
+

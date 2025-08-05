@@ -9,19 +9,29 @@ from flask import url_for
 # SQLAlchemy ORM
 from sqlalchemy.orm import joinedload
 
+from src.database.models import (
+    Certification,
+    Education,
+    Language,
+    Experience,
+    Project,
+    Publication,
+    Award,
+    CustomSection,
+    JobSeekerCV,
+    SavedCV,
+)
 from src.database.sql import Session
-from src.database import JobApplicationORM
+
 # Controllers
 from src.controllers.controller import Controllers, error_handler
 
 # Constants
 from src.database.constants import utc_time
 
-# Domain Models
-from src.database.models import JobSeekerCV, SavedCV
-
 # SQL Models (ORMs)
 from src.database import (
+    JobApplicationORM,
     JobSeekerCVORM,
     ExperienceORM,
     EducationORM,
@@ -723,7 +733,6 @@ class ResumeController(Controllers):
             # Return the full CV details for each CV ID
             return [await self.get_cv_by_id(cv_id=cv_id) for cv_id in cv_ids] if cv_ids else []
 
-
     @error_handler
     async def get_cvs_by_language(self, language: str) -> list[JobSeekerCV]:
         """
@@ -759,3 +768,639 @@ class ResumeController(Controllers):
     async def download_resume_pdf(self, cv_id: int):
         """Generate and return the PDF download of a resume."""
         pass
+
+    @error_handler
+    async def add_experience(self, user_uid: str, experience_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not experience_data:
+            raise ValueError("Experience data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Create a new Experience object
+            experience = Experience(
+                cv_id=cv_orm.cv_id,
+                job_title=experience_data['job_title'],
+                company=experience_data['company'],
+                start_date=experience_data['start_date'],
+                end_date=experience_data.get('end_date'),
+                location=experience_data.get('location'),
+                description=experience_data.get('description')
+            )
+
+            # Add the experience to the session
+            session.add(experience)
+            session.commit()
+            session.refresh(experience)
+
+            # Log the added experience
+            self.logger.info(f"Experience added: {experience}")
+
+    @error_handler
+    async def update_experience(self, exp_id: str, experience_data: dict):
+        if not (isinstance(exp_id, str) and exp_id.strip()):
+            raise ValueError("Invalid exp_id")
+
+        if not experience_data:
+            raise ValueError("Experience data is required")
+
+        with self.get_session() as session:
+            # Retrieve the experience by ID
+            experience = (
+                session.query(ExperienceORM)
+                .filter(ExperienceORM.id == exp_id)
+                .first()
+            )
+            if not experience:
+                raise ValueError("Experience not found for the given exp_id")
+
+            # Update the experience fields
+            experience.job_title = experience_data['job_title']
+            experience.company = experience_data['company']
+            experience.start_date = experience_data['start_date']
+            experience.end_date = experience_data.get('end_date')
+            experience.location = experience_data.get('location')
+            experience.description = experience_data.get('description')
+
+            # Commit the changes
+            session.commit()
+
+            # Log the updated experience
+            self.logger.info(f"Experience updated: {experience}")
+
+    @error_handler
+    async def add_education(self, user_uid: str, education_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not education_data:
+            raise ValueError("Education data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Create a new Education object
+            education = Education(
+                cv_id=cv_orm.cv_id,
+                qualification=education_data['qualification'],
+                institution=education_data['institution'],
+                start_date=education_data['start_date'],
+                end_date=education_data.get('end_date'),
+                field_of_study=education_data.get('field_of_study'),
+                description=education_data.get('description')
+            )
+
+            # Add the education to the session
+            session.add(education)
+            session.commit()
+            session.refresh(education)
+
+            # Log the added education
+            self.logger.info(f"Education added: {education}")
+
+    @error_handler
+    async def update_education(self, edu_id: str, education_data: dict):
+        if not (isinstance(edu_id, str) and edu_id.strip()):
+            raise ValueError("Invalid edu_id")
+
+        if not education_data:
+            raise ValueError("Education data is required")
+
+        with self.get_session() as session:
+            # Retrieve the education by ID
+            education = (
+                session.query(EducationORM)
+                .filter(EducationORM.id == edu_id)
+                .first()
+            )
+            if not education:
+                raise ValueError("Education not found for the given edu_id")
+
+            # Update the education fields
+            education.qualification = education_data['qualification']
+            education.institution = education_data['institution']
+            education.start_date = education_data['start_date']
+            education.end_date = education_data.get('end_date')
+            education.field_of_study = education_data.get('field_of_study')
+            education.description = education_data.get('description')
+
+            # Commit the changes
+            session.commit()
+
+            # Log the updated education
+            self.logger.info(f"Education updated: {education}")
+
+    @error_handler
+    async def add_certification(self, user_uid: str, certification_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not certification_data:
+            raise ValueError("Certification data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Create a new Certification object
+            certification = Certification(
+                cv_id=cv_orm.cv_id,
+                name=certification_data['name'],
+                issuer=certification_data['issuer'],
+                issue_date=certification_data['issue_date'],
+                expiry_date=certification_data.get('expiry_date'),
+                credential_url=certification_data.get('credential_url')
+            )
+
+            # Add the certification to the session
+            session.add(certification)
+            session.commit()
+            session.refresh(certification)
+
+            # Log the added certification
+            self.logger.info(f"Certification added: {certification}")
+
+    @error_handler
+    async def update_certification(self, cert_id: str, certification_data: dict):
+        if not (isinstance(cert_id, str) and cert_id.strip()):
+            raise ValueError("Invalid cert_id")
+
+        if not certification_data:
+            raise ValueError("Certification data is required")
+
+        with self.get_session() as session:
+            # Retrieve the certification by ID
+            certification = (
+                session.query(CertificationORM)
+                .filter(CertificationORM.id == cert_id)
+                .first()
+            )
+            if not certification:
+                raise ValueError("Certification not found for the given cert_id")
+
+            # Update the certification fields
+            certification.name = certification_data['name']
+            certification.issuer = certification_data['issuer']
+            certification.issue_date = certification_data['issue_date']
+            certification.expiry_date = certification_data.get('expiry_date')
+            certification.credential_url = certification_data.get('credential_url')
+
+            # Commit the changes
+            session.commit()
+
+            # Log the updated certification
+            self.logger.info(f"Certification updated: {certification}")
+
+    @error_handler
+    async def add_language(self, user_uid: str, language_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not language_data:
+            raise ValueError("Language data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Create a new Language object
+            language = Language(
+                cv_id=cv_orm.cv_id,
+                name=language_data['name'],
+                proficiency=language_data['proficiency']
+            )
+
+            # Add the language to the session
+            session.add(language)
+            session.commit()
+            session.refresh(language)
+
+            # Log the added language
+            self.logger.info(f"Language added: {language}")
+
+    @error_handler
+    async def update_language(self, lang_id: str, language_data: dict):
+        if not (isinstance(lang_id, str) and lang_id.strip()):
+            raise ValueError("Invalid lang_id")
+
+        if not language_data:
+            raise ValueError("Language data is required")
+
+        with self.get_session() as session:
+            # Retrieve the language by ID
+            language = (
+                session.query(LanguageORM)
+                .filter(LanguageORM.id == lang_id)
+                .first()
+            )
+            if not language:
+                raise ValueError("Language not found for the given lang_id")
+
+            # Update the language fields
+            language.name = language_data['name']
+            language.proficiency = language_data['proficiency']
+
+            # Commit the changes
+            session.commit()
+
+            # Log the updated language
+            self.logger.info(f"Language updated: {language}")
+
+    @error_handler
+    async def add_project(self, user_uid: str, project_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not project_data:
+            raise ValueError("Project data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Create a new Project object
+            project = Project(
+                cv_id=cv_orm.cv_id,
+                title=project_data['title'],
+                description=project_data['description'],
+                technologies=project_data['technologies'],
+                link=project_data.get('link')
+            )
+
+            # Add the project to the session
+            session.add(project)
+            session.commit()
+            session.refresh(project)
+
+            # Log the added project
+            self.logger.info(f"Project added: {project}")
+
+    @error_handler
+    async def update_project(self, project_id: str, project_data: dict):
+        if not (isinstance(project_id, str) and project_id.strip()):
+            raise ValueError("Invalid project_id")
+
+        if not project_data:
+            raise ValueError("Project data is required")
+
+        with self.get_session() as session:
+            # Retrieve the project by ID
+            project = (
+                session.query(ProjectORM)
+                .filter(ProjectORM.id == project_id)
+                .first()
+            )
+            if not project:
+                raise ValueError("Project not found for the given project_id")
+
+            # Update the project fields
+            project.title = project_data['title']
+            project.description = project_data['description']
+            project.technologies = project_data['technologies']
+            project.link = project_data.get('link')
+
+            # Commit the changes
+            session.commit()
+
+            # Log the updated project
+            self.logger.info(f"Project updated: {project}")
+
+    @error_handler
+    async def add_publication(self, user_uid: str, publication_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not publication_data:
+            raise ValueError("Publication data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Create a new Publication object
+            publication = Publication(
+                cv_id=cv_orm.cv_id,
+                title=publication_data['title'],
+                publisher=publication_data['publisher'],
+                date=publication_data['date'],
+                link=publication_data.get('link')
+            )
+
+            # Add the publication to the session
+            session.add(publication)
+            session.commit()
+            session.refresh(publication)
+
+            # Log the added publication
+            self.logger.info(f"Publication added: {publication}")
+
+    @error_handler
+    async def update_publication(self, pub_id: str, publication_data: dict):
+        if not (isinstance(pub_id, str) and pub_id.strip()):
+            raise ValueError("Invalid pub_id")
+
+        if not publication_data:
+            raise ValueError("Publication data is required")
+
+        with self.get_session() as session:
+            # Retrieve the publication by ID
+            publication = (
+                session.query(PublicationORM)
+                .filter(PublicationORM.id == pub_id)
+                .first()
+            )
+            if not publication:
+                raise ValueError("Publication not found for the given pub_id")
+
+            # Update the publication fields
+            publication.title = publication_data['title']
+            publication.publisher = publication_data['publisher']
+            publication.date = publication_data['date']
+            publication.link = publication_data.get('link')
+
+            # Commit the changes
+            session.commit()
+
+            # Log the updated publication
+            self.logger.info(f"Publication updated: {publication}")
+
+    @error_handler
+    async def add_award(self, user_uid: str, award_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not award_data:
+            raise ValueError("Award data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Create a new Award object
+            award = Award(
+                cv_id=cv_orm.cv_id,
+                title=award_data['title'],
+                issuer=award_data['issuer'],
+                date=award_data['date'],
+                description=award_data.get('description')
+            )
+
+            # Add the award to the session
+            session.add(award)
+            session.commit()
+            session.refresh(award)
+
+            # Log the added award
+            self.logger.info(f"Award added: {award}")
+
+    @error_handler
+    async def update_award(self, award_id: str, award_data: dict):
+        if not (isinstance(award_id, str) and award_id.strip()):
+            raise ValueError("Invalid award_id")
+
+        if not award_data:
+            raise ValueError("Award data is required")
+
+        with self.get_session() as session:
+            # Retrieve the award by ID
+            award = (
+                session.query(AwardORM)
+                .filter(AwardORM.id == award_id)
+                .first()
+            )
+            if not award:
+                raise ValueError("Award not found for the given award_id")
+
+            # Update the award fields
+            award.title = award_data['title']
+            award.issuer = award_data['issuer']
+            award.date = award_data['date']
+            award.description = award_data.get('description')
+
+            # Commit the changes
+            session.commit()
+
+            # Log the updated award
+            self.logger.info(f"Award updated: {award}")
+
+    @error_handler
+    async def add_custom_section(self, user_uid: str, custom_section_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not custom_section_data:
+            raise ValueError("Custom section data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Create a new CustomSection object
+            custom_section = CustomSection(
+                cv_id=cv_orm.cv_id,
+                title=custom_section_data['title'],
+                content=custom_section_data['content']
+            )
+
+            # Add the custom section to the session
+            session.add(custom_section)
+            session.commit()
+            session.refresh(custom_section)
+
+            # Log the added custom section
+            self.logger.info(f"Custom section added: {custom_section}")
+
+    @error_handler
+    async def update_custom_section(self, section_id: str, custom_section_data: dict):
+        if not (isinstance(section_id, str) and section_id.strip()):
+            raise ValueError("Invalid section_id")
+
+        if not custom_section_data:
+            raise ValueError("Custom section data is required")
+
+        with self.get_session() as session:
+            # Retrieve the custom section by ID
+            custom_section = (
+                session.query(CustomSectionORM)
+                .filter(CustomSectionORM.id == section_id)
+                .first()
+            )
+            if not custom_section:
+                raise ValueError("Custom section not found for the given section_id")
+
+            # Update the custom section fields
+            custom_section.title = custom_section_data['title']
+            custom_section.content = custom_section_data['content']
+
+            # Commit the changes
+            session.commit()
+
+            # Log the updated custom section
+            self.logger.info(f"Custom section updated: {custom_section}")
+
+    @error_handler
+    async def add_skills(self, user_uid: str, skills_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not skills_data or not skills_data['skills']:
+            raise ValueError("Skills data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Add new skills to the existing skills list
+            existing_skills = set(cv_orm.skills)
+            new_skills = [skill for skill in skills_data['skills'] if
+                          skill.strip() and skill.strip() not in existing_skills]
+
+            if new_skills:
+                cv_orm.skills.extend(new_skills)
+                session.commit()
+                self.logger.info(f"Skills added: {new_skills}")
+            else:
+                self.logger.info("No new skills to add.")
+
+    @error_handler
+    async def update_skills(self, user_uid: str, skills_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not skills_data or not skills_data['skills']:
+            raise ValueError("Skills data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Update the skills field in the CV ORM
+            cv_orm.skills = skills_data['skills']
+
+            session.commit()
+
+            # Log the updated skills
+            self.logger.info(f"Skills updated: {skills_data['skills']}")
+
+    @error_handler
+    async def add_portfolio_links(self, user_uid: str, portfolio_links_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not portfolio_links_data or not portfolio_links_data['portfolio_links']:
+            raise ValueError("Portfolio links data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Add new portfolio links to the existing portfolio links list
+            existing_portfolio_links = set(cv_orm.portfolio_links)
+            new_portfolio_links = [
+                link for link in portfolio_links_data['portfolio_links']
+                if link.strip() and link.strip() not in existing_portfolio_links
+            ]
+
+            if new_portfolio_links:
+                cv_orm.portfolio_links.extend(new_portfolio_links)
+                session.commit()
+                self.logger.info(f"Portfolio links added: {new_portfolio_links}")
+            else:
+                self.logger.info("No new portfolio links to add.")
+
+    @error_handler
+    async def update_portfolio_links(self, user_uid: str, portfolio_links_data: dict):
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            raise ValueError("Invalid user_uid")
+
+        if not portfolio_links_data or not portfolio_links_data['portfolio_links']:
+            raise ValueError("Portfolio links data is required")
+
+        with self.get_session() as session:
+            # Retrieve the user's CV
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .first()
+            )
+            if not cv_orm:
+                raise ValueError("CV not found for the given user_uid")
+
+            # Update the portfolio links field in the CV ORM
+            cv_orm.portfolio_links = portfolio_links_data['portfolio_links']
+
+            session.commit()
+
+            # Log the updated portfolio links
+            self.logger.info(f"Portfolio links updated: {portfolio_links_data['portfolio_links']}")

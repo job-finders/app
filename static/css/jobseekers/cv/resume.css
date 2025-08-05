@@ -2,7 +2,7 @@
 :root {
     --primary: #2563eb;
     --primary-light: #dbeafe;
-    --primary-dark: #1e40af;
+    --primary-dark: #494a52;
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
@@ -462,4 +462,12 @@ body {
 
 .animate-fade-in {
     animation: fadeInUp 0.6s ease forwards;
+}
+
+.auto-size {
+    overflow: hidden;
+    resize: none;
+    min-height: 50px; /* Minimum height */
+    max-height: 200px; /* Maximum height */
+    transition: height 0.2s ease;
 }

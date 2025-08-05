@@ -1,5 +1,5 @@
 {% extends "jobseekers/layout/page.html" %}
-{% import 'jobseekers/cv/partials/_cv_sections.html' as cv_sections %}
+{% import 'jobseekers/cv/partials/_editors.html' as cv_sections %}
 
 {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/jobseekers/cv/resume.css') }}">
@@ -21,12 +21,14 @@
                         <input type="text" class="form-control form-control-lg border-0 fw-bold mb-2"
                                name="professional_title" value="{{ cv.professional_title }}"
                                placeholder="Professional Title" required>
-                        <textarea class="form-control border-0 text-muted" name="summary" rows="3"
-                                  placeholder="Enter a short summary">{{ cv.summary }}</textarea>
+                        <textarea class="form-control border-0 text-muted auto-size" name="summary" rows="3"
+                                  placeholder="Enter a short summary">{{ cv.summary }}
+                            </textarea>
                     </div>
                     <span class="badge bg-primary text-white align-self-start">ATS: {{ ats_score }}/100</span>
                 </div>
             </div>
+
 
             <!-- Personal Info Section -->
             <div class="mb-5">
@@ -71,13 +73,39 @@
       {% include "jobseekers/cv/partials/_sidebar.html" %}
   </div>
 </div>
-
 {% endblock %}
 
-
 {% block scripts %}
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
+
+    });
+</script>
+
+
+    <script>
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const textareas = document.querySelectorAll('.auto-size');
+
+            function autoSizeTextarea(textarea) {
+                textarea.style.height = 'auto'; // Reset height
+                textarea.style.height = textarea.scrollHeight + 'px'; // Adjust height
+            }
+
+            textareas.forEach(textarea => {
+                autoSizeTextarea(textarea); // Initial resize
+                textarea.addEventListener('input', () => {
+                    autoSizeTextarea(textarea); // Resize on input
+                });
+            });
+
+
+
+
   // Real-time ATS scoring
   const atsUpdate = debounce(function() {
     const formData = new FormData(document.querySelector('form'));
