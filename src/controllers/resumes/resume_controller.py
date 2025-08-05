@@ -896,15 +896,12 @@ class ResumeController(Controllers):
         with self.get_session() as session:
             # Retrieve the certification by ID
             certification_orm = session.query(CertificationORM).filter(CertificationORM.id == cert_id).first()
-
             if not certification_orm:
                 raise ValueError("Certification not found for the given cert_id")
-
             # Update the certification fields
             certification_dict = certification_data.model_dump(exclude={'cv'}, exclude_unset=True)
             for key, value in certification_dict.items():
                 setattr(certification_orm, key, value)
-
             # Log the updated certification
             self.logger.info(f"Certification updated: {certification_data}")
             return certification_data

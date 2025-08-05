@@ -329,155 +329,6 @@
 
 
 
-{% macro render_certifications(cv_id, certifications) %}
-    <div class="cv-section">
-        <h4 class="section-title d-flex justify-content-between align-items-center">
-            <i class="ti-medall"></i>Certifications
-            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addCertificationModal">
-                <i class="ti-plus"></i>
-            </button>
-        </h4>
-        {% if certifications %}
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                {% for cert in certifications %}
-                    <div class="col">
-                        <div class="section-card">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="font-weight-bold text-dark mb-1">{{ cert.name }}</h5>
-                                    <div class="d-flex align-items-center text-muted mb-2">
-                                        <i class="ti-crown mr-2"></i>
-                                        <span class="font-weight-medium">{{ cert.issuer }}</span>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                <span class="modern-badge">
-                                    {{ cert.issue_date.strftime('%b %Y') }} -
-                                    {{ cert.expiry_date.strftime('%b %Y') if cert.expiry_date else 'No Expiry' }}
-                                </span>
-                                </div>
-                            </div>
-                            {% if cert.credential_url %}
-                                <div class="mt-3">
-                                    <a href="{{ cert.credential_url }}" class="btn btn-sm btn-outline-primary"
-                                       target="_blank">
-                                        <i class="ti-link mr-1"></i> Verify Credential
-                                    </a>
-                                </div>
-                            {% endif %}
-                            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
-                                    data-target="#editCertificationModal{{ cert.id }}">
-                                <i class="ti-pencil"></i>
-                            </button>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="text-center py-5">
-                <div class="display-4 text-muted mb-4">
-                    <i class="ti-files"></i>
-                </div>
-                <h4 class="text-muted mb-3">No Certifications Added</h4>
-                <p class="text-muted">Add your first certification</p>
-            </div>
-        {% endif %}
-    </div>
-
-    <!-- Add Certification Modal -->
-    <div class="modal fade" id="addCertificationModal" tabindex="-1" role="dialog"
-         aria-labelledby="addCertificationModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addCertificationModalLabel">Add Certification</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_certification', cv_id=cv_id) }}">
-                        <!-- Form fields for adding certification -->
-                        <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}"/>
-                        <div class="form-group">
-                            <label for="name">Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="issuer">Issuer</label>
-                            <input type="text" class="form-control" id="issuer" name="issuer" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="issue_date">Issue Date</label>
-                            <input type="month" class="form-control" id="issue_date" name="issue_date" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="expiry_date">Expiry Date</label>
-                            <input type="month" class="form-control" id="expiry_date" name="expiry_date">
-                        </div>
-                        <div class="form-group">
-                            <label for="credential_url">Credential URL</label>
-                            <input type="url" class="form-control" id="credential_url" name="credential_url">
-                        </div>
-                        <button type="submit" class="btn btn-primary">Add</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Certification Modal -->
-    {% for cert in certifications %}
-        <div class="modal fade" id="editCertificationModal{{ cert.id }}" tabindex="-1" role="dialog"
-             aria-labelledby="editCertificationModalLabel" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="editCertificationModalLabel">Edit Certification</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_certification', cert_id=cert.id) }}">
-                            <!-- Form fields for editing certification -->
-                            <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}"/>
-                            <div class="form-group">
-                                <label for="name">Name</label>
-                                <input type="text" class="form-control" id="name" name="name" value="{{ cert.name }}"
-                                       required>
-                            </div>
-                            <div class="form-group">
-                                <label for="issuer">Issuer</label>
-                                <input type="text" class="form-control" id="issuer" name="issuer"
-                                       value="{{ cert.issuer }}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="issue_date">Issue Date</label>
-                                <input type="month" class="form-control" id="issue_date" name="issue_date"
-                                       value="{{ cert.issue_date.strftime('%Y-%m') }}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="expiry_date">Expiry Date</label>
-                                <input type="month" class="form-control" id="expiry_date" name="expiry_date"
-                                       value="{{ cert.expiry_date.strftime('%Y-%m') if cert.expiry_date }}">
-                            </div>
-                            <div class="form-group">
-                                <label for="credential_url">Credential URL</label>
-                                <input type="url" class="form-control" id="credential_url" name="credential_url"
-                                       value="{{ cert.credential_url }}">
-                            </div>
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% endfor %}
-
-{% endmacro %}
-
-
 {% macro render_languages(languages) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
@@ -1232,7 +1083,7 @@
 
 
 
-{% macro render_certifications(certifications) %}
+{% macro render_certifications(cv_id, certifications) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-medall"></i>Certifications
@@ -1294,8 +1145,10 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_certification') }}">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_certification', cv_id=cv_id) }}">
                         <!-- Form fields for adding certification -->
+                        <input type="hidden" name="cv_id" id="cv_id" value="{{ cv_id }}"/>
+
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input type="text" class="form-control" id="name" name="name" required>
@@ -1338,6 +1191,7 @@
                     <div class="modal-body">
                         <form method="POST" action="{{ url_for('jobseeker_cv.edit_certification', cert_id=cert.id) }}">
                             <!-- Form fields for editing certification -->
+                            <input type="hidden" name="cv_id" id="cv_id" value="{{ cv_id }}"/>
                             <div class="form-group">
                                 <label for="name">Name</label>
                                 <input type="text" class="form-control" id="name" name="name" value="{{ cert.name }}"

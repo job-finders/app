@@ -463,8 +463,8 @@ async def add_certification(user: User, cv_id: str):
             'cv_id': cv_id,
             'name': form_data.get('name'),
             'issuer': form_data.get('issuer'),
-            'issue_date': _parse_date(form_data.get('issue_date')),
-            'expiry_date': _parse_date(form_data.get('expiry_date')),
+            'issue_date': _parse_short_date(form_data.get('issue_date')),
+            'expiry_date': _parse_short_date(form_data.get('expiry_date')),
             'credential_url': form_data.get('credential_url')
         })
 
@@ -487,8 +487,8 @@ async def edit_certification(user: User, cert_id: str):
             'cv_id': form_data.get('cv_id'),
             'name': form_data.get('name'),
             'issuer': form_data.get('issuer'),
-            'issue_date': _parse_date(form_data.get('issue_date')),
-            'expiry_date': _parse_date(form_data.get('expiry_date')),
+            'issue_date': _parse_short_date(form_data.get('issue_date')),
+            'expiry_date': _parse_short_date(form_data.get('expiry_date')),
             'credential_url': form_data.get('credential_url')
         })
         resume_controller = get_controller('resume')
