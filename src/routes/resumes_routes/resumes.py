@@ -410,6 +410,8 @@ async def edit_experience(user: User, exp_id: str):
 @flask_error_handler
 @jobseeker_login
 async def add_education(user: User):
+    """Add education details to the CV"""
+
     try:
         form_data = request.form
         education_data = {
