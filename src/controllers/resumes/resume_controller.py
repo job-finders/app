@@ -865,71 +865,49 @@ class ResumeController(Controllers):
             return education_data
 
     @error_handler
-    async def add_certification(self, user_uid: str, certification_data: dict):
+    async def add_certification(self, user_uid: str, certification_data: Certification) -> Certification | None:
         if not (isinstance(user_uid, str) and user_uid.strip()):
-            raise ValueError("Invalid user_uid")
-
+            self.logger.error("Invalid user_uid")
+            return None
         if not certification_data:
-            raise ValueError("Certification data is required")
-
+            self.logger.error("Certification data is required")
+            return None
         with self.get_session() as session:
             # Retrieve the user's CV
-            cv_orm = (
-                session.query(JobSeekerCVORM)
-                .filter(JobSeekerCVORM.user_uid == user_uid)
-                .first()
-            )
+            cv_orm = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.user_uid == user_uid).first()
             if not cv_orm:
-                raise ValueError("CV not found for the given user_uid")
-
+                self.logger.error("CV not found for the given user_uid")
+                return None
             # Create a new Certification object
-            certification = Certification(
-                cv_id=cv_orm.cv_id,
-                name=certification_data['name'],
-                issuer=certification_data['issuer'],
-                issue_date=certification_data['issue_date'],
-                expiry_date=certification_data.get('expiry_date'),
-                credential_url=certification_data.get('credential_url')
-            )
-
+            certification_orm = CertificationORM(**certification_data.model_dump(exclude={'cv'}, exclude_unset=True))
             # Add the certification to the session
-            session.add(certification)
-            session.commit()
-            session.refresh(certification)
-
+            session.add(certification_orm)
             # Log the added certification
-            self.logger.info(f"Certification added: {certification}")
+            self.logger.info(f"Certification added: {certification_data}")
+            return certification_data
 
     @error_handler
-    async def update_certification(self, cert_id: str, certification_data: dict):
+    async def update_certification(self, cert_id: str, certification_data: Certification) -> Certification | None:
         if not (isinstance(cert_id, str) and cert_id.strip()):
             raise ValueError("Invalid cert_id")
-
         if not certification_data:
             raise ValueError("Certification data is required")
 
         with self.get_session() as session:
             # Retrieve the certification by ID
-            certification = (
-                session.query(CertificationORM)
-                .filter(CertificationORM.id == cert_id)
-                .first()
-            )
-            if not certification:
+            certification_orm = session.query(CertificationORM).filter(CertificationORM.id == cert_id).first()
+
+            if not certification_orm:
                 raise ValueError("Certification not found for the given cert_id")
 
             # Update the certification fields
-            certification.name = certification_data['name']
-            certification.issuer = certification_data['issuer']
-            certification.issue_date = certification_data['issue_date']
-            certification.expiry_date = certification_data.get('expiry_date')
-            certification.credential_url = certification_data.get('credential_url')
-
-            # Commit the changes
-            session.commit()
+            certification_dict = certification_data.model_dump(exclude={'cv'}, exclude_unset=True)
+            for key, value in certification_dict.items():
+                setattr(certification_orm, key, value)
 
             # Log the updated certification
-            self.logger.info(f"Certification updated: {certification}")
+            self.logger.info(f"Certification updated: {certification_data}")
+            return certification_data
 
     @error_handler
     async def add_language(self, user_uid: str, language_data: dict):

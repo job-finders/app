@@ -59,7 +59,7 @@
                 {{ cv_sections.render_publications(cv.publications) }}
                 {{ cv_sections.render_custom_sections(cv.custom_sections) }}
                 {{ cv_sections.render_awards(cv.awards) }}
-                {{ cv_sections.render_certifications(cv.certifications) }}
+                {{ cv_sections.render_certifications(cv.cv_id, cv.certifications) }}
         </div>
 
             <!-- Save Button -->

@@ -453,19 +453,21 @@ async def edit_education(user: User, edu_id: str):
     return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
 
 
-@resume_routes.route("/add/certification", methods=["POST"])
+@resume_routes.route("/add/certification/<string:cv_id>", methods=["POST"])
 @flask_error_handler
 @jobseeker_login
-async def add_certification(user: User):
+async def add_certification(user: User, cv_id: str):
     try:
         form_data = request.form
-        certification_data = {
+        certification_data = Certification(**{
+            'cv_id': cv_id,
             'name': form_data.get('name'),
             'issuer': form_data.get('issuer'),
             'issue_date': _parse_date(form_data.get('issue_date')),
             'expiry_date': _parse_date(form_data.get('expiry_date')),
             'credential_url': form_data.get('credential_url')
-        }
+        })
+
         resume_controller = get_controller('resume')
         await resume_controller.add_certification(user.uid, certification_data)
         flash("Certification added successfully!", "success")
@@ -480,13 +482,15 @@ async def add_certification(user: User):
 async def edit_certification(user: User, cert_id: str):
     try:
         form_data = request.form
-        certification_data = {
+        certification_data = Certification(**{
+            'id': cert_id,
+            'cv_id': form_data.get('cv_id'),
             'name': form_data.get('name'),
             'issuer': form_data.get('issuer'),
             'issue_date': _parse_date(form_data.get('issue_date')),
             'expiry_date': _parse_date(form_data.get('expiry_date')),
             'credential_url': form_data.get('credential_url')
-        }
+        })
         resume_controller = get_controller('resume')
         await resume_controller.update_certification(cert_id, certification_data)
         flash("Certification updated successfully!", "success")

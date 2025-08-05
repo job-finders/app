@@ -329,7 +329,7 @@
 
 
 
-{% macro render_certifications(certifications) %}
+{% macro render_certifications(cv_id, certifications) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-medall"></i>Certifications
@@ -396,8 +396,9 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_certification') }}">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_certification', cv_id=cv_id) }}">
                         <!-- Form fields for adding certification -->
+                        <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}"/>
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input type="text" class="form-control" id="name" name="name" required>
@@ -440,6 +441,7 @@
                     <div class="modal-body">
                         <form method="POST" action="{{ url_for('jobseeker_cv.edit_certification', cert_id=cert.id) }}">
                             <!-- Form fields for editing certification -->
+                            <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}"/>
                             <div class="form-group">
                                 <label for="name">Name</label>
                                 <input type="text" class="form-control" id="name" name="name" value="{{ cert.name }}"
