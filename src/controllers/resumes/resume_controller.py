@@ -1,6 +1,6 @@
 # Standard Library
 import uuid
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Type
 
 # Flask Core
@@ -770,73 +770,49 @@ class ResumeController(Controllers):
         pass
 
     @error_handler
-    async def add_experience(self, user_uid: str, experience_data: dict):
+    async def add_experience(self, user_uid: str, experience_data: Experience) -> Experience | None:
         if not (isinstance(user_uid, str) and user_uid.strip()):
-            raise ValueError("Invalid user_uid")
+            self.logger.error("Invalid user_uid ")
+            return None
 
-        if not experience_data:
-            raise ValueError("Experience data is required")
+        if not isinstance(experience_data, Experience):
+            self.logger.error("Experience data is required")
+            return None
 
         with self.get_session() as session:
-            # Retrieve the user's CV
-            cv_orm = (
-                session.query(JobSeekerCVORM)
-                .filter(JobSeekerCVORM.user_uid == user_uid)
-                .first()
-            )
-            if not cv_orm:
-                raise ValueError("CV not found for the given user_uid")
-
             # Create a new Experience object
-            experience = Experience(
-                cv_id=cv_orm.cv_id,
-                job_title=experience_data['job_title'],
-                company=experience_data['company'],
-                start_date=experience_data['start_date'],
-                end_date=experience_data.get('end_date'),
-                location=experience_data.get('location'),
-                description=experience_data.get('description')
-            )
-
+            experience_orm = ExperienceORM(**experience_data.model_dump(exclude={'cv'}))
             # Add the experience to the session
-            session.add(experience)
-            session.commit()
-            session.refresh(experience)
-
+            session.add(experience_orm)
             # Log the added experience
-            self.logger.info(f"Experience added: {experience}")
+            self.logger.info(f"Experience added: {experience_data}")
+            return experience_data
 
     @error_handler
-    async def update_experience(self, exp_id: str, experience_data: dict):
+    async def update_experience(self, exp_id: str, experience_data: Experience) -> Experience | None:
         if not (isinstance(exp_id, str) and exp_id.strip()):
-            raise ValueError("Invalid exp_id")
+            self.logger.error("Invalid exp_id")
+            return None
 
         if not experience_data:
-            raise ValueError("Experience data is required")
+            self.logger.error("Experience data is required")
+            return None
 
         with self.get_session() as session:
             # Retrieve the experience by ID
-            experience = (
+            experience_orm = (
                 session.query(ExperienceORM)
                 .filter(ExperienceORM.id == exp_id)
                 .first()
             )
-            if not experience:
-                raise ValueError("Experience not found for the given exp_id")
-
+            if not experience_orm:
+                self.logger.error("Experience not found for the given exp_id")
+                return None
             # Update the experience fields
-            experience.job_title = experience_data['job_title']
-            experience.company = experience_data['company']
-            experience.start_date = experience_data['start_date']
-            experience.end_date = experience_data.get('end_date')
-            experience.location = experience_data.get('location')
-            experience.description = experience_data.get('description')
-
-            # Commit the changes
-            session.commit()
-
+            experience_orm(**experience_data.model_dump(exclude={'cv'}, exclude_unset=True))
             # Log the updated experience
-            self.logger.info(f"Experience updated: {experience}")
+            self.logger.info(f"Experience updated for exp_id: {exp_id}")
+            return experience_data
 
     @error_handler
     async def add_education(self, user_uid: str, education_data: dict):

@@ -55,6 +55,15 @@ def _parse_date(date_str: str) -> date:
     return datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else None
 
 
+def _parse_short_date(date_str):
+    """Parse date from YYYY-MM format"""
+    if not date_str:
+        return None
+    try:
+        return datetime.strptime(date_str, "%Y-%m").date()
+    except ValueError:
+        return None
+
 def _parse_cv_form_data(form_data, files, user_uid):
     structured_data = {
         'user_uid': user_uid,
@@ -172,58 +181,6 @@ async def ats_check(user: User):
         }), 500
 
 
-
-@resume_routes.route("/edit/<string:cv_id>", methods=["GET", "POST"])
-@flask_error_handler
-@jobseeker_login
-async def edit_cv(user: User, cv_id: str):
-    resume_controller: ResumeController = get_controller('resume')
-    if request.method == "POST":
-        try:
-            start_time = utc_time()
-            raw_data = _parse_cv_form_data(form_data=request.form, files=request.files, user_uid=user.uid)
-            updated_data = JobSeekerCV(**raw_data)
-            resume_controller = get_controller('resume')
-            # Update CV first
-            await resume_controller.update_cv(
-                user_uid=user.uid,
-                cv_id=cv_id,
-                data=updated_data
-            )
-
-            # Async ATS analysis after successful update
-            ats_controller = get_controller('ats')
-            await ats_controller.queue_ats_analysis(cv_id)
-
-            flash("CV updated successfully! ATS analysis in progress...", "success")
-            return redirect(url_for("jobseeker_cv.view_cv", cv_id=cv_id))
-
-        except ValidationError as e:
-            # Get partial CV data for error recovery
-            cv = await resume_controller.get_cv_by_id(cv_id)
-            context = await _handle_validation_error(e, cv)
-            return render_template("jobseekers/cv/edit_cv.html", **context)
-
-        except Exception as e:
-            flash(f"Error updating CV: {str(e)}", "danger")
-            return redirect(url_for("jobseeker_cv.list_cvs"))
-
-    # GET: Load with real-time ATS analysis
-    try:
-        cv = await resume_controller.get_cv_by_id(cv_id)
-        ats_report = await _get_ats_report(cv)
-
-        context = {
-            "current_user": user,
-            "cv": cv,
-            "ats_report": ats_report,
-            "section_completeness": ats_report.get('section_completeness', {})
-        }
-        return render_template("jobseekers/cv/edit_cv.html", **context)
-
-    except Exception as e:
-        flash(f"Error loading CV: {str(e)}", "danger")
-        return redirect(url_for("jobseeker_cv.list_cvs"))
 
 
 async def _get_ats_report(cv: JobSeekerCV) -> dict:
@@ -351,48 +308,101 @@ async def list_cvs(user: User):
 # --------------------------------------------------------------------------------------------------
 # -----------------------------------SECTION EDIT ROUTES--------------------------------------------
 # --------------------------------------------------------------------------------------------------
-
-@resume_routes.route("/add/experience", methods=["POST"])
+@resume_routes.route("/edit/<string:cv_id>", methods=["GET", "POST"])
 @flask_error_handler
 @jobseeker_login
-async def add_experience(user: User):
+async def edit_cv(user: User, cv_id: str):
+    resume_controller: ResumeController = get_controller('resume')
+    if request.method == "POST":
+        try:
+            start_time = utc_time()
+            raw_data = _parse_cv_form_data(form_data=request.form, files=request.files, user_uid=user.uid)
+            updated_data = JobSeekerCV(**raw_data)
+            resume_controller = get_controller('resume')
+            # Update CV first
+            await resume_controller.update_cv(
+                user_uid=user.uid,
+                cv_id=cv_id,
+                data=updated_data
+            )
+
+            # Async ATS analysis after successful update
+            ats_controller = get_controller('ats')
+            await ats_controller.queue_ats_analysis(cv_id)
+
+            flash("CV updated successfully! ATS analysis in progress...", "success")
+            return redirect(url_for("jobseeker_cv.view_cv", cv_id=cv_id))
+
+        except ValidationError as e:
+            # Get partial CV data for error recovery
+            cv = await resume_controller.get_cv_by_id(cv_id)
+            context = await _handle_validation_error(e, cv)
+            return render_template("jobseekers/cv/edit_cv.html", **context)
+
+        except Exception as e:
+            flash(f"Error updating CV: {str(e)}", "danger")
+            return redirect(url_for("jobseeker_cv.list_cvs"))
+
+    # GET: Load with real-time ATS analysis
     try:
-        form_data = request.form
-        experience_data = {
-            'job_title': form_data.get('job_title'),
-            'company': form_data.get('company'),
-            'start_date': _parse_date(form_data.get('start_date')),
-            'end_date': _parse_date(form_data.get('end_date')),
-            'location': form_data.get('location'),
-            'description': form_data.get('description')
+        cv = await resume_controller.get_cv_by_id(cv_id)
+        ats_report = await _get_ats_report(cv)
+
+        context = {
+            "current_user": user,
+            "cv": cv,
+            "ats_report": ats_report,
+            "section_completeness": ats_report.get('section_completeness', {})
         }
-        resume_controller = get_controller('resume')
-        await resume_controller.add_experience(user.uid, experience_data)
-        flash("Experience added successfully!", "success")
+        return render_template("jobseekers/cv/edit_cv.html", **context)
+
     except Exception as e:
-        flash(f"Error adding experience: {str(e)}", "danger")
-    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+        flash(f"Error loading CV: {str(e)}", "danger")
+        return redirect(url_for("jobseeker_cv.list_cvs"))
+
+
+@resume_routes.route("/add/experience/<string:cv_id>", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def add_experience(user: User, cv_id: str):
+    form_data = request.form
+    experience_data = Experience(**{
+        'cv_id': cv_id,
+        'job_title': form_data.get('job_title'),
+        'company': form_data.get('company'),
+        'start_date': _parse_short_date(form_data.get('start_date')),
+        'end_date': _parse_short_date(form_data.get('end_date')),
+        'location': form_data.get('location'),
+        'description': form_data.get('description')
+    })
+    resume_logger = get_service('logger')()("ADD_EXPERIENCE_ROUTE:")
+    resume_logger.info(f"Adding experience for user {user.uid}: {experience_data}")
+    resume_controller = get_controller('resume')
+    await resume_controller.add_experience(user.uid, experience_data)
+    flash("Experience added successfully!", "success")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=cv_id))
 
 
 @resume_routes.route("/edit/experience/<string:exp_id>", methods=["POST"])
 @flask_error_handler
 @jobseeker_login
 async def edit_experience(user: User, exp_id: str):
-    try:
-        form_data = request.form
-        experience_data = {
-            'job_title': form_data.get('job_title'),
-            'company': form_data.get('company'),
-            'start_date': _parse_date(form_data.get('start_date')),
-            'end_date': _parse_date(form_data.get('end_date')),
-            'location': form_data.get('location'),
-            'description': form_data.get('description')
-        }
-        resume_controller = get_controller('resume')
-        await resume_controller.update_experience(exp_id, experience_data)
-        flash("Experience updated successfully!", "success")
-    except Exception as e:
-        flash(f"Error updating experience: {str(e)}", "danger")
+    form_data = request.form
+    experience_data = Experience(**{
+        'id': exp_id,
+        'cv_id': form_data.get('cv_id'),
+        'job_title': form_data.get('job_title'),
+        'company': form_data.get('company'),
+        'start_date': _parse_short_date(form_data.get('start_date')),
+        'end_date': _parse_short_date(form_data.get('end_date')),
+        'location': form_data.get('location'),
+        'description': form_data.get('description')
+    })
+    resume_logger = get_service('logger')()("EDIT_EXPERIENCE_ROUTE:")
+    resume_logger.info(f"Editing experience {exp_id} for user {user.uid}: {experience_data}")
+    resume_controller = get_controller('resume')
+    await resume_controller.update_experience(exp_id, experience_data)
+    flash("Experience updated successfully!", "success")
     return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
 
 

@@ -1,4 +1,4 @@
-{% macro render_experience(experience) %}
+{% macro render_experience(cv_id,  experience) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-briefcase"></i>Experience
@@ -72,7 +72,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_experience') }}">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_experience', cv_id=cv_id) }}">
                         <!-- Form fields for adding experience -->
                         <div class="form-group">
                             <label for="job_title">Job Title</label>
@@ -120,16 +120,20 @@
                     <div class="modal-body">
                         <form method="POST" action="{{ url_for('jobseeker_cv.edit_experience', exp_id=exp.id) }}">
                             <!-- Form fields for editing experience -->
+                            <input type="hidden" id="cv_id" name="cv_id" value="{{ exp.cv_id }}">
+
                             <div class="form-group">
                                 <label for="job_title">Job Title</label>
                                 <input type="text" class="form-control" id="job_title" name="job_title"
                                        value="{{ exp.job_title }}" required>
                             </div>
+
                             <div class="form-group">
                                 <label for="company">Company</label>
                                 <input type="text" class="form-control" id="company" name="company"
                                        value="{{ exp.company }}" required>
                             </div>
+
                             <div class="form-group">
                                 <label for="start_date">Start Date</label>
                                 <input type="month" class="form-control" id="start_date" name="start_date"
@@ -159,6 +163,7 @@
     {% endfor %}
 
 {% endmacro %}
+
 
 
 
@@ -719,8 +724,6 @@
 {% endmacro %}
 
 
-
-
 {% macro render_publications(publications) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
@@ -854,9 +857,6 @@
     {% endfor %}
 
 {% endmacro %}
-
-
-
 
 
 {% macro render_awards(awards) %}

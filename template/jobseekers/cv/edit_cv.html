@@ -53,7 +53,7 @@
             <div class="mb-5">
                 {{ cv_sections.render_education(cv.education) }}
                 {{ cv_sections.render_languages(cv.languages) }}
-                {{ cv_sections.render_experience(cv.experience) }}
+                {{ cv_sections.render_experience(cv.cv_id, cv.experience) }}
                 {{ cv_sections.render_skills(cv.skills) }}
                 {{ cv_sections.render_portfolio_links(cv.portfolio_links) }}
                 {{ cv_sections.render_publications(cv.publications) }}
