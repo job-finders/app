@@ -809,79 +809,60 @@ class ResumeController(Controllers):
                 self.logger.error("Experience not found for the given exp_id")
                 return None
             # Update the experience fields
-            experience_orm(**experience_data.model_dump(exclude={'cv'}, exclude_unset=True))
+            experience_data = experience_data.model_dump(exclude={'cv'}, exclude_unset=True)
+            for key, value in experience_data.items():
+                setattr(experience_orm, key, value)
             # Log the updated experience
             self.logger.info(f"Experience updated for exp_id: {exp_id}")
             return experience_data
 
     @error_handler
-    async def add_education(self, user_uid: str, education_data: dict):
+    async def add_education(self, user_uid: str, education_data: Education) -> Education | None:
         if not (isinstance(user_uid, str) and user_uid.strip()):
-            raise ValueError("Invalid user_uid")
-
-        if not education_data:
-            raise ValueError("Education data is required")
+            self.logger.error("Invalid user_uid")
+            return None
+        if not isinstance(education_data, Education):
+            self.logger.error("Education data is required")
+            return None
 
         with self.get_session() as session:
             # Retrieve the user's CV
-            cv_orm = (
-                session.query(JobSeekerCVORM)
-                .filter(JobSeekerCVORM.user_uid == user_uid)
-                .first()
-            )
+            cv_orm = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.user_uid == user_uid).first()
             if not cv_orm:
-                raise ValueError("CV not found for the given user_uid")
-
+                self.logger.error("CV not found for the given user_uid")
+                return None
             # Create a new Education object
-            education = Education(
-                cv_id=cv_orm.cv_id,
-                qualification=education_data['qualification'],
-                institution=education_data['institution'],
-                start_date=education_data['start_date'],
-                end_date=education_data.get('end_date'),
-                field_of_study=education_data.get('field_of_study'),
-                description=education_data.get('description')
-            )
-
+            education_orm = EducationORM(**education_data.model_dump(exclude={'cv'}))
             # Add the education to the session
-            session.add(education)
-            session.commit()
-            session.refresh(education)
-
+            session.add(education_orm)
             # Log the added education
-            self.logger.info(f"Education added: {education}")
+            self.logger.info(f"Education added: {education_data}")
+            return education_data
 
     @error_handler
-    async def update_education(self, edu_id: str, education_data: dict):
+    async def update_education(self, edu_id: str, education_data: Education) -> Education | None:
         if not (isinstance(edu_id, str) and edu_id.strip()):
-            raise ValueError("Invalid edu_id")
-
+            self.logger.error("Invalid edu_id")
+            return None
         if not education_data:
-            raise ValueError("Education data is required")
+            self.logger.error("Education data is required")
+            return None
 
         with self.get_session() as session:
             # Retrieve the education by ID
-            education = (
-                session.query(EducationORM)
-                .filter(EducationORM.id == edu_id)
-                .first()
-            )
-            if not education:
-                raise ValueError("Education not found for the given edu_id")
-
+            education_orm = session.query(EducationORM).filter(EducationORM.id == edu_id).first()
+            if not education_orm:
+                self.logger.error("Education not found for the given edu_id")
+                return None
             # Update the education fields
-            education.qualification = education_data['qualification']
-            education.institution = education_data['institution']
-            education.start_date = education_data['start_date']
-            education.end_date = education_data.get('end_date')
-            education.field_of_study = education_data.get('field_of_study')
-            education.description = education_data.get('description')
-
-            # Commit the changes
-            session.commit()
+            # Update the education fields
+            education_orm_data = education_data.model_dump(exclude={'cv'}, exclude_unset=True)
+            for key, value in education_orm_data.items():
+                setattr(education_orm, key, value)
 
             # Log the updated education
-            self.logger.info(f"Education updated: {education}")
+            self.logger.info(f"Education updated: {education_data}")
+            return education_data
 
     @error_handler
     async def add_certification(self, user_uid: str, certification_data: dict):

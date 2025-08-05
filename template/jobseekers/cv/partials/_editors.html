@@ -167,7 +167,7 @@
 
 
 
-{% macro render_education(education) %}
+{% macro render_education(cv_id, education) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-book"></i>Education
@@ -237,8 +237,9 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_education') }}">
+                    <form method="POST" action="{{ url_for('jobseeker_cv.add_education', cv_id=cv_id) }}">
                         <!-- Form fields for adding education -->
+                        <input type="hidden" name="cv_id" value="{{ cv_id }}">
                         <div class="form-group">
                             <label for="qualification">Qualification</label>
                             <input type="text" class="form-control" id="qualification" name="qualification" required>
@@ -285,6 +286,7 @@
                     <div class="modal-body">
                         <form method="POST" action="{{ url_for('jobseeker_cv.edit_education', edu_id=edu.id) }}">
                             <!-- Form fields for editing education -->
+                            <input type="hidden" id="{{ cv_id }}" name="cv_id" value="{{ cv_id }}">
                             <div class="form-group">
                                 <label for="qualification">Qualification</label>
                                 <input type="text" class="form-control" id="qualification" name="qualification"

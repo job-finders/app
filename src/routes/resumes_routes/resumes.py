@@ -406,28 +406,26 @@ async def edit_experience(user: User, exp_id: str):
     return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
 
 
-@resume_routes.route("/add/education", methods=["POST"])
+@resume_routes.route("/add/education<string:cv_id>", methods=["POST"])
 @flask_error_handler
 @jobseeker_login
-async def add_education(user: User):
+async def add_education(user: User, cv_id: str):
     """Add education details to the CV"""
+    form_data = request.form
+    education_data = Education(**{
+        'cv_id': cv_id,
+        'qualification': form_data.get('qualification'),
+        'institution': form_data.get('institution'),
+        'start_date': _parse_short_date(form_data.get('start_date')),
+        'end_date': _parse_short_date(form_data.get('end_date')),
+        'field_of_study': form_data.get('field_of_study'),
+        'description': form_data.get('description')
+    })
 
-    try:
-        form_data = request.form
-        education_data = {
-            'qualification': form_data.get('qualification'),
-            'institution': form_data.get('institution'),
-            'start_date': _parse_date(form_data.get('start_date')),
-            'end_date': _parse_date(form_data.get('end_date')),
-            'field_of_study': form_data.get('field_of_study'),
-            'description': form_data.get('description')
-        }
-        resume_controller = get_controller('resume')
-        await resume_controller.add_education(user.uid, education_data)
-        flash("Education added successfully!", "success")
-    except Exception as e:
-        flash(f"Error adding education: {str(e)}", "danger")
-    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+    resume_controller = get_controller('resume')
+    await resume_controller.add_education(user.uid, education_data)
+    flash("Education added successfully!", "success")
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=cv_id))
 
 
 @resume_routes.route("/edit/education/<string:edu_id>", methods=["POST"])
@@ -436,14 +434,17 @@ async def add_education(user: User):
 async def edit_education(user: User, edu_id: str):
     try:
         form_data = request.form
-        education_data = {
+        education_data = Education(**{
+            "id": edu_id,
+            'cv_id': form_data.get('cv_id'),
             'qualification': form_data.get('qualification'),
             'institution': form_data.get('institution'),
-            'start_date': _parse_date(form_data.get('start_date')),
-            'end_date': _parse_date(form_data.get('end_date')),
+            'start_date': _parse_short_date(form_data.get('start_date')),
+            'end_date': _parse_short_date(form_data.get('end_date')),
             'field_of_study': form_data.get('field_of_study'),
             'description': form_data.get('description')
-        }
+        })
+
         resume_controller = get_controller('resume')
         await resume_controller.update_education(edu_id, education_data)
         flash("Education updated successfully!", "success")
