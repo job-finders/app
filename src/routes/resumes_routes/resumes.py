@@ -181,7 +181,7 @@ async def edit_cv(user: User, cv_id: str):
     if request.method == "POST":
         try:
             start_time = utc_time()
-            raw_data = _parse_cv_form_data(request.form, request.files)
+            raw_data = _parse_cv_form_data(form_data=request.form, files=request.files, user_uid=user.uid)
             updated_data = JobSeekerCV(**raw_data)
             resume_controller = get_controller('resume')
             # Update CV first
@@ -216,11 +216,7 @@ async def edit_cv(user: User, cv_id: str):
         context = {
             "current_user": user,
             "cv": cv,
-            "ats_score": ats_report.get('score', 0),
-            "missing_keywords": ats_report.get('missing_keywords', []),
-            "matched_keywords": ats_report.get('matched_keywords', []),
-            "quality_metrics": ats_report.get('quality_metrics', {}),
-            "ats_feedback": ats_report.get('feedback', 'Analysis pending'),
+            "ats_report": ats_report,
             "section_completeness": ats_report.get('section_completeness', {})
         }
         return render_template("jobseekers/cv/edit_cv.html", **context)

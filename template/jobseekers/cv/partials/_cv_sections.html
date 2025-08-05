@@ -1,251 +1,386 @@
 {% macro render_experience(experience) %}
 {% if experience %}
-<div class="mb-4">
-  <h4 class="text-info"><i class="ti-briefcase mr-2"></i>Experience</h4>
-  {% for exp in experience %}
-      <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <h5 class="font-weight-bold">{{ exp.job_title }}</h5>
-      <div class="row text-muted small mb-2">
-        <div class="col-12 col-md-6">
-          <i class="ti-home"></i> {{ exp.company }}
-        </div>
-        <div class="col-12 col-md-6 text-md-right">
-            {{ exp.start_date.strftime('%b %Y') }} -
-          {{ exp.end_date.strftime('%b %Y') if exp.end_date else 'Present' }}
-        </div>
-      </div>
-      {% if exp.location %}
-      <div class="mb-2">
-        <i class="ti-location-pin"></i> {{ exp.location }}
-      </div>
-      {% endif %}
-      {% if exp.description %}
-      <p class="mb-0">{{ exp.description }}</p>
-      {% endif %}
-    </div>
-  </div>
-  {% endfor %}
+    <div class="cv-section">
+        <h4 class="section-title">
+            <i class="ti-briefcase"></i>Experience
+        </h4>
+        {% for exp in experience %}
+            <div class="section-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="font-weight-bold text-dark mb-1">{{ exp.job_title }}</h5>
+                        <div class="d-flex align-items-center text-muted mb-2">
+                            <i class="ti-home mr-2"></i>
+                            <span class="font-weight-medium">{{ exp.company }}</span>
+                        </div>
+                        {% if exp.location %}
+                            <div class="d-flex align-items-center text-muted small">
+                                <i class="ti-location-pin mr-2"></i>
+                                <span>{{ exp.location }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="text-right">
+                <span class="modern-badge">
+                    {{ exp.start_date.strftime('%b %Y') }} -
+                    {{ exp.end_date.strftime('%b %Y') if exp.end_date else 'Present' }}
+                </span>
+                    </div>
+                </div>
+                {% if exp.description %}
+                    <div class="text-muted" style="line-height: 1.6;">
+                        {{ exp.description }}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
 </div>
 {% endif %}
 {% endmacro %}
 
 {% macro render_education(education) %}
 {% if education %}
-<div class="mb-4">
-  <h4 class="text-info"><i class="ti-book mr-2"></i>Education</h4>
-  {% for edu in education %}
-      <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <h5 class="font-weight-bold">{{ edu.qualification }}</h5>
-      <div class="row text-muted small mb-2">
-        <div class="col-12 col-md-6">
-          <i class="ti-medal"></i> {{ edu.institution }}
-        </div>
-        <div class="col-12 col-md-6 text-md-right">
-            {{ edu.start_date.strftime('%b %Y') }} -
-          {{ edu.end_date.strftime('%b %Y') if edu.end_date else 'Present' }}
-        </div>
-      </div>
-      {% if edu.field_of_study %}
-      <div class="mb-2">
-        <i class="ti-bookmark-alt"></i> {{ edu.field_of_study }}
-      </div>
-      {% endif %}
-      {% if edu.description %}
-      <p class="mb-0">{{ edu.description }}</p>
-      {% endif %}
-    </div>
-  </div>
-  {% endfor %}
+    <div class="cv-section">
+        <h4 class="section-title">
+            <i class="ti-book"></i>Education
+        </h4>
+        {% for edu in education %}
+            <div class="section-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="font-weight-bold text-dark mb-1">{{ edu.qualification }}</h5>
+                        <div class="d-flex align-items-center text-muted mb-2">
+                            <i class="ti-medal mr-2"></i>
+                            <span class="font-weight-medium">{{ edu.institution }}</span>
+                        </div>
+                        {% if edu.field_of_study %}
+                            <div class="d-flex align-items-center text-muted small">
+                                <i class="ti-bookmark-alt mr-2"></i>
+                                <span>{{ edu.field_of_study }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="text-right">
+                <span class="modern-badge">
+                    {{ edu.start_date.strftime('%b %Y') }} -
+                    {{ edu.end_date.strftime('%b %Y') if edu.end_date else 'Present' }}
+                </span>
+                    </div>
+                </div>
+                {% if edu.description %}
+                    <div class="text-muted" style="line-height: 1.6;">
+                        {{ edu.description }}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
 </div>
 {% endif %}
 {% endmacro %}
 
 {% macro render_certifications(certifications) %}
 {% if certifications %}
-<div class="mb-4">
-  <h4 class="text-info"><i class="ti-medall mr-2"></i>Certifications</h4>
-  {% for cert in certifications %}
-      <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <h5 class="font-weight-bold">{{ cert.name }}</h5>
-      <div class="row text-muted small mb-2">
-        <div class="col-12 col-md-6">
-          <i class="ti-crown"></i> {{ cert.issuer }}
-        </div>
-        <div class="col-12 col-md-6 text-md-right">
-            {{ cert.issue_date.strftime('%b %Y') }} -
-          {{ cert.expiry_date.strftime('%b %Y') if cert.expiry_date else 'No Expiry' }}
-        </div>
-      </div>
-      {% if cert.credential_url %}
-      <a href="{{ cert.credential_url }}" class="btn btn-sm btn-outline-info">
-        <i class="ti-link"></i> Verify Credential
-      </a>
-      {% endif %}
-    </div>
-  </div>
-  {% endfor %}
+    <div class="cv-section">
+        <h4 class="section-title">
+            <i class="ti-medall"></i>Certifications
+        </h4>
+        {% for cert in certifications %}
+            <div class="section-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="font-weight-bold text-dark mb-1">{{ cert.name }}</h5>
+                        <div class="d-flex align-items-center text-muted mb-2">
+                            <i class="ti-crown mr-2"></i>
+                            <span class="font-weight-medium">{{ cert.issuer }}</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                <span class="modern-badge">
+                    {{ cert.issue_date.strftime('%b %Y') }} -
+                    {{ cert.expiry_date.strftime('%b %Y') if cert.expiry_date else 'No Expiry' }}
+                </span>
+                    </div>
+                </div>
+                {% if cert.credential_url %}
+                    <div class="mt-3">
+                        <a href="{{ cert.credential_url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                            <i class="ti-link mr-1"></i> Verify Credential
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
 </div>
 {% endif %}
 {% endmacro %}
 
 {% macro render_languages(languages) %}
 {% if languages %}
-<div class="mb-4">
-  <h4 class="text-info"><i class="ti-world mr-2"></i>Languages</h4>
-  <div class="row">
-    {% for lang in languages %}
-    <div class="col-6 col-md-4 col-lg-3 mb-2">
-      <div class="d-flex align-items-center">
-        <span class="font-weight-bold mr-2">{{ lang.name }}</span>
-        <span class="badge badge-pill badge-secondary">
-          {{ lang.proficiency }}
-        </span>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
+    <div class="cv-section">
+        <h4 class="section-title">
+            <i class="ti-world"></i>Languages
+        </h4>
+        <div class="section-card">
+            <div class="row">
+                {% for lang in languages %}
+                    <div class="col-6 col-md-4 col-xl-3 mb-3">
+                        <div class="d-flex flex-column align-items-center text-center p-3 bg-light rounded">
+                            <span class="font-weight-bold text-dark mb-1">{{ lang.name }}</span>
+                            <span class="modern-badge badge-success">{{ lang.proficiency }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
 </div>
 {% endif %}
 {% endmacro %}
 
 {% macro render_projects(projects) %}
 {% if projects %}
-<div class="mb-4">
-  <h4 class="text-info"><i class="ti-layout mr-2"></i>Projects</h4>
-  {% for project in projects %}
-      <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <h5 class="font-weight-bold">{{ project.title }}</h5>
-      {% if project.technologies %}
-      <div class="mb-2">
-        {% for tech in project.technologies %}
-        <span class="badge badge-pill badge-light border">{{ tech }}</span>
-        {% endfor %}
-      </div>
-      {% endif %}
-      <p>{{ project.description }}</p>
-      {% if project.link %}
-      <a href="{{ project.link }}" class="btn btn-sm btn-outline-info">
-        <i class="ti-link"></i> View Project
-      </a>
-      {% endif %}
+    <div class="cv-section">
+        <h4 class="section-title">
+            <i class="ti-layout"></i>Projects
+        </h4>
+        {% for project in projects %}
+            <div class="section-card">
+                <h5 class="font-weight-bold text-dark mb-2">{{ project.title }}</h5>
+                {% if project.technologies %}
+                    <div class="mb-3">
+                        {% for tech in project.technologies %}
+                            <span class="modern-badge mr-2 mb-1">{{ tech }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="text-muted mb-3" style="line-height: 1.6;">
+                    {{ project.description }}
+                </div>
+                {% if project.link %}
+                    <a href="{{ project.link }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                        <i class="ti-link mr-1"></i> View Project
+                    </a>
+                {% endif %}
     </div>
-  </div>
-  {% endfor %}
+        {% endfor %}
 </div>
 {% endif %}
 {% endmacro %}
 
 {% macro render_publications(publications) %}
 {% if publications %}
-<div class="mb-4">
-  <h4 class="text-info"><i class="ti-notepad mr-2"></i>Publications</h4>
-  {% for pub in publications %}
-      <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <h5 class="font-weight-bold">{{ pub.title }}</h5>
-      <div class="row text-muted small mb-2">
-        <div class="col-12 col-md-6">
-          {% if pub.publisher %}<i class="ti-agenda"></i> {{ pub.publisher }}{% endif %}
-        </div>
-        <div class="col-12 col-md-6 text-md-right">
-          {% if pub.date %}{{ pub.date.strftime('%b %Y') }}{% endif %}
-        </div>
-      </div>
-      {% if pub.link %}
-      <a href="{{ pub.link }}" class="btn btn-sm btn-outline-info">
-        <i class="ti-link"></i> Read Publication
-      </a>
-      {% endif %}
+    <div class="cv-section">
+        <h4 class="section-title">
+            <i class="ti-notepad"></i>Publications
+        </h4>
+        {% for pub in publications %}
+            <div class="section-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="font-weight-bold text-dark mb-1">{{ pub.title }}</h5>
+                        {% if pub.publisher %}
+                            <div class="d-flex align-items-center text-muted">
+                                <i class="ti-agenda mr-2"></i>
+                                <span class="font-weight-medium">{{ pub.publisher }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if pub.date %}
+                        <div class="text-right">
+                            <span class="modern-badge">{{ pub.date.strftime('%b %Y') }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                {% if pub.link %}
+                    <a href="{{ pub.link }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                        <i class="ti-link mr-1"></i> Read Publication
+                    </a>
+                {% endif %}
     </div>
-  </div>
-  {% endfor %}
+        {% endfor %}
 </div>
 {% endif %}
 {% endmacro %}
 
 {% macro render_awards(awards) %}
 {% if awards %}
-<div class="mb-4">
-  <h4 class="text-info"><i class="ti-cup mr-2"></i>Awards</h4>
-  {% for award in awards %}
-      <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <h5 class="font-weight-bold">{{ award.title }}</h5>
-      <div class="row text-muted small mb-2">
-        <div class="col-12 col-md-6">
-          {% if award.issuer %}<i class="ti-star"></i> {{ award.issuer }}{% endif %}
-        </div>
-        <div class="col-12 col-md-6 text-md-right">
-          {% if award.date %}{{ award.date.strftime('%b %Y') }}{% endif %}
-        </div>
-      </div>
-      {% if award.description %}
-      <p class="mb-0">{{ award.description }}</p>
-      {% endif %}
-    </div>
-  </div>
-  {% endfor %}
+    <div class="cv-section">
+        <h4 class="section-title">
+            <i class="ti-cup"></i>Awards
+        </h4>
+        {% for award in awards %}
+            <div class="section-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="font-weight-bold text-dark mb-1">{{ award.title }}</h5>
+                        {% if award.issuer %}
+                            <div class="d-flex align-items-center text-muted">
+                                <i class="ti-star mr-2"></i>
+                                <span class="font-weight-medium">{{ award.issuer }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if award.date %}
+                        <div class="text-right">
+                            <span class="modern-badge">{{ award.date.strftime('%b %Y') }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                {% if award.description %}
+                    <div class="text-muted" style="line-height: 1.6;">
+                        {{ award.description }}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
 </div>
 {% endif %}
 {% endmacro %}
 
 {% macro render_custom_sections(custom_sections) %}
 {% if custom_sections %}
-<div class="mb-4">
-  <h4 class="text-info"><i class="ti-layout-grid3 mr-2"></i>Additional Information</h4>
-  {% for section in custom_sections %}
-      <div class="card mb-3 shadow-sm">
-    <div class="card-body">
-      <h5 class="font-weight-bold">{{ section.title }}</h5>
-      {% if section.content is string %}
-        <p>{{ section.content }}</p>
-      {% else %}
-        <ul class="mb-0">
-          {% for item in section.content %}
-          <li>{{ item }}</li>
-          {% endfor %}
+    <div class="cv-section">
+        <h4 class="section-title">
+            <i class="ti-layout-grid3"></i>Additional Information
+        </h4>
+        {% for section in custom_sections %}
+            <div class="section-card">
+                <h5 class="font-weight-bold text-dark mb-3">{{ section.title }}</h5>
+                {% if section.content is string %}
+                    <div class="text-muted" style="line-height: 1.6;">
+                        {{ section.content }}
+                    </div>
+                {% else %}
+                    <ul class="list-unstyled mb-0">
+                        {% for item in section.content %}
+                            <li class="d-flex align-items-start mb-2">
+                                <i class="ti-check text-primary mr-2 mt-1" style="font-size: 0.8rem;"></i>
+                                <span class="text-muted">{{ item }}</span>
+                            </li>
+                        {% endfor %}
         </ul>
-      {% endif %}
+                {% endif %}
     </div>
-  </div>
-  {% endfor %}
+        {% endfor %}
 </div>
 {% endif %}
 {% endmacro %}
 
 {% macro render_skills(skills) %}
     {% if skills %}
-        <div class="mb-4">
-            <h4 class="text-info"><i class="ti-tools mr-2"></i>Skills</h4>
-            <div class="row">
-                {% for skill in skills %}
-                    <div class="col-6 col-md-4 col-lg-3 mb-2">
-                        <div class="d-flex align-items-center">
-                            <span class="font-weight-bold mr-2">{{ skill }}</span>
-                        </div>
-                    </div>
-                {% endfor %}
+        <div class="cv-section">
+            <h4 class="section-title">
+                <i class="ti-tools"></i>Skills
+            </h4>
+            <div class="section-card">
+                <div class="skills-container">
+                    {% for skill in skills %}
+                        <span class="skill-pill">
+                <i class="ti-check-box skill-check"></i>
+                {{ skill }}
+            </span>
+                    {% endfor %}
+                </div>
             </div>
         </div>
+
+        <style>
+            .skills-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                margin: 0;
+            }
+
+            .skill-pill {
+                display: inline-flex;
+                align-items: center;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                border: 1px solid #cbd5e1;
+                color: #334155;
+                padding: 0.5rem 1rem;
+                border-radius: 9999px;
+                font-size: 0.875rem;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                cursor: default;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .skill-pill::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+                transition: left 0.5s ease;
+            }
+
+            .skill-pill:hover {
+                background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+                color: white;
+                border-color: #1e40af;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            }
+
+            .skill-pill:hover::before {
+                left: 100%;
+            }
+
+            .skill-pill:hover .skill-check {
+                color: #dbeafe;
+            }
+
+            .skill-check {
+                margin-right: 0.5rem;
+                font-size: 0.75rem;
+                color: #10b981;
+                transition: color 0.3s ease;
+            }
+
+            /* Responsive adjustments */
+            @media (max-width: 768px) {
+                .skills-container {
+                    gap: 0.5rem;
+                }
+
+                .skill-pill {
+                    padding: 0.4rem 0.8rem;
+                    font-size: 0.8rem;
+                }
+
+                .skill-check {
+                    margin-right: 0.4rem;
+                    font-size: 0.7rem;
+                }
+            }
+        </style>
     {% endif %}
 {% endmacro %}
 
 {% macro render_portfolio_links(portfolio_links) %}
     {% if portfolio_links %}
-        <div class="mb-4">
-            <h4 class="text-info"><i class="ti-link mr-2"></i>Portfolio Links</h4>
-            <div class="row">
-                {% for link in portfolio_links %}
-                    <div class="col-12 mb-2">
-                        <a href="{{ link }}" class="btn btn-sm btn-outline-info" target="_blank">
-                            <i class="ti-link"></i> View Portfolio
-                        </a>
-                    </div>
-                {% endfor %}
+        <div class="cv-section">
+            <h4 class="section-title">
+                <i class="ti-link"></i>Portfolio Links
+            </h4>
+            <div class="section-card">
+                <div class="row">
+                    {% for link in portfolio_links %}
+                        <div class="col-12 col-md-6 mb-3">
+                            <a href="{{ link }}"
+                               class="btn btn-outline-primary btn-block d-flex align-items-center justify-content-center py-3"
+                               target="_blank">
+                                <i class="ti-link mr-2"></i>
+                                <span>View Portfolio</span>
+                                <i class="ti-external-link ml-2" style="font-size: 0.8rem;"></i>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     {% endif %}

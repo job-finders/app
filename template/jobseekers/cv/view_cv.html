@@ -2,279 +2,120 @@
 {% import 'jobseekers/cv/partials/_cv_sections.html' as cv_sections %}
 
 {% block styles %}
-    <style>
-        :root {
-            --accent: #0d6efd;
-            --soft-bg: #f5faff;
-            --muted-text: #6c757d;
-            --border-radius-lg: 1rem;
-        }
-
-        .sticky-top {
-            top: 20px;
-        }
-
-        .card {
-            border-radius: var(--border-radius-lg);
-            overflow: hidden;
-            transition: box-shadow 0.2s ease-in-out;
-        }
-
-        .card:hover {
-            box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.05);
-        }
-
-        .card-header {
-            background-color: var(--soft-bg);
-            border-bottom: 1px solid #e2e6ea;
-        }
-
-        .card-header h2,
-        .card-header h4 {
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .card-body {
-            font-size: 0.95rem;
-            background-color: white;
-        }
-
-        .lead {
-            font-size: 1.1rem;
-            color: #3c4043;
-            line-height: 1.6;
-        }
-
-        .btn-link {
-            color: var(--accent);
-            font-weight: 500;
-        }
-
-        .contact-info .col-6 {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.95rem;
-            color: var(--muted-text);
-        }
-
-        .contact-info i {
-            color: var(--accent);
-            margin-right: 4px;
-        }
-
-        .alert-success {
-            background-color: #d1e7dd;
-            color: #0f5132;
-            border-radius: 0.5rem;
-        }
-
-        .alert-warning {
-            background-color: #fff3cd;
-            color: #664d03;
-            border-radius: 0.5rem;
-        }
-
-        .accordion .card-header {
-            background-color: #f8f9fa;
-        }
-
-        .accordion .card-body {
-            background-color: #fff;
-        }
-
-        .accordion .btn-link {
-            text-decoration: none;
-            color: #0d6efd;
-        }
-
-        ul.list-unstyled li {
-            padding-left: 1.25rem;
-            position: relative;
-            margin-bottom: 0.25rem;
-        }
-
-        ul.list-unstyled li::before {
-            content: '•';
-            position: absolute;
-            left: 0;
-            color: var(--accent);
-        }
-
-        .badge-pill {
-            border-radius: 20px;
-            font-size: 0.75rem;
-            padding: 0.25rem 0.6rem;
-        }
-
-        /* Highlight for score metrics */
-        .score-metric {
-            font-weight: 600;
-            display: inline-block;
-            margin-bottom: 0.25rem;
-        }
-
-        .score-metric span {
-            color: var(--accent);
-        }
-
-        /* Responsive Tweaks */
-        @media (max-width: 768px) {
-            .card-header h2 {
-                font-size: 1.4rem;
-            }
-
-            .contact-info .col-6 {
-                font-size: 0.85rem;
-            }
-
-            .card-body {
-                font-size: 0.9rem;
-            }
-        }
-    </style>
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobseekers/cv/resume.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-  <div class="row">
-    <!-- Main CV Content -->
-    <div class="col-lg-8">
-      <div class="card shadow-sm mb-4">
-        <div class="card-header bg-light">
-          <h2 class="font-weight-bold text-info">
-            {{ cv.professional_title }}
-            <a href="{{ url_for('jobseeker_cv.edit_cv', cv_id=cv.cv_id) }}"
-               class="btn btn-sm btn-outline-primary float-right">
-              <i class="ti-pencil"></i> Edit CV
-            </a>
-          </h2>
-          <p class="lead mb-0">{{ cv.summary }}</p>
-        </div>
-        <!-- Contact Info -->
-        <div class="card-body">
-          <div class="row text-center mb-4">
-            {% if cv.phone %}<div class="col-6 col-md-3 mb-2">
-              <i class="ti-mobile"></i> {{ cv.phone }}
-            </div>{% endif %}
-            {% if cv.location %}<div class="col-6 col-md-3 mb-2">
-              <i class="ti-location-pin"></i> {{ cv.location }}
-            </div>{% endif %}
-            {% if cv.linkedin %}<div class="col-6 col-md-3 mb-2">
-              <i class="ti-linkedin"></i> {{ cv.linkedin|urlize(40) }}
-            </div>{% endif %}
-            {% if cv.github %}<div class="col-6 col-md-3 mb-2">
-              <i class="ti-github"></i> {{ cv.github|urlize(40) }}
-            </div>{% endif %}
-          </div>
+    <div class="row">
+        <!-- Main CV Content -->
+        <div class="col-lg-8">
+            <div class="modern-card animate-fade-in">
+                <!-- Header Section -->
+                <div class="modern-card-header">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="header-content">
+                            <div class="title-section">
+                                <h1 class="professional-title">{{ cv.professional_title }}</h1>
+                                <div class="title-underline"></div>
+                            </div>
+                            <div class="summary-section">
+                                <p class="cv-summary">{{ cv.summary }}</p>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('jobseeker_cv.edit_cv', cv_id=cv.cv_id) }}" class="edit-btn">
+                            <i class="ti-pencil mr-2"></i> Edit CV
+                        </a>
+                    </div>
+                </div>
 
-            <!-- Dynamic Sections -->
-            {{ cv_sections.render_education(cv.education) }}
-            {{ cv_sections.render_languages(cv.languages) }}
-            {{ cv_sections.render_experience(cv.experience) }}
-            {{ cv_sections.render_skills(cv.skills) }}
-            {{ cv_sections.render_portfolio_links(cv.portfolio_links) }}
-            {{ cv_sections.render_publications(cv.publications) }}
-            {{ cv_sections.render_custom_sections(cv.custom_sections) }}
-            {{ cv_sections.render_awards(cv.awards) }}
-            {{ cv_sections.render_certifications(cv.certifications) }}
+                <!-- Contact Info Section -->
+                <div class="contact-section">
+                    {% if cv.phone %}
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="ti-mobile"></i>
+                            </div>
+                            <div class="contact-content">
+                                <small class="contact-label">Phone</small>
+                                <div class="contact-value">{{ cv.phone }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if cv.location %}
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="ti-location-pin"></i>
+                            </div>
+                            <div class="contact-content">
+                                <small class="contact-label">Location</small>
+                                <div class="contact-value">{{ cv.location }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if cv.linkedin %}
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="ti-linkedin"></i>
+                            </div>
+                            <div class="contact-content">
+                                <small class="contact-label">LinkedIn</small>
+                                <div class="contact-value">{{ cv.linkedin|urlize(40) }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if cv.github %}
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="ti-github"></i>
+                            </div>
+                            <div class="contact-content">
+                                <small class="contact-label">GitHub</small>
+                                <div class="contact-value">{{ cv.github|urlize(40) }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
 
+                <!-- CV Sections -->
+                <div class="p-4">
+                    {{ cv_sections.render_education(cv.education) }}
+                    {{ cv_sections.render_languages(cv.languages) }}
+                    {{ cv_sections.render_experience(cv.experience) }}
+                    {{ cv_sections.render_skills(cv.skills) }}
+                    {{ cv_sections.render_portfolio_links(cv.portfolio_links) }}
+                    {{ cv_sections.render_publications(cv.publications) }}
+                    {{ cv_sections.render_custom_sections(cv.custom_sections) }}
+                    {{ cv_sections.render_awards(cv.awards) }}
+                    {{ cv_sections.render_certifications(cv.certifications) }}
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- Modern Sidebar -->
+        {% include "jobseekers/cv/partials/_sidebar.html" %}
     </div>
-
-      <!-- ATS Tools Sidebar -->
-      <!-- ATS Tools Sidebar -->
-      <div class="col-lg-4">
-          <div class="card shadow-sm sticky-top">
-              <div class="card-header bg-light">
-                  <h4 class="text-info"><i class="ti-stats-up mr-2"></i> CV Analysis</h4>
-              </div>
-              <div class="card-body">
-
-                  {# === ATS Report Score & Feedback === #}
-                  {% if ats_report %}
-                      <div class="alert alert-success">
-                          {% if ats_report.score is defined %}
-                              <h5 class="mb-1">ATS Score: {{ ats_report.score }}/100</h5>
-                          {% else %}
-                              <h5 class="mb-1">ATS Report</h5>
-                          {% endif %}
-                          <small class="d-block mt-1 text-muted">{{ ats_report.feedback }}</small>
-                      </div>
-
-                      <div class="accordion" id="atsAccordion">
-
-                          <!-- Keyword Analysis -->
-                          <div class="card">
-                              <div class="card-header" id="headingKeywords">
-                                  <h6 class="mb-0">
-                                      <button class="btn btn-link" data-toggle="collapse" data-target="#keywordAnalysis"
-                                              aria-expanded="true">
-                                          <i class="ti-search mr-2"></i>Keyword Analysis
-                                      </button>
-                                  </h6>
-                              </div>
-                              <div id="keywordAnalysis" class="collapse show" aria-labelledby="headingKeywords"
-                                   data-parent="#atsAccordion">
-                                  <div class="card-body">
-                                      <ul class="list-unstyled mb-0">
-                                          <li>✅ <strong>{{ ats_report.matched_keywords | length }}</strong> Matched
-                                              Keywords
-                                          </li>
-                                          <li>⚠️ <strong>{{ ats_report.missing_keywords | length }}</strong> Missing
-                                              Keywords
-                                          </li>
-                                      </ul>
-                                  </div>
-                              </div>
-                          </div>
-
-                      </div>
-                  {% else %}
-                      <div class="alert alert-warning">
-                          <h5 class="mb-1">ATS Report Unavailable</h5>
-                          <small class="text-muted">No analysis data could be retrieved for this CV.</small>
-                      </div>
-                  {% endif %}
-
-                  {# === Resume Metrics from Model === #}
-                  <div class="mt-4">
-                      <h6 class="text-secondary font-weight-bold mb-2">Quality Metrics</h6>
-                      <ul class="list-unstyled mb-0 small">
-                          <li>📄 <strong>Completion:</strong> {{ cv.resume_completion_percentage }}%</li>
-                          <li>🔐 <strong>Trust Score:</strong> {{ cv.trust_score }}/100</li>
-                          <li>📈 <strong>Experience Quality:</strong> {{ cv.experience_quality_score }}/100</li>
-                          <li>🎓 <strong>Education Quality:</strong> {{ cv.education_quality_score }}/100</li>
-                          <li>📝 <strong>Custom Section Quality:</strong> {{ cv.custom_section_quality_score }}/100</li>
-                          {% if cv.resume_has_boilerplate %}
-                              <li>⚠️ <strong>Boilerplate Detected</strong> — consider replacing placeholder text.</li>
-                          {% endif %}
-                      </ul>
-                  </div>
-
-              </div>
-          </div>
-      </div>
-
-  </div>
 </div>
 {% endblock %}
 
-
-
 {% block scripts %}
 <script>
-  // Initialize ATS tooltips
-  $(function () {
+    // Initialize tooltips
+    $(function () {
     $('[data-toggle="tooltip"]').tooltip()
-  })
+    })
 
-  // Auto-expand sections with errors
-  document.querySelectorAll('.ats-issue').forEach(item => {
+    // Auto-expand sections with errors
+    document.querySelectorAll('.ats-issue').forEach(item => {
     item.closest('.collapse').classList.add('show')
-  })
+    })
+
+    // Add loading animation on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        const cards = document.querySelectorAll('.animate-fade-in');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+    });
 </script>
 {% endblock %}

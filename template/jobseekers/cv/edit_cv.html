@@ -1,156 +1,77 @@
 {% extends "jobseekers/layout/page.html" %}
-{% import 'jobseekers/cv/partials/_cv_sections.html' as sections %}
+{% import 'jobseekers/cv/partials/_cv_sections.html' as cv_sections %}
 
 {% block styles %}
-    <style>
-        .sticky-top {
-            top: 20px;
-            z-index: 1000;
-        }
-
-        .ats-score-preview {
-            font-size: 1.1rem;
-            padding: 0.5rem 1rem;
-        }
-
-        [data-ats-highlight="true"] {
-            border-left: 3px solid #17a2b8;
-            background-color: rgba(23, 162, 184, 0.05);
-        }
-
-        @media (max-width: 768px) {
-            .form-group input, .form-group textarea {
-                font-size: 0.9rem;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobseekers/cv/resume.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+    <div class="container py-5">
   <div class="row">
-    <!-- Main Edit Form -->
+      <!-- Main Content -->
     <div class="col-lg-8">
-      <form method="POST" enctype="multipart/form-data">
-        <div class="card shadow-sm mb-4">
-          <div class="card-header bg-light d-flex justify-content-between align-items-center">
-            <h2 class="font-weight-bold text-info mb-0">
-              Edit CV: {{ cv.professional_title }}
-            </h2>
-            <div class="ats-score-preview badge badge-pill badge-success">
-              ATS: {{ ats_score }}/100
-            </div>
-          </div>
+        <form method="POST" action="{{ url_for('jobseeker_cv.edit_cv', cv_id=cv.id) }}"
+              class="bg-white p-4 shadow-sm rounded">
 
-          <div class="card-body">
-            <!-- Core Information -->
-            <div class="form-group">
-              <label class="font-weight-bold">Professional Title</label>
-              <input type="text" class="form-control" name="professional_title"
-                     value="{{ cv.professional_title }}" required>
-            </div>
 
-            <div class="form-group">
-              <label class="font-weight-bold">Summary</label>
-              <textarea class="form-control" name="summary" rows="3"
-                        data-ats-check="summary">{{ cv.summary }}</textarea>
+            <!-- Header Section -->
+            <div class="mb-4 border-bottom pb-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="w-100">
+                        <input type="text" class="form-control form-control-lg border-0 fw-bold mb-2"
+                               name="professional_title" value="{{ cv.professional_title }}"
+                               placeholder="Professional Title" required>
+                        <textarea class="form-control border-0 text-muted" name="summary" rows="3"
+                                  placeholder="Enter a short summary">{{ cv.summary }}</textarea>
+                    </div>
+                    <span class="badge bg-primary text-white align-self-start">ATS: {{ ats_score }}/100</span>
+                </div>
             </div>
 
-            <!-- Dynamic Sections -->
-            <div class="mb-4">
-              <h4 class="text-info border-bottom pb-2">Sections</h4>
-
-                {{ sections.render_experience(cv.experience) }}
-                {{ sections.render_education(cv.education) }}
-                {{ sections.render_certifications(cv.certifications) }}
-                {{ sections.render_languages(cv.languages) }}
-                {{ sections.render_projects(cv.projects) }}
-                {{ sections.render_publications(cv.publications) }}
-                {{ sections.render_awards(cv.awards) }}
-                {{ sections.render_custom_sections(cv.custom_sections) }}
-
+            <!-- Personal Info Section -->
+            <div class="mb-5">
+                <h5 class="fw-semibold border-bottom pb-2 mb-3">Personal Information</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" value="{{ cv.email }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" name="phone" value="{{ cv.phone }}">
             </div>
-          </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-control" name="location" value="{{ cv.location }}">
+            </div>
+                </div>
+            </div>
+
+            <!-- CV Sections -->
+            <div class="mb-5">
+                {{ cv_sections.render_education(cv.education) }}
+                {{ cv_sections.render_languages(cv.languages) }}
+                {{ cv_sections.render_experience(cv.experience) }}
+                {{ cv_sections.render_skills(cv.skills) }}
+                {{ cv_sections.render_portfolio_links(cv.portfolio_links) }}
+                {{ cv_sections.render_publications(cv.publications) }}
+                {{ cv_sections.render_custom_sections(cv.custom_sections) }}
+                {{ cv_sections.render_awards(cv.awards) }}
+                {{ cv_sections.render_certifications(cv.certifications) }}
         </div>
-        <div class="text-right mb-4">
-          <button type="submit" class="btn btn-primary btn-lg">
-            <i class="ti-save mr-2"></i>Save Changes
-          </button>
+
+            <!-- Save Button -->
+            <div class="text-end">
+                <button type="submit" class="btn btn-success px-4">Save Changes</button>
         </div>
       </form>
     </div>
-    <!-- ATS Tools Sidebar -->
-    <div class="col-lg-4">
-      <div class="card shadow-sm sticky-top">
-        <div class="card-header bg-light">
-            <h4 class="text-info"><i class="ti-stats-up mr-2"></i>ATS Feedback</h4>
-        </div>
-        <div class="card-body">
-          <div class="alert" :class="atsClass">
-            <h5>Current Score: {{ ats_score }}/100</h5>
-            <small>{{ ats_feedback }}</small>
-          </div>
 
-          <div class="accordion">
-            <!-- Keyword Optimization -->
-            <div class="card">
-              <div class="card-header">
-                <h6 class="mb-0">
-                  <button class="btn btn-link" data-toggle="collapse" data-target="#keywordSuggestions">
-                    <i class="ti-search mr-2"></i>Keyword Suggestions
-                  </button>
-                </h6>
-              </div>
-              <div id="keywordSuggestions" class="collapse show">
-                <div class="card-body">
-                  <ul class="list-unstyled">
-                    {% for keyword in missing_keywords %}
-                    <li class="text-danger mb-1">
-                      <i class="ti-close"></i> {{ keyword }}
-                      <button type="button" class="btn btn-sm btn-link text-info"
-                              @click="addKeyword(keyword)">
-                        <i class="ti-plus"></i> Add
-                      </button>
-                    </li>
-                    {% endfor %}
-                    {% for keyword in matched_keywords %}
-                    <li class="text-success mb-1">
-                      <i class="ti-check"></i> {{ keyword }}
-                    </li>
-                    {% endfor %}
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <!-- Section Completeness -->
-            <div class="card">
-              <div class="card-header">
-                <h6 class="mb-0">
-                  <button class="btn btn-link" data-toggle="collapse" data-target="#sectionCompleteness">
-                    <i class="ti-check-box mr-2"></i>Missing Sections
-                  </button>
-                </h6>
-              </div>
-              <div id="sectionCompleteness" class="collapse">
-                <div class="card-body">
-                  <ul class="list-unstyled">
-                    {% if not cv.experience %}
-                    <li class="text-danger">
-                      <i class="ti-close"></i> Work Experience
-                    </li>
-                    {% endif %}
-                    <!-- Add other section checks -->
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      <!-- Sidebar ATS -->
+      {% include "jobseekers/cv/partials/_sidebar.html" %}
   </div>
 </div>
+
 {% endblock %}
 
 
