@@ -968,69 +968,56 @@ class ResumeController(Controllers):
             self.logger.info(f"Language updated: {language}")
 
     @error_handler
-    async def add_project(self, user_uid: str, project_data: dict):
+    async def add_project(self, user_uid: str, project_data: Project) -> Project | None:
+        """
+
+        :param user_uid:
+        :param project_data:
+        :return:
+        """
         if not (isinstance(user_uid, str) and user_uid.strip()):
-            raise ValueError("Invalid user_uid")
+            self.logger.error("Invalid user_uid")
+            return None
 
         if not project_data:
-            raise ValueError("Project data is required")
+            self.logger.error("Project data is required")
+            return None
 
         with self.get_session() as session:
             # Retrieve the user's CV
-            cv_orm = (
-                session.query(JobSeekerCVORM)
-                .filter(JobSeekerCVORM.user_uid == user_uid)
-                .first()
-            )
-            if not cv_orm:
-                raise ValueError("CV not found for the given user_uid")
-
-            # Create a new Project object
-            project = Project(
-                cv_id=cv_orm.cv_id,
-                title=project_data['title'],
-                description=project_data['description'],
-                technologies=project_data['technologies'],
-                link=project_data.get('link')
-            )
-
-            # Add the project to the session
-            session.add(project)
-            session.commit()
-            session.refresh(project)
-
+            project_orm = ProjectORM(project_data.model_dump(exclude={'cv'}, exclude_unset=True))
+            session.add(project_orm)
             # Log the added project
-            self.logger.info(f"Project added: {project}")
+            self.logger.info(f"Project added: {project_data}")
+            return project_data
 
     @error_handler
-    async def update_project(self, project_id: str, project_data: dict):
+    async def update_project(self, project_id: str, project_data: Project) -> Project | None:
+        """
+
+        :param project_id:
+        :param project_data:
+        :return:
+        """
         if not (isinstance(project_id, str) and project_id.strip()):
-            raise ValueError("Invalid project_id")
+            self.logger.error("Invalid project_id")
+            return None
 
         if not project_data:
-            raise ValueError("Project data is required")
+            self.logger.error("Project data is required")
+            return None
 
         with self.get_session() as session:
             # Retrieve the project by ID
-            project = (
-                session.query(ProjectORM)
-                .filter(ProjectORM.id == project_id)
-                .first()
-            )
-            if not project:
-                raise ValueError("Project not found for the given project_id")
+            project_orm = session.query(ProjectORM).filter(ProjectORM.id == project_id).first()
 
-            # Update the project fields
-            project.title = project_data['title']
-            project.description = project_data['description']
-            project.technologies = project_data['technologies']
-            project.link = project_data.get('link')
-
-            # Commit the changes
-            session.commit()
+            project_dict = project_data.model_dump(exclude={'cv'}, exclude_unset=True)
+            for key, value in project_dict.items():
+                setattr(project_orm, key, value)
 
             # Log the updated project
-            self.logger.info(f"Project updated: {project}")
+            self.logger.info(f"Project updated: {project_data}")
+            return project_data
 
     @error_handler
     async def add_publication(self, user_uid: str, publication_data: dict):

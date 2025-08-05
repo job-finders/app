@@ -503,6 +503,11 @@ async def edit_certification(user: User, cert_id: str):
 @flask_error_handler
 @jobseeker_login
 async def add_language(user: User):
+    """
+        TODO still need to finish the language
+    :param user:
+    :return:
+    """
     try:
         form_data = request.form
         language_data = {
@@ -535,18 +540,19 @@ async def edit_language(user: User, lang_id: str):
     return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
 
 
-@resume_routes.route("/add/project", methods=["POST"])
+@resume_routes.route("/add/project/<string:cv_id>", methods=["POST"])
 @flask_error_handler
 @jobseeker_login
-async def add_project(user: User):
+async def add_project(user: User, cv_id: str):
     try:
         form_data = request.form
-        project_data = {
+        project_data = Project(**{
+            'cv_id': cv_id,
             'title': form_data.get('title'),
             'description': form_data.get('description'),
             'technologies': [tech.strip() for tech in form_data.get('technologies', '').split(',')],
             'link': form_data.get('link')
-        }
+        })
         resume_controller = get_controller('resume')
         await resume_controller.add_project(user.uid, project_data)
         flash("Project added successfully!", "success")
