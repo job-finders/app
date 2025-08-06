@@ -72,8 +72,11 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_experience', cv_id=cv_id) }}">
+                    <form name="add_experience_form" method="POST"
+                          action="{{ url_for('jobseeker_cv.add_experience', cv_id=cv_id) }}">
                         <!-- Form fields for adding experience -->
+                        <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}">
+
                         <div class="form-group">
                             <label for="job_title">Job Title</label>
                             <input type="text" class="form-control" id="job_title" name="job_title" required>
@@ -118,9 +121,10 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_experience', exp_id=exp.id) }}">
+                        <form name="edit_experience_form" method="POST"
+                              action="{{ url_for('jobseeker_cv.edit_experience', exp_id=exp.id) }}">
                             <!-- Form fields for editing experience -->
-                            <input type="hidden" id="cv_id" name="cv_id" value="{{ exp.cv_id }}">
+                            <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}">
 
                             <div class="form-group">
                                 <label for="job_title">Job Title</label>
@@ -237,8 +241,8 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_education', cv_id=cv_id) }}">
-                        <!-- Form fields for adding education -->
+                    <form name="add_education_form" method="POST"
+                          action="{{ url_for('jobseeker_cv.add_education', cv_id=cv_id) }}">
                         <input type="hidden" name="cv_id" value="{{ cv_id }}">
                         <div class="form-group">
                             <label for="qualification">Qualification</label>
@@ -284,7 +288,8 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_education', edu_id=edu.id) }}">
+                        <form name="edit_education_form" method="POST"
+                              action="{{ url_for('jobseeker_cv.edit_education', edu_id=edu.id) }}">
                             <!-- Form fields for editing education -->
                             <input type="hidden" id="{{ cv_id }}" name="cv_id" value="{{ cv_id }}">
                             <div class="form-group">
@@ -329,7 +334,7 @@
 
 
 
-{% macro render_languages(languages) %}
+{% macro render_languages(cv_id,  languages) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-world"></i>Languages
@@ -377,8 +382,10 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_language') }}">
+                    <form name="add_language_form" method="POST" action="{{ url_for('jobseeker_cv.add_language') }}">
                         <!-- Form fields for adding language -->
+                        <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}">
+
                         <div class="form-group">
                             <label for="name">Language</label>
                             <input type="text" class="form-control" id="name" name="name" required>
@@ -412,8 +419,11 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_language', lang_id=lang.id) }}">
+                        <form name="edit_language_form" method="POST"
+                              action="{{ url_for('jobseeker_cv.edit_language', lang_id=lang.id) }}">
                             <!-- Form fields for editing language -->
+                            <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}">
+
                             <div class="form-group">
                                 <label for="name">Language</label>
                                 <input type="text" class="form-control" id="name" name="name" value="{{ lang.name }}"
@@ -449,7 +459,7 @@
 
 
 
-{% macro render_projects(projects) %}
+{% macro render_projects(cv_id,  projects) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-layout"></i>Projects
@@ -509,8 +519,10 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_project') }}">
+                    <form name="add_projects_form" method="POST" action="{{ url_for('jobseeker_cv.add_project') }}">
                         <!-- Form fields for adding project -->
+                        <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}">
+
                         <div class="form-group">
                             <label for="title">Title</label>
                             <input type="text" class="form-control" id="title" name="title" required>
@@ -547,8 +559,11 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_project', project_id=project.id) }}">
+                        <form name="edit_projects_form" method="POST"
+                              action="{{ url_for('jobseeker_cv.edit_project', project_id=project.id) }}">
                             <!-- Form fields for editing project -->
+                            <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}">
+
                             <div class="form-group">
                                 <label for="title">Title</label>
                                 <input type="text" class="form-control" id="title" name="title"
@@ -579,7 +594,7 @@
 {% endmacro %}
 
 
-{% macro render_publications(publications) %}
+{% macro render_publications(cv_id, publications) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-notepad"></i>Publications
@@ -644,8 +659,10 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_publication') }}">
+                    <form name="add_publication_form" method="POST"
+                          action="{{ url_for('jobseeker_cv.add_publication', cv_id=cv_id) }}">
                         <!-- Form fields for adding publication -->
+                        <input type="hidden" name="cv_id" id="cv_id" value="{{ cv_id }}"/>
                         <div class="form-group">
                             <label for="title">Title</label>
                             <input type="text" class="form-control" id="title" name="title" required>
@@ -682,8 +699,10 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_publication', pub_id=pub.id) }}">
+                        <form name="edit_publication_form" method="POST"
+                              action="{{ url_for('jobseeker_cv.edit_publication', pub_id=pub.id) }}">
                             <!-- Form fields for editing publication -->
+                            <input type="hidden" name="cv_id" id="cv_id" value="{{ cv_id }}"/>
                             <div class="form-group">
                                 <label for="title">Title</label>
                                 <input type="text" class="form-control" id="title" name="title" value="{{ pub.title }}"
@@ -714,7 +733,7 @@
 {% endmacro %}
 
 
-{% macro render_awards(awards) %}
+{% macro render_awards(cv_id, awards) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-cup"></i>Awards
@@ -779,8 +798,9 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_award') }}">
+                    <form name="add_awards_form" method="POST" action="{{ url_for('jobseeker_cv.add_award') }}">
                         <!-- Form fields for adding award -->
+                        <input type="hidden" name="cv_id" id="cv_id" value="{{ cv_id }}"/>
                         <div class="form-group">
                             <label for="title">Title</label>
                             <input type="text" class="form-control" id="title" name="title" required>
@@ -817,8 +837,10 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_award', award_id=award.id) }}">
+                        <form name="edit_awards_form" method="POST"
+                              action="{{ url_for('jobseeker_cv.edit_award', award_id=award.id) }}">
                             <!-- Form fields for editing award -->
+                            <input type="hidden" name="cv_id" id="cv_id" value="{{ cv_id }}"/>
                             <div class="form-group">
                                 <label for="title">Title</label>
                                 <input type="text" class="form-control" id="title" name="title"
@@ -852,7 +874,7 @@
 
 
 
-{% macro render_custom_sections(custom_sections) %}
+{% macro render_custom_sections(cv_id,  custom_sections) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-layout-grid3"></i>Additional Information
@@ -909,8 +931,11 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_custom_section') }}">
+                    <form name="add_custom_section_form" method="POST"
+                          action="{{ url_for('jobseeker_cv.add_custom_section') }}">
                         <!-- Form fields for adding custom section -->
+                        <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}">
+
                         <div class="form-group">
                             <label for="title">Title</label>
                             <input type="text" class="form-control" id="title" name="title" required>
@@ -939,9 +964,11 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <form method="POST"
+                        <form name="edit_custom_action_form" method="POST"
                               action="{{ url_for('jobseeker_cv.edit_custom_section', section_id=section.id) }}">
                             <!-- Form fields for editing custom section -->
+                            <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}">
+
                             <div class="form-group">
                                 <label for="title">Title</label>
                                 <input type="text" class="form-control" id="title" name="title"
@@ -963,7 +990,7 @@
 {% endmacro %}
 
 
-{% macro render_skills(skills) %}
+{% macro render_skills(cv_id,  skills) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-tools"></i>Skills
@@ -1005,8 +1032,10 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_skill') }}">
+                    <form name="add_skills_form" method="POST" action="{{ url_for('jobseeker_cv.add_skill') }}">
                         <!-- Form fields for adding skill -->
+                        <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}">
+
                         <div class="form-group">
                             <label for="skill">Skill</label>
                             <input type="text" class="form-control" id="skill" name="skill" required>
@@ -1020,7 +1049,7 @@
 {% endmacro %}
 
 
-{% macro render_portfolio_links(portfolio_links) %}
+{% macro render_portfolio_links(cv_id,  portfolio_links) %}
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-link"></i>Portfolio Links
@@ -1067,8 +1096,11 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_portfolio_link') }}">
+                    <form name="add_portfolio_links_form" method="POST"
+                          action="{{ url_for('jobseeker_cv.add_portfolio_link') }}">
                         <!-- Form fields for adding portfolio link -->
+                        <input type="hidden" id="cv_id" name="cv_id" value="{{ cv_id }}">
+
                         <div class="form-group">
                             <label for="link">Link</label>
                             <input type="url" class="form-control" id="link" name="link" required>
@@ -1145,7 +1177,8 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('jobseeker_cv.add_certification', cv_id=cv_id) }}">
+                    <form name="add_certifications_form" method="POST"
+                          action="{{ url_for('jobseeker_cv.add_certification', cv_id=cv_id) }}">
                         <!-- Form fields for adding certification -->
                         <input type="hidden" name="cv_id" id="cv_id" value="{{ cv_id }}"/>
 
@@ -1189,7 +1222,8 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <form method="POST" action="{{ url_for('jobseeker_cv.edit_certification', cert_id=cert.id) }}">
+                        <form name="edit_certifications_form" method="POST"
+                              action="{{ url_for('jobseeker_cv.edit_certification', cert_id=cert.id) }}">
                             <!-- Form fields for editing certification -->
                             <input type="hidden" name="cv_id" id="cv_id" value="{{ cv_id }}"/>
                             <div class="form-group">

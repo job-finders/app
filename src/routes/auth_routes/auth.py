@@ -71,7 +71,7 @@ async def login(user: User):
             auth_logger.info(f"System Admin Role or : {user.role}")
         else:
             auth_logger.info(f"System Unknown Role or : {user.role}")
-            return redirect("auth.login")
+            return redirect(url_for("auth.login"))
 
         expiration = utc_time() + timedelta(minutes=remember_me_delay)
         jwt_token = create_jwt(user.model_dump(exclude={'password_hash'}))
@@ -170,4 +170,4 @@ async def password_reset():
     await users_controller.send_reset_link(email)
 
     flash("Check your email for a password reset link.", "success")
-    return redirect(url_for("auth.get_auth"))
+    return redirect(url_for("auth.login"))

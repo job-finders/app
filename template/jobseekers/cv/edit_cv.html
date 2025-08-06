@@ -10,9 +10,8 @@
   <div class="row">
       <!-- Main Content -->
     <div class="col-lg-8">
-        <form method="POST" action="{{ url_for('jobseeker_cv.edit_cv', cv_id=cv.id) }}"
-              class="bg-white p-4 shadow-sm rounded">
 
+        <div class="bg-white p-4 shadow-sm rounded">
 
             <!-- Header Section -->
             <div class="mb-4 border-bottom pb-3">
@@ -29,7 +28,6 @@
                 </div>
             </div>
 
-
             <!-- Personal Info Section -->
             <div class="mb-5">
                 <h5 class="fw-semibold border-bottom pb-2 mb-3">Personal Information</h5>
@@ -41,54 +39,47 @@
                     <div class="col-md-6">
                         <label class="form-label">Phone</label>
                         <input type="text" class="form-control" name="phone" value="{{ cv.phone }}">
-            </div>
+                    </div>
                     <div class="col-md-12">
                         <label class="form-label">Location</label>
                         <input type="text" class="form-control" name="location" value="{{ cv.location }}">
-            </div>
+                    </div>
                 </div>
             </div>
 
             <!-- CV Sections -->
             <div class="mb-5">
                 {{ cv_sections.render_education(cv.cv_id, cv.education) }}
-                {{ cv_sections.render_languages(cv.languages) }}
+                {{ cv_sections.render_languages(cv.cv_id, cv.languages) }}
                 {{ cv_sections.render_experience(cv.cv_id, cv.experience) }}
-                {{ cv_sections.render_skills(cv.skills) }}
-                {{ cv_sections.render_portfolio_links(cv.portfolio_links) }}
-                {{ cv_sections.render_publications(cv.publications) }}
-                {{ cv_sections.render_custom_sections(cv.custom_sections) }}
-                {{ cv_sections.render_awards(cv.awards) }}
+                {{ cv_sections.render_skills(cv.cv_id,cv.skills) }}
+                {{ cv_sections.render_portfolio_links(cv.cv_id, cv.portfolio_links) }}
+                {{ cv_sections.render_publications(cv.cv_id, cv.publications) }}
+                {{ cv_sections.render_custom_sections(cv.cv_id, cv.custom_sections) }}
+                {{ cv_sections.render_awards(cv.cv_id, cv.awards) }}
                 {{ cv_sections.render_certifications(cv.cv_id, cv.certifications) }}
-        </div>
+            </div>
 
             <!-- Save Button -->
             <div class="text-end">
                 <button type="submit" class="btn btn-success px-4">Save Changes</button>
         </div>
-      </form>
-    </div>
 
+
+        </div>
+    </div>
       <!-- Sidebar ATS -->
       {% include "jobseekers/cv/partials/_sidebar.html" %}
+
   </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-
-    });
-</script>
-
-
     <script>
-
-
-        document.addEventListener('DOMContentLoaded', function() {
-
+        document.addEventListener('DOMContentLoaded', function () {
             const textareas = document.querySelectorAll('.auto-size');
 
             function autoSizeTextarea(textarea) {
@@ -102,56 +93,6 @@
                     autoSizeTextarea(textarea); // Resize on input
                 });
             });
-
-
-
-
-  // Real-time ATS scoring
-  const atsUpdate = debounce(function() {
-    const formData = new FormData(document.querySelector('form'));
-
-        fetch('/api/ats-check', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => Promise.reject(err));
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Update UI with ATS results
-          document.querySelector('.ats-score-preview').textContent =
-            `ATS: ${data.score}/100`;
-          document.querySelector('.ats-score-preview').className =
-            `ats-score-preview badge badge-pill ${data.score > 75 ? 'badge-success' : 'badge-warning'}`;
-        })
-        .catch(error => {
-            console.error('ATS Error:', error);
-            // Show error to user
         });
-  }, 500);
-
-  // Add event listeners to all inputs
-  document.querySelectorAll('input, textarea, select').forEach(el => {
-    el.addEventListener('input', atsUpdate);
-  });
-
-  // Handle keyword suggestions
-  window.addKeyword = function(keyword) {
-    const summaryField = document.querySelector('[name="summary"]');
-    summaryField.value = summaryField.value + ' ' + keyword;
-    atsUpdate();
-  }
-});
-
-function debounce(func, timeout = 300){
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => { func.apply(this, args); }, timeout);
-  };
-}
 </script>
 {% endblock %}

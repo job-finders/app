@@ -811,13 +811,14 @@ class ResumeController(Controllers):
             # Update the experience fields
             experience_data = experience_data.model_dump(exclude={'cv'}, exclude_unset=True)
             for key, value in experience_data.items():
-                setattr(experience_orm, key, value)
+                if key not in ['cv_id', 'id']:  # Avoid updating cv_id or id
+                    setattr(experience_orm, key, value)
             # Log the updated experience
             self.logger.info(f"Experience updated for exp_id: {exp_id}")
             return experience_data
 
     @error_handler
-    async def add_education(self, user_uid: str, education_data: Education) -> Education | None:
+    async def add_education_(self, user_uid: str, education_data: Education) -> Education | None:
         if not (isinstance(user_uid, str) and user_uid.strip()):
             self.logger.error("Invalid user_uid")
             return None
@@ -826,11 +827,6 @@ class ResumeController(Controllers):
             return None
 
         with self.get_session() as session:
-            # Retrieve the user's CV
-            cv_orm = session.query(JobSeekerCVORM).filter(JobSeekerCVORM.user_uid == user_uid).first()
-            if not cv_orm:
-                self.logger.error("CV not found for the given user_uid")
-                return None
             # Create a new Education object
             education_orm = EducationORM(**education_data.model_dump(exclude={'cv'}))
             # Add the education to the session
@@ -858,7 +854,8 @@ class ResumeController(Controllers):
             # Update the education fields
             education_orm_data = education_data.model_dump(exclude={'cv'}, exclude_unset=True)
             for key, value in education_orm_data.items():
-                setattr(education_orm, key, value)
+                if key not in ['cv_id', 'id']:  # Avoid updating cv_id or id
+                    setattr(education_orm, key, value)
 
             # Log the updated education
             self.logger.info(f"Education updated: {education_data}")
@@ -901,71 +898,65 @@ class ResumeController(Controllers):
             # Update the certification fields
             certification_dict = certification_data.model_dump(exclude={'cv'}, exclude_unset=True)
             for key, value in certification_dict.items():
-                setattr(certification_orm, key, value)
+                if key not in ['cv_id', 'id']:  # Avoid updating cv_id or id
+                    setattr(certification_orm, key, value)
             # Log the updated certification
             self.logger.info(f"Certification updated: {certification_data}")
             return certification_data
 
     @error_handler
-    async def add_language(self, user_uid: str, language_data: dict):
-        if not (isinstance(user_uid, str) and user_uid.strip()):
-            raise ValueError("Invalid user_uid")
+    async def add_language(self, cv_id: str, language_data: Language) -> Language | None:
+        if not (isinstance(cv_id, str) and cv_id.strip()):
+            self.logger.error("Invalid cv_id")
+            return None
 
         if not language_data:
-            raise ValueError("Language data is required")
+            self.logger.error("Invalid language data")
+            return None
 
         with self.get_session() as session:
-            # Retrieve the user's CV
-            cv_orm = (
-                session.query(JobSeekerCVORM)
-                .filter(JobSeekerCVORM.user_uid == user_uid)
-                .first()
-            )
-            if not cv_orm:
-                raise ValueError("CV not found for the given user_uid")
-
+            language_orm_list = session.query(LanguageORM).filter(
+                LanguageORM.cv_id == cv_id,
+                LanguageORM.name == language_data.name.casefold()  # Case-insensitive match
+            ).all()
+            if language_orm_list:
+                self.logger.error("Language already exists for the given cv_id")
+                return None
             # Create a new Language object
-            language = Language(
-                cv_id=cv_orm.cv_id,
-                name=language_data['name'],
-                proficiency=language_data['proficiency']
-            )
-
-            # Add the language to the session
-            session.add(language)
-            session.commit()
-            session.refresh(language)
-
+            language_orm = LanguageORM(**language_data.model_dump(exclude={'cv'}))
+            session.add(language_orm)
             # Log the added language
-            self.logger.info(f"Language added: {language}")
+            self.logger.info(f"Language added: {language_data}")
+            return language_data
 
     @error_handler
-    async def update_language(self, lang_id: str, language_data: dict):
+    async def update_language(self, lang_id: str, language_data: Language) -> Language | None:
         if not (isinstance(lang_id, str) and lang_id.strip()):
-            raise ValueError("Invalid lang_id")
+            self.logger.error("Invalid lang_id")
+            return None
 
         if not language_data:
-            raise ValueError("Language data is required")
+            self.logger.error("Language data is required")
+            return None
 
         with self.get_session() as session:
             # Retrieve the language by ID
-            language = (
+            language_orm = (
                 session.query(LanguageORM)
                 .filter(LanguageORM.id == lang_id)
                 .first()
             )
-            if not language:
-                raise ValueError("Language not found for the given lang_id")
+            if not language_orm:
+                self.logger.error("Language not found for the given lang_id")
+                return None
 
-            # Update the language fields
-            language.name = language_data['name']
-            language.proficiency = language_data['proficiency']
-
-            # Commit the changes
-            session.commit()
-
+            language_dict = language_data.model_dump(exclude={'cv'}, exclude_unset=True)
+            for key, value in language_dict.items():
+                if key not in ['cv_id', 'id']:
+                    setattr(language_orm, key, value)
             # Log the updated language
-            self.logger.info(f"Language updated: {language}")
+            self.logger.info(f"Language updated: {language_data}")
+            return language_data
 
     @error_handler
     async def add_project(self, user_uid: str, project_data: Project) -> Project | None:
@@ -1013,79 +1004,66 @@ class ResumeController(Controllers):
 
             project_dict = project_data.model_dump(exclude={'cv'}, exclude_unset=True)
             for key, value in project_dict.items():
-                setattr(project_orm, key, value)
+                if key not in ['cv_id', 'id']:  # Avoid updating cv_id or id
+                    setattr(project_orm, key, value)
 
             # Log the updated project
             self.logger.info(f"Project updated: {project_data}")
             return project_data
 
     @error_handler
-    async def add_publication(self, user_uid: str, publication_data: dict):
+    async def add_publication(self, user_uid: str, publication_data: Publication) -> Publication | None:
         if not (isinstance(user_uid, str) and user_uid.strip()):
-            raise ValueError("Invalid user_uid")
+            self.logger.error("Invalid user_uid")
+            return None
 
         if not publication_data:
-            raise ValueError("Publication data is required")
+            self.logger.error("Publication data is required")
+            return None
 
         with self.get_session() as session:
-            # Retrieve the user's CV
-            cv_orm = (
-                session.query(JobSeekerCVORM)
-                .filter(JobSeekerCVORM.user_uid == user_uid)
-                .first()
-            )
-            if not cv_orm:
-                raise ValueError("CV not found for the given user_uid")
-
             # Create a new Publication object
-            publication = Publication(
-                cv_id=cv_orm.cv_id,
-                title=publication_data['title'],
-                publisher=publication_data['publisher'],
-                date=publication_data['date'],
-                link=publication_data.get('link')
-            )
-
+            publication_orm = PublicationORM(**publication_data.model_dump(exclude={'cv'}, exclude_unset=True))
             # Add the publication to the session
-            session.add(publication)
-            session.commit()
-            session.refresh(publication)
-
+            session.add(publication_orm)
             # Log the added publication
-            self.logger.info(f"Publication added: {publication}")
+            self.logger.info(f"Publication added: {publication_data}")
+            return publication_data
 
     @error_handler
-    async def update_publication(self, pub_id: str, publication_data: dict):
+    async def update_publication(self, pub_id: str, publication_data: Publication) -> Publication | None:
         if not (isinstance(pub_id, str) and pub_id.strip()):
-            raise ValueError("Invalid pub_id")
+            self.logger.error("Invalid pub_id")
+            return None
 
         if not publication_data:
-            raise ValueError("Publication data is required")
+            self.logger.error("Publication data is required")
+            return None
 
         with self.get_session() as session:
             # Retrieve the publication by ID
-            publication = (
+            publication_orm = (
                 session.query(PublicationORM)
                 .filter(PublicationORM.id == pub_id)
                 .first()
             )
-            if not publication:
-                raise ValueError("Publication not found for the given pub_id")
+            if not publication_orm:
+                self.logger.error("Publication not found for the given pub_id")
+                return None
 
-            # Update the publication fields
-            publication.title = publication_data['title']
-            publication.publisher = publication_data['publisher']
-            publication.date = publication_data['date']
-            publication.link = publication_data.get('link')
+            publication_dict = publication_data.model_dump(exclude={'cv'}, exclude_unset=True)
 
-            # Commit the changes
-            session.commit()
+            for key, value in publication_dict.items():
+                if key not in ['cv_id', 'id']:  # Avoid updating cv_id or id
+                    setattr(publication_orm, key, value)
 
             # Log the updated publication
-            self.logger.info(f"Publication updated: {publication}")
+            self.logger.info(f"Publication updated: {publication_data}")
+            return publication_data
+
 
     @error_handler
-    async def add_award(self, user_uid: str, award_data: dict):
+    async def add_award(self, user_uid: str, award_data: Award) -> Award | None:
         if not (isinstance(user_uid, str) and user_uid.strip()):
             raise ValueError("Invalid user_uid")
 
@@ -1093,122 +1071,97 @@ class ResumeController(Controllers):
             raise ValueError("Award data is required")
 
         with self.get_session() as session:
-            # Retrieve the user's CV
-            cv_orm = (
-                session.query(JobSeekerCVORM)
-                .filter(JobSeekerCVORM.user_uid == user_uid)
-                .first()
-            )
-            if not cv_orm:
-                raise ValueError("CV not found for the given user_uid")
-
-            # Create a new Award object
-            award = Award(
-                cv_id=cv_orm.cv_id,
-                title=award_data['title'],
-                issuer=award_data['issuer'],
-                date=award_data['date'],
-                description=award_data.get('description')
-            )
-
+            self.logger.info(f"Adding Award with Award Data : {award_data}")
+            award_orm = AwardORM(**award_data.model_dump(exclude={'cv'}, exclude_unset=True))
             # Add the award to the session
-            session.add(award)
-            session.commit()
-            session.refresh(award)
-
+            session.add(award_orm)
             # Log the added award
-            self.logger.info(f"Award added: {award}")
+            self.logger.info(f"Award added: {award_data}")
+            return award_data
 
     @error_handler
-    async def update_award(self, award_id: str, award_data: dict):
+    async def update_award(self, award_id: str, award_data: Award) -> Award | None:
         if not (isinstance(award_id, str) and award_id.strip()):
-            raise ValueError("Invalid award_id")
+            self.logger.error("Award not found for the given award_id")
+            return None
 
         if not award_data:
-            raise ValueError("Award data is required")
+            self.logger.error("Award not found for the given award_id")
+            return None
 
         with self.get_session() as session:
             # Retrieve the award by ID
-            award = (
-                session.query(AwardORM)
-                .filter(AwardORM.id == award_id)
-                .first()
-            )
-            if not award:
-                raise ValueError("Award not found for the given award_id")
+            award_orm = session.query(AwardORM).filter(AwardORM.id == award_id).first()
+
+            if not award_orm:
+                self.logger.error("Award not found for the given award_id")
+                return None
 
             # Update the award fields
-            award.title = award_data['title']
-            award.issuer = award_data['issuer']
-            award.date = award_data['date']
-            award.description = award_data.get('description')
+            award_dict = award_data.model_dump(exclude={'cv'}, exclude_unset=True)
+            for key, value in award_dict.items():
+                if key not in ['cv_id', 'id']:  # Avoid updating cv_id or id
+                    setattr(award_orm, key, value)
 
-            # Commit the changes
-            session.commit()
-
-            # Log the updated award
-            self.logger.info(f"Award updated: {award}")
+            self.logger.info(f"Award updated: {award_data}")
+            return award_data
 
     @error_handler
-    async def add_custom_section(self, user_uid: str, custom_section_data: dict):
-        if not (isinstance(user_uid, str) and user_uid.strip()):
-            raise ValueError("Invalid user_uid")
+    async def add_custom_section(self, cv_id: str, custom_section_data: CustomSection) -> CustomSection | None:
+        if not (isinstance(cv_id, str) and cv_id.strip()):
+            self.logger.error("Invalid cv_id")
+            return None
 
         if not custom_section_data:
-            raise ValueError("Custom section data is required")
+            self.logger.error("Custom section data is required")
+            return None
 
         with self.get_session() as session:
-            # Retrieve the user's CV
-            cv_orm = (
-                session.query(JobSeekerCVORM)
-                .filter(JobSeekerCVORM.user_uid == user_uid)
-                .first()
+            # Retrieve the Custom Section
+            custom_section_orm = (
+                session.query(CustomSectionORM).filter(
+                    CustomSectionORM.cv_id == cv_id,
+                    CustomSectionORM.title == custom_section_data.title.casefold()
+                ).first()
             )
-            if not cv_orm:
-                raise ValueError("CV not found for the given user_uid")
+            if custom_section_orm:
+                self.logger.error("Custom section with this title already exists for the given cv_id")
+                return None
 
             # Create a new CustomSection object
-            custom_section = CustomSection(
-                cv_id=cv_orm.cv_id,
-                title=custom_section_data['title'],
-                content=custom_section_data['content']
-            )
-
-            # Add the custom section to the session
-            session.add(custom_section)
-            session.commit()
-            session.refresh(custom_section)
-
-            # Log the added custom section
-            self.logger.info(f"Custom section added: {custom_section}")
+            custom_section_orm = CustomSectionORM(**custom_section_data.model_dump(exclude_unset=True))
+            session.add(custom_section_orm)
+            self.logger.info(f"Custom section added: {custom_section_data}")
+            return custom_section_data
 
     @error_handler
-    async def update_custom_section(self, section_id: str, custom_section_data: dict):
+    async def update_custom_section(self, section_id: str, custom_section_data: CustomSection) -> CustomSection | None:
         if not (isinstance(section_id, str) and section_id.strip()):
-            raise ValueError("Invalid section_id")
+            self.logger.error("Invalid section_id")
+            return None
 
         if not custom_section_data:
-            raise ValueError("Custom section data is required")
+            self.logger.error("Custom section data is required")
+            return None
 
         with self.get_session() as session:
             # Retrieve the custom section by ID
-            custom_section = (
+            custom_section_orm = (
                 session.query(CustomSectionORM)
                 .filter(CustomSectionORM.id == section_id)
                 .first()
             )
-            if not custom_section:
-                raise ValueError("Custom section not found for the given section_id")
+            if not custom_section_orm:
+                self.logger.error("Custom section not found for the given section_id")
+                return None
 
-            # Update the custom section fields
-            custom_section.title = custom_section_data['title']
-            custom_section.content = custom_section_data['content']
-
-            # Commit the changes
-            session.commit()
-
+            custom_section_dict = custom_section_data.model_dump(exclude_unset=True, exclude={'cv'})
+            for key, value in custom_section_dict.items():
+                if key not in ['cv_id', 'id']:  # Avoid updating cv_id or id
+                    setattr(custom_section_orm, key, value)
             # Log the updated custom section
-            self.logger.info(f"Custom section updated: {custom_section}")
+            self.logger.info(f"Custom section updated: {custom_section_data}")
+            return custom_section_data
 
     @error_handler
     async def add_skills(self, user_uid: str, skills_data: dict):
