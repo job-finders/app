@@ -7,77 +7,107 @@
 
 {% block content %}
     <div class="container py-5">
-  <div class="row">
-      <!-- Main Content -->
-    <div class="col-lg-8">
+        <div class="row">
 
-        <div class="bg-white p-4 shadow-sm rounded">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <div class="modern-card shadow-sm rounded">
+                    <div class="cv-editor-section">
+                        <div class="cv-editor-header">Experience</div>
 
-            <!-- Header Section -->
-            <div class="mb-4 border-bottom pb-3">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="w-100">
-                        <input type="text" class="form-control form-control-lg border-0 fw-bold mb-2"
-                               name="professional_title" value="{{ cv.professional_title }}"
-                               placeholder="Professional Title" required>
-                        <textarea class="form-control border-0 text-muted auto-size" name="summary" rows="3"
-                                  placeholder="Enter a short summary">{{ cv.summary }}
-                            </textarea>
+                        <form method="POST" action="{{ url_for('jobseeker_cv.update_cv_metadata', cv_id=cv.cv_id) }}">
+                            <!-- Header Section -->
+                            <div class="cv-editor-header mb-4 border-bottom pb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="w-100">
+                                        <input type="text" class="form-control form-control-lg border-0 fw-bold mb-2"
+                                               name="professional_title" value="{{ cv.professional_title }}"
+                                               placeholder="Professional Title" required>
+
+                                        <textarea class="form-control border-0 text-muted auto-size summary-section"
+                                                  name="summary" rows="3"
+                                                  placeholder="Enter a short summary">{{ cv.summary }}</textarea>
+                                    </div>
+                                    <span class="badge bg-primary text-white align-self-start">ATS: {{ ats_score }}/100</span>
+                                </div>
+                            </div>
+
+                            <!-- Personal Info Section -->
+                            <div class="section-card mb-5">
+                                <h5 class="cv-section fw-semibold border-bottom pb-2 mb-3">Personal Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Phone</label>
+                                        <input type="text" class="form-control" name="phone" value="{{ cv.phone }}">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Location</label>
+                                        <input type="text" class="form-control" name="location"
+                                               value="{{ cv.location }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Website</label>
+                                        <input type="text" class="form-control" name="website" value="{{ cv.website }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">GitHub</label>
+                                        <input type="text" class="form-control" name="github" value="{{ cv.github }}">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">LinkedIn</label>
+                                        <input type="text" class="form-control" name="linkedin"
+                                               value="{{ cv.linkedin }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Primary CV Toggle -->
+                            <div class="mb-5">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="isPrimaryToggle"
+                                           name="is_primary"
+                                           {% if cv.is_primary %}checked{% endif %}>
+                                    <label class="form-check-label fw-semibold" for="isPrimaryToggle">
+                                        Set this CV as my primary CV
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Save Button -->
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-success px-4">
+                                    Update Changes
+                                </button>
+                            </div>
+                        </form>
+
                     </div>
-                    <span class="badge bg-primary text-white align-self-start">ATS: {{ ats_score }}/100</span>
+
+
+                    <!-- Section Editors (each handles its own form) -->
+                    <div class="mt-5">
+                        {{ cv_sections.render_education(cv.cv_id, cv.education) }}
+                        {{ cv_sections.render_languages(cv.cv_id, cv.languages) }}
+                        {{ cv_sections.render_experience(cv.cv_id, cv.experience) }}
+                        {{ cv_sections.render_skills(cv.cv_id, cv.skills) }}
+                        {{ cv_sections.render_portfolio_links(cv.cv_id, cv.portfolio_links) }}
+                        {{ cv_sections.render_publications(cv.cv_id, cv.publications) }}
+                        {{ cv_sections.render_custom_sections(cv.cv_id, cv.custom_sections) }}
+                        {{ cv_sections.render_awards(cv.cv_id, cv.awards) }}
+                        {{ cv_sections.render_certifications(cv.cv_id, cv.certifications) }}
+                    </div>
+
                 </div>
             </div>
 
-            <!-- Personal Info Section -->
-            <div class="mb-5">
-                <h5 class="fw-semibold border-bottom pb-2 mb-3">Personal Information</h5>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" value="{{ cv.email }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Phone</label>
-                        <input type="text" class="form-control" name="phone" value="{{ cv.phone }}">
-                    </div>
-                    <div class="col-md-12">
-                        <label class="form-label">Location</label>
-                        <input type="text" class="form-control" name="location" value="{{ cv.location }}">
-                    </div>
-                </div>
-            </div>
-
-            <!-- CV Sections -->
-            <div class="mb-5">
-                {{ cv_sections.render_education(cv.cv_id, cv.education) }}
-                {{ cv_sections.render_languages(cv.cv_id, cv.languages) }}
-                {{ cv_sections.render_experience(cv.cv_id, cv.experience) }}
-                {{ cv_sections.render_skills(cv.cv_id,cv.skills) }}
-                {{ cv_sections.render_portfolio_links(cv.cv_id, cv.portfolio_links) }}
-                {{ cv_sections.render_publications(cv.cv_id, cv.publications) }}
-                {{ cv_sections.render_custom_sections(cv.cv_id, cv.custom_sections) }}
-                {{ cv_sections.render_awards(cv.cv_id, cv.awards) }}
-                {{ cv_sections.render_certifications(cv.cv_id, cv.certifications) }}
-            </div>
-
-            <!-- Save Button -->
-            <div class="text-end">
-                <button type="submit" class="btn btn-success px-4">Save Changes</button>
-        </div>
-
+            <!-- Sidebar ATS -->
+            {% include "jobseekers/cv/partials/_sidebar.html" %}
 
         </div>
-    </div>
-      <!-- Sidebar ATS -->
-      {% include "jobseekers/cv/partials/_sidebar.html" %}
-
-  </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const textareas = document.querySelectorAll('.auto-size');

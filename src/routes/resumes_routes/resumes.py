@@ -722,17 +722,19 @@ async def add_custom_section(user: User):
 @jobseeker_login
 async def edit_custom_section(user: User, section_id: str):
     form_data = request.form
+    cv_id = form_data.get('cv_id')
     try:
-        custom_section_data = {
+        custom_section_data = CustomSection(**{
+            'cv_id': cv_id,
             'title': form_data.get('title'),
             'content': form_data.get('content')
-        }
+        })
         resume_controller = get_controller('resume')
         await resume_controller.update_custom_section(section_id, custom_section_data)
         flash("Custom section updated successfully!", "success")
     except Exception as e:
         flash(f"Error updating custom section: {str(e)}", "danger")
-    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=cv_id))
 
 
 @resume_routes.route("/add/skill", methods=["POST"])
@@ -740,12 +742,12 @@ async def edit_custom_section(user: User, section_id: str):
 @jobseeker_login
 async def add_skill(user: User):
     form_data = request.form
+    cv_id = form_data.get('cv_id')
     try:
-        skills_data = {
-            'skills': [skill.strip() for skill in form_data.get('skills', '').split(',')]
-        }
+        # TODO SHould improve skill to include useful and rateble data
+        skill = form_data.get('skill')
         resume_controller = get_controller('resume')
-        await resume_controller.add_skills(user.uid, skills_data)
+        await resume_controller.add_skill(cv_id, skill)
         flash("Skill added successfully!", "success")
     except Exception as e:
         flash(f"Error adding skill: {str(e)}", "danger")
@@ -755,18 +757,17 @@ async def add_skill(user: User):
 @resume_routes.route("/edit/skills", methods=["POST"])
 @flask_error_handler
 @jobseeker_login
-async def edit_skills(user: User):
+async def remove_skill(user: User):
     form_data = request.form
+    cv_id = form_data.get('cv_id')
     try:
-        skills_data = {
-            'skills': [skill.strip() for skill in form_data.get('skills', '').split(',')]
-        }
+        skills = form_data.getlist('skills')  # This gives you a list of selected skills
         resume_controller = get_controller('resume')
-        await resume_controller.update_skills(user.uid, skills_data)
+        await resume_controller.remove_skills(cv_id, skills)
         flash("Skills updated successfully!", "success")
     except Exception as e:
         flash(f"Error updating skills: {str(e)}", "danger")
-    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+    return redirect(url_for("jobseeker_cv.edit_cv", cv_id=cv_id))
 
 
 @resume_routes.route("/add/portfolio_link", methods=["POST"])
@@ -801,3 +802,55 @@ async def edit_portfolio_links(user: User):
     except Exception as e:
         flash(f"Error updating portfolio links: {str(e)}", "danger")
     return redirect(url_for("jobseeker_cv.edit_cv", cv_id=form_data.get('cv_id')))
+
+
+@resume_routes.route("/edit/<string:cv_id>/metadata", methods=["POST"])
+@flask_error_handler
+@jobseeker_login
+async def update_cv_metadata(user: User, cv_id: str):
+    resume_controller: ResumeController = get_controller('resume')
+
+    try:
+        # Parse only the metadata fields from form (can reuse _parse_cv_form_data with filtering or create a dedicated parser)
+        # For clarity, extracting fields explicitly here:
+        form = request.form
+        data = {
+            "user_uid": user.uid,
+            "cv_id": cv_id,
+            "professional_title": form.get("professional_title", "").strip(),
+            "summary": form.get("summary", "").strip(),
+            "email": form.get("email", "").strip(),
+            "phone": form.get("phone", "").strip(),
+            "location": form.get("location", "").strip(),
+            "website": form.get("website", "").strip(),
+            "linkedin": form.get("linkedin", "").strip(),
+            "github": form.get("github", "").strip(),
+            "is_primary": "is_primary" in form,
+        }
+
+        # Validate minimum required fields (e.g. professional_title)
+        if not data["professional_title"]:
+            flash("Professional title is required", "warning")
+            return redirect(url_for("jobseeker_cv.edit_cv", cv_id=cv_id))
+
+        # Build a partial JobSeekerCV data object with only relevant fields
+        updated_cv = JobSeekerCV(**data)
+
+        # Call controller method (you’ll implement update_cv_metadata method)
+        await resume_controller.update_cv_metadata(cv_id=cv_id, data=updated_cv)
+
+        # Trigger ATS re-analysis async (optional here or separate)
+        # ats_controller = get_controller('ats')
+        # await ats_controller.queue_ats_analysis(cv_id)
+
+        flash("CV metadata updated successfully! ATS analysis in progress...", "success")
+        return redirect(url_for("jobseeker_cv.edit_cv", cv_id=cv_id))
+
+    except ValidationError as e:
+        cv = await resume_controller.get_cv_by_id(cv_id)
+        context = await _handle_validation_error(e, cv)
+        return render_template("jobseekers/cv/edit_cv.html", **context)
+
+    except Exception as e:
+        flash(f"Error updating CV metadata: {str(e)}", "danger")
+        return redirect(url_for("jobseeker_cv.list_cvs"))

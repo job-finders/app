@@ -17,6 +17,7 @@ from src.controllers.controller import Controllers, error_handler
 from src.database.models import Job, ATSReport, JobSeekerCV
 # ORM Models
 from src.database.sql.config import ConfigurationORM
+from src.utils import tokenize
 
 # single, shared spaCy model instance
 _NLP = spacy.load("en_core_web_sm", disable=["parser", "ner"])
@@ -181,13 +182,11 @@ class ATSToolController(Controllers):
         Industry keyword–based ATS analysis.
         
         """
-        text = " ".join([
-            cv.professional_title or "",
-            cv.summary or "",
-            *cv.skills,
-            *[e.description for e in cv.experience],
-        ])
-        kws = await self.extract_keywords(text, top_n=30)
+
+        text = " ".join(tokenize(cv.ats_description))
+        kws = await self.extract_keywords(text, top_n=5000)
+        self.logger.info(f"Extracted {len(kws)} keywords from CV text")
+        self.logger.info(f"Extracted {kws} ")
         industry = [w for w in self.industry_keywords.get("common", []) + kws]
         match = await self.calculate_match_score(kws, industry)
         secs = self._analyze_sections(cv)

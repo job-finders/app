@@ -44,6 +44,7 @@ body {
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
     overflow: hidden;
+    padding: 0.5rem; /* Added padding */
 }
 
 .modern-card:hover {
@@ -470,4 +471,41 @@ body {
     min-height: 50px; /* Minimum height */
     max-height: 200px; /* Maximum height */
     transition: height 0.2s ease;
+}
+
+
+.cv-editor-section {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-xs);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.cv-editor-section:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+.cv-editor-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    border-bottom: 1px solid var(--gray-100);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.cv-editor-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.cv-editor-actions {
+    text-align: right;
+    margin-top: 1.5rem;
+}
+
+.cv-editor-actions .btn {
+    min-width: 120px;
 }

@@ -994,9 +994,17 @@
     <div class="cv-section">
         <h4 class="section-title d-flex justify-content-between align-items-center">
             <i class="ti-tools"></i>Skills
-            <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addSkillModal">
-                <i class="ti-plus"></i>
-            </button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-icon btn-sm" data-toggle="modal" data-target="#addSkillModal">
+                    <i class="ti-plus"></i>
+                </button>
+                {% if skills %}
+                    <button type="button" class="btn btn-icon btn-sm" data-toggle="modal"
+                            data-target="#removeSkillModal">
+                        <i class="ti-trash"></i>
+                    </button>
+                {% endif %}
+            </div>
         </h4>
         {% if skills %}
             <div class="section-card">
@@ -1046,6 +1054,47 @@
             </div>
         </div>
     </div>
+
+    <!-- Remove Skill Modal -->
+    {% if skills %}
+        <div class="modal fade" id="removeSkillModal" tabindex="-1" role="dialog"
+             aria-labelledby="removeSkillModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="removeSkillModalLabel">Remove Skills</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form name="remove_skills_form" method="POST"
+                              action="{{ url_for('jobseeker_cv.remove_skill') }}">
+                            <input type="hidden" name="cv_id" value="{{ cv_id }}">
+
+                            <div class="form-group">
+                                <label>Select skills to remove:</label>
+                                <div class="skills-selection-container" style="max-height: 300px; overflow-y: auto;">
+                                    {% for skill in skills %}
+                                        <div class="custom-control custom-checkbox mb-2">
+                                            <input type="checkbox" class="custom-control-input"
+                                                   id="skill-{{ loop.index }}" name="skills" value="{{ skill }}">
+                                            <label class="custom-control-label" for="skill-{{ loop.index }}">
+                                                {{ skill }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-danger">Remove Selected</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 {% endmacro %}
 
 

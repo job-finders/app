@@ -168,26 +168,26 @@ class JobSeekerCV(BaseModel):
     user_uid: str  # FK to User.uid
     is_primary: bool = Field(default=False)
     professional_title: str
-    summary: Optional[str] = None
-    location: Optional[str] = None
-    phone: Optional[str] = None
-    website: Optional[str] = None
-    linkedin: Optional[str] = None
-    github: Optional[str] = None
-    skills: List[str]
-    experience: List[Experience] = []
-    education: List[Education] = []
-    certifications: Optional[List[Certification]] = []
-    languages: Optional[List[Language]] = []
-    projects: Optional[List[Project]] = []
-    publications: Optional[List[Publication]] = []
-    awards: Optional[List[Award]] = []
-    custom_sections: Optional[List[CustomSection]] = []
+    summary: Optional[str] = Field(default=None)
+    location: Optional[str] = Field(default=None)
+    phone: Optional[str] = Field(default=None)
+    website: Optional[str] = Field(default=None)
+    linkedin: Optional[str] = Field(default=None)
+    github: Optional[str] = Field(default=None)
+    skills: List[str] = Field(default_factory=list)
+    experience: List[Experience] = Field(default_factory=list)
+    education: List[Education] = Field(default_factory=list)
+    certifications: Optional[List[Certification]] = Field(default_factory=list)
+    languages: Optional[List[Language]] = Field(default_factory=list)
+    projects: Optional[List[Project]] = Field(default_factory=list)
+    publications: Optional[List[Publication]] = Field(default_factory=list)
+    awards: Optional[List[Award]] = Field(default_factory=list)
+    custom_sections: Optional[List[CustomSection]] = Field(default_factory=list)
 
     # Media and links
-    portfolio_links: Optional[List[HttpUrl]] = []
-    resume_file_url: Optional[HttpUrl] = None
-    profile_image_url: Optional[HttpUrl] = None
+    portfolio_links: Optional[List[HttpUrl]] = Field(default_factory=list)
+    resume_file_url: Optional[HttpUrl] = Field(default=None)
+    profile_image_url: Optional[HttpUrl] = Field(default=None)
 
     created_at: AwareDatetime = Field(default_factory=lambda: utc_time())
     jobseeker_profile: Optional['JobSeekerProfile'] = Field(default=None)

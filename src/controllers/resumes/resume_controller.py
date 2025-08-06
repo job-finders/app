@@ -190,14 +190,14 @@ class ResumeController(Controllers):
                 return None
 
             # Log the retrieved CV ORM object
-            self.logger.info(f"Retrieved CV ORM: {cv_orm.to_dict(include_relationships=True)}")
+            # self.logger.info(f"Retrieved CV ORM: {cv_orm.to_dict(include_relationships=True)}")
 
             # Convert the CV ORM object to a Pydantic model
             jobseeker_cv = JobSeekerCV(**cv_orm.to_dict(include_relationships=True))
 
             # Log the Pydantic model to ensure it is correctly populated
             self.logger.info(f"PYDANTIC MODEL ================================")
-            self.logger.info(f"{jobseeker_cv}")
+            # self.logger.info(f"{jobseeker_cv}")
 
             return jobseeker_cv
 
@@ -507,6 +507,52 @@ class ResumeController(Controllers):
             for custom in data.custom_sections:
                 session.add(CustomSectionORM(cv_id=cv_id, **custom.model_dump()))
 
+            return True
+
+    @error_handler
+    async def update_cv_metadata(self, cv_id: str, data: JobSeekerCV) -> bool:
+        """
+        Partially update core CV fields only if data is provided.
+        Does NOT touch related sections (experience, education, etc).
+        """
+        if not (isinstance(cv_id, str) and cv_id.strip()):
+            return False
+        if not isinstance(data, JobSeekerCV):
+            return False
+
+        with self.get_session() as session:
+            existing_cv = session.query(JobSeekerCVORM).filter_by(cv_id=cv_id).first()
+            if not existing_cv:
+                return False
+
+            # Only update fields if data is not empty or None
+            if data.professional_title:
+                existing_cv.professional_title = data.professional_title
+            if data.summary:
+                existing_cv.summary = data.summary
+            if data.phone:
+                existing_cv.phone = data.phone
+            if data.location:
+                existing_cv.location = data.location
+            if getattr(data, "contact_number", None):
+                existing_cv.contact_number = data.contact_number
+            if data.website:
+                existing_cv.website = data.website
+            if data.linkedin:
+                existing_cv.linkedin = data.linkedin
+            if data.github:
+                existing_cv.github = data.github
+            if data.is_primary is not None:
+                # Handle setting this CV as primary - unset others if needed
+                if data.is_primary and not existing_cv.is_primary:
+                    session.query(JobSeekerCVORM).filter(
+                        JobSeekerCVORM.user_uid == existing_cv.user_uid,
+                        JobSeekerCVORM.cv_id != cv_id,
+                        JobSeekerCVORM.is_primary == True
+                    ).update({"is_primary": False})
+                existing_cv.is_primary = data.is_primary
+
+            existing_cv.updated_at = utc_time()
             return True
 
     @error_handler
@@ -1164,60 +1210,74 @@ class ResumeController(Controllers):
             return custom_section_data
 
     @error_handler
-    async def add_skills(self, user_uid: str, skills_data: dict):
-        if not (isinstance(user_uid, str) and user_uid.strip()):
-            raise ValueError("Invalid user_uid")
+    async def add_skill(self, cv_id: str, skill: str) -> str | None:
+        if not (isinstance(cv_id, str) and cv_id.strip()):
+            raise ValueError("Invalid cv_id")
 
-        if not skills_data or not skills_data['skills']:
-            raise ValueError("Skills data is required")
+        if not (isinstance(skill, str) and skill.strip()):
+            raise ValueError("Invalid skill")
 
         with self.get_session() as session:
             # Retrieve the user's CV
             cv_orm = (
                 session.query(JobSeekerCVORM)
-                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .filter(JobSeekerCVORM.cv_id == cv_id)
                 .first()
             )
             if not cv_orm:
-                raise ValueError("CV not found for the given user_uid")
+                raise ValueError("CV not found for the given cv_id")
 
-            # Add new skills to the existing skills list
-            existing_skills = set(cv_orm.skills)
-            new_skills = [skill for skill in skills_data['skills'] if
-                          skill.strip() and skill.strip() not in existing_skills]
+            existing_skills = cv_orm.skills or []
 
-            if new_skills:
-                cv_orm.skills.extend(new_skills)
-                session.commit()
-                self.logger.info(f"Skills added: {new_skills}")
+            normalized_skill = skill.strip()
+            normalized_existing = {s.strip().casefold() for s in existing_skills}
+
+            if normalized_skill.casefold() not in normalized_existing:
+                updated_skills = existing_skills + [normalized_skill]  # Reassign full list
+                cv_orm.skills = list(dict.fromkeys(s.strip() for s in updated_skills))
+                self.logger.info(f"Skill added: {normalized_skill}")
             else:
-                self.logger.info("No new skills to add.")
+                self.logger.info(f"Skill '{skill}' already exists in CV.")
+
+            return normalized_skill
 
     @error_handler
-    async def update_skills(self, user_uid: str, skills_data: dict):
-        if not (isinstance(user_uid, str) and user_uid.strip()):
-            raise ValueError("Invalid user_uid")
-
-        if not skills_data or not skills_data['skills']:
-            raise ValueError("Skills data is required")
+    async def remove_skills(self, cv_id: str, skills: list[str]) -> list[str] | None:
+        if not (isinstance(cv_id, str) and cv_id.strip()):
+            raise ValueError("Invalid cv_id")
 
         with self.get_session() as session:
-            # Retrieve the user's CV
             cv_orm = (
                 session.query(JobSeekerCVORM)
-                .filter(JobSeekerCVORM.user_uid == user_uid)
+                .filter(JobSeekerCVORM.cv_id == cv_id)
                 .first()
             )
+
             if not cv_orm:
-                raise ValueError("CV not found for the given user_uid")
+                raise ValueError("CV not found for the given cv_id")
 
-            # Update the skills field in the CV ORM
-            cv_orm.skills = skills_data['skills']
+            original_skills = cv_orm.skills or []
+            normalized_to_remove = {s.strip().casefold() for s in skills}
 
-            session.commit()
+            # Build new list without in-place mutation
+            updated_skills = [
+                s for s in original_skills
+                if s.strip().casefold() not in normalized_to_remove
+            ]
 
-            # Log the updated skills
-            self.logger.info(f"Skills updated: {skills_data['skills']}")
+            removed_skills = [
+                s for s in original_skills
+                if s.strip().casefold() in normalized_to_remove
+            ]
+
+            if removed_skills:
+                cv_orm.skills = list(dict.fromkeys(s.strip() for s in updated_skills))
+                self.logger.info(f"Skills removed: {removed_skills}")
+            else:
+                self.logger.info("No matching skills found to remove.")
+
+            self.logger.info(f"Updated skills: {cv_orm.skills}")
+            return removed_skills
 
     @error_handler
     async def add_portfolio_links(self, user_uid: str, portfolio_links_data: dict):
