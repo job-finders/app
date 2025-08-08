@@ -7,6 +7,7 @@ from src.database.models import (
     ATSReport,
     JobApplication
 )
+from src.utils.route_helpers import get_service
 
 _FAKE_MODE = True  # Default to True for development purposes
 
@@ -69,3 +70,13 @@ def get_application_full_data(application_id: str) -> Optional[dict]:
         'ats_report': ats_reports.get(app.ats_report_id),
         'company': companies.get(jobs[app.job_id].company_id) if app.job_id in jobs else None
     }
+
+def get_fake_job(job_id: str) -> Job:
+    """
+    
+    :param job_id: 
+    :return: 
+    """
+    logger = get_service("logger")()("GET FAKE JOBS :")
+    logger.info("GET FAKE JOBS : {jobs}")
+    return jobs.get(job_id)

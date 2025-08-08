@@ -47,6 +47,7 @@ def generate_fake_job_application(job_id: str, user_id: str = None, stage: str =
         ats_report=ats_report,
         applied_date=utc_time() - timedelta(days=applied_days_ago),
         updated_at=utc_time(),
+        status=application_stage,
         application_stage=application_stage,
         expected_salary=random.randint(60000, 120000),
         preferred_location=random.choice(["Remote", "New York", "Berlin", "Toronto", None]),
@@ -62,9 +63,11 @@ def generate_fake_job_application(job_id: str, user_id: str = None, stage: str =
             "Junior-level candidate",
             "Limited experience but promising"
         ]),
-
         cover_letter=generate_cover_letters(),
-        jobseeker_profile=profile  # ✅ Include the full profile
+        jobseeker_profile=profile,
+        is_active=True,
+        notes="Generated fake application for testing",
+        source="Fake Data Generator"
     )
 
 

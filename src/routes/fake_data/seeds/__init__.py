@@ -1,1 +1,1 @@
-from .seeds import generate_fake_application_pipeline
+from .seeds import fake_data_generator as generate_fake_application_pipeline

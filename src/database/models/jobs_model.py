@@ -194,7 +194,7 @@ class Job(BaseModel):
     version_history: Optional[JobVersionHistory] = Field(default=None)
 
     # Job Details
-    title: str = Field(min_length=5, max_length=255)
+    title: str = Field(min_length=2, max_length=255)
     description: str
     position_type: str = Field(pattern="FULL_TIME|PART_TIME|CONTRACT")
     remote_policy: str = Field(pattern="ONSITE|HYBRID|REMOTE")
@@ -699,6 +699,7 @@ class Job(BaseModel):
         # ------------------------------------------------------------------
         # 2.  Helper – copy only when the agent supplied something meaningful
         # ------------------------------------------------------------------
+        
         def copy_if_provided(key: str, value):
             """Return {key: value} if value is truthy, else {}."""
             return {key: value} if value is not None and value != [] and value != {} else {}
@@ -726,6 +727,7 @@ class Job(BaseModel):
         from src.routes.utils import to_aware
 
         expires_at = to_aware(getattr(agent_output, "expires_at", None))
+
         if not expires_at:
             expires_at = utc_time() + timedelta(days=60)
 

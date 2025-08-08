@@ -17,7 +17,7 @@
       <ul>
         <li><strong>Salary:</strong> {{ job.salary | default("Not specified") }}</li>
         <li><strong>Employment Type:</strong> {{ job.employment_type }}</li>
-        <li><strong>Posted On:</strong> {{ job.posted_on.strftime('%Y-%m-%d') }}</li>
+        <li><strong>Posted On:</strong> {{ job.created_at.strftime('%Y-%m-%d') }}</li>
         <li><strong>Application Deadline:</strong> {{ job.application_deadline.strftime('%Y-%m-%d') if job.application_deadline else "Open" }}</li>
       </ul>
     </div>
@@ -95,7 +95,7 @@
   <div class="mb-4">
     <div class="card-body">
       <h5 class="card-title">Company Details</h5>    
-        <a class="btn btn-success btn-lg" href="{{ url_for('company_search.view_company', company_id=job.company_id) }}" >Company Details</a>
+        <a class="btn btn-success btn-lg" href="{{ url_for('company_search.view_company_by_company_id', company_id=job.company_id) }}" >Company Details</a>
     </div>
   </div>
 

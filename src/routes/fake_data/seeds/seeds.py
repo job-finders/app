@@ -53,17 +53,25 @@ class FakeDataGenerator:
             company_id=company_id,
             title=fake.job(),
             description=fake.paragraph(nb_sentences=5),
+            seo_description = fake.paragraph(nb_sentences=2),
             requirements="\n".join(fake.sentences(nb=3)),
             responsibilities="\n".join(fake.sentences(nb=3)),
-            location=f"{fake.city()}, {fake.country()}",
+            position_type=random.choice(["FULL_TIME", "PART_TIME", "CONTRACT"]),
+            remote_policy=random.choice(["REMOTE", "HYBRID", "ONSITE"]),
+            city=fake.city(),
+            province=fake.state(),
+            country="South Africa",
+            location=f"{fake.city()}, {fake.state()}, South Africa",
             salary_min=random.randint(20000, 100000),
             salary_max=random.randint(100000, 200000),
             salary_currency="ZAR",
+            created_at=utc_time(),
             posted_at=utc_time() - timedelta(days=random.randint(0, 30)),
             expires_at=utc_time() + timedelta(days=random.randint(30, 90)),
             is_active=True,
             application_count=random.randint(0, 50),
-            view_count=random.randint(10, 200)
+            view_count=random.randint(10, 200),
+            application_instructions="Apply through our online portal"
         )
         store.jobs[job_id] = job
         return job
@@ -92,13 +100,66 @@ class FakeDataGenerator:
         """Generate a fake resume for given user"""
         cv_id = str(uuid.uuid4())
         
+        # Define realistic tech skills
+        tech_skills = {
+            "Python": ["Django", "Flask", "Pandas"],
+            "JavaScript": ["React", "Node.js"],
+            "DevOps": ["AWS", "Docker"],
+            "Data": ["SQL", "PostgreSQL"]
+        }
+        
+        # Select a primary tech stack
+        primary_stack = random.choice(list(tech_skills.keys()))
+        skills = [primary_stack] + tech_skills[primary_stack]
+        
+        # Add some secondary skills
+        other_stacks = [s for s in tech_skills if s != primary_stack]
+        if other_stacks:
+            secondary = random.choice(other_stacks)
+            skills.append(secondary)
+        
+        # Add soft skills
+        skills += ["Communication", "Teamwork", "Problem Solving"]
+        
+        # Generate experience
+        companies = ["TechCorp", "InnovateX", "Digital Solutions", "Global Systems"]
+        experience = []
+        for i in range(random.randint(1, 3)):
+            is_current = i == 0 and random.choice([True, False])
+            end_date = None if is_current else \
+                (datetime.now() - timedelta(days=random.randint(30, 364))).date()
+            
+            exp = {
+                "cv_id": cv_id,
+                "job_title": f"{primary_stack} Developer",
+                "company": random.choice(companies),
+                "start_date": (datetime.now() - timedelta(days=random.randint(365*(i+1), 365*(i+3)))).date(),
+                "end_date": end_date,
+                "description": f"Developed {primary_stack} applications using {', '.join(tech_skills[primary_stack])}.",
+                "is_current": is_current
+            }
+            experience.append(exp)
+        
+        # Generate education
+        institutions = ["University of Tech", "State College", "Polytechnic"]
+        education = [{
+            "cv_id": cv_id,
+            "qualification": "BSc Computer Science",
+            "institution": random.choice(institutions),
+            "field_of_study": "Computer Science",
+            "start_date": (datetime.now() - timedelta(days=365*4)).date(),
+            "end_date": (datetime.now() - timedelta(days=365*2)).date(),
+            "is_completed": True
+        }]
+        
         resume = JobSeekerCV(
             cv_id=cv_id,
             user_uid=user_uid,
-            content=fake.paragraph(nb_sentences=10),
-            skills=[fake.word() for _ in range(10)],
-            experience=[fake.sentence() for _ in range(3)],
-            education=fake.sentence(),
+            professional_title=f"{primary_stack} Developer",
+            summary=f"Experienced {primary_stack} developer with {random.randint(2,5)} years of experience.",
+            skills=skills,
+            experience=experience,
+            education=education,
             is_primary=True
         )
         store.resumes[cv_id] = resume
@@ -108,14 +169,45 @@ class FakeDataGenerator:
         """Generate a fake ATS report for job application"""
         ats_id = str(uuid.uuid4())
         
+        # Define realistic tech stacks
+        tech_stacks = {
+            "Python": ["Django", "Flask", "FastAPI", "Pandas", "NumPy"],
+            "JavaScript": ["React", "Node.js", "Vue", "Angular", "TypeScript"],
+            "DevOps": ["AWS", "Docker", "Kubernetes", "Terraform", "CI/CD"],
+            "Data": ["SQL", "PostgreSQL", "MongoDB", "Spark", "PySpark"]
+        }
+        
+        # Select a random tech stack as matched keywords
+        stack = random.choice(list(tech_stacks.keys()))
+        matched = [stack] + tech_stacks[stack][:random.randint(2,4)]
+        
+        # Add some soft skills
+        soft_skills = ["Communication", "Teamwork", "Problem Solving", "Leadership"]
+        matched += random.sample(soft_skills, k=random.randint(1,2))
+        
+        # Generate missing keywords from other stacks
+        other_stacks = [s for s in tech_stacks if s != stack]
+        missing = []
+        if other_stacks:
+            missing_stack = random.choice(other_stacks)
+            missing = [missing_stack] + tech_stacks[missing_stack][:random.randint(1,2)]
+        
+        feedback_options = [
+            f"Strong candidate with excellent {stack} skills. Would benefit from more {missing[0]} experience.",
+            f"Good cultural fit with solid technical skills. Needs deeper knowledge of {', '.join(missing)}.",
+            f"Top candidate with all required skills. Ready to contribute immediately.",
+            f"Meets most requirements but would need some upskilling in {missing[0]}."
+        ]
+        
         report = ATSReport(
             ats_report_id=ats_id,
             job_id=job_id,
             cv_id=cv_id,
-            score=random.randint(50, 100),
-            keywords_matched=random.randint(5, 15),
-            missing_keywords=random.randint(0, 5),
-            summary=fake.paragraph(nb_sentences=2),
+            score=random.randint(70, 95),  # Higher base score for better test data
+            matched_keywords=matched,
+            missing_keywords=missing,
+            summary=f"ATS evaluation for candidate {cv_id[:8]}",
+            feedback=random.choice(feedback_options),
             created_at=utc_time()
         )
         store.ats_reports[ats_id] = report
@@ -180,3 +272,4 @@ class FakeDataGenerator:
 
 # Singleton instance for easy access
 fake_data_generator = FakeDataGenerator()
+fake_data_generator.generate_full_pipeline(count=50)

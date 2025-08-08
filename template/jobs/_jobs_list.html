@@ -11,7 +11,7 @@
               <a href="{{ url_for('jobs.job_details', job_id=job.job_id) }}">{{ job.title }}</a>
             </h5>
             <h6 class="card-subtitle mb-2 text-muted">{{ job.company.name }} &mdash; {{ job.city }}, {{ job.country }}</h6>
-            <p class="card-text flex-fill">{{ job.summary ~ '…' }}</p>
+            <p class="card-text flex-fill">{{ job.description ~ '…' }}</p>
             <div>
               <span class="badge badge-pill badge-info">₩{{ job.salary_min | intcomma }}–{{ job.salary_max | intcomma }}</span>
               {% if job.is_featured %}<span class="badge badge-warning">Featured</span>{% endif %}

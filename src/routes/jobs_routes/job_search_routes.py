@@ -1,10 +1,8 @@
 # Standard Library
-import random
-import uuid
-from datetime import datetime, timedelta
 from typing import TypedDict, List, Tuple
 # Flask Core
 from flask import Blueprint, render_template, request
+import random
 
 from src.controllers.jobs import JobsSearchController
 # Authentication
@@ -16,13 +14,14 @@ from src.routes import flask_error_handler
 from src.routes.utils import gone
 # Utilities
 from src.utils.route_helpers import get_controller
+# Fake Data
+from src.routes.fake_data import store
 
 
 MIN_PAGE = 1
 MAX_PAGE_SIZE = 100
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 25
-MOCK_JOBS = []
 
 async def parse_pagination_params(
     default_page: int = DEFAULT_PAGE,
@@ -48,74 +47,19 @@ async def parse_pagination_params(
     return page, page_size
 
 
-def generate_mock_jobs(keyword: str, count: int = 5) -> list[dict]:
-    """Generate mock job listings for demonstration purposes"""
-    global MOCK_JOBS
-
-    # Check if we already have mock jobs for this keyword
-    existing_jobs = [job for job in MOCK_JOBS if keyword.lower() in job['title'].lower()]
-    if existing_jobs:
-        return MOCK_JOBS
-
-    titles = [
-        f"Senior {keyword} Developer",
-        f"{keyword} Specialist",
-        f"Junior {keyword} Engineer",
-        f"{keyword} Team Lead",
-        f"{keyword} Product Manager"
-    ]
-
-    companies = [
-        "Tech Innovations Inc.",
-        "Digital Solutions Ltd.",
-        "Future Systems Corp.",
-        "Global Tech Partners",
-        "InnovateX Technologies"
-    ]
-
-    cities = ["Cape Town", "Johannesburg", "Durban", "Pretoria", "Port Elizabeth"]
-    provinces = ["Western Cape", "Gauteng", "KwaZulu-Natal", "Eastern Cape"]
-    job_types = ["FULL_TIME", "PART_TIME", "CONTRACT"]
-    remote_policies = ["REMOTE", "HYBRID", "ONSITE"]
-    experience_levels = ["ENTRY", "MID", "SENIOR"]
-
-    for i in range(count):
-        posted_at = datetime.utcnow() - timedelta(days=random.randint(0, 30))
-        salary_min = random.randint(20000, 50000)
-        salary_max = salary_min + random.randint(10000, 30000)
-
-        job = Job(**{
-            "job_id": str(uuid.uuid4()),  # Ensure unique IDs
-            "title": random.choice(titles),
-            "company": {
-                "name": random.choice(companies),
-                "logo_url": None
-            },
-            "position_type": random.choice(job_types),
-            "remote_policy": random.choice(remote_policies),
-            "salary_min": salary_min,
-            "salary_max": salary_max,
-            "salary_currency": "ZAR",
-            "city": random.choice(cities),
-            "province": random.choice(provinces),
-            "country": "South Africa",
-            "posted_at": posted_at,
-            "expires_at": posted_at + timedelta(days=60),
-            "experience_level": random.choice(experience_levels),
-            "description": f"We're looking for a talented {keyword} professional to join our team. "
-                           f"You'll work on cutting-edge {keyword} solutions and collaborate with "
-                           "a team of passionate engineers. Apply now!",
-            "application_count": random.randint(0, 50),
-            "view_count": random.randint(10, 200),
-            "is_featured": i == 0,
-            "location": f"{random.choice(cities)}, {random.choice(provinces)}, South Africa",
-            "salary": f"ZAR {salary_min} - {salary_max}",
-            "is_active": True,
-            "status": "active"  # Add this for consistency with real jobs
-        })
-        MOCK_JOBS.append(job)
-
-    return MOCK_JOBS
+def get_fake_jobs(keyword: str = None) -> list[Job]:
+    """Get jobs from fake data store, optionally filtered by keyword"""
+    if not store.is_fake_mode():
+        return []
+        
+    if keyword:
+        keyword = keyword.lower()
+        return [
+            job for job in store.jobs.values()
+            if keyword in job.title.lower() or
+               (job.description and keyword in job.description.lower())
+        ]
+    return list(store.jobs.values())
 
 class JobSearchContext(TypedDict):
     current_user: User
@@ -160,8 +104,8 @@ async def list_jobs(user: User):
     search_result = await job_search_controller.get_all_jobs(page=page, page_size=page_size)
     jobs = search_result.get('jobs', [])
 
-    if not jobs:
-        jobs = generate_mock_jobs("Software Development")
+    if not jobs and store.is_fake_mode():
+        jobs = get_fake_jobs()
 
     context: JobSearchContext = {
         'current_user': user,
@@ -209,10 +153,9 @@ async def search_jobs(user: User):
     total_jobs = search_result.get('total_jobs', 0)
     show_mock_jobs = not jobs  # Flag to indicate if we should show mock jobs
 
-    if show_mock_jobs:
-        # Generate mock jobs for demonstration purposes
-        jobs = generate_mock_jobs(keyword)
-        total_jobs = len(jobs)
+    if show_mock_jobs and store.is_fake_mode():
+        jobs = get_fake_jobs(keyword)
+        total_jobs = len(jobs) if jobs else 0
 
     context: JobSearchContext = {
         'current_user': user,
@@ -307,10 +250,10 @@ async def full_job_details(user: User, job_id: str):
 
     if not job or job.status != "active":
         # Check for mock job
-        if MOCK_JOBS:
-            mock_job = next((job for job in MOCK_JOBS if job.job_id == job_id), None)
-            if mock_job:
-                job = mock_job
+        if store.is_fake_mode():
+            fake_job = store.get_fake_job(job_id)
+            if fake_job:
+                job = fake_job
             else:
                 return await gone(user=user, search_term=job_id)
         else:
@@ -323,7 +266,7 @@ async def full_job_details(user: User, job_id: str):
         'job': job,
         'related_jobs': related_jobs,
         'meta_title': job.title,
-        'meta_description': job.short_description,
+        'meta_description': job.seo_description,
     }
 
     return render_template('jobs/full_job_detail.html', **context)
@@ -347,21 +290,41 @@ async def job_details(user: User, job_id: str):
 
     job = await job_search_controller.get_job_by_id(job_id)
     if not job or job.status != "active":
-        return await gone(user=user, search_term=job_id)
+        # Check for fake data if enabled
+        if store.is_fake_mode():
+            fake_job = store.jobs.get(job_id)
+            if fake_job:
+                job = fake_job
+            else:
+                return await gone(user=user, search_term=job_id)
+        else:
+            return await gone(user=user, search_term=job_id)
 
-    related_jobs: list[Job] = await job_search_controller.get_similar_jobs(job_id=job.job_id)
+    # Get related jobs - use fake data if original job was fake
+    if job.job_id in store.jobs:
+        related_jobs = list(store.jobs.values())[:4]  # Get first few fake jobs as "related"
+    else:
+        related_jobs = await job_search_controller.get_similar_jobs(job_id=job.job_id)
     
-    list_resumes: list[JobSeekerCV] = await resume_controller.list_cvs_for_user(user_id=user.uid)
+    # Get resumes - use fake ones if job was fake
+    if job.job_id in store.jobs:
+        list_resumes = list(store.resumes.values())[:2]  # Get first couple fake resumes
+    else:
+        list_resumes = await resume_controller.list_cvs_for_user(user_id=user.uid)
 
     # Check if user has already applied for this job
     user_has_applied = False
     if user and user.uid:
-        try:
-            user_applications, _ = await job_search_controller.get_applied_jobs_for_user(user_id=user.uid)
-            user_has_applied = any(app.job_id == job_id for app in user_applications)
-        except Exception:
-            # If there's an error checking application status, default to False
-            user_has_applied = False
+        if job.job_id in store.jobs:
+            # For fake jobs, randomly decide if "applied"
+            user_has_applied = random.choice([True, False])
+        else:
+            try:
+                user_applications, _ = await job_search_controller.get_applied_jobs_for_user(user_id=user.uid)
+                user_has_applied = any(app.job_id == job_id for app in user_applications)
+            except Exception:
+                # If there's an error checking application status, default to False
+                user_has_applied = False
 
     context = {
         'current_user': user,
@@ -370,7 +333,7 @@ async def job_details(user: User, job_id: str):
         'related_jobs': related_jobs,
         'user_has_applied': user_has_applied,
         'meta_title': job.title,
-        'meta_description': job.short_description,
+        'meta_description': job.seo_description,
     }
 
     return render_template('jobs/job_detail.html', **context)
