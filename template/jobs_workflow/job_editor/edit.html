@@ -277,6 +277,11 @@
            value="{{ url_for('employer_agents.analyze_job_post', job_id=job.job_id) | tojson | safe }}">
     <input type="hidden" id="ats_endpoint_url"
            value="{{ url_for('jobs_workflow.calculate_ats', job_id=job.job_id) | tojson | safe }}">
+    <input type="hidden" id="job_update_status_url"
+            value="{{ url_for('jobs_workflow.update_status', job_id=job.job_id) }}">
+    <input type="hidden" id="toggled_featured_url"
+            value=`{{ url_for("jobs_workflow.toggle_featured", job_id="__ID__") }}`/>
+            
 {% endblock %}
 {% block scripts %}
     <script src="{{ url_for('static', filename='js/jobs/job_editor.js') }}"></script>

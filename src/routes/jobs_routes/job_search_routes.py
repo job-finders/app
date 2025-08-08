@@ -344,18 +344,27 @@ async def job_details(user: User, job_id: str):
 
     related_jobs: list[Job] = await job_search_controller.get_similar_jobs(job_id=job.job_id)
     
-    
     list_resumes: list[JobSeekerCV] = await resume_controller.list_cvs_for_user(user_id=user.uid)
+
+    # Check if user has already applied for this job
+    user_has_applied = False
+    if user and user.uid:
+        try:
+            user_applications = await job_search_controller.get_applied_jobs_for_user(user_id=user.uid)
+            user_has_applied = any(app.job_id == job_id for app in user_applications)
+        except Exception:
+            # If there's an error checking application status, default to False
+            user_has_applied = False
 
     context = {
         'current_user': user,
         'job': job,
         'list_resumes': list_resumes,
         'related_jobs': related_jobs,
+        'user_has_applied': user_has_applied,
         'meta_title': job.title,
         'meta_description': job.short_description,
     }
-
 
     return render_template('jobs/job_detail.html', **context)
 

@@ -1,4 +1,5 @@
 import math
+from datetime import datetime, timezone, timedelta
 
 import pytest
 
@@ -1282,3 +1283,214 @@ async def test_get_saved_jobs_for_user_large_number_of_saved_jobs(session, get_c
     assert len(saved_jobs) == len(keys)
     assert saved_jobs[0].job_id == keys[0]
     assert saved_jobs[-1].job_id == keys[-1]  # Oldest saved job
+
+############################################################################################
+# TEST CASES FOR DASHBOARD STATISTICS METHODS
+############################################################################################
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_get_user_dashboard_statistics_with_data(get_controller, session):
+    """Test dashboard statistics calculation with existing data"""
+    user_id = str(uuid.uuid4())
+    job_id = str(uuid.uuid4())
+    
+    # Create test data
+    job = create_job(session, job_id=job_id)
+    
+    # Create applications (2 total, 1 recent)
+    recent_date = datetime.now(timezone.utc) - timedelta(days=3)
+    old_date = datetime.now(timezone.utc) - timedelta(days=10)
+    
+    create_job_application(session, user_id=user_id, job_id=job_id, applied_date=recent_date)
+    create_job_application(session, user_id=user_id, job_id=job_id, applied_date=old_date)
+    
+    # Create saved jobs
+    create_saved_job(session, user_id=user_id, job_id=job_id)
+    
+    # Create CV (simulate CV upload)
+    from src.database import JobSeekerCVORM
+    cv = JobSeekerCVORM(
+        cv_id=str(uuid.uuid4()),
+        user_id=user_id,
+        file_name="test_cv.pdf",
+        created_at=datetime.now(timezone.utc)
+    )
+    session.add(cv)
+    session.commit()
+    
+    controller = get_controller
+    result = await controller.get_user_dashboard_statistics(user_id)
+    
+    assert result["applications_count"] == 2
+    assert result["saved_jobs_count"] == 1
+    assert result["recent_applications_count"] == 1
+    assert result["cv_uploaded"] == True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_get_user_dashboard_statistics_empty_data(get_controller, session):
+    """Test dashboard statistics with no user data"""
+    user_id = str(uuid.uuid4())
+    
+    controller = get_controller
+    result = await controller.get_user_dashboard_statistics(user_id)
+    
+    assert result["applications_count"] == 0
+    assert result["saved_jobs_count"] == 0
+    assert result["recent_applications_count"] == 0
+    assert result["cv_uploaded"] == False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_get_user_dashboard_statistics_invalid_user_id(get_controller, session):
+    """Test dashboard statistics with invalid user ID"""
+    controller = get_controller
+    
+    # Test with empty string
+    result = await controller.get_user_dashboard_statistics("")
+    assert result == {}
+    
+    # Test with None (converted to string)
+    result = await controller.get_user_dashboard_statistics("None")
+    assert result["applications_count"] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_count_user_applications_with_data(get_controller, session):
+    """Test counting user applications"""
+    user_id = str(uuid.uuid4())
+    job_id = str(uuid.uuid4())
+    
+    job = create_job(session, job_id=job_id)
+    
+    # Create multiple applications
+    for _ in range(5):
+        create_job_application(session, user_id=user_id, job_id=job_id)
+    
+    controller = get_controller
+    result = await controller.count_user_applications(user_id)
+    
+    assert result == 5
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_count_user_applications_no_data(get_controller, session):
+    """Test counting applications for user with no applications"""
+    user_id = str(uuid.uuid4())
+    
+    controller = get_controller
+    result = await controller.count_user_applications(user_id)
+    
+    assert result == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_count_user_applications_invalid_user_id(get_controller, session):
+    """Test counting applications with invalid user ID"""
+    controller = get_controller
+    
+    result = await controller.count_user_applications("")
+    assert result == 0
+    
+    result = await controller.count_user_applications("   ")
+    assert result == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_count_saved_jobs_for_user_with_data(get_controller, session):
+    """Test counting saved jobs for user"""
+    user_id = str(uuid.uuid4())
+    
+    # Create multiple jobs and save them
+    for _ in range(3):
+        job_id = str(uuid.uuid4())
+        job = create_job(session, job_id=job_id)
+        create_saved_job(session, user_id=user_id, job_id=job_id)
+    
+    controller = get_controller
+    result = await controller.count_saved_jobs_for_user(user_id)
+    
+    assert result == 3
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_count_saved_jobs_for_user_no_data(get_controller, session):
+    """Test counting saved jobs for user with no saved jobs"""
+    user_id = str(uuid.uuid4())
+    
+    controller = get_controller
+    result = await controller.count_saved_jobs_for_user(user_id)
+    
+    assert result == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_count_saved_jobs_for_user_invalid_user_id(get_controller, session):
+    """Test counting saved jobs with invalid user ID"""
+    controller = get_controller
+    
+    result = await controller.count_saved_jobs_for_user("")
+    assert result == 0
+    
+    result = await controller.count_saved_jobs_for_user("   ")
+    assert result == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_get_user_dashboard_statistics_recent_applications_boundary(get_controller, session):
+    """Test recent applications boundary (7 days)"""
+    user_id = str(uuid.uuid4())
+    job_id = str(uuid.uuid4())
+    
+    job = create_job(session, job_id=job_id)
+    
+    # Create applications at boundary dates
+    exactly_7_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    exactly_8_days_ago = datetime.now(timezone.utc) - timedelta(days=8)
+    recent_date = datetime.now(timezone.utc) - timedelta(days=6)
+    
+    create_job_application(session, user_id=user_id, job_id=job_id, applied_date=exactly_7_days_ago)
+    create_job_application(session, user_id=user_id, job_id=job_id, applied_date=exactly_8_days_ago)
+    create_job_application(session, user_id=user_id, job_id=job_id, applied_date=recent_date)
+    
+    controller = get_controller
+    result = await controller.get_user_dashboard_statistics(user_id)
+    
+    assert result["applications_count"] == 3
+    assert result["recent_applications_count"] == 2  # 7 days ago and 6 days ago should count
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_get_user_dashboard_statistics_multiple_cvs(get_controller, session):
+    """Test CV uploaded flag with multiple CVs"""
+    user_id = str(uuid.uuid4())
+    
+    # Create multiple CVs
+    from src.database import JobSeekerCVORM
+    for i in range(3):
+        cv = JobSeekerCVORM(
+            cv_id=str(uuid.uuid4()),
+            user_id=user_id,
+            file_name=f"test_cv_{i}.pdf",
+            created_at=datetime.now(timezone.utc)
+        )
+        session.add(cv)
+    session.commit()
+    
+    controller = get_controller
+    result = await controller.get_user_dashboard_statistics(user_id)
+    
+    assert result["cv_uploaded"] == True
+    assert result["applications_count"] == 0
+    assert result["saved_jobs_count"] == 0

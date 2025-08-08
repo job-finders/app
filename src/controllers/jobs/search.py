@@ -708,6 +708,88 @@ class JobsSearchController(Controllers):
             return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list if job_orm] if jobs_orm_list else [] 
 
     @error_handler
+    async def get_user_dashboard_statistics(self, user_id: str) -> dict:
+        """
+        Get dashboard statistics for a specific user including application counts and saved jobs.
+        
+        Args:
+            user_id (str): The ID of the user to get statistics for.
+            
+        Returns:
+            dict: Dictionary containing user statistics including:
+                - applications_count: Total number of applications submitted
+                - saved_jobs_count: Total number of saved jobs
+                - recent_applications_count: Applications from last 7 days
+                - cv_uploaded: Whether user has uploaded at least one CV
+        """
+        if not (isinstance(user_id, str) and user_id.strip()):
+            self.logger.error("Invalid User ID")
+            return {}
+
+        with self.get_session() as session:
+            # Count total applications
+            applications_count = session.query(JobApplicationORM).filter_by(user_id=user_id).count()
+            
+            # Count saved jobs
+            saved_jobs_count = session.query(SavedJobORM).filter_by(user_id=user_id).count()
+            
+            # Count recent applications (last 7 days)
+            
+            recent_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+            recent_applications_count = session.query(JobApplicationORM).filter(
+                JobApplicationORM.user_id == user_id,
+                JobApplicationORM.applied_date >= recent_cutoff
+            ).count()
+            
+            # Check if user has uploaded at least one CV
+            cv_count = session.query(JobSeekerCVORM).filter_by(user_uid=user_id).count()
+            cv_uploaded = cv_count > 0
+            
+            return {
+                'applications_count': applications_count,
+                'saved_jobs_count': saved_jobs_count,
+                'recent_applications_count': recent_applications_count,
+                'cv_uploaded': cv_uploaded,
+                'cv_count': cv_count}
+            
+
+    @error_handler
+    async def count_user_applications(self, user_id: str) -> int:
+        """
+        Count total number of applications submitted by a user.
+        
+        Args:
+            user_id (str): The ID of the user to count applications for.
+            
+        Returns:
+            int: Total number of applications submitted by the user.
+        """
+        if not (isinstance(user_id, str) and user_id.strip()):
+            self.logger.error("Invalid User ID")
+            return 0
+
+        with self.get_session() as session:
+            return session.query(JobApplicationORM).filter_by(user_id=user_id).count()
+
+    @error_handler
+    async def count_saved_jobs_for_user(self, user_id: str) -> int:
+        """
+        Count total number of jobs saved by a user.
+        
+        Args:
+            user_id (str): The ID of the user to count saved jobs for.
+            
+        Returns:
+            int: Total number of jobs saved by the user.
+        """
+        if not (isinstance(user_id, str) and user_id.strip()):
+            self.logger.error("Invalid User ID")
+            return 0
+
+        with self.get_session() as session:
+            return session.query(SavedJobORM).filter_by(user_id=user_id).count()
+
+    @error_handler
     async def calculate_job_match_score(self, job_id: str, user_id: str) -> dict:
         """
         Calculate how well a specific job matches a user's profile and CV.

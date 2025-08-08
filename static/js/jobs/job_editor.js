@@ -2,9 +2,9 @@
 
 
 window.pillContainers = [
-    {id: 'education-list', jsonId: 'education-json', isDict: true},
-    {id: 'required-skills-list', jsonId: 'required-skills-json', isDict: false},
-    {id: 'preferred-skills-list', jsonId: 'preferred-skills-json', isDict: false}
+    { id: 'education-list', jsonId: 'education-json', isDict: true },
+    { id: 'required-skills-list', jsonId: 'required-skills-json', isDict: false },
+    { id: 'preferred-skills-list', jsonId: 'preferred-skills-json', isDict: false }
 ];
 
 /* --------------  shared helpers  -------------- */
@@ -43,9 +43,9 @@ function syncJson(containerId) {
 }
 document.addEventListener('DOMContentLoaded', () => {
     const containers = [
-        {id: 'education-list', jsonId: 'education-json', isDict: true},
-        {id: 'required-skills-list', jsonId: 'required-skills-json', isDict: false},
-        {id: 'preferred-skills-list', jsonId: 'preferred-skills-json', isDict: false}
+        { id: 'education-list', jsonId: 'education-json', isDict: true },
+        { id: 'required-skills-list', jsonId: 'required-skills-json', isDict: false },
+        { id: 'preferred-skills-list', jsonId: 'preferred-skills-json', isDict: false }
     ];
     /* ----------  init pills from hidden JSON  ---------- */
     containers.forEach(c => {
@@ -106,7 +106,7 @@ document.getElementById('doEnhanceBtn').addEventListener('click', async () => {
     btn.innerHTML = '<i class="ti-reload spin"></i> Enhancing…';
     const res = await fetch(endpoint_url, {
         method: 'POST',
-        body: getFormData({user_prompt: document.getElementById('userPrompt').value})
+        body: getFormData({ user_prompt: document.getElementById('userPrompt').value })
     });
     btn.disabled = false;
     btn.innerHTML = 'Enhancing....';
@@ -122,7 +122,7 @@ document.getElementById('doEnhanceBtn').addEventListener('click', async () => {
             .forEach(k => {
                 const el = document.querySelector(`[name="${k}"]`);
                 if (el) el.value = data[k] ?? '';
-        });
+            });
 
         // 2. array → pills
         function refreshPills(listId, values) {
@@ -149,20 +149,22 @@ document.getElementById('doEnhanceBtn').addEventListener('click', async () => {
 
 /* Update job status */
 async function updateJobStatus(jobId, newStatus) {
-    const res = await fetch(`{{ url_for("jobs_workflow.update_status", job_id="__ID__") }}`.replace("__ID__", jobId), {
+    const endpoint = document.getElementById('job_update_status_url').value;
+    const res = await fetch(endpoint, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({status: newStatus})
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus })
     });
     if (res.ok) location.reload(); else alert("Error updating status");
 }
 
 /* Toggle featured flag */
 async function toggleFeatured(jobId, featured) {
-    const res = await fetch(`{{ url_for("jobs_workflow.toggle_featured", job_id="__ID__") }}`.replace("__ID__", jobId), {
+    const endpoint = document.getElementById('toggle_featured_url').value;
+    const res = await fetch(endpoint, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({featured})
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featured })
     });
     if (res.ok) location.reload(); else alert("Error toggling featured");
 }
@@ -193,64 +195,64 @@ async function toggleFeatured(jobId, featured) {
 
     /* ---- render ---- */
     const loadInsights = async () => {
-setLoading(true);
-try {
-    const res = await fetch(endpoint, { method: 'POST', credentials: 'same-origin' });
-    if (!res.ok) throw new Error('Network response was not ok');
-    const data = await res.json();
-    console.log('Job) Post Insights:', data);
-    /* clarity score */
-    const score = Math.round(data.clarity_score * 10);
-    const bar = document.getElementById('clarityProgressBar');
-    bar.style.width = `${score}%`;
-    bar.setAttribute('aria-valuenow', score);
-    bar.textContent = `${score} %`;
-    bar.classList.toggle('bg-warning', score < 60);
-    bar.classList.toggle('bg-success', score >= 60);
+        setLoading(true);
+        try {
+            const res = await fetch(endpoint, { method: 'POST', credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Network response was not ok');
+            const data = await res.json();
+            console.log('Job) Post Insights:', data);
+            /* clarity score */
+            const score = Math.round(data.clarity_score * 10);
+            const bar = document.getElementById('clarityProgressBar');
+            bar.style.width = `${score}%`;
+            bar.setAttribute('aria-valuenow', score);
+            bar.textContent = `${score} %`;
+            bar.classList.toggle('bg-warning', score < 60);
+            bar.classList.toggle('bg-success', score >= 60);
 
-    /* salary benchmark */
-    document.getElementById('salaryBenchmarkBadge').textContent =
-        data.salary_benchmark || '—';
+            /* salary benchmark */
+            document.getElementById('salaryBenchmarkBadge').textContent =
+                data.salary_benchmark || '—';
 
-    /* missing information */
-    const mList = document.getElementById('missingInfoList');
-    mList.innerHTML = '';
-    if (data.missing_information?.length) {
-        data.missing_information.forEach(item => {
-            mList.insertAdjacentHTML('beforeend',
-                `<li class="list-group-item">
+            /* missing information */
+            const mList = document.getElementById('missingInfoList');
+            mList.innerHTML = '';
+            if (data.missing_information?.length) {
+                data.missing_information.forEach(item => {
+                    mList.insertAdjacentHTML('beforeend',
+                        `<li class="list-group-item">
             <i class="bi bi-dash-circle"></i> ${item}
             </li>`);
-        });
-    } else {
-        mList.insertAdjacentHTML('beforeend',
-            '<li class="list-group-item text-muted">None</li>');
-    }
+                });
+            } else {
+                mList.insertAdjacentHTML('beforeend',
+                    '<li class="list-group-item text-muted">None</li>');
+            }
 
-    /* suggestions */
-    const sList = document.getElementById('suggestionsList');
-    sList.innerHTML = '';
-    if (data.suggestions?.length) {
-        data.suggestions.forEach(item => {
-            sList.insertAdjacentHTML('beforeend',
-                `<li class="list-group-item">
+            /* suggestions */
+            const sList = document.getElementById('suggestionsList');
+            sList.innerHTML = '';
+            if (data.suggestions?.length) {
+                data.suggestions.forEach(item => {
+                    sList.insertAdjacentHTML('beforeend',
+                        `<li class="list-group-item">
             <i class="bi bi-check-circle"></i> ${item}
             </li>`);
-        });
-        renderAiSuggestions(data?.suggestions);
-    } else {
-        sList.insertAdjacentHTML('beforeend',
-            '<li class="list-group-item text-muted">None</li>');
-    }
+                });
+                renderAiSuggestions(data?.suggestions);
+            } else {
+                sList.insertAdjacentHTML('beforeend',
+                    '<li class="list-group-item text-muted">None</li>');
+            }
 
-    content.style.display = '';
-} catch (err) {
-    console.error(err);
-    error.style.display = '';
-} finally {
-    setLoading(false);
+            content.style.display = '';
+        } catch (err) {
+            console.error(err);
+            error.style.display = '';
+        } finally {
+            setLoading(false);
 
-}
+        }
     };
     /* ---- events ---- */
 

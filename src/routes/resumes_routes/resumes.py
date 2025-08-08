@@ -161,6 +161,7 @@ async def ats_check(user: User):
         # Generate ATS report
         ats_controller = get_controller('ats')
         report = await ats_controller.generate_industry_ats_report(cv_data)
+        
 
         return jsonify({
             "score": report.get('score', 0),

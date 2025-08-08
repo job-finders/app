@@ -134,7 +134,7 @@ async def api_cover_draft(user: User):
         applications_logger.error(f"Cover Draft Error: {str(e)}")
         return jsonify({"error": "Failed to generate cover draft"}), 500
 
-@jobseeker_applications_route.route('/jobs/aaply/<string:job_id>', methods=['GET'])
+@jobseeker_applications_route.route('/jobs/apply/<string:job_id>', methods=['GET'])
 @flask_error_handler
 @jobseeker_login
 async def apply_for_job(user: User, job_id: str):
@@ -191,7 +191,7 @@ async def apply_for_job(user: User, job_id: str):
     async def enrich_cv_with_score(cv):
         ats_report: ATSReport = await ats_controller.evaluate_application(
             job=job_details,
-            cv_id=cv.cv.id,
+            cv_id=cv.cv_id,
             cover_letter=cover_draft if cv.cv_id == primary_cv.cv_id else ""
         )
         cv.ats_score = ats_report.score
@@ -214,11 +214,12 @@ async def apply_for_job(user: User, job_id: str):
         'job': job_details,
         'cvs': cvs,
         'best_ats_report': best_ats_report,
-        "selected_cv_id": best_ats_report.cv_id,
-        'ats_score': best_ats_report.score,
-        'matched_keywords': best_ats_report.matched_keywords,
-        'missing_keywords': best_ats_report.missing_keywords,
-        'cover_letter_feedback': best_ats_report.feedback,
+        "selected_cv_id": best_ats_report.cv_id if best_ats_report else (cvs[0].cv_id if cvs else None),
+        'ats_score': best_ats_report.score if best_ats_report else 0,
+        'ats_report_id': best_ats_report.ats_report_id if best_ats_report else None,
+        'matched_keywords': best_ats_report.matched_keywords if best_ats_report else [],
+        'missing_keywords': best_ats_report.missing_keywords if best_ats_report else [],
+        'cover_letter_feedback': best_ats_report.feedback if best_ats_report else "",
 
         'salary_recommendation': salary_recommendation,
         'locations': locations,
@@ -255,33 +256,99 @@ async def submit_application(job_id: str, user: User):
     """
 
     try:
+        # Server-side validation for required fields
+        cv_id = request.form.get("cv_id", "").strip()
+        cover_letter = request.form.get("cover_letter", "").strip()
+        
+        # Validate required fields
+        validation_errors = []
+        
+        if not cv_id:
+            validation_errors.append("Please select a CV for your application.")
+            
+        if not cover_letter or len(cover_letter) < 50:
+            validation_errors.append("Cover letter must be at least 50 characters long.")
+            
+        # Validate salary if provided
+        expected_salary = request.form.get("expected_salary")
+        if expected_salary:
+            try:
+                salary_value = int(expected_salary)
+                if salary_value < 0:
+                    validation_errors.append("Expected salary must be a positive number.")
+            except (ValueError, TypeError):
+                validation_errors.append("Expected salary must be a valid number.")
+        
+        # Validate start date if provided
+        preferred_start_date = request.form.get("preferred_start_date")
+        if preferred_start_date:
+            try:
+                from datetime import datetime
+                start_date = datetime.strptime(preferred_start_date, '%Y-%m-%d').date()
+                if start_date < datetime.now().date():
+                    validation_errors.append("Preferred start date cannot be in the past.")
+            except ValueError:
+                validation_errors.append("Please provide a valid start date.")
+        
+        # If there are validation errors, return to job details with errors
+        if validation_errors:
+            for error in validation_errors:
+                flash(error, "danger")
+            return redirect(url_for("jobs.job_details", job_id=job_id))
+
+        # Check if user has already applied for this job (duplicate prevention)
+        jobs_search_controller = get_controller('jobs_search')
+        user_applications = await jobs_search_controller.get_applied_jobs_for_user(user_id=user.uid)
+        if any(app.job_id == job_id for app in user_applications):
+            flash("You have already applied for this job. You can view your application in your applications list.", "warning")
+            return redirect(url_for("jobseeker_applications.list_applications"))
+
+        # Verify job exists and is still active
+        job_details = await jobs_search_controller.get_job_by_id(job_id)
+        if not job_details:
+            flash("The job you are trying to apply for no longer exists.", "danger")
+            return redirect(url_for("jobs.list_jobs"))
+            
+        if job_details.status != "active":
+            flash("This job is no longer accepting applications.", "warning")
+            return redirect(url_for("jobs.job_details", job_id=job_id))
+
+        # Prepare application data
         application_data = {
-            "user_uid": user.uid,
+            "user_id": user.uid,
             "job_id": job_id,
-            "cover_letter": request.form.get("cover_letter", "").strip(),
-            "cv_id": request.form.get("cv_id", ""),
-            "notes" : request.form.get('notes'),
-            "expected_salary": request.form.get("expected_salary"),
-            "preferred_start_date": request.form.get("preferred_start_date"),
-            "preferred_location": request.form.get("preferred_location"),
-            "ats_score": request.form.get("ats_score"),
-            "ats_report_id": request.form.get("ats_report_id")
+            "cover_letter": cover_letter,
+            "cv_id": cv_id,
+            "notes": request.form.get('notes', '').strip() or None,
+            "expected_salary": int(expected_salary) if expected_salary else None,
+            "preferred_start_date": preferred_start_date or None,
+            "preferred_location": request.form.get("preferred_location", '').strip() or None,
+            "ats_score": request.form.get("ats_score") or None,
+            "ats_report_id": request.form.get("ats_report_id") or None
         }
 
+        # Create and submit application
         job_application = JobApplication(**application_data)
         jobs_workflow_controller = get_controller('jobs_workflow')
 
         applied_job = await jobs_workflow_controller.apply_to_job(job_application=job_application)
+        
         if applied_job:
-            flash("Application submitted successfully.", "success")
+            flash("Application submitted successfully! You can track its progress in your applications list.", "success")
             return redirect(url_for("jobseeker_applications.list_applications"))
-
-        flash("There was a problem applying for this job please check if you have not already applied.", "success")
-        return redirect(url_for("jobseeker_applications.list_applications"))
+        else:
+            flash("There was a problem submitting your application. Please try again or contact support if the issue persists.", "danger")
+            return redirect(url_for("jobs.job_details", job_id=job_id))
 
     except ValidationError as e:
-        flash("There was a validation error while submitting your application.", "danger")
-        return redirect(url_for("jobs.view_job", job_id=job_id))  # Or show a more specific error page
+        applications_logger.error(f"Validation error in application submission: {str(e)}")
+        flash("There was a validation error with your application data. Please check all fields and try again.", "danger")
+        return redirect(url_for("jobs.job_details", job_id=job_id))
+    
+    except Exception as e:
+        applications_logger.error(f"Unexpected error in application submission: {str(e)}")
+        flash("An unexpected error occurred while submitting your application. Please try again.", "danger")
+        return redirect(url_for("jobs.job_details", job_id=job_id))
 
 
 @jobseeker_applications_route.route("/withdraw-application/<string:application_id>", methods=["GET"])
@@ -314,7 +381,7 @@ async def withdraw_application(user: User, application_id: str):
         return redirect(url_for("jobseeker_applications.list_applications"))
 
     # Authorization check
-    if application.user_uid != user.uid:
+    if application.user_id != user.uid:
         flash("You are not authorized to withdraw this application", "danger")
         return redirect(url_for("jobseeker_applications.list_applications"))
 
@@ -373,7 +440,7 @@ async def view_application(application_id: str, user: User):
         return redirect(url_for("jobseeker_applications.list_applications"))
 
     # Authorization check
-    if application.user_uid != user.uid:
+    if application.user_id != user.uid:
         flash("You are not authorized to view this application", "danger")
         return redirect(url_for("jobseeker_applications.list_applications"))
 
@@ -404,7 +471,7 @@ async def edit_application(application_id: str, user: User):
     jobs_search_controller = get_controller('jobs_search')
     application = await jobs_search_controller.get_job_application_by_id(application_id)
 
-    if not application or application.user_uid != user.uid:
+    if not application or application.user_id != user.uid:
         flash("Application not found or not authorized", "danger")
         return redirect(url_for("jobseeker_applications.list_applications"))
 
@@ -435,7 +502,7 @@ async def submit_edited_application(application_id: str, user: User):
     jobs_search_controller = get_controller('jobs_search')
     application = await jobs_search_controller.get_job_application_by_id(application_id)
 
-    if not application or application.user_uid != user.uid or application.status != "draft":
+    if not application or application.user_id != user.uid or application.status != "draft":
         flash("Unauthorized or invalid application", "danger")
         return redirect(url_for("jobseeker_applications.list_applications"))
     jobs_workflow_controller = get_controller('jobs_workflow')

@@ -151,7 +151,13 @@
     <div class="card mb-5">
       <div class="card-body">
         <h5 class="card-title">Submit Application</h5>
-        <form id="application-form" method="POST" action="/jobs/{{ job.job_id }}/apply">
+        {% if user_has_applied %}
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          You have already applied for this job. You can view your application in your <a href="{{ url_for('jobseeker_applications.list_applications') }}">applications list</a>.
+        </div>
+        {% else %}
+        <form id="application-form" method="POST" action="{{ url_for('jobseeker_applications.submit_application', job_id=job.job_id) }}">
           <input type="hidden" name="cv_id" id="app_cv_id">
           <input type="hidden" name="cover_letter" id="app_cover_letter">
 
@@ -172,6 +178,7 @@
 
           <button type="submit" class="btn btn-success w-100">Submit Application</button>
         </form>
+        {% endif %}
       </div>
     </div>
   </div>

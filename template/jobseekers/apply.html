@@ -33,7 +33,7 @@
   <div class="row">
     <!-- Main Application Form -->
     <div class="col-lg-8">
-      <form action="{{ url_for('jobseeker_applications_bp.submit_application', job_id=job.job_id) }}"
+      <form action="{{ url_for('jobseeker_applications.submit_application', job_id=job.job_id) }}"
             method="post" enctype="multipart/form-data" id="application-form">
         {% if ats_score %}
           <input type="hidden" value="{{ ats_score }}" name="ats_score" />
@@ -229,41 +229,57 @@ document.addEventListener('DOMContentLoaded', function() {
         data.score > 75 ? 'badge-success' :
         data.score > 50 ? 'badge-warning' : 'badge-danger'}`;
 
-      // Update ats_report_id field if returned
-      if (data.ats_report_id) {
-        const atsReportInput = document.getElementById('ats-report-id');
-        atsReportInput.value = data.ats_report_id;
-        const atsScoreInput = document.getElementById('ats_score');
-        atsScoreInput.value = data.score;
+      // Update live score in sidebar
+      const liveScoreElement = document.querySelector('#ats-live-score');
+      if (liveScoreElement) {
+        liveScoreElement.textContent = data.score;
       }
-    })
-    .catch(error => {
-      console.error("ATS Check failed:", error);
-    });
 
+      // Update feedback
+      const feedbackElement = document.querySelector('#ats-feedback');
+      if (feedbackElement && data.feedback) {
+        feedbackElement.textContent = data.feedback;
+      }
 
       // Update keyword lists
       const keywordList = document.querySelector('#keyword-list');
-      keywordList.innerHTML = '';
+      if (keywordList) {
+        keywordList.innerHTML = '';
 
-      data.missing.forEach(keyword => {
-        const li = document.createElement('li');
-        li.className = 'text-danger mb-1';
-        li.innerHTML = `
-          <i class="ti-close"></i> ${keyword}
-          <button type="button" class="btn btn-sm btn-link text-info"
-                  onclick="addKeyword('${keyword}')">
-            <i class="ti-plus"></i> Add
-          </button>`;
-        keywordList.appendChild(li);
-      });
+        if (data.missing_keywords) {
+          data.missing_keywords.forEach(keyword => {
+            const li = document.createElement('li');
+            li.className = 'text-danger mb-1';
+            li.innerHTML = `
+              <i class="ti-close"></i> ${keyword}
+              <button type="button" class="btn btn-sm btn-link text-info"
+                      onclick="addKeyword('${keyword}')">
+                <i class="ti-plus"></i> Add
+              </button>`;
+            keywordList.appendChild(li);
+          });
+        }
 
-      data.matched.forEach(keyword => {
-        const li = document.createElement('li');
-        li.className = 'text-success mb-1';
-        li.innerHTML = `<i class="ti-check"></i> ${keyword}`;
-        keywordList.appendChild(li);
-      });
+        if (data.matched_keywords) {
+          data.matched_keywords.forEach(keyword => {
+            const li = document.createElement('li');
+            li.className = 'text-success mb-1';
+            li.innerHTML = `<i class="ti-check"></i> ${keyword}`;
+            keywordList.appendChild(li);
+          });
+        }
+      }
+
+      // Update hidden form fields
+      const atsScoreInput = document.querySelector('input[name="ats_score"]');
+      if (atsScoreInput) {
+        atsScoreInput.value = data.score;
+      }
+      
+      const atsReportInput = document.querySelector('input[name="ats_report_id"]');
+      if (atsReportInput && data.ats_report_id) {
+        atsReportInput.value = data.ats_report_id;
+      }
     })
     .catch(err => {
       console.error('ATS Update Error:', err);
@@ -274,7 +290,36 @@ document.addEventListener('DOMContentLoaded', function() {
   // Event listeners for real-time updates
   document.querySelectorAll('input, textarea, select').forEach(el => {
     el.addEventListener('input', atsUpdate);
+    el.addEventListener('change', atsUpdate); // Also listen for change events on selects
   });
+
+  // Special handling for CV selection changes
+  const cvSelect = document.querySelector('select[name="cv_id"]');
+  if (cvSelect) {
+    cvSelect.addEventListener('change', function() {
+      // Update the ATS score preview immediately based on the selected CV
+      const selectedOption = this.options[this.selectedIndex];
+      if (selectedOption) {
+        const atsScoreText = selectedOption.textContent;
+        const scoreMatch = atsScoreText.match(/ATS Score: (\d+)%/);
+        if (scoreMatch) {
+          const score = parseInt(scoreMatch[1]);
+          const scoreElement = document.querySelector('.ats-score-preview');
+          scoreElement.textContent = `ATS: ${score}/100`;
+          scoreElement.className = `ats-score-preview badge badge-pill ${
+            score > 75 ? 'badge-success' :
+            score > 50 ? 'badge-warning' : 'badge-danger'}`;
+          
+          const liveScoreElement = document.querySelector('#ats-live-score');
+          if (liveScoreElement) {
+            liveScoreElement.textContent = score;
+          }
+        }
+      }
+      // Then trigger full ATS update
+      atsUpdate();
+    });
+  }
 
   // AI Cover Letter Generation with loading state
   document.querySelector('#ai-cover-draft').addEventListener('click', async () => {
@@ -286,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
       button.disabled = true;
 
       const formData = new FormData(document.querySelector('#application-form'));
-      const response = await fetch(`/jobseeker/applications/api/cover-draft?job_id={{ job.id }}`, {
+      const response = await fetch(`/jobseeker/applications/api/cover-draft?job_id={{ job.job_id }}`, {
         method: 'POST',
         body: formData
       });

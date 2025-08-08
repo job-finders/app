@@ -20,8 +20,13 @@
       <div class="card-body text-center">
         <i class="ti-check-box text-success display-4 mb-3"></i>
         <h5 class="card-title">Applications</h5>
-        <p class="display-4 text-success">{{ seeker_stats.applications }}</p>
-        <small class="text-muted">Jobs you've applied for</small>
+        <p class="display-4 text-success">{{ seeker_stats.applications_count or 0 }}</p>
+        <small class="text-muted">
+          Jobs you've applied for
+          {% if seeker_stats.recent_applications_count > 0 %}
+          <br><span class="badge badge-success">{{ seeker_stats.recent_applications_count }} recent</span>
+          {% endif %}
+        </small>
       </div>
     </div>
   </div>
@@ -31,7 +36,7 @@
       <div class="card-body text-center">
         <i class="ti-bookmark text-info display-4 mb-3"></i>
         <h5 class="card-title">Saved Jobs</h5>
-        <p class="display-4 text-info">{{ seeker_stats.saved_jobs }}</p>
+        <p class="display-4 text-info">{{ seeker_stats.saved_jobs_count or 0 }}</p>
         <small class="text-muted">Jobs saved for later</small>
       </div>
     </div>
@@ -43,14 +48,20 @@
         <h5 class="card-title">CV Status</h5>
         {% if seeker_stats.cv_uploaded %}
         <p class="text-success font-weight-bold mb-1">
-          <i class="ti-check"></i> Uploaded
+          <i class="ti-check"></i> Uploaded ({{ seeker_stats.cv_count }})
         </p>
         {% else %}
         <p class="text-danger font-weight-bold mb-1">
           <i class="ti-close"></i> Not Uploaded
         </p>
         {% endif %}
-        <small class="text-muted">Upload your CV to apply faster</small>
+        <small class="text-muted">
+          {% if seeker_stats.cv_uploaded %}
+          {{ seeker_stats.cv_count }} CV{{ 's' if seeker_stats.cv_count != 1 else '' }} uploaded
+          {% else %}
+          Upload your CV to apply faster
+          {% endif %}
+        </small>
       </div>
     </div>
   </div>
@@ -69,7 +80,7 @@
       <div class="card-body p-2">
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-2">
           <div class="col">
-            <a href="{{ url_for('home.get_home') }}"
+            <a href="{{ url_for('jobs.list_jobs') }}"
                class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center py-2 py-md-3 quick-action-btn">
               <i class="ti-search mb-1 mb-md-2 fs-4"></i>
               <span class="text-center fs-6 fs-md-base">Browse Jobs</span>
