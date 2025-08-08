@@ -332,7 +332,7 @@ async def submit_application(job_id: str, user: User):
         jobs_search_controller = get_controller('jobs_search')
         
         # Check if user has already applied for this job (duplicate prevention)
-        user_applications = await jobs_search_controller.get_applied_jobs_for_user(user_id=user.uid)
+        user_applications, _ = await jobs_search_controller.get_applied_jobs_for_user(user_id=user.uid)
         if any(app.job_id == job_id for app in user_applications):
             flash("You have already applied for this job. You can view your application in your applications list.", "warning")
             return redirect(url_for("jobseeker_applications.list_applications"))
@@ -469,9 +469,38 @@ async def list_applications(user: User):
     :param user: Authenticated jobseeker.
     :return: Rendered application history template.
     """
+    from flask import request
+    
     jobs_search_controller = get_controller('jobs_search')
-    applications = await jobs_search_controller.get_applied_jobs_for_user(user.uid)
-    context = dict(current_user=user, applications=applications)
+
+    # Get pagination parameters
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 20, type=int)
+
+    # Get paginated applications
+    applications, total_count = await jobs_search_controller.get_applied_jobs_for_user(
+        user.uid, page=page, page_size=page_size
+    )
+
+    # Calculate pagination info
+    total_pages = (total_count + page_size - 1) // page_size
+    has_prev = page > 1
+    has_next = page < total_pages
+
+    context = dict(
+        current_user=user,
+        applications=applications,
+        pagination={
+            'page': page,
+            'page_size': page_size,
+            'total_count': total_count,
+            'total_pages': total_pages,
+            'has_prev': has_prev,
+            'has_next': has_next,
+            'prev_num': page - 1 if has_prev else None,
+            'next_num': page + 1 if has_next else None
+        }
+    )
     return render_template("jobseekers/applications/list.html", **context)
 
 @jobseeker_applications_route.route("/<string:application_id>", methods=["GET"])

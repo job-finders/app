@@ -388,6 +388,22 @@ class ATSToolController(Controllers):
 
     # ─── Text assembly ────────────────────────────────────────────────────────
 
+    @error_handler
+    async def get_ats_report_by_id(self, ats_report_id: str) -> ATSReport | None:
+        """Get an ATS report by ID"""
+        if not (isinstance(ats_report_id, str) and ats_report_id.strip()):
+            self.logger.error("Invalid ATS Report ID")
+            return None
+
+        from src.database.sql.jobs_sql import ATSReportORM
+
+        with self.get_session() as session:
+            ats_report_orm = session.query(ATSReportORM).filter_by(ats_report_id=ats_report_id).first()
+            if not ats_report_orm:
+                return None
+
+            return ATSReport(**ats_report_orm.to_dict())
+
     @staticmethod
     def _combine_cv_text(cv: JobSeekerCV) -> str:
         parts = [

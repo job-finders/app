@@ -20,7 +20,6 @@ class SendMail:
     """
         Make this more formal
     """
-
     def __init__(self):
         self._resend = resend
         self._resend.api_key = settings.RESEND.API_KEY

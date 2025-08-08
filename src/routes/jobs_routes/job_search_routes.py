@@ -350,7 +350,7 @@ async def job_details(user: User, job_id: str):
     user_has_applied = False
     if user and user.uid:
         try:
-            user_applications = await job_search_controller.get_applied_jobs_for_user(user_id=user.uid)
+            user_applications, _ = await job_search_controller.get_applied_jobs_for_user(user_id=user.uid)
             user_has_applied = any(app.job_id == job_id for app in user_applications)
         except Exception:
             # If there's an error checking application status, default to False

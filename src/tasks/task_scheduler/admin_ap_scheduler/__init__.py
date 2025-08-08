@@ -96,7 +96,7 @@ def schedule_app_tasks(scheduler, app):
         scheduler.add_job(
             async_job_wrapper("approve_jobs", admin_controller.approve_jobs),
             trigger='interval',
-            minutes=30,
+            minutes=5,
             id='approve_jobs',
             jitter=300,
             replace_existing=True)

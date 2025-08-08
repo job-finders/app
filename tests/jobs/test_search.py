@@ -1494,3 +1494,102 @@ async def test_get_user_dashboard_statistics_multiple_cvs(get_controller, sessio
     assert result["cv_uploaded"] == True
     assert result["applications_count"] == 0
     assert result["saved_jobs_count"] == 0
+
+
+@py
+
+
+test.mark.asyncio
+
+
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_get_applied_jobs_for_user_with_pagination(get_controller, session):
+    """Test getting applied jobs for user with pagination"""
+    controller = get_controller
+    user_id = str(uuid.uuid4())
+
+    # Create test jobs and applications
+    category = create_category(session, name="Engineering")
+
+    # Create multiple applications for testing pagination
+    applications = []
+    for i in range(25):  # Create 25 applications to test pagination
+        job_id = str(uuid.uuid4())
+        application_id = str(uuid.uuid4())
+
+        job = create_job(
+            session,
+            job_id=job_id,
+            title=f"Test Job {i + 1}",
+            description=f"Test job description {i + 1}",
+            category_id=category.category_id
+        )
+
+        application = create_job_application(
+            session,
+            application_id=application_id,
+            user_id=user_id,
+            job_id=job_id,
+            applied_date=datetime.now(timezone.utc) - timedelta(days=i)  # Different dates for sorting
+        )
+        applications.append(application)
+
+    session.commit()
+
+    # Test first page
+    result_apps, total_count = await controller.get_applied_jobs_for_user(user_id, page=1, page_size=10)
+
+    assert total_count == 25
+    assert len(result_apps) == 10
+
+    # Verify sorting (newest first)
+    for i in range(len(result_apps) - 1):
+        assert result_apps[i].applied_date >= result_apps[i + 1].applied_date
+
+    # Test second page
+    result_apps_page2, total_count_page2 = await controller.get_applied_jobs_for_user(user_id, page=2, page_size=10)
+
+    assert total_count_page2 == 25
+    assert len(result_apps_page2) == 10
+
+    # Test last page
+    result_apps_page3, total_count_page3 = await controller.get_applied_jobs_for_user(user_id, page=3, page_size=10)
+
+    assert total_count_page3 == 25
+    assert len(result_apps_page3) == 5  # Remaining 5 applications
+
+    # Test invalid page
+    result_apps_invalid, total_count_invalid = await controller.get_applied_jobs_for_user(user_id, page=0, page_size=10)
+
+    assert total_count_invalid == 25
+    assert len(result_apps_invalid) == 10  # Should default to page 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_get_applied_jobs_for_user_no_applications(get_controller, session):
+    """Test getting applied jobs for user with no applications"""
+    controller = get_controller
+    user_id = str(uuid.uuid4())
+
+    result_apps, total_count = await controller.get_applied_jobs_for_user(user_id, page=1, page_size=10)
+
+    assert total_count == 0
+    assert len(result_apps) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_get_applied_jobs_for_user_invalid_user_id(get_controller, session):
+    """Test getting applied jobs with invalid user ID"""
+    controller = get_controller
+
+    # Test empty string
+    result_apps, total_count = await controller.get_applied_jobs_for_user("", page=1, page_size=10)
+    assert total_count == 0
+    assert len(result_apps) == 0
+
+    # Test None (will be converted to string)
+    result_apps, total_count = await controller.get_applied_jobs_for_user(None, page=1, page_size=10)
+    assert total_count == 0
+    assert len(result_apps) == 0

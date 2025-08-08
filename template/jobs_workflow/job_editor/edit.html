@@ -273,10 +273,10 @@
 <!--  ##########################################################################  -->
 <!--  ##########################################################################  -->
     {% include 'jobs_workflow/job_editor/ai_enhance_model.html' %}
-    <input type="hidden" id="endpointurl"
-           value="{{ url_for('employer_agents.analyze_job_post', job_id=job.job_id) | tojson | safe }}">
+    <input type="hidden" id="job_post_intel_end_point_url"
+           value="{{ url_for('employer_agents.analyze_job_post', job_id=job.job_id) }}">
     <input type="hidden" id="ats_endpoint_url"
-           value="{{ url_for('jobs_workflow.calculate_ats', job_id=job.job_id) | tojson | safe }}">
+           value="{{ url_for('jobs_workflow.calculate_ats', job_id=job.job_id) }}">
     <input type="hidden" id="job_update_status_url"
             value="{{ url_for('jobs_workflow.update_status', job_id=job.job_id) }}">
     <input type="hidden" id="toggled_featured_url"

@@ -227,15 +227,22 @@ class JobsSearchController(Controllers):
 
     @error_handler
     async def get_application_by_id(self, application_id: str) -> JobApplication | None:
-        """
-
-        """
+        """Get a job application by ID with all related data"""
+        if not (isinstance(application_id, str) and application_id.strip()):
+            self.logger.error("Invalid Application ID")
+            return None
+            
         with self.get_session() as session:
-            job_application_orm = session.query(JobApplicationORM).filter_by(application_id=application_id).first()
+            job_application_orm = (
+                session.query(JobApplicationORM)
+                .filter_by(application_id=application_id)
+                .options(joinedload(JobApplicationORM.job))  # Eager load job details
+                .first()
+            )
             if not job_application_orm:
                 return None
 
-            return JobApplication(**job_application_orm.to_dict())
+            return JobApplication(**job_application_orm.to_dict(include_relationships=True))
 
 
     
@@ -658,23 +665,52 @@ class JobsSearchController(Controllers):
                 if saved_job.job ] if saved_jobs_orm_list else []
 
     @error_handler
-    async def get_applied_jobs_for_user(self, user_id: str) -> list[JobApplication]:
-        """Get job applications with full job details for a user"""
+    async def get_applied_jobs_for_user(self, user_id: str, page: int = 1, page_size: int = 20) -> tuple[
+        list[JobApplication], int]:
+        """Get job applications with full job details for a user with pagination
+        
+        Returns:
+            tuple: (applications_list, total_count)
+        """
 
         if not (isinstance(user_id, str) and user_id.strip()):
             self.logger.error("Invalid User ID")
-            return []
+            return [], 0
+
+        if not isinstance(page, int) or page < 1:
+            page = 1
+        if not isinstance(page_size, int) or page_size < 1:
+            page_size = 20
 
         with self.get_session() as session:
+            # Get total count for pagination
+            total_count = (
+                session.query(JobApplicationORM)
+                .filter_by(user_id=user_id)
+                .join(JobApplicationORM.job)  # Only count applications with existing jobs
+                .count()
+            )
+
+            # Get paginated results
+            offset = (page - 1) * page_size
             job_applications_orm_list = (
-                session.query(JobApplicationORM).filter_by(user_id=user_id)
+                session.query(JobApplicationORM)
+                .filter_by(user_id=user_id)
                 .options(joinedload(JobApplicationORM.job))  # Eager load job details
-                .order_by(JobApplicationORM.applied_date.desc()).all())
-            
-            # Ensure the associated job still exists
-            return [
+                .join(JobApplicationORM.job)  # Only get applications with existing jobs
+                .order_by(JobApplicationORM.applied_date.desc())
+                .offset(offset)
+                .limit(page_size)
+                .all()
+            )
+
+            # Convert to Pydantic models
+            applications = [
                 JobApplication(**app.to_dict(include_relationships=True))
-                for app in job_applications_orm_list if app.job] if job_applications_orm_list else []  
+                for app in job_applications_orm_list
+            ] if job_applications_orm_list else []
+
+            return applications, total_count  
 
     @error_handler
     async def get_jobs_by_employer(self, employer_id: str, limit: int = 100) -> list[Job]:

@@ -83,29 +83,26 @@
 
   - [x] 3.3 Implement application submission validation
 
-
-
-
-
-
-
-
     - Add server-side validation for all required application fields
     - Implement duplicate application prevention logic
     - Add proper error handling and user feedback for submission failures
     - Create success flow that redirects to applications list after submission
     - _Requirements: 2.6, 2.7_
 
-- [ ] 4. Create comprehensive application tracking system
-  - [ ] 4.1 Implement applications list functionality
+- [-] 4. Create comprehensive application tracking system
+
+
+- [x] 4.1 Implement applications list functionality
+
     - Ensure applications route loads all user applications from database
     - Display application status, job title, company, and application date
     - Add pagination for applications list if needed
     - Implement sorting by application date (newest first)
     - _Requirements: 3.1, 3.2_
 
-  - [ ] 4.2 Create detailed application view
-    - Implement individual application view with complete details
+- [ ] 4.2 Create detailed application view
+
+  - Implement individual application view with complete details
     - Display submitted CV, cover letter, and ATS feedback
     - Show current application status and any status updates
     - Add navigation back to applications list

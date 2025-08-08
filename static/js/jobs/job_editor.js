@@ -175,7 +175,7 @@ async function toggleFeatured(jobId, featured) {
 /* ==========  Job Post Insights Card ========== */
 (() => {
     // Endpoint URL for fetching insights - resolves on the DOM
-    const endpoint = document.getElementById('endpointurl').value;
+    const endpoint = document.getElementById('job_post_intel_end_point_url').value;
     /* ---- DOM references ---- */
     const card = document.getElementById('jobPostInsightsCard');
     const btn = document.getElementById('refreshInsightsBtn');
