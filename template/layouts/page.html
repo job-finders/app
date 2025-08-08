@@ -20,6 +20,7 @@
 
   <link rel="preload" href="{{ url_for('static', filename='css/style.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
   <link rel="preload" href="{{ url_for('static', filename='css/jobfinder.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='css/modal-fix.css') }}" as="style" onload="this.rel='stylesheet'" crossorigin>
   <noscript>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/lib/themify-icons.css') }}">
@@ -30,6 +31,7 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/jobfinder.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modal-fix.css') }}">
   </noscript>
 {% endblock %}
 
@@ -185,7 +187,10 @@
   {% block scripts %}
     {# Page Custom Scripts #}
   {% endblock %}
-  <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/modal-diagnostics.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/modal-stability.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/modal-position-fix.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/scripts.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/interface/interface.js') }}" defer></script>
   <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>

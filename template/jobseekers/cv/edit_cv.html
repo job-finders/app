@@ -2,7 +2,9 @@
 {% import 'jobseekers/cv/partials/_editors.html' as cv_sections %}
 
 {% block styles %}
+{{ super() }}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/jobseekers/cv/resume.css') }}">
+    
 {% endblock %}
 
 {% block content %}
@@ -12,12 +14,12 @@
             <!-- Main Content -->
             <div class="col-lg-8">
                 <div class="modern-card shadow-sm rounded">
-                    <div class="cv-editor-section">
-                        <div class="cv-editor-header">Experience</div>
+                    <div class="card-content">
+                        <div class="card-header">Experience</div>
 
                         <form method="POST" action="{{ url_for('jobseeker_cv.update_cv_metadata', cv_id=cv.cv_id) }}">
                             <!-- Header Section -->
-                            <div class="cv-editor-header mb-4 border-bottom pb-3">
+                            <div class="cv-metadata-header mb-4 border-bottopb-3">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="w-100">
                                         <input type="text" class="form-control form-control-lg border-0 fw-bold mb-2"
@@ -108,6 +110,7 @@
 {% endblock %}
 
 {% block scripts %}
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const textareas = document.querySelectorAll('.auto-size');
@@ -124,5 +127,6 @@
                 });
             });
         });
+        
 </script>
 {% endblock %}
