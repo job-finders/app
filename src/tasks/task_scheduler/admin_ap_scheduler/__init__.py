@@ -98,6 +98,7 @@ def schedule_app_tasks(scheduler, app):
             trigger='interval',
             minutes=5,
             id='approve_jobs',
+            max_instances=1,
             jitter=300,
             replace_existing=True)
         # cron hour 7
@@ -107,6 +108,7 @@ def schedule_app_tasks(scheduler, app):
             minute=0,
             hour=7,
             id='send_job_alerts',
+            max_instances=1,
             jitter=300,
             replace_existing=True)
 

@@ -1,108 +1,45 @@
-# tests/conftest.py
-
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from src import create_app
+from src.database.sql.config import db as _db
+from src.database.models import User
 
-from src.database.sql import Base  # Replace with actual base model
 
-
-@pytest.fixture(scope="function")
-def session():
-    engine = create_engine("sqlite:///:memory:", future=True)
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(autocommit=False,
-                           autoflush=False,
-                           bind=engine,
-                           future=True)
-
-    try:
-        yield Session()
-    finally:
-        engine.dispose()
-
-@pytest.fixture(scope="module")
-def test_app():
-    from src.config import config_test
-    from src.main import create_app
-    app = create_app(config_test())  # or import your actual app instance
-    # optionally load config, init extensions, etc.
+@pytest.fixture(scope='session')
+def app():
+    """Create and configure a new app instance for tests"""
+    app = create_app()
+    app.config['TESTING'] = True
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    app.config['WTF_CSRF_ENABLED'] = False
+    
     with app.app_context():
+        _db.create_all()
         yield app
+        _db.drop_all()
 
 
-@pytest.fixture(params=["jobs_search"])  # Test with just one first
-def get_controller(test_app, request):
-    with test_app.app_context():
-        # # Debug what's available
-        # from flask import current_app
-        # print(f"Extensions: {current_app.extensions}")
-        # factory = current_app.extensions.get('controller_factory')
-        # print(f"Factory: {factory}")
-        # if factory:
-        #     print(f"Factory methods: {dir(factory)}")
-
-        from src.utils.route_helpers import get_controller as this_get_controller
-        controller = this_get_controller(request.param)
-        print(f"Controller returned: {controller}")
-        return controller
-# @pytest.fixture
-# def job_search_controller():
-#     with current_app.app_context():
-#         return get_controller("jobs_search")
-
-# @pytest.fixture
-# def job_workflow_controller():
-#     with current_app.app_context():
-#         return get_controller("jobs_workflow")
-
-# @pytest.fixture
-# def resume_controller():
-#     with current_app.app_context():
-#         return get_controller("resume")
-
-# @pytest.fixture
-# def company_controller():
-#     with current_app.app_context():
-#         return get_controller("company")
-
-# @pytest.fixture
-# def users_controller():
-#     with current_app.app_context():
-#         return get_controller("users")
-
-# @pytest.fixture
-# def ats_controller():
-#     with current_app.app_context():
-#         return get_controller("ats")
-
-# @pytest.fixture
-# def job_seeker_controller():
-#     with current_app.app_context():
-#         return get_controller("job_seeker_profile")
-
-# @pytest.fixture
-# def employer_agents_controller():
-#     with current_app.app_context():
-#         return get_controller("employer_agents")
+@pytest.fixture
+def client(app):
+    """A test client for the app"""
+    return app.test_client()
 
 
-# @pytest.fixture
-# def employee_agents_controller():
-#     with current_app.app_context():
-#         return get_controller("employee_agents")
+@pytest.fixture
+def runner(app):
+    """A CLI runner for the app"""
+    return app.test_cli_runner()
 
-# @pytest.fixture
-# def admin_controller_controller():
-#     with current_app.app_context():
-#         return get_controller("admin_controller")
 
-# @pytest.fixture
-# def user_engagement_controller():
-#     with current_app.app_context():
-#         return get_controller("user_engagement")
-
-# @pytest.fixture
-# def billing_controller():
-#     with current_app.app_context():
-#         return get_controller("billing")
+@pytest.fixture
+def test_user(app):
+    """Create a test user"""
+    with app.app_context():
+        user = User(
+            email='test@example.com',
+            password='testpass',
+            first_name='Test',
+            last_name='User'
+        )
+        _db.session.add(user)
+        _db.session.commit()
+        return user

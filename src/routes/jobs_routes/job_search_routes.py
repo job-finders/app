@@ -1,5 +1,6 @@
 # Standard Library
 import random
+import uuid
 from datetime import datetime, timedelta
 from typing import TypedDict, List, Tuple
 # Flask Core
@@ -21,7 +22,7 @@ MIN_PAGE = 1
 MAX_PAGE_SIZE = 100
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 25
-
+MOCK_JOBS = []
 
 async def parse_pagination_params(
     default_page: int = DEFAULT_PAGE,
@@ -47,9 +48,15 @@ async def parse_pagination_params(
     return page, page_size
 
 
-
 def generate_mock_jobs(keyword: str, count: int = 5) -> list[dict]:
     """Generate mock job listings for demonstration purposes"""
+    global MOCK_JOBS
+
+    # Check if we already have mock jobs for this keyword
+    existing_jobs = [job for job in MOCK_JOBS if keyword.lower() in job['title'].lower()]
+    if existing_jobs:
+        return MOCK_JOBS
+
     titles = [
         f"Senior {keyword} Developer",
         f"{keyword} Specialist",
@@ -72,14 +79,13 @@ def generate_mock_jobs(keyword: str, count: int = 5) -> list[dict]:
     remote_policies = ["REMOTE", "HYBRID", "ONSITE"]
     experience_levels = ["ENTRY", "MID", "SENIOR"]
 
-    mock_jobs = []
     for i in range(count):
         posted_at = datetime.utcnow() - timedelta(days=random.randint(0, 30))
         salary_min = random.randint(20000, 50000)
         salary_max = salary_min + random.randint(10000, 30000)
 
-        job = {
-            "job_id": f"mock_{i}",
+        job = Job(**{
+            "job_id": str(uuid.uuid4()),  # Ensure unique IDs
             "title": random.choice(titles),
             "company": {
                 "name": random.choice(companies),
@@ -101,16 +107,15 @@ def generate_mock_jobs(keyword: str, count: int = 5) -> list[dict]:
                            "a team of passionate engineers. Apply now!",
             "application_count": random.randint(0, 50),
             "view_count": random.randint(10, 200),
-            "is_featured": i == 0,  # First job is featured
+            "is_featured": i == 0,
             "location": f"{random.choice(cities)}, {random.choice(provinces)}, South Africa",
             "salary": f"ZAR {salary_min} - {salary_max}",
-            "is_active": True
-        }
-        mock_jobs.append(job)
+            "is_active": True,
+            "status": "active"  # Add this for consistency with real jobs
+        })
+        MOCK_JOBS.append(job)
 
-    return mock_jobs
-
-
+    return MOCK_JOBS
 
 class JobSearchContext(TypedDict):
     current_user: User
@@ -295,21 +300,24 @@ async def category_jobs(user: User, category: str):
 @flask_error_handler
 @user_details
 async def full_job_details(user: User, job_id: str):
-    """sumary_line
-        Display full job details for a specific job ID.
-    Keyword arguments:
-    argument -- description
-    Return: return_description
-    """
+    """Display full job details for a specific job ID."""
 
     job_search_controller = get_controller('jobs_search')
     job = await job_search_controller.get_job_by_id(job_id)
 
     if not job or job.status != "active":
-        return await gone(user=user, search_term=job_id)
+        # Check for mock job
+        if MOCK_JOBS:
+            mock_job = next((job for job in MOCK_JOBS if job.job_id == job_id), None)
+            if mock_job:
+                job = mock_job
+            else:
+                return await gone(user=user, search_term=job_id)
+        else:
+            return await gone(user=user, search_term=job_id)
 
     related_jobs: list[Job] = await job_search_controller.get_similar_jobs(job_id=job.job_id)
-        
+
     context = {
         'current_user': user,
         'job': job,
@@ -319,7 +327,6 @@ async def full_job_details(user: User, job_id: str):
     }
 
     return render_template('jobs/full_job_detail.html', **context)
-
 
 @jobs_search_route.get('/<string:job_id>')
 @flask_error_handler

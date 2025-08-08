@@ -2,6 +2,8 @@
 import functools
 import inspect
 from flask import jsonify, request, flash, redirect, url_for
+from pydantic import ValidationError
+from pymysql import DatabaseError
 from werkzeug.exceptions import BadRequest, NotFound, Unauthorized, InternalServerError
 from src.logger import init_logger
 
@@ -20,7 +22,11 @@ def flask_error_handler(view_func):
         NotFound: ("Not Found", 404),
         Unauthorized: ("Unauthorized", 401),
         UnauthorizedError: ("Unauthorized", 403),
-        InternalServerError: ("Internal Server Error", 500)}
+        InternalServerError: ("Internal Server Error", 500),
+        ValidationError: ("Validation Error", 400),
+        DatabaseError: ("Database Error", 503),
+        TimeoutError: ("Service Timeout", 504),
+        FileNotFoundError: ("File Not Found", 404)}
 
     def handle_exception(e, method_name=None):
         error_type = type(e)
@@ -28,8 +34,30 @@ def flask_error_handler(view_func):
         log_func = error_logger.error if status != 500 else error_logger.exception
         prefix = f"[{method_name}] " if method_name else ""
         log_func(f"{prefix}{error_name}: {e}")
-        message = str(e) if status != 500 else "An unexpected error occurred"
-        return jsonify({"error": error_name, "message": message}), status
+
+        # Enhanced user messaging
+        if status == 400:
+            message = f"Validation error: {str(e)}"
+        elif status == 404:
+            message = "The requested resource was not found"
+        elif status == 403:
+            message = "You don't have permission to access this resource"
+        elif status in (503, 504):
+            message = "Service temporarily unavailable. Please try again later."
+        else:
+            message = "An unexpected error occurred"
+
+        # Return appropriate response based on request type
+        if request.accept_mimetypes.accept_json:
+            return jsonify({
+                "error": error_name,
+                "message": message,
+                "code": status,
+                "details": str(e) if status != 500 else None
+            }), status
+        else:
+            flash(message, "danger" if status >= 400 else "warning")
+            return redirect(url_for("home.get_home"))
 
     @functools.wraps(view_func)
     async def async_wrapper(*args, **kwargs):
