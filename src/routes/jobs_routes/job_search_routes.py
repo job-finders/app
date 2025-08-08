@@ -16,6 +16,47 @@ from src.routes.utils import gone
 from src.utils.route_helpers import get_controller
 # Fake Data
 from src.routes.fake_data import store
+import random
+from typing import Optional, List
+
+
+class FakeDataHandler:
+    @staticmethod
+    def get_job(job_id: str) -> Optional[Job]:
+        return store.jobs.get(job_id)
+
+    @staticmethod
+    def get_related_jobs(job_id: str, count: int = 4) -> List[Job]:
+        return list(store.jobs.values())[:count]
+
+    @staticmethod
+    def get_user_resumes(user_id: str, count: int = 2) -> List[JobSeekerCV]:
+        return list(store.resumes.values())[:count]
+
+    @staticmethod
+    def check_application_status(user_id: str, job_id: str) -> bool:
+        return random.choice([True, False])
+
+
+import random
+
+
+class FakeDataHandler:
+    @staticmethod
+    def get_job(job_id: str) -> Optional[Job]:
+        return store.jobs.get(job_id)
+
+    @staticmethod
+    def get_related_jobs(job_id: str, count: int = 4) -> List[Job]:
+        return list(store.jobs.values())[:count]
+
+    @staticmethod
+    def get_user_resumes(user_id: str, count: int = 2) -> List[JobSeekerCV]:
+        return list(store.resumes.values())[:count]
+
+    @staticmethod
+    def check_application_status(user_id: str, job_id: str) -> bool:
+        return random.choice([True, False])
 
 
 MIN_PAGE = 1
