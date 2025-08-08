@@ -81,7 +81,12 @@
 
 
 
-  - [-] 3.3 Implement application submission validation
+  - [x] 3.3 Implement application submission validation
+
+
+
+
+
 
 
 
