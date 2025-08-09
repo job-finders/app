@@ -165,9 +165,9 @@ class MatchDetailsModal {
 
         try {
             // Construct API endpoint
-            const endpoint = jobSlug 
-                ? `/api/jobs/${jobSlug}/match-analysis`
-                : `/api/jobs/${jobId}/match-analysis`;
+            const endpoint = jobSlug
+                ? `jobs/api/jobs/${jobSlug}/match-analysis`
+                : `jobs/api/jobs/${jobId}/match-analysis`;
 
             const response = await fetch(endpoint, {
                 method: 'GET',

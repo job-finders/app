@@ -84,6 +84,21 @@ class JobSeekerProfilesController(Controllers):
             return JobSeekerProfile(**seeker_orm.to_dict()) if seeker_orm else None
 
     @error_handler
+    async def get_complete_profile_by_uid(self, user_uid: str) -> JobSeekerProfile | None:
+        """Fetch a profile or return None if missing."""
+        if not (isinstance(user_uid, str) and user_uid.strip()):
+            return None
+        with self.get_session() as session:
+            seeker_orm = (
+                session
+                .query(JobSeekerProfileORM)
+                .options(joinedLoad(JobSeekerProfileORM.resumes_list))
+                .filter_by(user_uid=user_uid)
+                .first())
+            return JobSeekerProfile(**seeker_orm.to_dict(include_relationships=True)) if seeker_orm else None
+
+
+    @error_handler
     async def update_profile(self, user_uid: str, update_data: dict) -> JobSeekerProfile | None:
         """Partially update profile fields and return the updated model."""
         if not(isinstance(user_uid, str) and user_uid.strip()):

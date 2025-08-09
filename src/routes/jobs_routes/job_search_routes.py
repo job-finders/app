@@ -14,7 +14,7 @@ from src.database.models import Job, JobCategory, JobSeekerCV, User, JobSeekerPr
 from src.routes import flask_error_handler
 from src.routes.utils import gone
 # Utilities
-from src.utils.route_helpers import get_controller
+from src.utils.route_helpers import get_controller, get_service
 # Fake Data
 from src.routes.fake_data import store
 import random
@@ -22,26 +22,8 @@ from typing import Optional, List
 # Cache
 from src.cache.cache_redis import cached
 
-
-class FakeDataHandler:
-    @staticmethod
-    def get_job(job_id: str) -> Optional[Job]:
-        return store.jobs.get(job_id)
-
-    @staticmethod
-    def get_related_jobs(job_id: str, count: int = 4) -> List[Job]:
-        return list(store.jobs.values())[:count]
-
-    @staticmethod
-    def get_user_resumes(user_id: str, count: int = 2) -> List[JobSeekerCV]:
-        return list(store.resumes.values())[:count]
-
-    @staticmethod
-    def check_application_status(user_id: str, job_id: str) -> bool:
-        return random.choice([True, False])
-
-
-import random
+# Blueprint definition
+jobs_search_route = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 
 class FakeDataHandler:
@@ -114,7 +96,7 @@ async def get_user_profile_for_matching(user_id: str) -> Optional[JobSeekerProfi
     
     try:
         profile_controller = get_controller('job_seeker_profile')
-        return await profile_controller.get_profile_by_uid(user_id)
+        return await profile_controller.get_complete_profile_by_uid(user_id)
     except Exception as e:
         print(f"Error fetching user profile for matching: {e}")
         return None
@@ -132,10 +114,13 @@ async def calculate_batch_match_scores(jobs: List[Job], user: User, job_search_c
     Returns:
         List of jobs with match_score attribute added
     """
+    logger = get_service('logger')()("Batch Match Scores :")
+
     if not user or not user.uid or not jobs:
         # Return jobs without match scores if no user or no jobs
-        for job in jobs:
+        for job in jobs:         
             job.match_score = None
+        logger.info(f"We could not calculate scores Jobs : {len(jobs)},  User : {user}")
         return jobs
     
     try:
@@ -146,10 +131,12 @@ async def calculate_batch_match_scores(jobs: List[Job], user: User, job_search_c
             # User has no profile - return jobs without match scores
             for job in jobs:
                 job.match_score = None
+            logger.info("We could not calculate scores because we failed to locate user profiles")
             return jobs
         
         # Use optimized batch scoring service
         from src.services.optimized_match_scoring import optimizer
+        logger.info("We are now loading Optimized Job Match Scores")
         return await optimizer.optimize_job_listing_scores(user.uid, jobs, user_profile)
                 
     except Exception as e:
@@ -169,9 +156,6 @@ class JobSearchContext(TypedDict):
     total_jobs: int
     filters: dict
 
-
-# Blueprint definition
-jobs_search_route = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 
 # noinspection DuplicatedCode
@@ -776,6 +760,7 @@ async def get_job_match_analysis(user: User, job_id: str):
     from flask import jsonify
     from src.cache.cache_redis import cache
     from src.monitoring.match_scoring_metrics import track_performance, analytics
+    from src.services.optimized_match_scoring import optimizer
     
     # Track API usage
     start_time = time.time()

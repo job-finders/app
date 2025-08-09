@@ -56,6 +56,37 @@ class RedisCache:
             print(f"[Cache:get] Error: {e}")
             return None
 
+    def get_many(self, keys: list) -> dict:
+        """
+        Retrieve multiple cached values at once.
+
+        Args:
+            keys (list): List of cache keys (without prefix).
+
+        Returns:
+            dict: Mapping from key to cached value (unpickled). Missing keys are excluded.
+        """
+        try:
+            # Prefix all keys for redis
+            prefixed_keys = [self._prefixed(k) for k in keys]
+
+            # Bulk fetch using mget
+            raw_values = self.redis.mget(prefixed_keys)
+
+            # Map original keys to unpickled values, skipping missing
+            result = {}
+            for key, raw in zip(keys, raw_values):
+                if raw is not None:
+                    try:
+                        result[key] = pickle.loads(raw)
+                    except Exception as e:
+                        print(f"[Cache:get_many] Unpickle error for key {key}: {e}")
+                        # skip or set None if you want
+            return result
+        except Exception as e:
+            print(f"[Cache:get_many] Error fetching multiple keys: {e}")
+            return {}
+
     def set(self, key: str, value, ttl: Optional[int] = None):
         try:
             ttl = ttl or self.default_ttl

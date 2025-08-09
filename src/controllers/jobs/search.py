@@ -828,246 +828,243 @@ class JobsSearchController(Controllers):
     @error_handler
     async def calculate_quick_match_score(self, job: Job, user_profile: JobSeekerProfile) -> float:
         """
-        Calculate lightweight match score for job listings using basic criteria.
-        Uses non-AI algorithms for fast computation in job listing views.
-        
-        Args:
-            job (Job): The job to evaluate
-            user_profile (JobSeekerProfile): The user's profile
-            
-        Returns:
-            float: Match score from 0-100
+        Lightweight match score for job listings.
+        Non-AI, fast computation for listing views.
         """
         if not job or not user_profile:
             return 0.0
-            
+
         scores = {}
-        
-        # Location Match (40% weight) - Highest priority for quick matching
+
+        # -------------------------
+        # Location Match (40%)
+        # -------------------------
         location_score = 0
-        if user_profile.location and job.city:
-            # Exact city match
-            if user_profile.location.lower().strip() == job.city.lower().strip():
-                location_score = 100
-            # Province match (if user location contains province)
-            elif job.province and job.province.lower() in user_profile.location.lower():
-                location_score = 80
-            # Check locations of interest
-            elif user_profile.locations_of_interest:
-                for loc in user_profile.locations_of_interest:
-                    if loc.lower().strip() == job.city.lower().strip():
-                        location_score = 100
-                        break
-                    elif job.province and job.province.lower() in loc.lower():
-                        location_score = 80
-                        break
-        
-        # Remote work compatibility
-        if user_profile.remote_preference and job.remote_policy in ["REMOTE", "HYBRID"]:
-            location_score = max(location_score, 90)  # Remote preference satisfied
-            
-        scores['location'] = location_score
-        
-        # Job Title Keywords (30% weight) - Simple keyword matching
+        user_loc = (user_profile.location or "").strip().lower()
+        job_city = (job.city if job.city else "").strip().lower()
+        job_province = (job.province if job.province else "").strip().lower()
+
+        # Exact city match
+        if user_loc and job_city and user_loc == job_city:
+            location_score = 100
+        # Province match
+        elif user_loc and job_province and job_province in user_loc:
+            location_score = 80
+        # Locations of interest
+        elif user_profile.locations_of_interest:
+            for loc in user_profile.locations_of_interest:
+                loc_low = loc.strip().lower()
+                if loc_low == job_city:
+                    location_score = 100
+                    break
+                elif job_province and job_province in loc_low:
+                    location_score = 80
+                    break
+
+        # Remote preference
+        if (user_profile.remote_preference == True) and (job.remote_policy in ["REMOTE", "HYBRID"]):
+            location_score = max(location_score, 90)
+        elif (user_profile.remote_preference == False) and (job.remote_policy in ["ONSITE", "HYBRID"]):
+            location_score = max(location_score, 90)
+
+        scores["location"] = location_score
+
+        # -------------------------
+        # Title Match (30%)
+        # -------------------------
         title_score = 0
         if user_profile.job_titles_of_interest and job.title:
             job_title_lower = job.title.lower()
             for interested_title in user_profile.job_titles_of_interest:
                 interested_lower = interested_title.lower()
-                # Exact match
                 if interested_lower == job_title_lower:
                     title_score = 100
                     break
-                # Partial match - check if interested title is in job title
                 elif interested_lower in job_title_lower:
                     title_score = max(title_score, 80)
-                # Reverse check - job title keywords in interested title
                 elif any(word in interested_lower for word in job_title_lower.split() if len(word) > 3):
                     title_score = max(title_score, 60)
-                    
-        scores['title'] = title_score
-        
-        # Experience Level (20% weight) - Basic level comparison
+
+        scores["title"] = title_score
+
+        # -------------------------
+        # Experience Match (20%)
+        # -------------------------
         experience_score = 0
         if job.experience_level:
-            exp_levels = {'ENTRY': 1, 'MID': 2, 'SENIOR': 3}
+            exp_levels = {"ENTRY": 1, "MID": 2, "SENIOR": 3}
             job_level = exp_levels.get(job.experience_level.upper(), 1)
-            
-            # Estimate user experience level from profile completeness and preferences
-            user_level = 1  # Default to entry
-            if user_profile.expected_salary and user_profile.expected_salary > 600000:  # Senior salary range
+
+            user_level = 1
+            if user_profile.expected_salary and user_profile.expected_salary > 600000:
                 user_level = 3
-            elif user_profile.expected_salary and user_profile.expected_salary > 300000:  # Mid salary range
+            elif user_profile.expected_salary and user_profile.expected_salary > 300000:
                 user_level = 2
-            elif user_profile.profile_completion_percentage > 80:  # Well-completed profile suggests experience
+            elif user_profile.profile_completion_percentage > 80:
                 user_level = 2
-                
-            # Score based on level compatibility
+
             if user_level >= job_level:
                 experience_score = 100
             elif user_level == job_level - 1:
-                experience_score = 75  # One level below is still reasonable
+                experience_score = 75
             else:
-                experience_score = 40  # Significant gap
-                
-        scores['experience'] = experience_score
-        
-        # Industry Category (10% weight) - Direct category matching
+                experience_score = 40
+
+        scores["experience"] = experience_score
+
+        # -------------------------
+        # Industry Match (10%)
+        # -------------------------
         industry_score = 0
         if job.category and user_profile.industries_of_interest:
-            job_category_name = job.category.name if hasattr(job.category, 'name') else str(job.category)
             for industry in user_profile.industries_of_interest:
-                if industry.lower().strip() == job_category_name.lower().strip():
+                if industry.lower().strip() == job.category.name.lower().strip():
                     industry_score = 100
                     break
-                elif industry.lower() in job_category_name.lower() or job_category_name.lower() in industry.lower():
+                elif industry.lower() in job.category.name.lower() or job.category.name.lower() in industry.lower():
                     industry_score = max(industry_score, 70)
-                    
-        scores['industry'] = industry_score
-        
-        # Calculate weighted total
+
+        scores["industry"] = industry_score
+
+        # -------------------------
+        # Weighted Sum
+        # -------------------------
         weights = {
-            'location': 0.40,
-            'title': 0.30,
-            'experience': 0.20,
-            'industry': 0.10
+            "location": 0.40,
+            "title": 0.30,
+            "experience": 0.20,
+            "industry": 0.10,
         }
-        
-        total_score = sum(scores[category] * weight for category, weight in weights.items())
-        
+        total_score = sum(scores[cat] * weights[cat] for cat in weights)
+
         return round(total_score, 1)
+
 
     @error_handler
     async def calculate_job_match_score(self, job_id: str, user_id: str) -> dict:
         """
-        Calculate how well a specific job matches a user's profile and CV.
-
-        This method evaluates the alignment between the job's requirements and
-        the user's profile across multiple dimensions such as skills, experience,
-        education, industry, title interest, location preference, and remote work compatibility.
-        It returns both a numerical score and a human-readable interpretation with suggestions.
-
-        Args:
-            job_id (str): The ID of the job to evaluate.
-            user_id (str): The ID of the user whose profile is being matched.
-
-        Returns:
-            dict: A dictionary containing:
-                - 'score_breakdown': Detailed match scores by category.
-                - 'interpretation': Human-readable feedback based on the total score.
-                - 'recommended_improvements': Suggestions to increase future match scores.
+        Deep match score for a single job against a candidate's profile & CV.
         """
-
-        if not(isinstance(job_id, str) and job_id.strip()):
+        if not (isinstance(job_id, str) and job_id.strip()):
             self.logger.error("Invalid Job ID")
             return {}
 
         if not (isinstance(user_id, str) and user_id.strip()):
-            self.logger.error("Invalid Job ID")
+            self.logger.error("Invalid User ID")
             return {}
 
         with self.get_session() as session:
+            profile_orm = session.query(JobSeekerProfileORM).get(user_id)
+            cv_orm = session.query(JobSeekerCVORM).filter_by(user_uid=user_id, is_primary=True).first()
+            job_orm = session.query(JobsORM).get(job_id)
 
-            profile_orm: JobSeekerProfileORM = session.query(JobSeekerProfileORM).get(user_id)
-            cv_orm: JobSeekerCVORM   = session.query(JobSeekerCVORM).filter_by(user_uid=user_id, is_primary=True).first()
-            job_orm: JobsORM = session.query(JobsORM).get(job_id)
-
-            profile:JobSeekerProfile = JobSeekerProfile(**profile_orm.to_dict())
-            cv: JobSeekerCV = JobSeekerCV(**cv_orm.to_dict())
-            job: Job = Job(**job_orm.to_dict())
+            profile = JobSeekerProfile(**profile_orm.to_dict()) if profile_orm else None
+            cv = JobSeekerCV(**cv_orm.to_dict()) if cv_orm else None
+            job = Job(**job_orm.to_dict()) if job_orm else None
 
             if not profile or not cv or not job:
                 return {}
 
             scores = {
-                'skills': 0,
-                'experience': 0,
-                'education': 0,
-                'industry': 0,
-                'title': 0,
-                'location': 0,
-                'remote': 0,
-                'total': 0
+                "skills": 0,
+                "experience": 0,
+                "education": 0,
+                "industry": 0,
+                "title": 0,
+                "location": 0,
+                "remote": 0,
+                "total": 0
             }
 
-            # Skills Match (30% weight)
-            if cv.skills and job.required_skills:
-                matched_skills = set(cv.skills) & set(job.required_skills)
-                required_match = len(matched_skills) / len(job.required_skills) if job.required_skills else 0
-                preferred_match = len(set(cv.skills) & set(job.preferred_skills)) / len(
-                    job.preferred_skills) if job.preferred_skills else 0
-                scores['skills'] = round((required_match * 0.7 + preferred_match * 0.3) * 100)
+            # -------------------------
+            # Skills (30%)
+            # -------------------------
+            if cv.skills and job.skills_required:
+                matched_skills = set(cv.skills) & set(job.skills_required)
+                required_match = len(matched_skills) / len(job.skills_required) if job.skills_required else 0
+                preferred_match = (
+                    len(set(cv.skills) & set(job.skills_preferred)) / len(job.skills_preferred)
+                    if job.skills_preferred else 0
+                )
+                scores["skills"] = round((required_match * 0.7 + preferred_match * 0.3) * 100)
 
-            # Experience Level (20% weight)
-            exp_levels = ['entry', 'mid', 'senior']
-            user_exp = cv.experience[-1].level if cv.experience else 'entry'
-            user_exp_idx = exp_levels.index(user_exp.lower())
-            job_exp_idx = exp_levels.index(job.experience_level.lower())
-            # scores['experience'] = 100 if user_exp_idx >= job_exp_idx else round((user_exp_idx / job_exp_idx) * 100)
-            # Helps prevent divide by zero errors
-            def experience_score(_user_exp, _job_exp):
-                if _job_exp == 0:
-                    return 100 if _user_exp > 0 else 0
-                return 100 if _user_exp >= _job_exp else round((_user_exp / _job_exp) * 100)
+            # -------------------------
+            # Experience (20%)
+            # -------------------------
+            exp_levels = ["entry", "mid", "senior"]
+            user_exp = cv.experience[-1].level if cv.experience else "entry"
+            user_exp_idx = exp_levels.index(user_exp.lower()) if user_exp.lower() in exp_levels else 0
+            job_exp_idx = exp_levels.index(
+                job.experience_level.lower()) if job.experience_level and job.experience_level.lower() in exp_levels else 0
 
-            scores['experience'] = experience_score(user_exp_idx, job_exp_idx)
+            def experience_score(u, j):
+                if j == 0:
+                    return 100 if u > 0 else 0
+                return 100 if u >= j else round((u / j) * 100)
 
+            scores["experience"] = experience_score(user_exp_idx, job_exp_idx)
 
-            # Education Match (15% weight)
-            if cv.education and job.education_requirements:
-                # Assume `cv.education` contains qualification levels in your normalized form (e.g., 'bachelor', 'diploma', etc.)
+            # -------------------------
+            # Education (15%)
+            # -------------------------
+            if cv.education and job.required_qualifications:
                 user_degrees = {e.qualification.lower() for e in cv.education}
-
-                # Extract job-required qualification keys (e.g., 'bachelor', 'masters') where values are non-empty
-                job_degrees = {k for k, v in job.education_requirements.items() if v}
-
+                job_degrees = {req.lower() for req in job.required_qualifications}
                 if job_degrees:
-                    scores['education'] = round(len(user_degrees & job_degrees) / len(job_degrees) * 100)
-                else:
-                    scores['education'] = 0
+                    scores["education"] = round(len(user_degrees & job_degrees) / len(job_degrees) * 100)
 
-            # Industry Interest (10% weight)
-            if job.category and profile.industries_of_interest:
-                scores['industry'] = 100 if job.category in profile.industries_of_interest else 0
+            # -------------------------
+            # Industry (10%)
+            # -------------------------
+            if job.industry and profile.industries_of_interest:
+                scores["industry"] = 100 if job.industry in profile.industries_of_interest else 0
 
-            # Job Title Interest (10% weight)
+            # -------------------------
+            # Title (10%)
+            # -------------------------
             if profile.job_titles_of_interest:
-                scores['title'] = 100 if any(
+                scores["title"] = 100 if any(
                     title.lower() in job.title.lower()
                     for title in profile.job_titles_of_interest
                 ) else 0
 
-            # Location Compatibility (10% weight)
+            # -------------------------
+            # Location (10%)
+            # -------------------------
             location_match = False
-            if profile.location and job.city:
-                location_match = job.city.lower() == profile.location.lower()
-
+            job_city = (job.job_location.city if job.job_location else "").lower()
+            if profile.location and job_city:
+                location_match = job_city == profile.location.lower()
             if not location_match and profile.locations_of_interest:
-                location_match = job.city in profile.locations_of_interest
-            scores['location'] = 100 if location_match else 0
+                location_match = job_city in (loc.lower() for loc in profile.locations_of_interest)
 
-            # Remote Preference (5% weight)
-            scores['remote'] = 100 if (
-                    profile.remote_preference and
-                    job.remote_policy in ["REMOTE", "HYBRID"]
+            scores["location"] = 100 if location_match else 0
+
+            # -------------------------
+            # Remote (5%)
+            # -------------------------
+            scores["remote"] = 100 if (
+                    profile.remote_preference and (job.remote_only or job.remote_allowed)
             ) else 0
 
-            # Calculate weighted total
+            # -------------------------
+            # Weighted total
+            # -------------------------
             weights = {
-                'skills': 0.3,
-                'experience': 0.2,
-                'education': 0.15,
-                'industry': 0.1,
-                'title': 0.1,
-                'location': 0.1,
-                'remote': 0.05
+                "skills": 0.3,
+                "experience": 0.2,
+                "education": 0.15,
+                "industry": 0.1,
+                "title": 0.1,
+                "location": 0.1,
+                "remote": 0.05
             }
-            scores['total'] = sum(scores[cat] * weight for cat, weight in weights.items())
+            scores["total"] = sum(scores[cat] * weights[cat] for cat in weights)
 
             return {
-                'score_breakdown': {k: round(v, 1) for k, v in scores.items()},
-                'interpretation': self._get_match_interpretation(scores['total']),
-                'recommended_improvements': self._get_improvement_suggestions(scores)
+                "score_breakdown": {k: round(v, 1) for k, v in scores.items()},
+                "interpretation": self._get_match_interpretation(scores["total"]),
+                "recommended_improvements": self._get_improvement_suggestions(scores)
             }
 
     def _get_improvement_suggestions(self, scores: dict[str, int]):

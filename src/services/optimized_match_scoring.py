@@ -16,6 +16,8 @@ import json
 from src.cache.cache_redis import cache
 from src.monitoring.match_scoring_metrics import track_performance, analytics
 from src.database.models import Job, JobSeekerProfile
+# Utilities
+from src.utils.route_helpers import get_controller, get_service
 
 
 @dataclass
@@ -294,28 +296,30 @@ class MatchScoringOptimizer:
     
     def __init__(self):
         self.service = OptimizedMatchScoringService()
+        self.logger = get_service('logger')()(self.__class__.__name__)
     
     async def optimize_job_listing_scores(self, user_id: str, jobs: List[Job], 
                                         user_profile: JobSeekerProfile) -> List[Job]:
         """Optimize match score calculation for job listings"""
-        
+        self.logger.info("Inside Optimize Job Listings")
         if not user_id or not user_profile or not jobs:
             # Set all scores to None if no user or profile
             for job in jobs:
                 job.match_score = None
+            self.logger.info("Could not create match scores maybe user profile is not found")
             return jobs
         
         # Create batch request
-        request = BatchScoringRequest(
+        request_data = BatchScoringRequest(
             user_id=user_id,
             jobs=jobs,
             user_profile=user_profile,
             cache_ttl=1800  # 30 minutes
         )
-        
+        self.logger.info(f"Created Request for Batch Scoring : {request_data}")        
         # Calculate scores
-        results = await self.service.calculate_batch_scores(request)
-        
+        results = await self.service.calculate_batch_scores(request_data)
+        self.logger.info(f"Results after Service Execution : {results}")
         # Apply scores to jobs
         result_map = {result.job_id: result for result in results}
         
