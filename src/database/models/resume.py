@@ -29,6 +29,23 @@ class Experience(BaseModel):
             raise ValueError("Field cannot be empty")
         return v
 
+    @property
+    def level(self) -> str:
+        end = self.end_date or date.today()
+        duration_months = (end.year - self.start_date.year) * 12 + (end.month - self.start_date.month)
+
+        title = self.job_title.lower()
+        if any(x in title for x in ("senior", "lead", "manager", "director")):
+            return "senior"
+        if any(x in title for x in ("mid", "associate", "experienced")):
+            return "mid"
+
+        if duration_months < 12:
+            return "entry"
+        elif 12 <= duration_months < 36:
+            return "mid"
+        else:
+            return "senior"
 
 # Education
 class Education(BaseModel):

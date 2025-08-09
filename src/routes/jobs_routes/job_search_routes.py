@@ -26,6 +26,224 @@ from src.cache.cache_redis import cached
 jobs_search_route = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 
+@jobs_search_route.route('/job-match-analysis/<string:job_id>', methods=['GET'])
+@user_details
+async def get_job_match_analysis(user: User, job_id: str):
+    """
+    API endpoint to get detailed job match analysis for a specific job.
+
+    Args:
+        user (User): The authenticated user
+        job_id (str): The job ID to analyze
+
+    Returns:
+        JSON response with detailed match breakdown
+    """
+    from flask import jsonify
+    from src.cache.cache_redis import cache
+    from src.monitoring.match_scoring_metrics import track_performance, analytics
+
+    logger = get_service('logger')()("API = Get Match Scores")
+    # Track API usage
+    start_time = time.time()
+    logger.info(f"STARTED EXECUTION: {start_time}")
+    logger.info(f"Received job_id: {job_id}")
+    logger.info(f"User object: {user}")
+    logger.info(f"User UID: {user.uid if user else 'No user'}")
+
+    # Check if user is authenticated
+    if not user or not user.uid:
+        analytics.track_modal_interaction(
+            user_id="anonymous",
+            job_id=job_id,
+            action="unauthorized_access"
+        )
+        return jsonify({
+            'success': False,
+            'message': 'Authentication required for match analysis'
+        }), 401
+
+    try:
+        job_search_controller: JobsSearchController = get_controller('jobs_search')
+
+        # Check if job exists
+        job = await job_search_controller.get_complete_job_by_id(job_id=job_id)
+        if not job:
+            # Check fake data if enabled
+            logger.info("Job Not Found")
+            if store.is_fake_mode() and job_id in store.jobs:
+                job = store.jobs[job_id]
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Job not found'
+                }), 404
+        logger.info(f"Job found: {job.title} (ID: {job.job_id})")
+        # Check cache first (1-hour TTL)
+        cache_key = f"detailed_match_{user.uid}_{job_id}"
+        cached_analysis = cache.get(cache_key)
+
+        if cached_analysis:
+            logger.info(f"We found Cached Analyses: {cached_analysis}")
+            analytics.track_modal_interaction(
+                user_id=user.uid,
+                job_id=job_id,
+                action="opened",
+                additional_data={"cached": True, "response_time": time.time() - start_time}
+            )
+            return jsonify({
+                'success': True,
+                'match_analysis': cached_analysis,
+                'cached': True
+            })
+        logger.info(f"Trying to Obtain User Profile for User : {user.uid}")
+        # Get user profile
+        user_profile = await get_user_profile_for_matching(user_id=user.uid)
+        if not user_profile:
+            return jsonify({
+                'success': False,
+                'message': 'Please complete your profile to view match analysis'
+            }), 400
+
+        # Calculate detailed match analysis
+        logger.info(f"Calculating Match Analysis  with : {user_profile.first_name}")
+        match_analysis = await job_search_controller.calculate_job_match_score(job=job, user_id=user.uid)
+        logger.info(f"Match Score we found : {match_analysis}")
+        if not match_analysis:
+            return jsonify({
+                'success': False,
+                'message': 'Unable to calculate match analysis at this time'
+            }), 500
+
+        # Format the response data
+        formatted_analysis = {
+            'total_score': match_analysis.get('total_score', 0),
+            'job_title': job.title,
+            'company_name': getattr(job, 'company_name', 'Unknown Company'),
+            'skills_match': {
+                'score': match_analysis.get('score_breakdown', {}).get('skills_match', 0),
+                'matched_skills': match_analysis.get('matched_skills', []),
+                'missing_skills': match_analysis.get('missing_skills', []),
+                'explanation': match_analysis.get('skills_explanation', 'Skills analysis not available')
+            },
+            'experience_match': {
+                'score': match_analysis.get('score_breakdown', {}).get('experience_match', 0),
+                'details': {
+                    'required_years': getattr(job, 'experience_required', 'Not specified'),
+                    'user_years': getattr(user_profile, 'years_experience', 'Not specified'),
+                    'industry_match': match_analysis.get('industry_match', 'Not specified')
+                },
+                'explanation': match_analysis.get('experience_explanation', 'Experience analysis not available')
+            },
+            'location_match': {
+                'score': match_analysis.get('score_breakdown', {}).get('location_match', 0),
+                'details': {
+                    'job_location': getattr(job, 'location', 'Not specified'),
+                    'user_location': getattr(user_profile, 'location', 'Not specified'),
+                    'remote_option': getattr(job, 'remote_work', 'Not specified')
+                },
+                'explanation': match_analysis.get('location_explanation', 'Location analysis not available')
+            },
+            'salary_match': {
+                'score': match_analysis.get('score_breakdown', {}).get('salary_match', 0),
+                'details': {
+                    'offered_range': f"R{getattr(job, 'salary_min', 0):,} - R{getattr(job, 'salary_max', 0):,}" if hasattr(
+                        job, 'salary_min') else 'Not specified',
+                    'expected_range': f"R{getattr(user_profile, 'expected_salary_min', 0):,} - R{getattr(user_profile, 'expected_salary_max', 0):,}" if hasattr(
+                        user_profile, 'expected_salary_min') else 'Not specified',
+                    'match_level': match_analysis.get('salary_match_level', 'Not specified')
+                },
+                'explanation': match_analysis.get('salary_explanation', 'Salary analysis not available')
+            },
+            'interpretation': match_analysis.get('interpretation', 'Match analysis completed successfully')
+        }
+
+        # Cache the result for 1 hour
+        cache.set(cache_key, formatted_analysis, ttl=60 * 60)
+
+        # Track successful modal interaction
+        analytics.track_modal_interaction(
+            user_id=user.uid,
+            job_id=job_id,
+            action="opened",
+            additional_data={
+                "cached": False,
+                "response_time": time.time() - start_time,
+                "total_score": formatted_analysis.get('total_score', 0)
+            }
+        )
+
+        return jsonify({
+            'success': True,
+            'match_analysis': formatted_analysis,
+            'cached': False
+        })
+
+    except Exception as e:
+        print(f"Error in job match analysis API: {e}")
+
+        # Track error
+        analytics.track_modal_interaction(
+            user_id=user.uid if user else "unknown",
+            job_id=job_id,
+            action="error",
+            additional_data={"error": str(e), "response_time": time.time() - start_time}
+        )
+
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while analyzing job match'
+        }), 500
+
+
+@jobs_search_route.route('/api/jobs/<string:job_slug>/match-analysis', methods=['GET'])
+@flask_error_handler
+@user_details
+async def get_job_match_analysis_by_slug(user: User, job_slug: str):
+    """
+    API endpoint to get detailed job match analysis using job slug.
+
+    Args:
+        user (User): The authenticated user
+        job_slug (str): The job slug to analyze
+
+    Returns:
+        JSON response with detailed match breakdown
+    """
+    from flask import jsonify
+
+    # Check if user is authenticated
+    if not user or not user.uid:
+        return jsonify({
+            'success': False,
+            'message': 'Authentication required for match analysis'
+        }), 401
+
+    try:
+        job_search_controller: JobsSearchController = get_controller('jobs_search')
+
+        # Get job by slug (assuming there's a method for this)
+        # If not available, we'll need to implement it or use job_id
+        job = await job_search_controller.get_job_by_slug(job_slug) if hasattr(job_search_controller,
+                                                                               'get_job_by_slug') else None
+
+        if not job:
+            return jsonify({
+                'success': False,
+                'message': 'Job not found'
+            }), 404
+
+        # Redirect to the job_id endpoint
+        return await get_job_match_analysis(user, job.job_id)
+
+    except Exception as e:
+        print(f"Error in job match analysis by slug API: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while analyzing job match'
+        }), 500
+
+
 class FakeDataHandler:
     @staticmethod
     def get_job(job_id: str) -> Optional[Job]:
@@ -88,15 +306,19 @@ def get_fake_jobs(keyword: str = None) -> list[Job]:
     return list(store.jobs.values())
 
 
-@cached(ttl=30 * 60)  # 30-minute cache TTL
+# @cached(ttl=30 * 60)  # 30-minute cache TTL
 async def get_user_profile_for_matching(user_id: str) -> Optional[JobSeekerProfile]:
     """Get user profile for match scoring with caching"""
+    logger = get_service("logger")()("GET Profile for Job Matching")
     if not user_id:
         return None
     
     try:
+        logger.info(f"Will Now try to obtain Profile for Job Matching")
         profile_controller = get_controller('job_seeker_profile')
-        return await profile_controller.get_complete_profile_by_uid(user_id)
+        job_seeker_profile = await profile_controller.get_complete_profile_by_uid(user_uid=user_id)
+        logger.info(f"We found the Seeker Profile : {job_seeker_profile.first_name}")
+        return job_seeker_profile
     except Exception as e:
         print(f"Error fetching user profile for matching: {e}")
         return None
@@ -114,6 +336,8 @@ async def calculate_batch_match_scores(jobs: List[Job], user: User, job_search_c
     Returns:
         List of jobs with match_score attribute added
     """
+    from src.services.optimized_match_scoring import optimizer
+
     logger = get_service('logger')()("Batch Match Scores :")
 
     if not user or not user.uid or not jobs:
@@ -125,8 +349,8 @@ async def calculate_batch_match_scores(jobs: List[Job], user: User, job_search_c
     
     try:
         # Get user profile with caching
-        user_profile = await get_user_profile_for_matching(user.uid)
-        
+        user_profile = await get_user_profile_for_matching(user_id=user.uid)
+        logger.info(f"What we Found : {user_profile}")
         if not user_profile:
             # User has no profile - return jobs without match scores
             for job in jobs:
@@ -135,12 +359,12 @@ async def calculate_batch_match_scores(jobs: List[Job], user: User, job_search_c
             return jobs
         
         # Use optimized batch scoring service
-        from src.services.optimized_match_scoring import optimizer
+
         logger.info("We are now loading Optimized Job Match Scores")
         return await optimizer.optimize_job_listing_scores(user.uid, jobs, user_profile)
                 
     except Exception as e:
-        print(f"Error in batch match scoring: {e}")
+        logger.error(f"Error in batch match scoring: {e}")
         # Fallback: set all match scores to None
         for job in jobs:
             job.match_score = None
@@ -741,215 +965,6 @@ async def job_by_reference(user: User, reference: str):
         return render_template('jobs/error_404.html'), 404
     context = {'current_user': user,'job': job}
     return render_template('jobs/reference.html', **context)
-
-
-@jobs_search_route.route('/api/jobs/<string:job_id>/match-analysis', methods=['GET'])
-@flask_error_handler
-@user_details
-async def get_job_match_analysis(user: User, job_id: str):
-    """
-    API endpoint to get detailed job match analysis for a specific job.
-    
-    Args:
-        user (User): The authenticated user
-        job_id (str): The job ID to analyze
-        
-    Returns:
-        JSON response with detailed match breakdown
-    """
-    from flask import jsonify
-    from src.cache.cache_redis import cache
-    from src.monitoring.match_scoring_metrics import track_performance, analytics
-    from src.services.optimized_match_scoring import optimizer
-    
-    # Track API usage
-    start_time = time.time()
-    
-    # Check if user is authenticated
-    if not user or not user.uid:
-        analytics.track_modal_interaction(
-            user_id="anonymous", 
-            job_id=job_id, 
-            action="unauthorized_access"
-        )
-        return jsonify({
-            'success': False,
-            'message': 'Authentication required for match analysis'
-        }), 401
-    
-    try:
-        job_search_controller: JobsSearchController = get_controller('jobs_search')
-        
-        # Check if job exists
-        job = await job_search_controller.get_job_by_id(job_id)
-        if not job:
-            # Check fake data if enabled
-            if store.is_fake_mode() and job_id in store.jobs:
-                job = store.jobs[job_id]
-            else:
-                return jsonify({
-                    'success': False,
-                    'message': 'Job not found'
-                }), 404
-        
-        # Check cache first (1-hour TTL)
-        cache_key = f"detailed_match_{user.uid}_{job_id}"
-        cached_analysis = cache.get(cache_key)
-        
-        if cached_analysis:
-            analytics.track_modal_interaction(
-                user_id=user.uid, 
-                job_id=job_id, 
-                action="opened",
-                additional_data={"cached": True, "response_time": time.time() - start_time}
-            )
-            return jsonify({
-                'success': True,
-                'match_analysis': cached_analysis,
-                'cached': True
-            })
-        
-        # Get user profile
-        user_profile = await get_user_profile_for_matching(user.uid)
-        if not user_profile:
-            return jsonify({
-                'success': False,
-                'message': 'Please complete your profile to view match analysis'
-            }), 400
-        
-        # Calculate detailed match analysis
-        match_analysis = await job_search_controller.calculate_job_match_score(job_id, user.uid)
-        
-        if not match_analysis:
-            return jsonify({
-                'success': False,
-                'message': 'Unable to calculate match analysis at this time'
-            }), 500
-        
-        # Format the response data
-        formatted_analysis = {
-            'total_score': match_analysis.get('total_score', 0),
-            'job_title': job.title,
-            'company_name': getattr(job, 'company_name', 'Unknown Company'),
-            'skills_match': {
-                'score': match_analysis.get('score_breakdown', {}).get('skills_match', 0),
-                'matched_skills': match_analysis.get('matched_skills', []),
-                'missing_skills': match_analysis.get('missing_skills', []),
-                'explanation': match_analysis.get('skills_explanation', 'Skills analysis not available')
-            },
-            'experience_match': {
-                'score': match_analysis.get('score_breakdown', {}).get('experience_match', 0),
-                'details': {
-                    'required_years': getattr(job, 'experience_required', 'Not specified'),
-                    'user_years': getattr(user_profile, 'years_experience', 'Not specified'),
-                    'industry_match': match_analysis.get('industry_match', 'Not specified')
-                },
-                'explanation': match_analysis.get('experience_explanation', 'Experience analysis not available')
-            },
-            'location_match': {
-                'score': match_analysis.get('score_breakdown', {}).get('location_match', 0),
-                'details': {
-                    'job_location': getattr(job, 'location', 'Not specified'),
-                    'user_location': getattr(user_profile, 'location', 'Not specified'),
-                    'remote_option': getattr(job, 'remote_work', 'Not specified')
-                },
-                'explanation': match_analysis.get('location_explanation', 'Location analysis not available')
-            },
-            'salary_match': {
-                'score': match_analysis.get('score_breakdown', {}).get('salary_match', 0),
-                'details': {
-                    'offered_range': f"R{getattr(job, 'salary_min', 0):,} - R{getattr(job, 'salary_max', 0):,}" if hasattr(job, 'salary_min') else 'Not specified',
-                    'expected_range': f"R{getattr(user_profile, 'expected_salary_min', 0):,} - R{getattr(user_profile, 'expected_salary_max', 0):,}" if hasattr(user_profile, 'expected_salary_min') else 'Not specified',
-                    'match_level': match_analysis.get('salary_match_level', 'Not specified')
-                },
-                'explanation': match_analysis.get('salary_explanation', 'Salary analysis not available')
-            },
-            'interpretation': match_analysis.get('interpretation', 'Match analysis completed successfully')
-        }
-        
-        # Cache the result for 1 hour
-        cache.set(cache_key, formatted_analysis, ttl=60 * 60)
-        
-        # Track successful modal interaction
-        analytics.track_modal_interaction(
-            user_id=user.uid, 
-            job_id=job_id, 
-            action="opened",
-            additional_data={
-                "cached": False, 
-                "response_time": time.time() - start_time,
-                "total_score": formatted_analysis.get('total_score', 0)
-            }
-        )
-        
-        return jsonify({
-            'success': True,
-            'match_analysis': formatted_analysis,
-            'cached': False
-        })
-        
-    except Exception as e:
-        print(f"Error in job match analysis API: {e}")
-        
-        # Track error
-        analytics.track_modal_interaction(
-            user_id=user.uid if user else "unknown", 
-            job_id=job_id, 
-            action="error",
-            additional_data={"error": str(e), "response_time": time.time() - start_time}
-        )
-        
-        return jsonify({
-            'success': False,
-            'message': 'An error occurred while analyzing job match'
-        }), 500
-
-
-@jobs_search_route.route('/api/jobs/<string:job_slug>/match-analysis', methods=['GET'])
-@flask_error_handler
-@user_details
-async def get_job_match_analysis_by_slug(user: User, job_slug: str):
-    """
-    API endpoint to get detailed job match analysis using job slug.
-    
-    Args:
-        user (User): The authenticated user
-        job_slug (str): The job slug to analyze
-        
-    Returns:
-        JSON response with detailed match breakdown
-    """
-    from flask import jsonify
-    
-    # Check if user is authenticated
-    if not user or not user.uid:
-        return jsonify({
-            'success': False,
-            'message': 'Authentication required for match analysis'
-        }), 401
-    
-    try:
-        job_search_controller: JobsSearchController = get_controller('jobs_search')
-        
-        # Get job by slug (assuming there's a method for this)
-        # If not available, we'll need to implement it or use job_id
-        job = await job_search_controller.get_job_by_slug(job_slug) if hasattr(job_search_controller, 'get_job_by_slug') else None
-        
-        if not job:
-            return jsonify({
-                'success': False,
-                'message': 'Job not found'
-            }), 404
-        
-        # Redirect to the job_id endpoint
-        return await get_job_match_analysis(user, job.job_id)
-        
-    except Exception as e:
-        print(f"Error in job match analysis by slug API: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'An error occurred while analyzing job match'
-        }), 500
 
 
 ##############################################################################################################

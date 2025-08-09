@@ -1,11 +1,14 @@
 # Standard Library
 from datetime import datetime, timezone
 
+
 # Flask & Third-Party
 from flask import Flask
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
+from src.cache.cache_redis import cached
 # Controllers
 from src.controllers.controller import Controllers, error_handler
 
@@ -87,15 +90,22 @@ class JobSeekerProfilesController(Controllers):
     async def get_complete_profile_by_uid(self, user_uid: str) -> JobSeekerProfile | None:
         """Fetch a profile or return None if missing."""
         if not (isinstance(user_uid, str) and user_uid.strip()):
+            self.logger.warning("Invalid user_uid provided for get_complete_profile_by_uid")
             return None
+
         with self.get_session() as session:
             seeker_orm = (
                 session
                 .query(JobSeekerProfileORM)
-                .options(joinedLoad(JobSeekerProfileORM.resumes_list))
+                .options(joinedload(JobSeekerProfileORM.resumes_list))
                 .filter_by(user_uid=user_uid)
                 .first())
-            return JobSeekerProfile(**seeker_orm.to_dict(include_relationships=True)) if seeker_orm else None
+            job_seeker_profile = JobSeekerProfile(
+                **seeker_orm.to_dict(include_relationships=True)) if seeker_orm else None
+            if job_seeker_profile:
+                self.logger.info(f"Found Job Seeker Profile with Resumes List : {job_seeker_profile}")
+
+            return job_seeker_profile
 
 
     @error_handler

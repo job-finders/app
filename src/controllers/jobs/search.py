@@ -226,6 +226,20 @@ class JobsSearchController(Controllers):
             return Job(**job_orm.to_dict()) if job_orm else None
 
     @error_handler
+    async def get_complete_job_by_id(self, job_id: str) -> Job | None:
+        """
+
+        :param job_id:
+        :return:
+        """
+        with self.get_session() as session:
+            job_orm = (
+                session.query(JobsORM).filter_by(job_id=job_id)
+                .options(joinedload(JobsORM.category)).first()
+            )
+            return Job(**job_orm.to_dict(include_relationship=True)) if job_orm else None
+
+    @error_handler
     async def get_application_by_id(self, application_id: str) -> JobApplication | None:
         """Get a job application by ID with all related data"""
         if not (isinstance(application_id, str) and application_id.strip()):
@@ -835,7 +849,7 @@ class JobsSearchController(Controllers):
             return 0.0
 
         scores = {}
-
+        self.logger.info(f"Scores : {scores}")
         # -------------------------
         # Location Match (40%)
         # -------------------------
@@ -868,7 +882,7 @@ class JobsSearchController(Controllers):
             location_score = max(location_score, 90)
 
         scores["location"] = location_score
-
+        self.logger.info(f"Scores : {scores}")
         # -------------------------
         # Title Match (30%)
         # -------------------------
@@ -886,7 +900,7 @@ class JobsSearchController(Controllers):
                     title_score = max(title_score, 60)
 
         scores["title"] = title_score
-
+        self.logger.info(f"Scores : {scores}")
         # -------------------------
         # Experience Match (20%)
         # -------------------------
@@ -911,7 +925,7 @@ class JobsSearchController(Controllers):
                 experience_score = 40
 
         scores["experience"] = experience_score
-
+        self.logger.info(f"Scores : {scores}")
         # -------------------------
         # Industry Match (10%)
         # -------------------------
@@ -925,7 +939,7 @@ class JobsSearchController(Controllers):
                     industry_score = max(industry_score, 70)
 
         scores["industry"] = industry_score
-
+        self.logger.info(f"Scores : {scores}")
         # -------------------------
         # Weighted Sum
         # -------------------------
@@ -939,173 +953,261 @@ class JobsSearchController(Controllers):
 
         return round(total_score, 1)
 
-
     @error_handler
-    async def calculate_job_match_score(self, job_id: str, user_id: str) -> dict:
+    async def calculate_job_match_score(self, job: Job, user_id: str) -> dict:
         """
         Deep match score for a single job against a candidate's profile & CV.
+        Returns detailed breakdown, explanations, and improvement suggestions.
         """
-        if not (isinstance(job_id, str) and job_id.strip()):
-            self.logger.error("Invalid Job ID")
-            return {}
-
         if not (isinstance(user_id, str) and user_id.strip()):
             self.logger.error("Invalid User ID")
             return {}
 
+        self.logger.info(f"Calculating job match score for user_id: {user_id}")
+
         with self.get_session() as session:
             profile_orm = session.query(JobSeekerProfileORM).get(user_id)
-            cv_orm = session.query(JobSeekerCVORM).filter_by(user_uid=user_id, is_primary=True).first()
-            job_orm = session.query(JobsORM).get(job_id)
-
+            cv_orm = (
+                session.query(JobSeekerCVORM)
+                .options(
+                    joinedload(JobSeekerCVORM.experience),
+                    joinedload(JobSeekerCVORM.education),
+                    joinedload(JobSeekerCVORM.certifications),
+                    joinedload(JobSeekerCVORM.languages),
+                    joinedload(JobSeekerCVORM.projects),
+                    joinedload(JobSeekerCVORM.publications),
+                    joinedload(JobSeekerCVORM.awards),
+                    joinedload(JobSeekerCVORM.custom_sections),
+                    joinedload(JobSeekerCVORM.jobseeker_profile)
+                )
+                .filter_by(user_uid=user_id, is_primary=True)
+                .first()
+            )
             profile = JobSeekerProfile(**profile_orm.to_dict()) if profile_orm else None
-            cv = JobSeekerCV(**cv_orm.to_dict()) if cv_orm else None
-            job = Job(**job_orm.to_dict()) if job_orm else None
+            cv = JobSeekerCV(**cv_orm.to_dict(include_relationships=True)) if cv_orm else None
 
             if not profile or not cv or not job:
+                self.logger.error(f"Missing profile, CV, or job data for user_id: {user_id}")
                 return {}
 
             scores = {
-                "skills": 0,
-                "experience": 0,
-                "education": 0,
-                "industry": 0,
-                "title": 0,
-                "location": 0,
-                "remote": 0,
-                "total": 0
+                "skills_match": 0,
+                "experience_match": 0,
+                "education_match": 0,
+                "industry_match": 0,
+                "title_match": 0,
+                "location_match": 0,
+                "remote_match": 0,
+                "salary_match": 0,
+                "total_score": 0
             }
 
-            # -------------------------
-            # Skills (30%)
-            # -------------------------
-            if cv.skills and job.skills_required:
-                matched_skills = set(cv.skills) & set(job.skills_required)
-                required_match = len(matched_skills) / len(job.skills_required) if job.skills_required else 0
-                preferred_match = (
-                    len(set(cv.skills) & set(job.skills_preferred)) / len(job.skills_preferred)
-                    if job.skills_preferred else 0
-                )
-                scores["skills"] = round((required_match * 0.7 + preferred_match * 0.3) * 100)
+            # --- SKILLS MATCH (30%) ---
+            matched_skills = []
+            missing_skills = []
+            if cv.skills and (job.required_skills or job.preferred_skills):
+                required_skills = set(job.required_skills or [])
+                preferred_skills = set(job.preferred_skills or [])
+                user_skills = set(cv.skills)
 
-            # -------------------------
-            # Experience (20%)
-            # -------------------------
+                matched_required = user_skills & required_skills
+                matched_preferred = user_skills & preferred_skills
+
+                # Calculate weighted skill score: 70% required, 30% preferred
+                required_match_ratio = len(matched_required) / len(required_skills) if required_skills else 0
+                preferred_match_ratio = len(matched_preferred) / len(preferred_skills) if preferred_skills else 0
+
+                scores["skills_match"] = round((required_match_ratio * 0.7 + preferred_match_ratio * 0.3) * 100, 1)
+
+                matched_skills = list(matched_required | matched_preferred)
+                missing_skills = list(required_skills - user_skills)
+
+            # --- EXPERIENCE MATCH (20%) ---
             exp_levels = ["entry", "mid", "senior"]
-            user_exp = cv.experience[-1].level if cv.experience else "entry"
-            user_exp_idx = exp_levels.index(user_exp.lower()) if user_exp.lower() in exp_levels else 0
-            job_exp_idx = exp_levels.index(
-                job.experience_level.lower()) if job.experience_level and job.experience_level.lower() in exp_levels else 0
+            user_exp_level = (cv.experience[-1].level if cv.experience else "entry").lower()
+            job_exp_level = (job.experience_level or "entry").lower()
+
+            user_exp_idx = exp_levels.index(user_exp_level) if user_exp_level in exp_levels else 0
+            job_exp_idx = exp_levels.index(job_exp_level) if job_exp_level in exp_levels else 0
 
             def experience_score(u, j):
                 if j == 0:
                     return 100 if u > 0 else 0
                 return 100 if u >= j else round((u / j) * 100)
 
-            scores["experience"] = experience_score(user_exp_idx, job_exp_idx)
+            scores["experience_match"] = experience_score(user_exp_idx, job_exp_idx)
 
-            # -------------------------
-            # Education (15%)
-            # -------------------------
-            if cv.education and job.required_qualifications:
+            # --- EDUCATION MATCH (15%) ---
+            if cv.education and job.education_requirements:
                 user_degrees = {e.qualification.lower() for e in cv.education}
-                job_degrees = {req.lower() for req in job.required_qualifications}
+                job_degrees = {req.lower() for req in job.education_requirements}
                 if job_degrees:
-                    scores["education"] = round(len(user_degrees & job_degrees) / len(job_degrees) * 100)
+                    scores["education_match"] = round(len(user_degrees & job_degrees) / len(job_degrees) * 100, 1)
 
-            # -------------------------
-            # Industry (10%)
-            # -------------------------
-            if job.industry and profile.industries_of_interest:
-                scores["industry"] = 100 if job.industry in profile.industries_of_interest else 0
+            # --- INDUSTRY MATCH (10%) ---
+            if job.category and profile.industries_of_interest:
+                scores["industry_match"] = 100 if job.category.name in profile.industries_of_interest else 0
 
-            # -------------------------
-            # Title (10%)
-            # -------------------------
+            # --- TITLE MATCH (10%) ---
             if profile.job_titles_of_interest:
-                scores["title"] = 100 if any(
+                scores["title_match"] = 100 if any(
                     title.lower() in job.title.lower()
                     for title in profile.job_titles_of_interest
                 ) else 0
 
-            # -------------------------
-            # Location (10%)
-            # -------------------------
+            # --- LOCATION MATCH (10%) ---
             location_match = False
-            job_city = (job.job_location.city if job.job_location else "").lower()
-            if profile.location and job_city:
-                location_match = job_city == profile.location.lower()
+            job_city = (job.city or "").lower()
+            user_location = (profile.location or "").lower()
+            if user_location and job_city:
+                location_match = job_city == user_location
             if not location_match and profile.locations_of_interest:
                 location_match = job_city in (loc.lower() for loc in profile.locations_of_interest)
 
-            scores["location"] = 100 if location_match else 0
+            scores["location_match"] = 100 if location_match else 0
 
-            # -------------------------
-            # Remote (5%)
-            # -------------------------
-            scores["remote"] = 100 if (
-                    profile.remote_preference and (job.remote_only or job.remote_allowed)
-            ) else 0
+            # --- REMOTE MATCH (5%) ---
+            # Check if user prefers remote and job allows remote/hybrid
+            job_remote = (job.remote_policy or "").upper()
+            profile_remote = bool(profile.remote_preference)
+            scores["remote_match"] = 100 if (profile_remote and job_remote in ["HYBRID", "REMOTE"]) else 0
 
-            # -------------------------
-            # Weighted total
-            # -------------------------
+            # --- SALARY MATCH (NEW: 10%) ---
+            salary_score = 0
+            salary_match_level = "Not specified"
+            salary_explanation = "Salary analysis not available"
+            try:
+                # Assume salary_min/max on job and expected_salary_min/max on profile are numbers (ints/floats)
+                job_min = getattr(job, 'salary_min', None)
+                job_max = getattr(job, 'salary_max', None)
+                exp_min = getattr(profile, 'expected_salary_min', None)
+                exp_max = getattr(profile, 'expected_salary_max', None)
+
+                if None not in (job_min, job_max, exp_min, exp_max):
+                    # Check range overlap
+                    overlap_min = max(job_min, exp_min)
+                    overlap_max = min(job_max, exp_max)
+                    overlap = max(0, overlap_max - overlap_min)
+
+                    job_range = job_max - job_min
+                    exp_range = exp_max - exp_min
+
+                    if overlap > 0:
+                        # Good overlap, score relative to how much overlap covers job range
+                        coverage_ratio = overlap / job_range if job_range > 0 else 0
+                        salary_score = round(coverage_ratio * 100, 1)
+                        salary_match_level = "Good"
+                        salary_explanation = f"Your expected salary range overlaps well with the offered range."
+                    else:
+                        salary_score = 0
+                        salary_match_level = "Poor"
+                        salary_explanation = "No overlap between your expected salary and the job's offered range."
+                else:
+                    salary_explanation = "Salary information incomplete for comparison."
+            except Exception as e:
+                self.logger.error(f"Error calculating salary match: {e}")
+
+            scores["salary_match"] = salary_score
+
+            # --- TOTAL SCORE (weighted sum) ---
             weights = {
-                "skills": 0.3,
-                "experience": 0.2,
-                "education": 0.15,
-                "industry": 0.1,
-                "title": 0.1,
-                "location": 0.1,
-                "remote": 0.05
+                "skills_match": 0.3,
+                "experience_match": 0.2,
+                "education_match": 0.15,
+                "industry_match": 0.1,
+                "title_match": 0.1,
+                "location_match": 0.1,
+                "remote_match": 0.05,
+                "salary_match": 0.1  # Added salary with weight 10%
             }
-            scores["total"] = sum(scores[cat] * weights[cat] for cat in weights)
 
+            total_score = sum(scores[cat] * weights.get(cat, 0) for cat in scores)
+            scores["total_score"] = round(total_score, 1)
+
+            # --- EXPLANATIONS ---
+            explanations = {
+                "skills_explanation": self._build_skills_explanation(matched_skills, missing_skills,
+                                                                     len(job.required_skills or [])),
+                "experience_explanation": self._build_experience_explanation(user_exp_level, job_exp_level),
+                "education_explanation": self._build_education_explanation(scores["education_match"]),
+                "industry_explanation": "Industry match found." if scores[
+                                                                       "industry_match"] == 100 else "Industry does not match your interests.",
+                "title_explanation": "Job title matches your interests." if scores[
+                                                                                "title_match"] == 100 else "Job title does not match your interests.",
+                "location_explanation": "Job location matches your preferred location." if scores[
+                                                                                               "location_match"] == 100 else "Job location does not match your preferred locations.",
+                "remote_explanation": "Job supports your remote work preference." if scores[
+                                                                                         "remote_match"] == 100 else "Job does not support your remote work preference.",
+                "salary_explanation": salary_explanation
+            }
+
+            # --- RECOMMENDED IMPROVEMENTS ---
+            recommended_improvements = self._get_improvement_suggestions(scores, missing_skills)
+
+            # --- FINAL RETURN ---
             return {
-                "score_breakdown": {k: round(v, 1) for k, v in scores.items()},
-                "interpretation": self._get_match_interpretation(scores["total"]),
-                "recommended_improvements": self._get_improvement_suggestions(scores)
+                "total_score": scores["total_score"],
+                "score_breakdown": {k: round(v, 1) for k, v in scores.items() if k != "total_score"},
+                "matched_skills": matched_skills,
+                "missing_skills": missing_skills,
+                **explanations,
+                "salary_match_level": salary_match_level,
+                "interpretation": self._get_match_interpretation(scores["total_score"]),
+                "recommended_improvements": recommended_improvements
             }
 
-    def _get_improvement_suggestions(self, scores: dict[str, int]):
-        """
-            create improvement suggestions give scores
-        :param scores:
-        :return:
-        """
-        pass
+    def _build_skills_explanation(self, matched_skills, missing_skills, total_required):
+        return (
+            f"You matched {len(matched_skills)} skill(s). "
+            f"Missing {len(missing_skills)} required skill(s): {', '.join(missing_skills)}."
+            if missing_skills else
+            f"You matched all required skills!"
+        )
 
-    @staticmethod
-    def _get_match_interpretation(score: float) -> str:
-        """
-        Convert a numerical job match score into a human-readable interpretation.
-
-        This feedback helps the user understand how closely their profile
-        aligns with the job and what that alignment means qualitatively.
-
-        Args:
-            score (float): The total match score (0 to 100).
-
-        Returns:
-            str: Interpretation string with emoji and guidance.
-        """
-
-        score = round(score, 1)
-
-        if score >= 90:
-            return "🎯 Excellent Match - Strong alignment with all key requirements and preferences"
-        elif score >= 80:
-            return "🌟 Very Strong Match - Meets most requirements and aligns well with preferences"
-        elif score >= 70:
-            return "👍 Strong Match - Good overall fit with some areas for improvement"
-        elif score >= 60:
-            return "💡 Good Potential - Matches key criteria but consider enhancing some areas"
-        elif score >= 50:
-            return "🤔 Moderate Match - Partial alignment, might require additional qualifications"
-        elif score >= 40:
-            return "📉 Fair Match - Some relevant aspects but significant gaps exist"
+    def _build_experience_explanation(self, user_exp_level, job_exp_level):
+        if user_exp_level == job_exp_level:
+            return f"Your experience level ({user_exp_level.title()}) matches the job requirement."
+        elif exp_levels.index(user_exp_level) > exp_levels.index(job_exp_level):
+            return f"Your experience level ({user_exp_level.title()}) exceeds the job requirement ({job_exp_level.title()})."
         else:
-            return "⚠️ Low Match - Limited alignment with position requirements"
+            return f"Your experience level ({user_exp_level.title()}) is below the job requirement ({job_exp_level.title()})."
+
+    def _build_education_explanation(self, education_score):
+        if education_score == 100:
+            return "You meet all the education requirements."
+        elif education_score > 0:
+            return "You meet some of the education requirements."
+        else:
+            return "You do not meet the education requirements."
+
+    def _get_improvement_suggestions(self, scores, missing_skills):
+        suggestions = []
+        if scores["skills_match"] < 70:
+            if missing_skills:
+                suggestions.append(f"Consider gaining skills in: {', '.join(missing_skills)}.")
+            else:
+                suggestions.append("Add more relevant skills to improve your match.")
+        if scores["experience_match"] < 70:
+            suggestions.append("Gain more experience related to this job's level.")
+        if scores["education_match"] < 70:
+            suggestions.append("Consider further education or certifications.")
+        if scores["location_match"] < 50:
+            suggestions.append("Expand your preferred job locations or consider remote jobs.")
+        if scores["salary_match"] < 50:
+            suggestions.append("Adjust your salary expectations or seek jobs with better salary ranges.")
+        return suggestions
+
+    def _get_match_interpretation(self, total_score):
+        if total_score >= 90:
+            return "🏆 Excellent Match - You are highly suited for this job!"
+        elif total_score >= 75:
+            return "👍 Strong Match - Good overall fit with some areas for improvement."
+        elif total_score >= 50:
+            return "👌 Moderate Match - Some gaps exist; consider improving key areas."
+        elif total_score > 30:
+            return "🤔 Weak Match - Significant gaps; focus on improving your profile."
+        else:
+            return "🚫 Poor Match - Not a good fit currently; consider other roles or upskilling."
 
     @error_handler
     async def get_similar_jobs(self, job_id: str, limit: int = 12) -> list[Job]:
