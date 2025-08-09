@@ -2,6 +2,7 @@
 
 {% block title %}Search Results for “{{ filters.search_keyword }}”{% if total_pages > 1 %} — Page {{ page }}{% endif %}{% endblock %}
 {% block custom_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobs/job-listings.css') }}">
     <style>
     @media (max-width: 767px) {
       #filtersSidebar {
@@ -30,10 +31,60 @@
         position: static;
       }
     }
+    
+    /* Network status indicator */
+    .network-status {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 10000;
+        display: none;
+    }
+    
+    .network-status.offline {
+        background-color: #e74c3c;
+        color: white;
+        display: block;
+    }
+    
+    .network-status.online {
+        background-color: #27ae60;
+        color: white;
+        display: block;
+        animation: fadeOut 3s forwards;
+    }
+    
+    @keyframes fadeOut {
+        0% { opacity: 1; }
+        70% { opacity: 1; }
+        100% { opacity: 0; display: none; }
+    }
     </style>
+    <noscript>
+        <style>
+            .btn-match-details {
+                display: none !important;
+            }
+            .match-score-badge::after {
+                content: " (JavaScript required for details)";
+                font-size: 0.7em;
+                color: #666;
+                display: block;
+            }
+        </style>
+    </noscript>
 {% endblock %}
 
 {% block content %}
+    <!-- Network Status Indicator -->
+    <div class="network-status" id="networkStatus">
+        <i class="fas fa-wifi"></i>
+        <span class="status-text">Connection restored</span>
+    </div>
+    
     <div class="container mx-auto px-4 py-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
@@ -192,6 +243,7 @@
 {% endblock %}
 
 {% block scripts %}
+    <script src="{{ url_for('static', filename='js/jobs/match-details-modal.js') }}"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Mobile filter toggle

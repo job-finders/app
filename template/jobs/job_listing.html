@@ -1,0 +1,614 @@
+{% extends "layouts/page.html" %}
+
+{% block meta %}
+    <meta property="og:url" content="{{ url_for('home.get_home', _external=True) }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="jobfinders.site Job | {{ term|title }}" />
+    <meta property="og:description" content="{{ term|title }}" />
+    <meta property="og:image" content="https://jobfinders.site/static/images/jobfinder.jpg" />
+{% endblock %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobs/job-listings.css') }}">
+    <noscript>
+        <style>
+            .btn-match-details {
+                display: none !important;
+            }
+            .match-score-badge::after {
+                content: " (JavaScript required for details)";
+                font-size: 0.7em;
+                color: #666;
+                display: block;
+            }
+        </style>
+    </noscript>
+    <style>
+        /* Loading state for match scores */
+        .match-score-badge.loading {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+        }
+        
+        @keyframes loading-shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .match-score-badge.calculation-failed {
+            background-color: #ffeaa7;
+            border-color: #fdcb6e;
+            color: #2d3436;
+        }
+        
+        /* Network status indicator */
+        .network-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10000;
+            display: none;
+        }
+        
+        .network-status.offline {
+            background-color: #e74c3c;
+            color: white;
+            display: block;
+        }
+        
+        .network-status.online {
+            background-color: #27ae60;
+            color: white;
+            display: block;
+            animation: fadeOut 3s forwards;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Network Status Indicator -->
+    <div class="network-status" id="networkStatus">
+        <i class="fas fa-wifi"></i>
+        <span class="status-text">Connection restored</span>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-9 col-md-12 col-sm-12">
+            <!-- Job Search Bar -->
+            {% include 'job/cards/search_bar.html' %}
+            
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="card-title font-weight-bold">{{ term|title }}</h2>
+                    <div class="desktop-buttons">
+                        <a class="btn btn-sm btn-default btn-outline-danger"
+                           href="{{ url_for('jobs.job_search', search_term=previous_term) }}">
+                            <i class="ti-arrow-left"></i> Back
+                        </a>
+                        <a class="btn btn-sm btn-default btn-outline-success"
+                           href="{{ url_for('jobs.job_search', search_term=next_term) }}">
+                            <i class="ti-arrow-right"></i> Next
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Listings Container -->
+            <div class="job-listings-container">
+                {% if not job_list %}
+                    <div class="alert alert-info">No jobs found.</div>
+                {% else %}
+                    {% for job in job_list %}
+                        <div class="job-card" data-job-id="{{ job.job_id }}">
+                            <div class="job-card-header">
+                                <div class="company-info">
+                                    {% if job.internal_image_link %}
+                                        <img src="{{ job.internal_image_link }}" 
+                                             alt="{{ job.company_name }} Logo" 
+                                             class="company-logo">
+                                    {% else %}
+                                        <div class="company-logo-placeholder">
+                                            <i class="fas fa-building"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="company-details">
+                                        <h3 class="job-title">
+                                            <a href="{{ url_for('jobs.job_slug', slug=job.slug) }}">
+                                                {{ job.title|title }}
+                                            </a>
+                                        </h3>
+                                        <p class="company-name">{{ job.company_name }}</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Match Score Badge -->
+                                {% if current_user and current_user.is_authenticated %}
+                                    {% if job.match_score is defined and job.match_score is not none and job.match_score > 0 %}
+                                        <div class="match-score-badge" data-score="{{ job.match_score }}">
+                                            <span class="score-percentage">{{ job.match_score }}%</span>
+                                            <span class="score-label">Match</span>
+                                        </div>
+                                    {% elif job.match_score is defined and job.match_score == 0 %}
+                                        <div class="match-score-badge calculation-failed">
+                                            <span class="score-text">Score Unavailable</span>
+                                            <span class="score-label">Try Again Later</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="match-score-badge incomplete-profile">
+                                            <span class="score-text">Complete Profile</span>
+                                            <span class="score-label">for Match Score</span>
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="match-score-badge login-required">
+                                        <span class="score-text">Login Required</span>
+                                        <span class="score-label">for Match Score</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="job-card-body">
+                                <div class="job-meta">
+                                    <span class="location">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        {{ job.location }}
+                                    </span>
+                                    {% if job.salary %}
+                                        <span class="salary">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                            {{ job.salary }}
+                                        </span>
+                                    {% endif %}
+                                    {% if job.position %}
+                                        <span class="job-type">
+                                            <i class="fas fa-briefcase"></i>
+                                            {{ job.position }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Job Description Preview -->
+                                {% if job.description %}
+                                    <p class="job-description">
+                                        {{ job.description[:150] }}{% if job.description|length > 150 %}...{% endif %}
+                                    </p>
+                                {% endif %}
+
+                                <!-- Job Details -->
+                                <div class="job-details">
+                                    <div class="job-detail-item">
+                                        <span class="detail-label">Updated:</span>
+                                        <span class="detail-value">{{ job.updated_time }}</span>
+                                    </div>
+                                    {% if job.expires %}
+                                        <div class="job-detail-item">
+                                            <span class="detail-label">Expires:</span>
+                                            <span class="detail-value">{{ job.expires }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="job-card-footer">
+                                <a href="{{ url_for('jobs.job_slug', slug=job.slug) }}" 
+                                   class="btn btn-apply">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    View Details
+                                </a>
+                                
+                                {% if current_user and current_user.is_authenticated %}
+                                    {% if job.match_score is defined and job.match_score is not none %}
+                                        <button class="btn btn-match-details" 
+                                                data-job-id="{{ job.job_id }}"
+                                                data-job-slug="{{ job.slug }}">
+                                            <i class="fas fa-chart-line"></i>
+                                            Match Details
+                                        </button>
+                                    {% else %}
+                                        <a href="{{ url_for('jobseekers.profile') }}" 
+                                           class="btn btn-complete-profile">
+                                            <i class="fas fa-user-edit"></i>
+                                            Complete Profile
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{{ url_for('auth.login') }}" 
+                                       class="btn btn-login-required">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        Login for Match Details
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Insert affiliate template every 3rd job -->
+                        {% if loop.index == 3 %}
+                            {% include affiliate_template %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-3 col-md-12 col-sm-12">
+            <!-- Job Notifications -->
+            <div class="card bg-dark">
+                <div class="card-header">
+                    <h3 class="card-title text-white font-weight-bold">
+                        <i class="ti-email"></i> Job Notifications
+                    </h3>
+                </div>
+                <span class="card-content text-info">Email me jobs on {{ term|title }}</span>
+                <form method="POST" action="{{ url_for('home.email_me', search_term=term) }}">
+                    <input type="hidden" value="{{ term }}"/>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" name="email" id="email" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti-alert"></i> Create Job Alert
+                    </button>
+                </form>
+            </div>
+
+            <!-- Jobs By Category -->
+            <div class="card bg-dark">
+                <div class="card-header">
+                    <h3 class="card-title text-white font-weight-bold">
+                        <i class="ti-link"></i> Jobs By Category
+                    </h3>
+                </div>
+                {% include "job/cards/search_terms.html" %}
+            </div>
+
+            <!-- Jobs By Province -->
+            <div class="card bg-dark">
+                <div class="card-header">
+                    <h3 class="card-title text-white font-weight-bold">Jobs By Province</h3>
+                </div>
+                <ol class="list-group">
+                    {% for province in provinces %}
+                        <li class="list-group-item font-weight-bold text-info">
+                            <a href="{{ url_for('jobs.jobs_by_location', location=province|lower|replace(' ', '-') ) }}">
+                                {{ province|title }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ol>
+            </div>
+
+            <!-- Blog Panel -->
+            {% include "blog/panel.html" %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="col-lg-12 col-md-12 col-sm-12">
+        <div class="card bg-dark">
+            <ul class="pagination">
+                {% if current_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="{{ url_for('jobs.job_search', search_term=term, page=current_page-1) }}" 
+                           aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+                {% for page_num in range(1, total_pages+1) %}
+                    <li class="page-item{% if page_num == current_page %} active{% endif %}">
+                        <a class="page-link" 
+                           href="{{ url_for('jobs.job_search', search_term=term, page=page_num) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                {% endfor %}
+                {% if current_page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="{{ url_for('jobs.job_search', search_term=term, page=current_page+1) }}" 
+                           aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Match Details Modal -->
+    <div id="matchDetailsModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content match-details-modal">
+            <div class="modal-header">
+                <h2>Job Match Analysis</h2>
+                <button class="modal-close" type="button" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Loading State -->
+                <div class="loading-spinner" id="modalLoadingSpinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Analyzing job match...</p>
+                </div>
+
+                <!-- Error State -->
+                <div class="error-state" id="modalErrorState" style="display: none;">
+                    <div class="error-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="error-title">Unable to Load Match Details</h3>
+                    <p class="error-message">We're having trouble analyzing this job match. Please try again later.</p>
+                    <div class="error-actions">
+                        <button class="btn btn-retry" id="retryMatchAnalysis">
+                            <i class="fas fa-redo"></i> Try Again
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Match Analysis Content -->
+                <div class="match-analysis-content" id="matchAnalysisContent" style="display: none;">
+                    <!-- Job Information Header -->
+                    <div class="job-info-header">
+                        <div class="job-company-info">
+                            <img src="" alt="Company Logo" class="modal-company-logo" id="modalCompanyLogo">
+                            <div class="modal-job-details">
+                                <h3 class="modal-job-title" id="modalJobTitle"></h3>
+                                <p class="modal-company-name" id="modalCompanyName"></p>
+                                <div class="modal-job-meta">
+                                    <span class="modal-location" id="modalLocation">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span class="location-text"></span>
+                                    </span>
+                                    <span class="modal-salary" id="modalSalary">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                        <span class="salary-text"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overall Score Display -->
+                    <div class="overall-score-section">
+                        <div class="score-circle-container">
+                            <div class="score-circle" id="overallScoreCircle">
+                                <svg class="progress-ring" width="120" height="120">
+                                    <circle class="progress-ring-background" 
+                                            cx="60" cy="60" r="54" 
+                                            fill="transparent" 
+                                            stroke="#e6e6e6" 
+                                            stroke-width="8"/>
+                                    <circle class="progress-ring-progress" 
+                                            cx="60" cy="60" r="54" 
+                                            fill="transparent" 
+                                            stroke="#4CAF50" 
+                                            stroke-width="8"
+                                            stroke-linecap="round"
+                                            stroke-dasharray="339.292"
+                                            stroke-dashoffset="339.292"
+                                            transform="rotate(-90 60 60)"/>
+                                </svg>
+                                <div class="score-content">
+                                    <span class="score-number" id="overallScoreNumber">0%</span>
+                                    <span class="score-label">Match</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="score-interpretation">
+                            <h3 class="score-title">Overall Match Score</h3>
+                            <p class="score-description" id="scoreInterpretation">
+                                Calculating your compatibility with this position...
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Match Breakdown Sections -->
+                    <div class="match-breakdown">
+                        <!-- Skills Match Section -->
+                        <div class="match-category" id="skillsMatchCategory">
+                            <div class="category-header">
+                                <div class="category-title">
+                                    <i class="fas fa-cogs"></i>
+                                    <h4>Skills Match</h4>
+                                </div>
+                                <div class="category-score">
+                                    <span class="category-percentage" id="skillsScore">0%</span>
+                                    <div class="category-progress-bar">
+                                        <div class="progress-fill" id="skillsProgressFill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-details">
+                                <div class="matched-skills">
+                                    <h5>
+                                        <i class="fas fa-check-circle"></i>
+                                        Matched Skills
+                                        <span class="skill-count" id="matchedSkillsCount">(0)</span>
+                                    </h5>
+                                    <div class="skill-tags matched" id="matchedSkillsTags">
+                                        <!-- Matched skills will be populated here -->
+                                    </div>
+                                </div>
+                                <div class="missing-skills">
+                                    <h5>
+                                        <i class="fas fa-plus-circle"></i>
+                                        Skills to Develop
+                                        <span class="skill-count" id="missingSkillsCount">(0)</span>
+                                    </h5>
+                                    <div class="skill-tags missing" id="missingSkillsTags">
+                                        <!-- Missing skills will be populated here -->
+                                    </div>
+                                </div>
+                                <div class="skills-explanation">
+                                    <p id="skillsExplanation">
+                                        Skills analysis will appear here...
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Experience Match Section -->
+                        <div class="match-category" id="experienceMatchCategory">
+                            <div class="category-header">
+                                <div class="category-title">
+                                    <i class="fas fa-briefcase"></i>
+                                    <h4>Experience Match</h4>
+                                </div>
+                                <div class="category-score">
+                                    <span class="category-percentage" id="experienceScore">0%</span>
+                                    <div class="category-progress-bar">
+                                        <div class="progress-fill" id="experienceProgressFill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-details">
+                                <div class="experience-comparison">
+                                    <div class="experience-item">
+                                        <span class="experience-label">Your Experience:</span>
+                                        <span class="experience-value" id="userExperience">-</span>
+                                    </div>
+                                    <div class="experience-item">
+                                        <span class="experience-label">Required Experience:</span>
+                                        <span class="experience-value" id="requiredExperience">-</span>
+                                    </div>
+                                    <div class="experience-item">
+                                        <span class="experience-label">Industry Relevance:</span>
+                                        <span class="experience-value" id="industryRelevance">-</span>
+                                    </div>
+                                </div>
+                                <div class="experience-explanation">
+                                    <p id="experienceExplanation">
+                                        Experience analysis will appear here...
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Match Section -->
+                        <div class="match-category" id="locationMatchCategory">
+                            <div class="category-header">
+                                <div class="category-title">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <h4>Location Compatibility</h4>
+                                </div>
+                                <div class="category-score">
+                                    <span class="category-percentage" id="locationScore">0%</span>
+                                    <div class="category-progress-bar">
+                                        <div class="progress-fill" id="locationProgressFill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-details">
+                                <div class="location-comparison">
+                                    <div class="location-item">
+                                        <span class="location-label">Job Location:</span>
+                                        <span class="location-value" id="jobLocation">-</span>
+                                    </div>
+                                    <div class="location-item">
+                                        <span class="location-label">Your Preference:</span>
+                                        <span class="location-value" id="userLocationPreference">-</span>
+                                    </div>
+                                    <div class="location-item">
+                                        <span class="location-label">Remote Options:</span>
+                                        <span class="location-value" id="remoteOptions">-</span>
+                                    </div>
+                                    <div class="location-item">
+                                        <span class="location-label">Commute Distance:</span>
+                                        <span class="location-value" id="commuteDistance">-</span>
+                                    </div>
+                                </div>
+                                <div class="location-explanation">
+                                    <p id="locationExplanation">
+                                        Location analysis will appear here...
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Salary Match Section -->
+                        <div class="match-category" id="salaryMatchCategory">
+                            <div class="category-header">
+                                <div class="category-title">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                    <h4>Salary Alignment</h4>
+                                </div>
+                                <div class="category-score">
+                                    <span class="category-percentage" id="salaryScore">0%</span>
+                                    <div class="category-progress-bar">
+                                        <div class="progress-fill" id="salaryProgressFill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-details">
+                                <div class="salary-comparison">
+                                    <div class="salary-item">
+                                        <span class="salary-label">Offered Range:</span>
+                                        <span class="salary-value" id="offeredSalary">-</span>
+                                    </div>
+                                    <div class="salary-item">
+                                        <span class="salary-label">Your Expectation:</span>
+                                        <span class="salary-value" id="expectedSalary">-</span>
+                                    </div>
+                                    <div class="salary-item">
+                                        <span class="salary-label">Market Average:</span>
+                                        <span class="salary-value" id="marketAverage">-</span>
+                                    </div>
+                                    <div class="salary-item">
+                                        <span class="salary-label">Alignment:</span>
+                                        <span class="salary-value" id="salaryAlignment">-</span>
+                                    </div>
+                                </div>
+                                <div class="salary-explanation">
+                                    <p id="salaryExplanation">
+                                        Salary analysis will appear here...
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendations Section -->
+                    <div class="recommendations-section">
+                        <h4>
+                            <i class="fas fa-lightbulb"></i>
+                            Recommendations to Improve Your Match
+                        </h4>
+                        <ul class="recommendations-list" id="recommendationsList">
+                            <!-- Recommendations will be populated here -->
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="modal-actions">
+                        <a href="#" class="btn btn-primary btn-apply-job" id="applyJobButton">
+                            <i class="fas fa-paper-plane"></i>
+                            Apply for This Job
+                        </a>
+                        <button class="btn btn-secondary btn-save-job" id="saveJobButton">
+                            <i class="fas fa-bookmark"></i>
+                            Save Job
+                        </button>
+                        <button class="btn btn-outline btn-share-match" id="shareMatchButton">
+                            <i class="fas fa-share"></i>
+                            Share Match
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block custom_js %}
+    <script src="{{ url_for('static', filename='js/jobs/match-details.js') }}"></script>
+{% endblock %}

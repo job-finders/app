@@ -277,3 +277,11 @@ def tokenize(text: str) -> list[str]:
     """Return lowercase tokens without stop-words."""
     text = re.sub(r"[^\w\s]", " ", text.lower())
     return [t for t in text.split() if t not in STOP_WORDS and len(t) > 2]
+
+
+def format_currency(value, currency='ZAR'):
+    """Format as currency: {{ price|format_currency }}"""
+    try:
+        return f"{currency}{float(value):,.2f}"
+    except (ValueError, TypeError):
+        return value

@@ -1,9 +1,31 @@
 {% extends "layouts/page.html" %}
 {% block title %}Jobs at {{ company }} — Page {{ page }}{% endblock %}
 
+{% block custom_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobs/job-listings.css') }}">
+    <noscript>
+        <style>
+            .btn-match-details { display: none !important; }
+            .match-score-badge::after {
+                content: " (JavaScript required for details)";
+                font-size: 0.7em; color: #666; display: block;
+            }
+        </style>
+    </noscript>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-  <h1 class="mb-3">Jobs at {{ company }}</h1>
-  {% include 'jobs/_jobs_list.html' %}
-</div>
+    <div class="network-status" id="networkStatus">
+        <i class="fas fa-wifi"></i>
+        <span class="status-text">Connection restored</span>
+    </div>
+    
+    <div class="container mt-4">
+        <h1 class="mb-3">Jobs at {{ company }}</h1>
+        {% include 'jobs/_jobs_list.html' %}
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/jobs/match-details-modal.js') }}"></script>
 {% endblock %}

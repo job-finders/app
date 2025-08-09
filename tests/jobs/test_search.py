@@ -1593,3 +1593,284 @@ async def test_get_applied_jobs_for_user_invalid_user_id(get_controller, session
     result_apps, total_count = await controller.get_applied_jobs_for_user(None, page=1, page_size=10)
     assert total_count == 0
     assert len(result_apps) == 0
+
+############################################################################################
+# TEST CASES FOR QUICK MATCH SCORING
+############################################################################################
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_calculate_quick_match_score_perfect_match(get_controller, session):
+    """Test perfect match scenario with all criteria matching"""
+    from src.database.models.jobseeker_profile import JobSeekerProfile
+    from src.database.models.jobs_model import Job, JobCategory
+    
+    # Create job category
+    category = create_category(session, name="Engineering")
+    
+    # Create job
+    job_data = {
+        "job_id": str(uuid.uuid4()),
+        "title": "Python Developer",
+        "city": "Cape Town",
+        "province": "Western Cape",
+        "remote_policy": "HYBRID",
+        "experience_level": "MID",
+        "category_id": category.category_id
+    }
+    job_orm = create_job(session, **job_data)
+    job = Job(**job_orm.to_dict())
+    job.category = JobCategory(**category.to_dict())
+    
+    # Create user profile with matching preferences
+    user_profile = JobSeekerProfile(
+        user_uid="test-user",
+        first_name="John",
+        last_name="Doe",
+        email="john@example.com",
+        location="Cape Town",
+        job_titles_of_interest=["Python Developer", "Software Engineer"],
+        industries_of_interest=["Engineering"],
+        remote_preference=True,
+        expected_salary=400000  # Mid-level salary
+    )
+    
+    controller = get_controller
+    score = await controller.calculate_quick_match_score(job, user_profile)
+    
+    # Should be very high score (near 100)
+    assert score >= 90
+    assert score <= 100
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_calculate_quick_match_score_location_exact_match(get_controller, session):
+    """Test location exact match scoring"""
+    from src.database.models.jobseeker_profile import JobSeekerProfile
+    from src.database.models.jobs_model import Job
+    
+    job_orm = create_job(session, city="Johannesburg", province="Gauteng")
+    job = Job(**job_orm.to_dict())
+    
+    user_profile = JobSeekerProfile(
+        user_uid="test-user",
+        first_name="Jane",
+        last_name="Smith", 
+        email="jane@example.com",
+        location="Johannesburg"  # Exact match
+    )
+    
+    controller = get_controller
+    score = await controller.calculate_quick_match_score(job, user_profile)
+    
+    # Location is 40% weight, exact match should give 40 points
+    assert score >= 40
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_calculate_quick_match_score_remote_preference(get_controller, session):
+    """Test remote work preference matching"""
+    from src.database.models.jobseeker_profile import JobSeekerProfile
+    from src.database.models.jobs_model import Job
+    
+    job_orm = create_job(session, city="Durban", remote_policy="REMOTE")
+    job = Job(**job_orm.to_dict())
+    
+    user_profile = JobSeekerProfile(
+        user_uid="test-user",
+        first_name="Remote",
+        last_name="Worker",
+        email="remote@example.com",
+        location="Cape Town",  # Different city
+        remote_preference=True  # But prefers remote
+    )
+    
+    controller = get_controller
+    score = await controller.calculate_quick_match_score(job, user_profile)
+    
+    # Remote preference should boost location score to 90% of 40% weight = 36 points
+    assert score >= 36
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_calculate_quick_match_score_title_matching(get_controller, session):
+    """Test job title keyword matching"""
+    from src.database.models.jobseeker_profile import JobSeekerProfile
+    from src.database.models.jobs_model import Job
+    
+    job_orm = create_job(session, title="Senior Python Developer")
+    job = Job(**job_orm.to_dict())
+    
+    user_profile = JobSeekerProfile(
+        user_uid="test-user",
+        first_name="Python",
+        last_name="Dev",
+        email="python@example.com",
+        job_titles_of_interest=["Python Developer", "Backend Developer"]
+    )
+    
+    controller = get_controller
+    score = await controller.calculate_quick_match_score(job, user_profile)
+    
+    # Title match is 30% weight, partial match should give significant points
+    assert score >= 24  # 80% of 30% weight
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_calculate_quick_match_score_experience_level(get_controller, session):
+    """Test experience level matching"""
+    from src.database.models.jobseeker_profile import JobSeekerProfile
+    from src.database.models.jobs_model import Job
+    
+    job_orm = create_job(session, experience_level="SENIOR")
+    job = Job(**job_orm.to_dict())
+    
+    # High salary suggests senior level
+    user_profile = JobSeekerProfile(
+        user_uid="test-user",
+        first_name="Senior",
+        last_name="Dev",
+        email="senior@example.com",
+        expected_salary=700000,  # Senior salary range
+        profile_completion_percentage=90
+    )
+    
+    controller = get_controller
+    score = await controller.calculate_quick_match_score(job, user_profile)
+    
+    # Experience match is 20% weight, should contribute 20 points for perfect match
+    assert score >= 20
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_calculate_quick_match_score_industry_matching(get_controller, session):
+    """Test industry category matching"""
+    from src.database.models.jobseeker_profile import JobSeekerProfile
+    from src.database.models.jobs_model import Job, JobCategory
+    
+    category = create_category(session, name="Technology")
+    job_orm = create_job(session, category_id=category.category_id)
+    job = Job(**job_orm.to_dict())
+    job.category = JobCategory(**category.to_dict())
+    
+    user_profile = JobSeekerProfile(
+        user_uid="test-user",
+        first_name="Tech",
+        last_name="Worker",
+        email="tech@example.com",
+        industries_of_interest=["Technology", "Software"]
+    )
+    
+    controller = get_controller
+    score = await controller.calculate_quick_match_score(job, user_profile)
+    
+    # Industry match is 10% weight, exact match should give 10 points
+    assert score >= 10
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_calculate_quick_match_score_no_match(get_controller, session):
+    """Test scenario with no matching criteria"""
+    from src.database.models.jobseeker_profile import JobSeekerProfile
+    from src.database.models.jobs_model import Job, JobCategory
+    
+    category = create_category(session, name="Finance")
+    job_orm = create_job(
+        session, 
+        title="Accountant",
+        city="Pretoria",
+        remote_policy="ONSITE",
+        experience_level="SENIOR",
+        category_id=category.category_id
+    )
+    job = Job(**job_orm.to_dict())
+    job.category = JobCategory(**category.to_dict())
+    
+    user_profile = JobSeekerProfile(
+        user_uid="test-user",
+        first_name="Dev",
+        last_name="User",
+        email="dev@example.com",
+        location="Cape Town",  # Different city
+        job_titles_of_interest=["Python Developer"],  # Different title
+        industries_of_interest=["Technology"],  # Different industry
+        remote_preference=False,
+        expected_salary=300000  # Mid-level salary for senior role
+    )
+    
+    controller = get_controller
+    score = await controller.calculate_quick_match_score(job, user_profile)
+    
+    # Should be low score due to mismatches
+    assert score < 50
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_calculate_quick_match_score_locations_of_interest(get_controller, session):
+    """Test matching against locations_of_interest list"""
+    from src.database.models.jobseeker_profile import JobSeekerProfile
+    from src.database.models.jobs_model import Job
+    
+    job_orm = create_job(session, city="Bloemfontein", province="Free State")
+    job = Job(**job_orm.to_dict())
+    
+    user_profile = JobSeekerProfile(
+        user_uid="test-user",
+        first_name="Multi",
+        last_name="Location",
+        email="multi@example.com",
+        location="Cape Town",  # Different from job location
+        locations_of_interest=["Johannesburg", "Bloemfontein", "Durban"]  # Includes job city
+    )
+    
+    controller = get_controller
+    score = await controller.calculate_quick_match_score(job, user_profile)
+    
+    # Should get full location score due to locations_of_interest match
+    assert score >= 40  # 100% of 40% weight
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_calculate_quick_match_score_empty_profile(get_controller, session):
+    """Test with minimal/empty user profile"""
+    from src.database.models.jobseeker_profile import JobSeekerProfile
+    from src.database.models.jobs_model import Job
+    
+    job_orm = create_job(session)
+    job = Job(**job_orm.to_dict())
+    
+    user_profile = JobSeekerProfile(
+        user_uid="test-user",
+        first_name="Empty",
+        last_name="Profile",
+        email="empty@example.com"
+        # No location, interests, or preferences set
+    )
+    
+    controller = get_controller
+    score = await controller.calculate_quick_match_score(job, user_profile)
+    
+    # Should return low score due to lack of matching data
+    assert score >= 0
+    assert score <= 20
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("get_controller", ["jobs_search"], indirect=True)
+async def test_calculate_quick_match_score_none_inputs(get_controller, session):
+    """Test with None inputs"""
+    controller = get_controller
+    
+    score = await controller.calculate_quick_match_score(None, None)
+    assert score == 0.0
+    
+    # Test with one None input
+    from src.database.models.jobseeker_profile import JobSeekerProfile
+    user_profile = JobSeekerProfile(
+        user_uid="test-user",
+        first_name="Test",
+        last_name="User",
+        email="test@example.com"
+    )
+    
+    score = await controller.calculate_quick_match_score(None, user_profile)
+    assert score == 0.0

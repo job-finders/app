@@ -826,6 +826,118 @@ class JobsSearchController(Controllers):
             return session.query(SavedJobORM).filter_by(user_id=user_id).count()
 
     @error_handler
+    async def calculate_quick_match_score(self, job: Job, user_profile: JobSeekerProfile) -> float:
+        """
+        Calculate lightweight match score for job listings using basic criteria.
+        Uses non-AI algorithms for fast computation in job listing views.
+        
+        Args:
+            job (Job): The job to evaluate
+            user_profile (JobSeekerProfile): The user's profile
+            
+        Returns:
+            float: Match score from 0-100
+        """
+        if not job or not user_profile:
+            return 0.0
+            
+        scores = {}
+        
+        # Location Match (40% weight) - Highest priority for quick matching
+        location_score = 0
+        if user_profile.location and job.city:
+            # Exact city match
+            if user_profile.location.lower().strip() == job.city.lower().strip():
+                location_score = 100
+            # Province match (if user location contains province)
+            elif job.province and job.province.lower() in user_profile.location.lower():
+                location_score = 80
+            # Check locations of interest
+            elif user_profile.locations_of_interest:
+                for loc in user_profile.locations_of_interest:
+                    if loc.lower().strip() == job.city.lower().strip():
+                        location_score = 100
+                        break
+                    elif job.province and job.province.lower() in loc.lower():
+                        location_score = 80
+                        break
+        
+        # Remote work compatibility
+        if user_profile.remote_preference and job.remote_policy in ["REMOTE", "HYBRID"]:
+            location_score = max(location_score, 90)  # Remote preference satisfied
+            
+        scores['location'] = location_score
+        
+        # Job Title Keywords (30% weight) - Simple keyword matching
+        title_score = 0
+        if user_profile.job_titles_of_interest and job.title:
+            job_title_lower = job.title.lower()
+            for interested_title in user_profile.job_titles_of_interest:
+                interested_lower = interested_title.lower()
+                # Exact match
+                if interested_lower == job_title_lower:
+                    title_score = 100
+                    break
+                # Partial match - check if interested title is in job title
+                elif interested_lower in job_title_lower:
+                    title_score = max(title_score, 80)
+                # Reverse check - job title keywords in interested title
+                elif any(word in interested_lower for word in job_title_lower.split() if len(word) > 3):
+                    title_score = max(title_score, 60)
+                    
+        scores['title'] = title_score
+        
+        # Experience Level (20% weight) - Basic level comparison
+        experience_score = 0
+        if job.experience_level:
+            exp_levels = {'ENTRY': 1, 'MID': 2, 'SENIOR': 3}
+            job_level = exp_levels.get(job.experience_level.upper(), 1)
+            
+            # Estimate user experience level from profile completeness and preferences
+            user_level = 1  # Default to entry
+            if user_profile.expected_salary and user_profile.expected_salary > 600000:  # Senior salary range
+                user_level = 3
+            elif user_profile.expected_salary and user_profile.expected_salary > 300000:  # Mid salary range
+                user_level = 2
+            elif user_profile.profile_completion_percentage > 80:  # Well-completed profile suggests experience
+                user_level = 2
+                
+            # Score based on level compatibility
+            if user_level >= job_level:
+                experience_score = 100
+            elif user_level == job_level - 1:
+                experience_score = 75  # One level below is still reasonable
+            else:
+                experience_score = 40  # Significant gap
+                
+        scores['experience'] = experience_score
+        
+        # Industry Category (10% weight) - Direct category matching
+        industry_score = 0
+        if job.category and user_profile.industries_of_interest:
+            job_category_name = job.category.name if hasattr(job.category, 'name') else str(job.category)
+            for industry in user_profile.industries_of_interest:
+                if industry.lower().strip() == job_category_name.lower().strip():
+                    industry_score = 100
+                    break
+                elif industry.lower() in job_category_name.lower() or job_category_name.lower() in industry.lower():
+                    industry_score = max(industry_score, 70)
+                    
+        scores['industry'] = industry_score
+        
+        # Calculate weighted total
+        weights = {
+            'location': 0.40,
+            'title': 0.30,
+            'experience': 0.20,
+            'industry': 0.10
+        }
+        
+        total_score = sum(scores[category] * weight for category, weight in weights.items())
+        
+        return round(total_score, 1)
+
+    @error_handler
     async def calculate_job_match_score(self, job_id: str, user_id: str) -> dict:
         """
         Calculate how well a specific job matches a user's profile and CV.

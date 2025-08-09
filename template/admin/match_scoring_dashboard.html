@@ -1,0 +1,650 @@
+{% extends "layouts/admin.html" %}
+
+{% block title %}Match Scoring Monitoring Dashboard{% endblock %}
+
+{% block custom_css %}
+<style>
+    .metric-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .metric-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .metric-label {
+        color: #7f8c8d;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-healthy { background-color: #27ae60; }
+    .status-degraded { background-color: #f39c12; }
+    .status-error { background-color: #e74c3c; }
+    
+    .performance-chart {
+        height: 300px;
+        margin: 20px 0;
+    }
+    
+    .recommendations {
+        background: #f8f9fa;
+        border-left: 4px solid #3498db;
+        padding: 15px;
+        margin: 20px 0;
+    }
+    
+    .cache-controls {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 4px;
+        padding: 15px;
+        margin: 20px 0;
+    }
+    
+    .btn-danger-outline {
+        color: #dc3545;
+        border-color: #dc3545;
+        background: transparent;
+    }
+    
+    .btn-danger-outline:hover {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    
+    .error-message {
+        color: #e74c3c;
+        background: #fdf2f2;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+    }
+    
+    .success-message {
+        color: #27ae60;
+        background: #f0f9f0;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1>Job Match Scoring - Monitoring Dashboard</h1>
+            <p class="text-muted">Monitor performance, health, and usage of the job match scoring system</p>
+        </div>
+    </div>
+    
+    <!-- System Health Overview -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value" id="systemStatus">
+                    <span class="status-indicator status-healthy"></span>
+                    Loading...
+                </div>
+                <div class="metric-label">System Status</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value" id="avgResponseTime">--</div>
+                <div class="metric-label">Avg Response Time (ms)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value" id="successRate">--</div>
+                <div class="metric-label">Success Rate (%)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value" id="cacheHitRate">--</div>
+                <div class="metric-label">Cache Hit Rate (%)</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Performance Metrics -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="metric-card">
+                <h3>Performance Metrics</h3>
+                <div class="form-group">
+                    <label for="timeRange">Time Range:</label>
+                    <select id="timeRange" class="form-control" style="width: 200px; display: inline-block;">
+                        <option value="1">Last Hour</option>
+                        <option value="6">Last 6 Hours</option>
+                        <option value="24" selected>Last 24 Hours</option>
+                        <option value="168">Last Week</option>
+                    </select>
+                    <button id="refreshMetrics" class="btn btn-primary ml-2">Refresh</button>
+                </div>
+                
+                <div id="performanceData">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin"></i> Loading performance data...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="metric-card">
+                <h3>Circuit Breaker Status</h3>
+                <div id="circuitBreakerStatus">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </div>
+                <button id="resetCircuitBreaker" class="btn btn-warning btn-sm mt-2" style="display: none;">
+                    Reset Circuit Breaker
+                </button>
+            </div>
+            
+            <div class="metric-card">
+                <h3>Cache Statistics</h3>
+                <div id="cacheStats">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recommendations -->
+    <div class="row">
+        <div class="col-12">
+            <div class="recommendations" id="recommendations" style="display: none;">
+                <h4><i class="fas fa-lightbulb"></i> Performance Recommendations</h4>
+                <ul id="recommendationsList"></ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cache Management -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="cache-controls">
+                <h4><i class="fas fa-database"></i> Cache Management</h4>
+                <p>Clear cached match scores to force recalculation. Use with caution as this may impact performance.</p>
+                
+                <div class="form-group">
+                    <label for="cacheType">Cache Type:</label>
+                    <select id="cacheType" class="form-control">
+                        <option value="all">All Match Scoring Cache</option>
+                        <option value="match_scores">Match Scores Only</option>
+                        <option value="user_profiles">User Profiles Only</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="specificUserId">Specific User ID (optional):</label>
+                    <input type="text" id="specificUserId" class="form-control" placeholder="Leave empty to clear all users">
+                </div>
+                
+                <button id="clearCache" class="btn btn-danger-outline">
+                    <i class="fas fa-trash"></i> Clear Cache
+                </button>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="cache-controls">
+                <h4><i class="fas fa-cogs"></i> Performance Tuning</h4>
+                <p>Adjust performance settings for the match scoring system.</p>
+                
+                <div class="form-group">
+                    <label for="batchSize">Batch Size:</label>
+                    <input type="number" id="batchSize" class="form-control" min="1" max="200" value="50">
+                </div>
+                
+                <div class="form-group">
+                    <label for="maxWorkers">Max Workers:</label>
+                    <input type="number" id="maxWorkers" class="form-control" min="1" max="20" value="4">
+                </div>
+                
+                <div class="form-group">
+                    <label for="failureThreshold">Circuit Breaker Failure Threshold:</label>
+                    <input type="number" id="failureThreshold" class="form-control" min="1" max="20" value="5">
+                </div>
+                
+                <button id="updateSettings" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update Settings
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Test Performance -->
+    <div class="row">
+        <div class="col-12">
+            <div class="metric-card">
+                <h3><i class="fas fa-flask"></i> Performance Testing</h3>
+                <p>Run a performance test with sample data to verify system responsiveness.</p>
+                
+                <button id="runPerformanceTest" class="btn btn-info">
+                    <i class="fas fa-play"></i> Run Performance Test
+                </button>
+                
+                <div id="testResults" style="display: none; margin-top: 20px;">
+                    <h4>Test Results</h4>
+                    <div id="testResultsContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Messages -->
+    <div id="messages"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+class MatchScoringDashboard {
+    constructor() {
+        this.init();
+        this.loadInitialData();
+        this.setupEventListeners();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => this.refreshData(), 30000);
+    }
+    
+    init() {
+        this.apiBase = '/admin/match-scoring/api';
+    }
+    
+    setupEventListeners() {
+        document.getElementById('refreshMetrics').addEventListener('click', () => {
+            this.loadPerformanceMetrics();
+        });
+        
+        document.getElementById('timeRange').addEventListener('change', () => {
+            this.loadPerformanceMetrics();
+        });
+        
+        document.getElementById('clearCache').addEventListener('click', () => {
+            this.clearCache();
+        });
+        
+        document.getElementById('updateSettings').addEventListener('click', () => {
+            this.updatePerformanceSettings();
+        });
+        
+        document.getElementById('resetCircuitBreaker').addEventListener('click', () => {
+            this.resetCircuitBreaker();
+        });
+        
+        document.getElementById('runPerformanceTest').addEventListener('click', () => {
+            this.runPerformanceTest();
+        });
+    }
+    
+    async loadInitialData() {
+        await Promise.all([
+            this.loadSystemHealth(),
+            this.loadPerformanceMetrics(),
+            this.loadCircuitBreakerStatus(),
+            this.loadCacheStats()
+        ]);
+    }
+    
+    async refreshData() {
+        await this.loadSystemHealth();
+        await this.loadCacheStats();
+    }
+    
+    async loadSystemHealth() {
+        try {
+            const response = await fetch(`${this.apiBase}/health`);
+            const data = await response.json();
+            
+            this.updateSystemStatus(data);
+        } catch (error) {
+            console.error('Error loading system health:', error);
+            this.showError('Failed to load system health');
+        }
+    }
+    
+    async loadPerformanceMetrics() {
+        try {
+            const hours = document.getElementById('timeRange').value;
+            const response = await fetch(`${this.apiBase}/performance?hours=${hours}`);
+            const data = await response.json();
+            
+            this.updatePerformanceMetrics(data);
+        } catch (error) {
+            console.error('Error loading performance metrics:', error);
+            this.showError('Failed to load performance metrics');
+        }
+    }
+    
+    async loadCircuitBreakerStatus() {
+        try {
+            const response = await fetch(`${this.apiBase}/circuit-breaker`);
+            const data = await response.json();
+            
+            this.updateCircuitBreakerStatus(data);
+        } catch (error) {
+            console.error('Error loading circuit breaker status:', error);
+        }
+    }
+    
+    async loadCacheStats() {
+        try {
+            const response = await fetch(`${this.apiBase}/cache-stats`);
+            const data = await response.json();
+            
+            this.updateCacheStats(data);
+        } catch (error) {
+            console.error('Error loading cache stats:', error);
+        }
+    }
+    
+    updateSystemStatus(data) {
+        const statusElement = document.getElementById('systemStatus');
+        const statusClass = `status-${data.status}`;
+        
+        statusElement.innerHTML = `
+            <span class="status-indicator ${statusClass}"></span>
+            ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}
+        `;
+        
+        if (data.issues && data.issues.length > 0) {
+            const issuesList = data.issues.map(issue => `<li>${issue}</li>`).join('');
+            this.showWarning(`System issues detected: <ul>${issuesList}</ul>`);
+        }
+    }
+    
+    updatePerformanceMetrics(data) {
+        const performanceDiv = document.getElementById('performanceData');
+        
+        if (!data.performance || Object.keys(data.performance).length === 0) {
+            performanceDiv.innerHTML = '<p>No performance data available for the selected time range.</p>';
+            return;
+        }
+        
+        let html = '<div class="row">';
+        
+        for (const [operation, stats] of Object.entries(data.performance)) {
+            if (typeof stats === 'object') {
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <h5>${operation.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h5>
+                        <div class="small">
+                            <strong>Requests:</strong> ${stats.total_requests}<br>
+                            <strong>Avg Time:</strong> ${(stats.average_time * 1000).toFixed(1)}ms<br>
+                            <strong>Success Rate:</strong> ${(stats.success_rate * 100).toFixed(1)}%<br>
+                            <strong>Cache Hit Rate:</strong> ${(stats.cache_hit_rate * 100).toFixed(1)}%
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        html += '</div>';
+        performanceDiv.innerHTML = html;
+        
+        // Update top-level metrics
+        this.updateTopMetrics(data.performance);
+        
+        // Show recommendations
+        if (data.recommendations && data.recommendations.length > 0) {
+            this.showRecommendations(data.recommendations);
+        }
+    }
+    
+    updateTopMetrics(performance) {
+        let totalRequests = 0;
+        let totalTime = 0;
+        let totalSuccess = 0;
+        let totalCacheHits = 0;
+        
+        for (const stats of Object.values(performance)) {
+            if (typeof stats === 'object') {
+                totalRequests += stats.total_requests;
+                totalTime += stats.average_time * stats.total_requests;
+                totalSuccess += stats.success_count || (stats.success_rate * stats.total_requests);
+                totalCacheHits += stats.cache_hit_rate * stats.total_requests;
+            }
+        }
+        
+        if (totalRequests > 0) {
+            document.getElementById('avgResponseTime').textContent = 
+                Math.round((totalTime / totalRequests) * 1000);
+            document.getElementById('successRate').textContent = 
+                Math.round((totalSuccess / totalRequests) * 100);
+            document.getElementById('cacheHitRate').textContent = 
+                Math.round((totalCacheHits / totalRequests) * 100);
+        }
+    }
+    
+    updateCircuitBreakerStatus(data) {
+        const statusDiv = document.getElementById('circuitBreakerStatus');
+        const resetButton = document.getElementById('resetCircuitBreaker');
+        
+        const status = data.is_open ? 'OPEN' : 'CLOSED';
+        const statusClass = data.is_open ? 'text-danger' : 'text-success';
+        
+        statusDiv.innerHTML = `
+            <div class="${statusClass}">
+                <strong>Status:</strong> ${status}<br>
+                <strong>Failures:</strong> ${data.failure_count}/${data.failure_threshold}<br>
+                <strong>Timeout:</strong> ${data.timeout_seconds}s
+            </div>
+        `;
+        
+        resetButton.style.display = data.is_open ? 'block' : 'none';
+    }
+    
+    updateCacheStats(data) {
+        const statsDiv = document.getElementById('cacheStats');
+        
+        if (data.error) {
+            statsDiv.innerHTML = `<div class="text-danger">Error: ${data.error}</div>`;
+            return;
+        }
+        
+        statsDiv.innerHTML = `
+            <div class="small">
+                <strong>Memory Usage:</strong> ${data.memory_usage || 'Unknown'}<br>
+                <strong>Total Keys:</strong> ${data.total_keys || 0}<br>
+                <strong>Hit Rate:</strong> ${((data.hit_rate || 0) * 100).toFixed(1)}%<br>
+                <strong>Connected Clients:</strong> ${data.connected_clients || 0}
+            </div>
+        `;
+    }
+    
+    showRecommendations(recommendations) {
+        const recommendationsDiv = document.getElementById('recommendations');
+        const listDiv = document.getElementById('recommendationsList');
+        
+        listDiv.innerHTML = recommendations.map(rec => `<li>${rec}</li>`).join('');
+        recommendationsDiv.style.display = 'block';
+    }
+    
+    async clearCache() {
+        const cacheType = document.getElementById('cacheType').value;
+        const userId = document.getElementById('specificUserId').value.trim();
+        
+        const confirmMessage = userId 
+            ? `Clear cache for user ${userId}?`
+            : `Clear ${cacheType} cache? This may impact performance temporarily.`;
+        
+        if (!confirm(confirmMessage)) return;
+        
+        try {
+            const response = await fetch(`${this.apiBase}/clear-cache`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: cacheType, user_id: userId || undefined })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showSuccess(data.message);
+                await this.loadCacheStats();
+            } else {
+                this.showError(data.error);
+            }
+        } catch (error) {
+            this.showError('Failed to clear cache');
+        }
+    }
+    
+    async updatePerformanceSettings() {
+        const settings = {
+            batch_size: parseInt(document.getElementById('batchSize').value),
+            max_workers: parseInt(document.getElementById('maxWorkers').value),
+            failure_threshold: parseInt(document.getElementById('failureThreshold').value)
+        };
+        
+        try {
+            const response = await fetch(`${this.apiBase}/performance-tuning`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showSuccess(data.message);
+            } else {
+                this.showError(data.error);
+            }
+        } catch (error) {
+            this.showError('Failed to update settings');
+        }
+    }
+    
+    async resetCircuitBreaker() {
+        if (!confirm('Reset circuit breaker to closed state?')) return;
+        
+        try {
+            const response = await fetch(`${this.apiBase}/circuit-breaker/reset`, {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showSuccess(data.message);
+                await this.loadCircuitBreakerStatus();
+            } else {
+                this.showError(data.error);
+            }
+        } catch (error) {
+            this.showError('Failed to reset circuit breaker');
+        }
+    }
+    
+    async runPerformanceTest() {
+        const button = document.getElementById('runPerformanceTest');
+        const resultsDiv = document.getElementById('testResults');
+        const contentDiv = document.getElementById('testResultsContent');
+        
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running Test...';
+        
+        try {
+            const response = await fetch(`${this.apiBase}/test-scoring`, {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                const results = data.test_results;
+                contentDiv.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Jobs Processed:</strong> ${results.jobs_processed}<br>
+                            <strong>Execution Time:</strong> ${(results.execution_time * 1000).toFixed(1)}ms<br>
+                            <strong>Avg Time per Job:</strong> ${(results.average_time_per_job * 1000).toFixed(1)}ms
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Successful Scores:</strong> ${results.successful_scores}<br>
+                            <strong>Cached Scores:</strong> ${results.cached_scores}<br>
+                            <strong>Errors:</strong> ${results.errors}
+                        </div>
+                    </div>
+                `;
+                resultsDiv.style.display = 'block';
+            } else {
+                this.showError(data.error);
+            }
+        } catch (error) {
+            this.showError('Performance test failed');
+        } finally {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-play"></i> Run Performance Test';
+        }
+    }
+    
+    showSuccess(message) {
+        this.showMessage(message, 'success');
+    }
+    
+    showError(message) {
+        this.showMessage(message, 'error');
+    }
+    
+    showWarning(message) {
+        this.showMessage(message, 'warning');
+    }
+    
+    showMessage(message, type) {
+        const messagesDiv = document.getElementById('messages');
+        const className = type === 'success' ? 'success-message' : 'error-message';
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = className;
+        messageDiv.innerHTML = message;
+        
+        messagesDiv.appendChild(messageDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.parentNode.removeChild(messageDiv);
+            }
+        }, 5000);
+    }
+}
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new MatchScoringDashboard();
+});
+</script>
+{% endblock %}

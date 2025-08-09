@@ -78,7 +78,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
                             <h3 class="h5 card-title mb-1">
-                                <a href="{{ url_for('jobs_search_route.category_jobs', slug=category.slug) }}"
+                                <a href="{{ url_for('jobs.category_jobs', category=category.slug) }}"
                                    class="text-decoration-none text-dark stretched-link">
                                     {{ category.name }}
                                 </a>
@@ -143,7 +143,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-white border-0 text-end">
-                    <a href="{{ url_for('jobs_search_route.category_jobs', slug=category.slug) }}"
+                    <a href="{{ url_for('jobs.category_jobs', category=category.slug) }}"
                        class="btn btn-sm btn-outline-primary">
                         Browse Jobs <i class="bi bi-arrow-right ms-1"></i>
                     </a>

@@ -753,6 +753,7 @@ class Job(BaseModel):
         },
         # optional: exclude unset/None fields from the response
         exclude_unset=True,
+        extra="allow",
         str_strip_whitespace=True
     )
 
