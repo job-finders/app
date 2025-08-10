@@ -1,0 +1,84 @@
+{% if profile.saved_jobs_count > 0 %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+                <i class="ti-bookmark me-2"></i>Saved Jobs ({{ profile.saved_jobs_count }})
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>Job Title</th>
+                        <th>Company</th>
+                        <th>Location</th>
+                        <th>Saved On</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for job in profile.saved_jobs %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('jobs.view_job', job_id=job.job_id) }}">
+                                    {{ job.title }}
+                                </a>
+                            </td>
+                            <td>{{ job.company.name }}</td>
+                            <td>{{ job.location }}</td>
+                            <td>{{ job.saved_at|datetimeformat('%Y-%m-%d') }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-danger unsave-job"
+                                        data-job-id="{{ job.job_id }}">
+                                    <i class="ti-trash"></i> Remove
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="ti-bookmark text-muted fa-3x mb-3"></i>
+            <h5 class="text-muted">No saved jobs yet</h5>
+            <p class="text-muted">Save jobs you're interested in to view them here</p>
+            <a href="{{ url_for('jobs.browse') }}" class="btn btn-primary">
+                <i class="ti-search me-2"></i>Browse Jobs
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Handle unsave job clicks
+        document.querySelectorAll('.unsave-job').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const jobId = this.dataset.jobId;
+                try {
+                    const response = await fetch(`/api/jobs/${jobId}/save`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': '{{ csrf_token() }}'
+                        }
+                    });
+
+                    if (response.ok) {
+                        location.reload(); // Refresh to show updated list
+                    } else {
+                        alert('Failed to remove saved job');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Network error');
+                }
+            });
+        });
+    });
+</script>

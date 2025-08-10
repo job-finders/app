@@ -1,0 +1,104 @@
+<!-- Referral Stats Component -->
+<div class="referral-stats card">
+    <div class="card-header">
+        <h3>Your Referral Stats</h3>
+    </div>
+    <div class="card-body">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="total-referrals">0</div>
+                <div class="stat-label">Total Referrals</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="active-referrals">0</div>
+                <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="hired-referrals">0</div>
+                <div class="stat-label">Hired</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="bonus-earned">$0</div>
+                <div class="stat-label">Bonus Earned</div>
+            </div>
+        </div>
+
+        <div class="referral-share">
+            <h4>Share Jobs & Earn</h4>
+            <p>Share job links with your network using your unique referral code</p>
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" id="referral-code" readonly>
+                <button type="button" class="btn btn-primary" id="copy-referral-code">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // Load referral stats
+            const response = await fetch('/api/applications/referral-stats');
+            if (response.ok) {
+                const {data} = await response.json();
+                document.getElementById('total-referrals').textContent = data.total;
+                document.getElementById('active-referrals').textContent = data.pending + data.applied;
+                document.getElementById('hired-referrals').textContent = data.hired;
+                document.getElementById('bonus-earned').textContent = `$${data.bonus_earned.toFixed(2)}`;
+            }
+
+            // Set up referral code copy button
+            const copyBtn = document.getElementById('copy-referral-code');
+            copyBtn.addEventListener('click', () => {
+                const codeInput = document.getElementById('referral-code');
+                codeInput.select();
+                document.execCommand('copy');
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => {
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                }, 2000);
+            });
+        } catch (error) {
+            console.error('Error loading referral stats:', error);
+        }
+    });
+</script>
+
+<style>
+    .referral-stats {
+        margin-bottom: 20px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #007bff;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: #6c757d;
+    }
+
+    .referral-share {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+</style>

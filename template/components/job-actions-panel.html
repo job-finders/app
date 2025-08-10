@@ -1,0 +1,345 @@
+<!-- Job Actions Panel Component -->
+<div class="job-actions-panel bg-white rounded-3 shadow-sm p-4 mb-4" data-job-id="{{ job.job_id }}">
+    <h4 class="h6 fw-bold mb-3">
+        <i class="fas fa-heart text-danger me-2"></i>
+        Job Actions
+    </h4>
+
+    <!-- Actions Grid -->
+    <div class="row g-2">
+        <!-- View Company Button -->
+        <div class="col-6">
+            <a href="{{ url_for('company_public.company_profile', company_id=job.company_id) }}"
+               class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center"
+               title="View {{ job.company.name if job.company else 'Company' }} Profile">
+                <i class="fas fa-building me-2"></i>
+                <span class="d-none d-md-inline">View Company</span>
+                <span class="d-md-none">Company</span>
+            </a>
+        </div>
+
+        <!-- Like Job Button -->
+        <div class="col-6">
+            <button type="button"
+                    class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center like-btn"
+                    data-job-id="{{ job.job_id }}"
+                    data-liked="{{ 'true' if user_has_liked else 'false' }}"
+                    title="Like this job">
+                <i class="fas fa-heart me-2 like-icon"></i>
+                <span class="like-count">{{ job.like_count or 0 }}</span>
+            </button>
+        </div>
+
+        <!-- Save Job Button -->
+        <div class="col-6">
+            <button type="button"
+                    class="btn btn-outline-success w-100 d-flex align-items-center justify-content-center save-btn"
+                    data-job-id="{{ job.job_id }}"
+                    data-saved="{{ 'true' if user_has_saved else 'false' }}"
+                    title="Save this job">
+                <i class="fas fa-bookmark me-2 save-icon"></i>
+                <span class="d-none d-md-inline save-text">Save Job</span>
+                <span class="d-md-none">Save</span>
+            </button>
+        </div>
+
+        <!-- Share Job Button -->
+        <div class="col-6">
+            <button type="button"
+                    class="btn btn-outline-info w-100 d-flex align-items-center justify-content-center share-btn"
+                    data-job-id="{{ job.job_id }}"
+                    data-bs-toggle="modal"
+                    data-bs-target="#shareJobModal"
+                    title="Share this job">
+                <i class="fas fa-share me-2"></i>
+                <span class="d-none d-md-inline">Share</span>
+                <span class="d-md-none">Share</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Engagement Stats -->
+    <div class="mt-3 pt-3 border-top">
+        <div class="row g-2 text-center">
+            <div class="col-6">
+                <div class="small text-muted">Likes</div>
+                <div class="fw-semibold total-likes">{{ job.like_count or 0 }}</div>
+            </div>
+            <div class="col-6">
+                <div class="small text-muted">Shares</div>
+                <div class="fw-semibold total-shares">{{ job.share_count or 0 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-overlay d-none position-absolute top-0 start-0 w-100 h-100 align-items-center justify-content-center bg-white bg-opacity-75 rounded-3">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</div>
+
+<!-- Share Job Modal (Only include if not already defined elsewhere) -->
+{% if not share_modal_defined %}
+    <div class="modal fade" id="shareJobModal" tabindex="-1" aria-labelledby="shareJobModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shareJobModalLabel">
+                        <i class="fas fa-share me-2"></i>Share Job
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-4">Share this job opportunity with your network</p>
+
+                    <!-- Job Info (Dynamic content will be populated via JavaScript) -->
+                    <div class="bg-light rounded-3 p-3 mb-4" id="shareJobInfo">
+                        <h6 class="fw-bold mb-1" id="shareJobTitle">Job Title</h6>
+                        <p class="text-muted mb-0 small" id="shareJobMeta">Company • Location</p>
+                    </div>
+
+                    <!-- Share Options -->
+                    <div class="row g-3">
+                        <!-- Email -->
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-primary w-100 share-option"
+                                    data-method="email">
+                                <i class="fas fa-envelope fa-2x mb-2"></i>
+                                <span class="small d-block">Email</span>
+                            </button>
+                        </div>
+
+                        <!-- LinkedIn -->
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-primary w-100 share-option"
+                                    data-method="linkedin">
+                                <i class="fab fa-linkedin fa-2x mb-2"></i>
+                                <span class="small d-block">LinkedIn</span>
+                            </button>
+                        </div>
+
+                        <!-- Twitter -->
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-info w-100 share-option" data-method="twitter">
+                                <i class="fab fa-twitter fa-2x mb-2"></i>
+                                <span class="small d-block">Twitter</span>
+                            </button>
+                        </div>
+
+                        <!-- Facebook -->
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-primary w-100 share-option"
+                                    data-method="facebook">
+                                <i class="fab fa-facebook fa-2x mb-2"></i>
+                                <span class="small d-block">Facebook</span>
+                            </button>
+                        </div>
+
+                        <!-- WhatsApp -->
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-success w-100 share-option"
+                                    data-method="whatsapp">
+                                <i class="fab fa-whatsapp fa-2x mb-2"></i>
+                                <span class="small d-block">WhatsApp</span>
+                            </button>
+                        </div>
+
+                        <!-- Copy Link -->
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-secondary w-100 share-option"
+                                    data-method="copy_link">
+                                <i class="fas fa-link fa-2x mb-2"></i>
+                                <span class="small d-block">Copy Link</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Success Message -->
+                    <div class="alert alert-success mt-3 d-none" id="shareSuccessAlert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span id="shareSuccessMessage">Job shared successfully!</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Toast Notifications (Only include if not already defined elsewhere) -->
+{% if not toast_notifications_defined %}
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <!-- Like Success Toast -->
+        <div id="likeSuccessToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas fa-heart text-danger me-2"></i>
+                <strong class="me-auto">Job Liked</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                Job added to your liked jobs!
+            </div>
+        </div>
+
+        <!-- Save Success Toast -->
+        <div id="saveSuccessToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas fa-bookmark text-success me-2"></i>
+                <strong class="me-auto">Job Saved</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                Job saved to your profile!
+            </div>
+        </div>
+
+        <!-- Error Toast -->
+        <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="errorToastMessage">
+                Something went wrong. Please try again.
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<style>
+    /* Job Actions Panel Styles */
+    .job-actions-panel {
+        position: relative;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .job-actions-panel:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .job-actions-panel .btn {
+        transition: all 0.3s ease;
+        border-width: 2px;
+        font-weight: 500;
+    }
+
+    .job-actions-panel .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Button States */
+    .like-btn[data-liked="true"] {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
+
+    .save-btn[data-saved="true"] {
+        background-color: #198754;
+        border-color: #198754;
+        color: white;
+    }
+
+    /* Animations */
+    .like-btn[data-liked="true"] .like-icon,
+    .save-btn[data-saved="true"] .save-icon {
+        animation: pulse 0.6s ease-in-out;
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.2);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* Loading State */
+    .job-actions-panel.loading .btn {
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    .loading-overlay {
+        background-color: rgba(255, 255, 255, 0.8);
+        display: flex;
+    }
+
+    .loading-overlay.d-none {
+        display: none !important;
+    }
+
+    /* Share Modal Enhancements */
+    .share-option {
+        transition: all 0.3s ease;
+        height: 80px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+    }
+
+    .share-option:hover {
+        transform: translateY(-2px);
+        background-color: #e9ecef;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Stats Section */
+    .job-actions-panel .border-top {
+        border-color: #e9ecef !important;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .job-actions-panel .btn {
+            font-size: 0.875rem;
+            padding: 0.5rem;
+        }
+
+        .share-option {
+            height: 70px;
+        }
+
+        .share-option i {
+            font-size: 1.5rem !important;
+        }
+    }
+
+    /* Accessibility Enhancements */
+    .job-actions-panel .btn:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        outline: none;
+    }
+
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+        .job-actions-panel .btn {
+            border-width: 3px;
+        }
+    }
+
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+        .job-actions-panel .btn,
+        .share-option {
+            transition: none;
+        }
+
+        .job-actions-panel .btn:hover,
+        .share-option:hover {
+            transform: none;
+        }
+
+        .like-icon,
+        .save-icon {
+            animation: none !important;
+        }
+    }
+</style>

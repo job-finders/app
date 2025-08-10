@@ -1,0 +1,16 @@
+/* Profile Progress Bar */
+.progress-thin {
+    height: 8px;
+}
+
+/* Profile Image Styles */
+.profile-photo {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+}
+
+.profile-photo-placeholder {
+    width: 80px;
+    height: 80px;
+}

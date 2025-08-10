@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Actions Monitoring Dashboard - Job Finders Admin</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/monitoring-dashboard.css') }}">
+
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+<div class="admin-container">
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="header-content">
+            <h1>Job Actions Monitoring Dashboard</h1>
+            <div class="header-actions">
+                <button id="refreshBtn" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button id="exportBtn" class="btn btn-secondary">
+                    <i class="fas fa-download"></i> Export
+                </button>
+                <select id="timeRangeSelect" class="form-select">
+                    <option value="60">Last Hour</option>
+                    <option value="360">Last 6 Hours</option>
+                    <option value="1440">Last 24 Hours</option>
+                    <option value="10080">Last Week</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- Alert Banner -->
+    <div id="alertBanner" class="alert-banner" style="display: none;">
+        <div class="alert-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="alertMessage"></span>
+            <button id="dismissAlert" class="alert-dismiss">×</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Summary Cards -->
+        <section class="summary-section">
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Total Actions</h3>
+                        <div class="card-value" id="totalActions">-</div>
+                        <div class="card-change" id="totalActionsChange">-</div>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Error Rate</h3>
+                        <div class="card-value" id="errorRate">-</div>
+                        <div class="card-change" id="errorRateChange">-</div>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Avg Response Time</h3>
+                        <div class="card-value" id="avgResponseTime">-</div>
+                        <div class="card-change" id="responseTimeChange">-</div>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Active Alerts</h3>
+                        <div class="card-value" id="activeAlerts">-</div>
+                        <div class="card-change" id="alertsChange">-</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="charts-grid">
+                <!-- Actions Over Time Chart -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Actions Over Time</h3>
+                        <div class="chart-controls">
+                            <button class="chart-toggle active" data-metric="total">Total</button>
+                            <button class="chart-toggle" data-metric="likes">Likes</button>
+                            <button class="chart-toggle" data-metric="saves">Saves</button>
+                            <button class="chart-toggle" data-metric="shares">Shares</button>
+                        </div>
+                    </div>
+                    <canvas id="actionsChart"></canvas>
+                </div>
+
+                <!-- Response Time Chart -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Response Time Distribution</h3>
+                    </div>
+                    <canvas id="responseTimeChart"></canvas>
+                </div>
+
+                <!-- Error Rate Chart -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Error Rate Trend</h3>
+                    </div>
+                    <canvas id="errorRateChart"></canvas>
+                </div>
+
+                <!-- System Resources Chart -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>System Resources</h3>
+                    </div>
+                    <canvas id="systemResourcesChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Tables Section -->
+        <section class="tables-section">
+            <div class="tables-grid">
+                <!-- Top Performing Jobs -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Top Performing Jobs (Last 30 Days)</h3>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="topJobsTable" class="data-table">
+                            <thead>
+                            <tr>
+                                <th>Job Title</th>
+                                <th>Likes</th>
+                                <th>Shares</th>
+                                <th>Total Engagement</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <!-- Data populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Platform Statistics -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Sharing Platform Statistics</h3>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="platformStatsTable" class="data-table">
+                            <thead>
+                            <tr>
+                                <th>Platform</th>
+                                <th>Total Shares</th>
+                                <th>Recent (7d)</th>
+                                <th>Share %</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <!-- Data populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Active Alerts -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Active Alerts</h3>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="alertsTable" class="data-table">
+                            <thead>
+                            <tr>
+                                <th>Alert Name</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Last Triggered</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <!-- Data populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Database Statistics -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Database Statistics</h3>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="databaseStatsTable" class="data-table">
+                            <thead>
+                            <tr>
+                                <th>Table</th>
+                                <th>Rows</th>
+                                <th>Size (MB)</th>
+                                <th>Index Size (MB)</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <!-- Data populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Health Status Section -->
+        <section class="health-section">
+            <div class="health-container">
+                <div class="health-header">
+                    <h3>System Health Status</h3>
+                    <div class="health-score">
+                        <div class="score-circle" id="healthScoreCircle">
+                            <span id="healthScoreValue">-</span>
+                        </div>
+                        <div class="score-label">Health Score</div>
+                    </div>
+                </div>
+
+                <div class="health-details">
+                    <div class="health-checks">
+                        <div class="health-check" id="databaseCheck">
+                            <i class="fas fa-database"></i>
+                            <span>Database Connectivity</span>
+                            <div class="check-status">-</div>
+                        </div>
+                        <div class="health-check" id="tablesCheck">
+                            <i class="fas fa-table"></i>
+                            <span>Table Accessibility</span>
+                            <div class="check-status">-</div>
+                        </div>
+                        <div class="health-check" id="indexesCheck">
+                            <i class="fas fa-search"></i>
+                            <span>Index Performance</span>
+                            <div class="check-status">-</div>
+                        </div>
+                        <div class="health-check" id="alertsCheck">
+                            <i class="fas fa-bell"></i>
+                            <span>Alert System</span>
+                            <div class="check-status">-</div>
+                        </div>
+                    </div>
+
+                    <div class="health-issues" id="healthIssues" style="display: none;">
+                        <h4>Issues Detected:</h4>
+                        <ul id="issuesList"></ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Loading dashboard data...</span>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script src="{{ url_for('static', filename='js/admin/job-actions-monitoring.js') }}"></script>
+</body>
+</html>
