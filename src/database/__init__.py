@@ -9,7 +9,7 @@ from .sql.billing_sql import (
 from .sql.jobs_sql import (
     JobsORM, JobApplicationORM, JobCategoryORM, SavedJobORM, ApplicationDashboardORM,
     ImportJobBatchORM, JobVersionHistoryORM, JobApprovalRequestORM, JobApprovalStatusEnum,
-    ATSReportORM, TalentPoolReportORM
+    ATSReportORM, TalentPoolReportORM, JobLikeORM, JobShareORM
 )
 from .sql.admin_sql import (
 AdminORM, AdminRecommendationORM, FlaggedUserORM
@@ -50,7 +50,7 @@ __all__ = [
     "BillingEventORM", "BillingPlanORM", "CompanyBillingProfileORM", "InvoiceORM", "PaymentMethodORM",
     "JobsORM", "JobApplicationORM", "JobCategoryORM", "SavedJobORM", "ApplicationDashboardORM",
     "ImportJobBatchORM", "JobVersionHistoryORM", "JobApprovalRequestORM", "JobApprovalStatusEnum",
-    "ATSReportORM", "TalentPoolReportORM",
+    "ATSReportORM", "TalentPoolReportORM", "JobLikeORM", "JobShareORM",
     "AdminORM", "AdminRecommendationORM", "FlaggedUserORM",
     "EmployerORM",
     "JobSeekerProfileORM",

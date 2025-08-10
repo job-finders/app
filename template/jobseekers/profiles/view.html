@@ -16,7 +16,7 @@
     </a>
   </div>
   <!-- Profile Completion Progress -->
-  <div class="progress mb-5" style="height: 8px;">
+      <div class="progress mb-5 progress-thin">
     <div class="progress-bar bg-primary" role="progressbar"
          style="width: {{ profile.profile_completion }}%"
          aria-valuenow="{{ profile.profile_completion }}"
@@ -209,6 +209,11 @@
         </div>
       </div>
     </div>
+
+      <!-- Referral Program Section -->
+      <div class="col-12">
+          {% include "components/referral-stats.html" %}
+      </div>
   </div>
 
   {% else %}
@@ -232,4 +237,26 @@
   </div>
   {% endif %}
 </div>
+
+    <script>
+        function copyReferralLink() {
+            const copyText = document.getElementById("referralLink");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+
+            const btn = document.querySelector("#referralLink + button");
+            btn.innerHTML = '<i class="ti-check"></i> Copied!';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="ti-clipboard"></i> Copy';
+            }, 2000);
+        }
+    </script>
+
+    <!-- Saved Jobs Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            {% include "components/saved-jobs-section.html" %}
+        </div>
+    </div>
 {% endblock %}

@@ -23,6 +23,11 @@ class Hint(BaseModel):
 class JobSeekerProfile(BaseModel):
     user_uid: str  # FK to User.uid
 
+    # --- Referral Info ---
+    referrer_id: Optional[str] = Field(default=None)
+    referral_count: int = Field(default=0)
+    referral_bonus_earned: float = Field(default=0.0)
+
     # --- Personal Info ---
     first_name: str
     last_name: str
@@ -111,6 +116,10 @@ class JobSeekerProfile(BaseModel):
             max_score += weight
             if condition:
                 score += weight
+
+        # Referral Info (only if referred)
+        if self.referrer_id:
+            add(True, 2)  # Bonus for being referred
 
         # Personal Info
         add(bool(self.first_name), 1.5)
@@ -292,6 +301,32 @@ class JobSeekerProfile(BaseModel):
     @property
     def job_application_hints(self) -> List[Hint]:
         return [h for h in self.all_hints if h.context.startswith("Application:")]
+
+    # --- Referral Methods ---
+    @property
+    def active_referrals(self) -> List['JobSeekerReferral']:
+        """Get active referrals made by this user."""
+        controller = get_controller('job_seeker_profile')
+        return controller.get_referrals_by_referrer(self.user_uid, active_only=True)
+
+    @property
+    def successful_referrals(self) -> List['JobSeekerReferral']:
+        """Get successful referrals made by this user."""
+        controller = get_controller('job_seeker_profile')
+        return controller.get_referrals_by_referrer(
+            self.user_uid,
+            status=ReferralStatus.COMPLETED
+        )
+
+    @property
+    def referral_stats(self) -> dict:
+        """Get statistics about referrals."""
+        return {
+            'total': self.referral_count,
+            'active': len(self.active_referrals),
+            'successful': len(self.successful_referrals),
+            'bonus_earned': self.referral_bonus_earned
+        }
 
     @property
     def trust_score(self) -> float:

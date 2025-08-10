@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/jobs/job-statistics.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobs/job-actions.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -967,6 +968,9 @@
 <!-- Job Statistics JavaScript -->
 <script src="{{ url_for('static', filename='js/jobs/statistics-charts.js') }}"></script>
 <script src="{{ url_for('static', filename='js/jobs/statistics-tooltips.js') }}"></script>
+
+    <!-- Job Actions JavaScript -->
+    <script src="{{ url_for('static', filename='js/jobs/job-actions.js') }}"></script>
 
 <!-- Pass statistics data to JavaScript -->
 {% if job_statistics %}

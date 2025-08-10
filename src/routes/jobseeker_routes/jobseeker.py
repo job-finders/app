@@ -80,8 +80,36 @@ async def apply(user: User):
 @flask_error_handler
 @jobseeker_login
 async def saved_jobs(user: User):
-    """Retrives a list of jobs bookmaerked by the job seeker"""
-    context = dict(current_user=user)
+    """Retrieves paginated list of jobs saved by the job seeker"""
+    # Get pagination parameters
+    limit = min(int(request.args.get('limit', 20)), 100)  # Max 100 items
+    offset = max(int(request.args.get('offset', 0)), 0)
+
+    # Get job actions controller
+    job_actions_controller = get_controller('job_actions')
+
+    # Get saved jobs
+    result = await job_actions_controller.get_user_saved_jobs(
+        user_id=user.uid,
+        limit=limit,
+        offset=offset
+    )
+
+    if not result.get('success'):
+        flash("Error retrieving saved jobs", "danger")
+        return redirect(url_for('jobseekers.dashboard'))
+
+    # Prepare context with pagination info
+    context = {
+        'current_user': user,
+        'jobs': result['data']['jobs'],
+        'pagination': {
+            'total': result['data']['total_count'],
+            'limit': limit,
+            'offset': offset
+        }
+    }
+    
     return render_template("jobseekers/saved_jobs.html", **context)
 
 

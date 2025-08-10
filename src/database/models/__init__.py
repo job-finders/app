@@ -54,7 +54,9 @@ from .feedback_analysis import (
 from .jobs_model import (
     JobApprovalStatusEnum, JobApprovalRequest, JobVersionHistory, JobStatusEnum, JobCategory, Job, JobEditableFields,
     SavedJob, ATSReport, JobApplicationStatusEnum, JobApplication, StatusCounts, ApplicationMetrics, JobStatistics,
-    ApplicationFunnelStats, JobApplicationDashboard, TalentPoolReport, BulkImportResult
+    ApplicationFunnelStats, JobApplicationDashboard, TalentPoolReport, BulkImportResult, JobLike, JobShare,
+    JobActionsState, ShareMethodEnum, JobActionRequest, JobLikeRequest, JobSaveRequest, JobShareRequest,
+    JobActionsResponse
 )
 
 from .jobseeker_profile import (

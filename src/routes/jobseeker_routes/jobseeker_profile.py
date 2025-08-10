@@ -9,6 +9,8 @@ from src.database.models import User, JobSeekerProfile
 from src.routes import flask_error_handler
 # Utilities
 from src.utils.route_helpers import get_controller, get_service
+# Controllers
+from src.controllers.jobs.actions import JobActionsController
 
 jobseeker_profiles_bp = Blueprint("jobseeker_profiles", __name__, url_prefix="/jobseeker/profile")
 jobseeker_logger = get_service("logger")()("JobSeekerProfileRouter")
@@ -190,13 +192,16 @@ async def create_profile(user: User):
 @jobseeker_login
 async def view_profile(user: User):
     job_seeker_profile_controller = get_controller('job_seeker_profile')
-    profile: JobSeekerProfile = await job_seeker_profile_controller.get_profile_by_uid(user_uid=user.uid)
+    job_actions_controller = get_controller('job_actions')
 
-    # if not profile:
-    #     flash("Please create your profile to get started", "info")
-    #     return redirect(url_for("jobseeker_profiles.create_profile"))
+    profile = await job_seeker_profile_controller.get_complete_profile_by_uid(user_uid=user.uid)
+    saved_jobs = await job_actions_controller.get_user_saved_jobs(user.uid)
 
-    context = dict(current_user=user, profile=profile)
+    context = dict(
+        current_user=user,
+        profile=profile,
+        saved_jobs=saved_jobs['data']['jobs'] if saved_jobs['success'] else []
+    )
     return render_template("jobseekers/profiles/view.html", **context)
 
 

@@ -114,6 +114,142 @@ def generate_job_ref() -> str:
     return f"JB-{ts}-{rand}"                         # e.g., JB-20250529143000-B6FA9C
 
 
+class JobLike(BaseModel):
+    """Pydantic model for job likes"""
+    like_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str = Field(..., min_length=1, description="JobSeeker profile user_uid")
+    job_id: str = Field(..., min_length=1, description="Job ID being liked")
+    created_at: AwareDatetime = Field(default_factory=utc_time)
+
+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
+
+    @property
+    def is_recent(self) -> bool:
+        """Check if this like was created within the last 24 hours"""
+        return (utc_time() - self.created_at).total_seconds() < 86400  # 24 hours in seconds
+
+
+class ShareMethodEnum(str, Enum):
+    EMAIL = "email"
+    LINKEDIN = "linkedin"
+    TWITTER = "twitter"
+    FACEBOOK = "facebook"
+    WHATSAPP = "whatsapp"
+    COPY_LINK = "copy_link"
+
+
+class JobShare(BaseModel):
+    """Pydantic model for job shares"""
+    share_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = Field(None, description="JobSeeker profile user_uid (optional for anonymous sharing)")
+    job_id: str = Field(..., min_length=1, description="Job ID being shared")
+    share_method: ShareMethodEnum = Field(..., description="Method used to share the job")
+    shared_at: AwareDatetime = Field(default_factory=utc_time)
+    referral_code: Optional[str] = Field(None, max_length=20, description="Tracking code for referrals")
+
+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
+
+    @property
+    def is_anonymous(self) -> bool:
+        """Check if this is an anonymous share (no user_id)"""
+        return self.user_id is None
+
+    @property
+    def is_social_media(self) -> bool:
+        """Check if this share was via social media"""
+        social_methods = {ShareMethodEnum.LINKEDIN, ShareMethodEnum.TWITTER, ShareMethodEnum.FACEBOOK}
+        return self.share_method in social_methods
+
+    @classmethod
+    def generate_referral_code(cls, user_id: str, job_id: str) -> str:
+        """Generate a unique referral code for tracking"""
+        import hashlib
+        combined = f"{user_id}:{job_id}:{utc_time().timestamp()}"
+        return hashlib.md5(combined.encode()).hexdigest()[:8].upper()
+
+
+class JobActionsState(BaseModel):
+    """Pydantic model for job actions UI state"""
+    job_id: str = Field(..., min_length=1, description="Job ID")
+    user_has_liked: bool = Field(default=False, description="Whether current user has liked this job")
+    user_has_saved: bool = Field(default=False, description="Whether current user has saved this job")
+    like_count: int = Field(default=0, ge=0, description="Total number of likes for this job")
+    share_count: int = Field(default=0, ge=0, description="Total number of shares for this job")
+
+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
+
+    @property
+    def has_engagement(self) -> bool:
+        """Check if the job has any user engagement (likes or shares)"""
+        return self.like_count > 0 or self.share_count > 0
+
+    @property
+    def engagement_score(self) -> float:
+        """Calculate a simple engagement score (likes weighted more than shares)"""
+        return (self.like_count * 2) + self.share_count
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for JSON serialization"""
+        return {
+            "job_id": self.job_id,
+            "user_has_liked": self.user_has_liked,
+            "user_has_saved": self.user_has_saved,
+            "like_count": self.like_count,
+            "share_count": self.share_count,
+            "has_engagement": self.has_engagement,
+            "engagement_score": self.engagement_score
+        }
+
+
+class JobActionRequest(BaseModel):
+    """Base model for job action requests"""
+    job_id: str = Field(..., min_length=1, description="Job ID")
+    user_id: str = Field(..., min_length=1, description="JobSeeker profile user_uid")
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+
+class JobLikeRequest(JobActionRequest):
+    """Model for job like/unlike requests"""
+    pass
+
+
+class JobSaveRequest(JobActionRequest):
+    """Model for job save/unsave requests"""
+    pass
+
+
+class JobShareRequest(BaseModel):
+    """Model for job share requests"""
+    job_id: str = Field(..., min_length=1, description="Job ID")
+    user_id: Optional[str] = Field(None, description="JobSeeker profile user_uid (optional for anonymous sharing)")
+    share_method: ShareMethodEnum = Field(..., description="Method used to share the job")
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    def create_job_share(self) -> JobShare:
+        """Create a JobShare instance from this request"""
+        referral_code = None
+        if self.user_id:
+            referral_code = JobShare.generate_referral_code(self.user_id, self.job_id)
+
+        return JobShare(
+            user_id=self.user_id,
+            job_id=self.job_id,
+            share_method=self.share_method,
+            referral_code=referral_code
+        )
+
+
+class JobActionsResponse(BaseModel):
+    """Standard response model for job actions"""
+    success: bool = Field(..., description="Whether the action was successful")
+    message: str = Field(..., description="Response message")
+    data: Optional[dict] = Field(None, description="Additional response data")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class JobCategory(BaseModel):
     category_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(min_length=2, max_length=100)
@@ -252,6 +388,10 @@ class Job(BaseModel):
 
     ats_reports: list['ATSReport'] = Field(default_factory=list, description="list of ATS reports for this job")
 
+    # Job actions relationships
+    likes: list['JobLike'] = Field(default_factory=list, description="list of job likes")
+    shares: list['JobShare'] = Field(default_factory=list, description="list of job shares")
+
     @model_validator(mode="before")
     @classmethod
     def _coerce_raw_form(cls, data: dict[str, Any]) -> dict[str, Any]:
@@ -329,6 +469,18 @@ class Job(BaseModel):
         :return:
         """
         return len(self.applications)
+
+    @computed_field(return_type=int)
+    @property
+    def like_count(self) -> int:
+        """Total number of likes for this job"""
+        return len(self.likes) if hasattr(self, 'likes') and self.likes else 0
+
+    @computed_field(return_type=int)
+    @property
+    def share_count(self) -> int:
+        """Total number of shares for this job"""
+        return len(self.shares) if hasattr(self, 'shares') and self.shares else 0
 
 
     @computed_field(return_type=Optional[int])

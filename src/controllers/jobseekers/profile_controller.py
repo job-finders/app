@@ -88,7 +88,7 @@ class JobSeekerProfilesController(Controllers):
 
     @error_handler
     async def get_complete_profile_by_uid(self, user_uid: str) -> JobSeekerProfile | None:
-        """Fetch a profile or return None if missing."""
+        """Fetch a profile with saved jobs or return None if missing."""
         if not (isinstance(user_uid, str) and user_uid.strip()):
             self.logger.warning("Invalid user_uid provided for get_complete_profile_by_uid")
             return None
@@ -97,14 +97,24 @@ class JobSeekerProfilesController(Controllers):
             seeker_orm = (
                 session
                 .query(JobSeekerProfileORM)
-                .options(joinedload(JobSeekerProfileORM.resumes_list))
+                .options(
+                    joinedload(JobSeekerProfileORM.resumes_list),
+                    joinedload(JobSeekerProfileORM.saved_jobs)
+                    .joinedload(SavedJobORM.job)
+                )
                 .filter_by(user_uid=user_uid)
                 .first())
-            job_seeker_profile = JobSeekerProfile(
-                **seeker_orm.to_dict(include_relationships=True)) if seeker_orm else None
-            if job_seeker_profile:
-                self.logger.info(f"Found Job Seeker Profile with Resumes List : {job_seeker_profile}")
 
+            if not seeker_orm:
+                return None
+                
+            job_seeker_profile = JobSeekerProfile(
+                **seeker_orm.to_dict(include_relationships=True))
+
+            # Add saved jobs count to profile
+            job_seeker_profile.saved_jobs_count = len(seeker_orm.saved_jobs) if seeker_orm.saved_jobs else 0
+            self.logger.info(f"Found Job Seeker Profile with {job_seeker_profile.saved_jobs_count} saved jobs")
+            
             return job_seeker_profile
 
 
@@ -234,3 +244,78 @@ class JobSeekerProfilesController(Controllers):
         with self.get_session() as session:
             orm = session.query(ConfigurationORM).filter_by(type='job_title').all()
             return [Configuration.model_validate(x.to_dict()) for x in orm]
+
+    # --- Referral Methods ---
+    @error_handler
+    async def create_referral(self, referrer_uid: str, referee_uid: str) -> dict:
+        """Create a new referral relationship between users."""
+        with self.get_session() as session:
+            # Check if referral already exists
+            existing = session.query(JobSeekerReferralORM).filter_by(
+                referrer_id=referrer_uid,
+                referee_id=referee_uid
+            ).first()
+            if existing:
+                return {"error": "Referral already exists"}
+
+            referral = JobSeekerReferralORM(
+                referrer_id=referrer_uid,
+                referee_id=referee_uid,
+                status=ReferralStatus.PENDING,
+                created_at=datetime.now(timezone.utc)
+            )
+            session.add(referral)
+            return {"message": "Referral created successfully"}
+
+    @error_handler
+    async def get_referrals_by_referrer(self, user_uid: str, active_only: bool = False) -> list[dict]:
+        """Get all referrals made by a user."""
+        with self.get_session() as session:
+            query = session.query(JobSeekerReferralORM).filter_by(referrer_id=user_uid)
+            if active_only:
+                query = query.filter_by(is_active=True)
+            return [ref.to_dict() for ref in query.all()]
+
+    @error_handler
+    async def get_referrals_by_referee(self, user_uid: str) -> list[dict]:
+        """Get referral info for a referred user."""
+        with self.get_session() as session:
+            return [
+                ref.to_dict()
+                for ref in session.query(JobSeekerReferralORM)
+                .filter_by(referee_id=user_uid)
+                .all()
+            ]
+
+    @error_handler
+    async def update_referral_status(self, referral_id: int, status: ReferralStatus) -> dict:
+        """Update a referral's status."""
+        with self.get_session() as session:
+            referral = session.query(JobSeekerReferralORM).get(referral_id)
+            if not referral:
+                return {"error": "Referral not found"}
+
+            referral.status = status
+            if status == ReferralStatus.COMPLETED:
+                referral.completed_at = datetime.now(timezone.utc)
+                # Update referrer's stats
+                referrer = session.query(JobSeekerProfileORM).get(referral.referrer_id)
+                if referrer:
+                    referrer.referral_count += 1
+            return {"message": "Referral status updated"}
+
+    @error_handler
+    async def get_referral_stats(self, user_uid: str) -> dict:
+        """Get statistics about a user's referrals."""
+        with self.get_session() as session:
+            total = session.query(JobSeekerReferralORM).filter_by(referrer_id=user_uid).count()
+            completed = session.query(JobSeekerReferralORM).filter_by(
+                referrer_id=user_uid,
+                status=ReferralStatus.COMPLETED
+            ).count()
+
+            return {
+                "total_referrals": total,
+                "completed_referrals": completed,
+                "completion_rate": (completed / total * 100) if total else 0
+            }

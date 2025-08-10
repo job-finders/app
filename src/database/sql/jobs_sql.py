@@ -33,14 +33,11 @@ class JobCategoryORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
-    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-
-    # Computed statistics properties
     @hybrid_property
     def total_jobs(self) -> int:
         """Total jobs in this category"""
@@ -52,7 +49,7 @@ class JobCategoryORM(Base):
         now = utc_time()
         return sum(
             1 for job in self.jobs
-            if job.status == 'active' and job.expires_at > now
+            if job.status == 'active' and job.expires_at and job.expires_at > now
         )
 
     @hybrid_property
@@ -103,96 +100,26 @@ class JobsORM(Base):
     """
     JobsORM represents a job posting in the system and contains comprehensive metadata
     about the job, its employer, location, requirements, application process, and internal tracking.
-
-    Fields:
-
-    - job_id: Unique UUID identifier for the job (primary key).
-    - job_ref: A human-readable job reference code or ID used for external or internal tracking.
-    - external_source: Indicates where the job originated (e.g., 'LinkedIn', 'CompanyWebsite').
-
-    Company Relationships:
-    - company_id: Foreign key linking to the associated company.
-    - company: SQLAlchemy relationship to the CompanyORM object.
-
-    Job Details:
-    - title: Job title.
-    - description: Full job description (deferred for performance).
-    - position_type: Type of employment (e.g., FULL_TIME, PART_TIME, CONTRACT).
-    - remote_policy: Work arrangement policy (e.g., ONSITE, HYBRID, REMOTE).
-
-    Compensation:
-    - salary_min / salary_max: Salary range.
-    - salary_currency: Currency code (default: "ZAR").
-    - salary_confidential: Whether salary details should be hidden from public view.
-
-    Location:
-    - city / province / country: Geographical job location.
-    - geo_location: Latitude and longitude string (e.g., "−26.2041,28.0473").
-
-    Timeline:
-    - posted_at: Date/time the job was published.
-    - expires_at: Date/time the job listing will expire.
-    - application_deadline: Cutoff date for accepting applications.
-
-    Requirements:
-    - experience_level: Desired experience level (ENTRY, MID, SENIOR).
-    - education_requirements: JSON structure detailing educational qualifications.
-    - required_skills / preferred_skills: Lists of must-have and nice-to-have skills.
-
-    Application Process:
-    - application_url: Link to an external application form (if applicable).
-    - application_instructions: Additional text-based instructions for applicants.
-
-    Statistics:
-    - view_count: Number of times the job has been viewed.
-    - application_count: Number of submitted applications.
-
-    Status & Moderation:
-    - status: Current state of the job (e.g., active, closed, archived).
-    - is_featured: Marks job for prioritized display or promotion.
-
-    Audit Fields:
-    - created_at / updated_at: Timestamps for creation and last update.
-
-    Relationships:
-    - applications: Related JobApplicationORM entries.
-    - saved_jobs: Related SavedJobORM entries (e.g., user bookmarks/favorites).
-
-    Hybrid Properties:
-    - is_active: Boolean indicating if the job is currently visible and not expired.
-    - location: Readable string combining city, province, and country.
-
-    Indexes:
-    - Multi-field indexes improve performance for search, filtering, and sorting operations.
-
-    Utility Methods:
-    - generate_slug(): Generates a URL-friendly slug using job title and job_ref.
-    - to_dict(): Serializes the job record and related fields to a dictionary.
     """
 
     __tablename__ = 'jobs'
 
     # Core Identification
     job_id = Column(String(ID_LEN), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
-    category_id = Column(String(ID_LEN), ForeignKey('job_category.category_id'), index=True)  # Add this below position_type/remote_policy
-
+    category_id = Column(String(ID_LEN), ForeignKey('job_category.category_id'), index=True)
     job_ref = Column(String(NAME_LEN), unique=True, index=True)
     slug = Column(String(NAME_LEN), unique=True, index=True)
-    external_source = Column(String(NAME_LEN))  # e.g., "LinkedIn", "CompanyWebsite"
+    external_source = Column(String(NAME_LEN))
 
     # Company Relationships
-    employer_id= Column(String(ID_LEN), ForeignKey('employers.employer_id'), index=True)
+    employer_id = Column(String(ID_LEN), ForeignKey('employers.employer_id'), index=True)
     company_id = Column(String(ID_LEN), ForeignKey('companies.company_id'), index=True)
-    company = relationship("CompanyORM", back_populates="jobs")
-    approval_request = relationship("JobApprovalRequestORM", uselist=False, back_populates="job")
-    version_history = relationship("JobVersionHistoryORM")
+
     # Job Details
     title = Column(String(255), index=True)
-    description = deferred(Column(Text))  # Large text, loaded only when needed
-    position_type = Column(String(50), index=True)  # FULL_TIME, PART_TIME, CONTRACT
-    remote_policy = Column(String(50), index=True)  # ONSITE, HYBRID, REMOTE
-    # In Job Details section of JobsORM
-
+    description = deferred(Column(Text))
+    position_type = Column(String(50), index=True)
+    remote_policy = Column(String(50), index=True)
 
     # Compensation
     salary_min = Column(Float)
@@ -204,20 +131,20 @@ class JobsORM(Base):
     city = Column(String(NAME_LEN), index=True)
     province = Column(String(NAME_LEN), index=True)
     country = Column(String(NAME_LEN), index=True)
-    geo_location = Column(String(100))  # "lat,lng" for mapping
+    geo_location = Column(String(100))
 
-    # Timeline - Posted at is the date the job went live = created_at is the date the job was created
+    # Timeline
     posted_at = Column(DateTime(timezone=True), default=utc_time, index=True)
     expires_at = Column(DateTime(timezone=True), index=True)
     application_deadline = Column(DateTime(timezone=True))
 
     # Requirements
-    experience_level = Column(String(50), index=True)  # ENTRY, MID, SENIOR
-    education_requirements = Column(JSON, default={})  # {"degree": "BSc", "field": "Computer Science"}
-    required_skills = Column(JSON, default=[])  # ["Python", "AWS"]
-    preferred_skills = Column(JSON, default=[])  # ["Docker", "Kubernetes"]
+    experience_level = Column(String(50), index=True)
+    education_requirements = Column(JSON, default={})
+    required_skills = Column(JSON, default=[])
+    preferred_skills = Column(JSON, default=[])
 
-    # REQUIRED DOCUMENTATIONS AND QUESTIONAIRE
+    # Required documentations and questionnaire
     required_documents = Column(JSON, default=[])
     required_questionnaire = Column(JSON, default=[])
 
@@ -230,23 +157,27 @@ class JobsORM(Base):
     application_count = Column(Integer, default=0)
 
     # Status & Moderation
-    status = Column(String(20), default='active', index=True)  # active/closed/archived
+    status = Column(String(20), default='active', index=True)
     is_featured = Column(Boolean, default=False)
 
     # Audit Fields
     created_at = Column(DateTime(timezone=True), default=utc_time)
     updated_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
 
-    # Note Summary and SEO Description will be auto created by Agents
-    summary = Column(Text, nullable=True)  # Summary of job details for quick access
-    seo_description = Column(Text, nullable=True)  # SEO description for job listing
+    # Summary and SEO
+    summary = Column(Text, nullable=True)
+    seo_description = Column(Text, nullable=True)
 
     # Relationships
+    company = relationship("CompanyORM", back_populates="jobs")
+    category = relationship("JobCategoryORM", back_populates="jobs")
     applications = relationship("JobApplicationORM", back_populates="job")
     interested_jobseekers = relationship("SavedJobORM", back_populates="job")
-    category = relationship("JobCategoryORM", back_populates="jobs")
+    approval_request = relationship("JobApprovalRequestORM", uselist=False, back_populates="job")
+    version_history = relationship("JobVersionHistoryORM")
     ats_reports = relationship("ATSReportORM", back_populates="job")
-
+    likes = relationship("JobLikeORM", back_populates="job")
+    shares = relationship("JobShareORM", back_populates="job")
 
     # Indexes
     __table_args__ = (
@@ -254,12 +185,12 @@ class JobsORM(Base):
         Index('ix_salary_range', 'salary_min', 'salary_max'),
         Index('ix_recent_jobs', 'posted_at', 'is_featured'),
     )
+
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
-    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
@@ -267,11 +198,13 @@ class JobsORM(Base):
 
     @hybrid_property
     def is_active(self):
-        return self.status == JobStatusEnum.ACTIVE.value and self.expires_at > utc_time()
+        return (self.status == JobStatusEnum.ACTIVE.value and
+                self.expires_at and self.expires_at > utc_time())
 
     @hybrid_property
     def location(self):
-        return f"{self.city}, {self.province}, {self.country}"
+        parts = [self.city, self.province, self.country]
+        return ", ".join(part for part in parts if part)
 
     def generate_slug(self):
         return f"{self.title.lower().replace(' ', '-')}-{self.job_ref}"
@@ -301,7 +234,7 @@ class JobsORM(Base):
             "posted_at": self.posted_at.replace(tzinfo=timezone.utc).isoformat() if self.posted_at else None,
             "expires_at": self.expires_at.replace(tzinfo=timezone.utc).isoformat() if self.expires_at else None,
             "application_deadline": self.application_deadline.replace(
-                tzinfo=timezone.utc) if self.application_deadline else None,
+                tzinfo=timezone.utc).isoformat() if self.application_deadline else None,
             "experience_level": self.experience_level,
             "education_requirements": self.education_requirements,
             "required_skills": self.required_skills,
@@ -318,12 +251,15 @@ class JobsORM(Base):
             "updated_at": self.updated_at.replace(tzinfo=timezone.utc).isoformat() if self.updated_at else None,
             "location": self.location,
             "is_active": self.is_active,
-
             "category": self.category.to_dict(include_jobs=False) if self.category and include_relationship else None,
             "company": self.company.to_dict() if self.company and include_relationship else None,
             "applications": [application.to_dict() for application in self.applications] if include_relationship else [],
             "interested_jobseekers": [_interest.to_dict() for _interest in
-                                      self.interested_jobseekers] if include_relationship else []
+                                      self.interested_jobseekers] if include_relationship else [],
+            "likes": [like.to_dict() for like in self.likes] if include_relationship else [],
+            "shares": [share.to_dict() for share in self.shares] if include_relationship else [],
+            "like_count": len(self.likes) if self.likes else 0,
+            "share_count": len(self.shares) if self.shares else 0
         }
 
     def generate_and_set_slug(self):
@@ -344,7 +280,7 @@ class JobVersionHistoryORM(Base):
     id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)
     version = Column(Integer)
-    changes = Column(JSON)  # Stores diff between versions
+    changes = Column(JSON)
     modified_by = Column(String(ID_LEN), ForeignKey('users.uid'))
     modified_at = Column(DateTime(timezone=True), default=utc_time)
 
@@ -353,7 +289,6 @@ class JobVersionHistoryORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
-    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
@@ -361,38 +296,30 @@ class JobVersionHistoryORM(Base):
 
 
 class SavedJobORM(Base):
-    """sumary_line
-        JobSeekers will save jobs they are interested in for later reference. using this Model.
-    Keyword arguments:
-    argument -- description
-    Return: return_description
-    """
+    """JobSeekers will save jobs they are interested in for later reference."""
     
     __tablename__ = 'saved_jobs'
     saved_job_id = Column(String(ID_LEN), primary_key=True, index=True)
     user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_uid'), index=True)
     job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)
-
     created_at = Column(DateTime(timezone=True), default=utc_time)
 
     job = relationship("JobsORM", back_populates="interested_jobseekers")
     jobseeker_profile = relationship("JobSeekerProfileORM", back_populates="saved_jobs")
-
 
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
-    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-    def to_dict(self, include_relationship=False) -> dict[str, str]:
+    def to_dict(self, include_relationship=False) -> dict:
         return {
-            "saved_job_id" : self.saved_job_id,
+            "saved_job_id": self.saved_job_id,
             "user_id": self.user_id,
             "job_id": self.job_id,
             "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
@@ -400,22 +327,21 @@ class SavedJobORM(Base):
             "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationship else None
         }
 
+
 class JobApplicationORM(Base):
     __tablename__ = 'job_applications'
 
     application_id = Column(String(ID_LEN), primary_key=True, index=True)
-    user_id = Column(String(ID_LEN),ForeignKey('jobseeker_profiles.user_uid'), index=True)
-    job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)  # Added ForeignKey
+    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_uid'), index=True)
+    job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), index=True)
     ats_report_id = Column(String(ID_LEN), ForeignKey('ats_reports.ats_report_id'), nullable=True, index=True)
     cv_id = Column(String(ID_LEN), index=True)
 
     jobseeker_profile = relationship("JobSeekerProfileORM", back_populates="applications")
-    # Rest of the existing columns...
     applied_date = Column(DateTime(timezone=True), default=utc_time)
     updated_at = Column(DateTime(timezone=True), default=utc_time, onupdate=utc_time)
 
     cover_letter = Column(Text, nullable=True)
-
     method = Column(String(50), default='website')
     notes = Column(String(255), nullable=True)
 
@@ -423,9 +349,8 @@ class JobApplicationORM(Base):
     preferred_start_date = Column(Date, nullable=True)
     preferred_location = Column(String(255), nullable=True)
 
-    required_documents = Column(JSON, default=[])  # ["CV", "ID Copy", "Certificates"]
-    questionnaire_answers = Column(JSON, default=[])  # {"questions": ["Why this role?", "Availability dat
-    # See Job Application Stage Enum - the Default Stage is Applied
+    required_documents = Column(JSON, default=[])
+    questionnaire_answers = Column(JSON, default=[])
     last_application_stage = Column(String(50), nullable=True)
     application_stage = Column(String(50))
     validation_score = Column(Integer)
@@ -433,15 +358,14 @@ class JobApplicationORM(Base):
     review_summary = Column(Text)
 
     ats_report = relationship("ATSReportORM", uselist=False, back_populates="job_application")
-    # Relationship to Job
-    job = relationship("JobsORM", back_populates="applications")  # New relationship
+    job = relationship("JobsORM", back_populates="applications")
 
     def to_dict(self, include_relationships=False) -> dict:
         return {
             "application_id": self.application_id,
             "user_id": self.user_id,
             "job_id": self.job_id,
-            "job": self.job.to_dict() if self.job else None,  # Include job details
+            "job": self.job.to_dict() if self.job else None,
             "ats_report_id": self.ats_report_id,
             "cv_id": self.cv_id,
             "applied_date": self.applied_date.replace(tzinfo=timezone.utc).isoformat() if self.applied_date else None,
@@ -463,18 +387,16 @@ class JobApplicationORM(Base):
             "ats_report": self.ats_report.to_dict() if self.ats_report and include_relationships else None,
         }
 
-    # Rest of the existing methods...
-
     @classmethod
     def create_if_not_table(cls):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
-    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
+
 
 class ATSReportORM(Base):
     __tablename__ = "ats_reports"
@@ -487,6 +409,7 @@ class ATSReportORM(Base):
     missing_keywords = Column(JSON, nullable=False, default=list)
     feedback = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_time)
+
     job_application = relationship("JobApplicationORM", back_populates="ats_report")
     job = relationship("JobsORM", back_populates="ats_reports")
 
@@ -499,13 +422,12 @@ class ATSReportORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
-    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-    def to_dict(self, include_relationships: bool=False) -> dict:
+    def to_dict(self, include_relationships: bool = False) -> dict:
         return {
             "ats_report_id": self.ats_report_id,
             "job_id": self.job_id,
@@ -518,40 +440,14 @@ class ATSReportORM(Base):
             "job_application": self.job_application if include_relationships and self.job_application else None
         }
 
+
 class JobApprovalRequestORM(Base):
-    __doc__ = """
+    """
     SQLAlchemy ORM model representing job approval requests submitted by companies.
 
     This table tracks the approval lifecycle of jobs that require administrative or delegated approval
     before being listed publicly. Each request is tied to a specific job and includes metadata about
     the request such as token expiration, approvers, and decision status.
-
-    Columns:
-        - request_id (UUID): Unique identifier for the approval request.
-        - job_id (UUID): Foreign key linking to the job being approved.
-        - token (str): Unique token used for secure approval links.
-        - token_expires (datetime): Expiry timestamp for the token.
-        - requested_at (datetime): Timestamp when the approval request was created.
-        - requested_by (UUID): ID of the company that submitted the request.
-        - approvers (list of str): List of user IDs assigned to review and decide.
-        - status (str): Current status ('pending', 'approved', 'rejected', 'expired').
-        - decision_at (datetime): Timestamp of when a decision was made (if applicable).
-        - decision_by (UUID): ID of the user who approved/rejected the request.
-        - feedback (str): Optional text feedback from the approver.
-
-    Relationships:
-        - job: SQLAlchemy relationship to the associated JobsORM object.
-
-    Example usage:
-        >>> request = JobApprovalRequestORM(
-        ...     job_id="job-1234",
-        ...     token="abc-uuid-token",
-        ...     token_expires=utc_time() + timedelta(days=2),
-        ...     requested_by="company-5678",
-        ...     approvers=["user-1", "user-2"]
-        ... )
-        >>> session.add(request)
-        >>> session.commit()
     """
 
     __tablename__ = 'job_approval_requests'
@@ -562,8 +458,8 @@ class JobApprovalRequestORM(Base):
     token_expires = Column(DateTime(timezone=True))
     requested_at = Column(DateTime(timezone=True), default=utc_time)
     requested_by = Column(String(ID_LEN), ForeignKey('companies.company_id'))
-    approvers = Column(JSON, default=[])  # List of user IDs
-    status = Column(String(20), default=JobApprovalStatusEnum.PENDING.value)  # pending/approved/rejected/expired
+    approvers = Column(JSON, default=[])
+    status = Column(String(20), default=JobApprovalStatusEnum.PENDING.value)
     decision_at = Column(DateTime(timezone=True), onupdate=utc_time)
     decision_by = Column(String(ID_LEN), ForeignKey('users.uid'))
     feedback = Column(Text)
@@ -575,7 +471,6 @@ class JobApprovalRequestORM(Base):
         if not inspect(engine).has_table(cls.__tablename__):
             Base.metadata.create_all(bind=engine)
 
-    # noinspection PyUnresolvedReferences
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
@@ -616,7 +511,6 @@ class ApplicationDashboardORM(Base):
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
-            # noinspection PyUnresolvedReferences
             cls.__table__.drop(bind=engine)
 
     def to_dict(self):
@@ -647,17 +541,163 @@ class TalentPoolReportORM(Base):
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
-            # noinspection PyUnresolvedReferences
             cls.__table__.drop(bind=engine)
 
     def to_dict(self):
         return {
             "report_id": self.report_id,
             "company_id": self.company_id,
-            "generated_at": self.generated_at.replace(tzinfo=timezone.utc) if self.generated_at else None,
+            "generated_at": self.generated_at.replace(tzinfo=timezone.utc).isoformat() if self.generated_at else None,
             "report_data": self.report_data,
             "insights": self.insights
         }
+
+
+class JobLikeORM(Base):
+    """
+    JobLikeORM represents user likes on job postings.
+    Tracks which users have liked which jobs for engagement analytics.
+    """
+    __tablename__ = 'job_likes'
+
+    like_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_uid'), nullable=False, index=True)
+    job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_time, index=True)
+
+    # Relationships
+    job = relationship("JobsORM", back_populates="likes")
+    jobseeker_profile = relationship("JobSeekerProfileORM", back_populates="liked_jobs")
+
+    # Unique constraint to prevent duplicate likes
+    __table_args__ = (
+        UniqueConstraint('user_id', 'job_id', name='unique_user_job_like'),
+        Index('ix_job_likes_user_job', 'user_id', 'job_id'),
+        Index('ix_job_likes_job_created', 'job_id', 'created_at'),
+    )
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self, include_relationships=False) -> dict:
+        data = {
+            "like_id": self.like_id,
+            "user_id": self.user_id,
+            "job_id": self.job_id,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
+        }
+
+        if include_relationships:
+            if self.jobseeker_profile:
+                data["jobseeker_profile"] = {
+                    "user_uid": self.jobseeker_profile.user_uid,
+                    "first_name": getattr(self.jobseeker_profile, 'first_name', None),
+                    "last_name": getattr(self.jobseeker_profile, 'last_name', None)
+                }
+            if self.job:
+                data["job"] = {
+                    "job_id": self.job.job_id,
+                    "title": self.job.title,
+                    "company_id": self.job.company_id
+                }
+
+        return data
+
+    @property
+    def is_recent(self) -> bool:
+        """Check if this like was created within the last 24 hours"""
+        if not self.created_at:
+            return False
+        return (utc_time() - self.created_at).total_seconds() < 86400
+
+
+class JobShareORM(Base):
+    """
+    JobShareORM tracks job sharing activities across different platforms.
+    Supports both authenticated and anonymous sharing with referral tracking.
+    """
+    __tablename__ = 'job_shares'
+
+    share_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(ID_LEN), ForeignKey('jobseeker_profiles.user_uid'), nullable=True,
+                     index=True)  # Nullable for anonymous shares
+    job_id = Column(String(ID_LEN), ForeignKey('jobs.job_id'), nullable=False, index=True)
+    share_method = Column(String(50), nullable=False,
+                          index=True)  # email, linkedin, twitter, facebook, whatsapp, copy_link
+    shared_at = Column(DateTime(timezone=True), default=utc_time, index=True)
+    referral_code = Column(String(20), nullable=True, index=True)  # For tracking conversions
+
+    # Relationships
+    job = relationship("JobsORM", back_populates="shares")
+    jobseeker_profile = relationship("JobSeekerProfileORM", back_populates="shared_jobs")
+
+    # Indexes for performance
+    __table_args__ = (
+        Index('ix_job_shares_job_method', 'job_id', 'share_method'),
+        Index('ix_job_shares_user_shared', 'user_id', 'shared_at'),
+        Index('ix_job_shares_referral', 'referral_code'),
+    )
+
+    @classmethod
+    def create_if_not_table(cls):
+        if not inspect(engine).has_table(cls.__tablename__):
+            Base.metadata.create_all(bind=engine)
+
+    @classmethod
+    def delete_table(cls):
+        if inspect(engine).has_table(cls.__tablename__):
+            cls.__table__.drop(bind=engine)
+
+    def to_dict(self, include_relationships=False) -> dict:
+        data = {
+            "share_id": self.share_id,
+            "user_id": self.user_id,
+            "job_id": self.job_id,
+            "share_method": self.share_method,
+            "shared_at": self.shared_at.replace(tzinfo=timezone.utc).isoformat() if self.shared_at else None,
+            "referral_code": self.referral_code,
+        }
+
+        if include_relationships:
+            if self.jobseeker_profile:
+                data["jobseeker_profile"] = {
+                    "user_uid": self.jobseeker_profile.user_uid,
+                    "first_name": getattr(self.jobseeker_profile, 'first_name', None),
+                    "last_name": getattr(self.jobseeker_profile, 'last_name', None)
+                }
+            if self.job:
+                data["job"] = {
+                    "job_id": self.job.job_id,
+                    "title": self.job.title,
+                    "company_id": self.job.company_id
+                }
+
+        return data
+
+    @property
+    def is_anonymous(self) -> bool:
+        """Check if this is an anonymous share"""
+        return self.user_id is None
+
+    @property
+    def is_social_media(self) -> bool:
+        """Check if this share was via social media"""
+        social_methods = ['linkedin', 'twitter', 'facebook']
+        return self.share_method in social_methods
+
+    @classmethod
+    def generate_referral_code(cls, user_id: str, job_id: str) -> str:
+        """Generate a unique referral code for tracking"""
+        import hashlib
+        combined = f"{user_id}:{job_id}:{utc_time().timestamp()}"
+        return hashlib.md5(combined.encode()).hexdigest()[:8].upper()
 
 
 class ImportJobBatchORM(Base):
@@ -679,7 +719,6 @@ class ImportJobBatchORM(Base):
     @classmethod
     def delete_table(cls):
         if inspect(engine).has_table(cls.__tablename__):
-            # noinspection PyUnresolvedReferences
             cls.__table__.drop(bind=engine)
 
     def to_dict(self):

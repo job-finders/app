@@ -1469,6 +1469,124 @@ class JobsWorkflowController(Controllers):
 
             return ranked
 
+    @error_handler
+    async def get_enhanced_company_analytics_dashboard(self, company_id: str) -> Optional[dict]:
+        """Enhanced employer dashboard with job actions analytics integration"""
+        self.logger.info("Started running : get_enhanced_company_analytics_dashboard")
+        if not (isinstance(company_id, str) and company_id.strip()):
+            self.logger.error(f"Error Invalid Company ID")
+            return None
+
+        # Get base analytics dashboard
+        base_dashboard = await self.get_company_analytics_dashboard(company_id)
+        if not base_dashboard:
+            return None
+
+        try:
+            # Get job actions analytics service
+            from src.utils.route_helpers import get_controller
+            analytics_service = get_controller('job_actions_analytics')
+
+            if analytics_service:
+                # Get company engagement stats
+                engagement_stats = await analytics_service.get_company_engagement_stats(company_id)
+
+                # Get job actions report
+                actions_report = await analytics_service.generate_job_actions_report(company_id)
+
+                # Combine with base dashboard
+                enhanced_dashboard = {
+                    "base_analytics": base_dashboard.model_dump() if hasattr(base_dashboard,
+                                                                             'model_dump') else base_dashboard,
+                    "engagement_analytics": {
+                        "total_job_likes": engagement_stats.total_job_likes if engagement_stats else 0,
+                        "total_job_saves": engagement_stats.total_job_saves if engagement_stats else 0,
+                        "total_job_shares": engagement_stats.total_job_shares if engagement_stats else 0,
+                        "average_engagement_per_job": engagement_stats.average_engagement_per_job if engagement_stats else 0.0,
+                        "engagement_growth_rate": engagement_stats.engagement_growth_rate if engagement_stats else 0.0,
+                        "most_liked_job_id": engagement_stats.most_liked_job_id if engagement_stats else None,
+                        "most_saved_job_id": engagement_stats.most_saved_job_id if engagement_stats else None,
+                        "most_shared_job_id": engagement_stats.most_shared_job_id if engagement_stats else None
+                    },
+                    "actions_report": {
+                        "total_engagement_events": actions_report.total_engagement_events if actions_report else 0,
+                        "top_performing_jobs": actions_report.top_performing_jobs if actions_report else [],
+                        "engagement_trends": actions_report.engagement_trends if actions_report else {},
+                        "conversion_metrics": actions_report.conversion_metrics if actions_report else {}
+                    }
+                }
+
+                return enhanced_dashboard
+            else:
+                # Fallback to base dashboard if analytics service not available
+                return {
+                    "base_analytics": base_dashboard.model_dump() if hasattr(base_dashboard,
+                                                                             'model_dump') else base_dashboard,
+                    "engagement_analytics": {},
+                    "actions_report": {}
+                }
+
+        except Exception as e:
+            self.logger.error(f"Error getting enhanced analytics dashboard: {e}")
+            # Return base dashboard on error
+            return {
+                "base_analytics": base_dashboard.model_dump() if hasattr(base_dashboard,
+                                                                         'model_dump') else base_dashboard,
+                "engagement_analytics": {},
+                "actions_report": {}
+            }
+
+    @error_handler
+    async def get_job_performance_metrics(self, job_id: str) -> Optional[dict]:
+        """Get comprehensive performance metrics for a specific job including engagement data"""
+        if not (isinstance(job_id, str) and job_id.strip()):
+            return None
+
+        try:
+            # Get base job details
+            job_details = await self.get_job_details(job_id)
+            if not job_details:
+                return None
+
+            # Get application funnel stats
+            funnel_stats = await self.get_application_funnel_stats(job_id)
+
+            # Get job actions analytics
+            from src.utils.route_helpers import get_controller
+            analytics_service = get_controller('job_actions_analytics')
+
+            engagement_metrics = None
+            if analytics_service:
+                engagement_metrics = await analytics_service.get_job_engagement_metrics(job_id)
+
+            # Combine all metrics
+            performance_metrics = {
+                "job_details": {
+                    "job_id": job_details.job_id,
+                    "title": job_details.title,
+                    "status": job_details.status,
+                    "posted_at": job_details.posted_at.isoformat() if job_details.posted_at else None,
+                    "expires_at": job_details.expires_at.isoformat() if job_details.expires_at else None
+                },
+                "application_funnel": funnel_stats.model_dump() if funnel_stats else {},
+                "engagement_metrics": engagement_metrics.model_dump() if engagement_metrics else {
+                    "total_likes": 0,
+                    "total_saves": 0,
+                    "total_shares": 0,
+                    "total_views": 0,
+                    "engagement_rate": 0.0,
+                    "save_to_apply_rate": 0.0,
+                    "like_to_apply_rate": 0.0,
+                    "share_conversion_rate": 0.0
+                },
+                "calculated_at": datetime.now(timezone.utc).isoformat()
+            }
+
+            return performance_metrics
+
+        except Exception as e:
+            self.logger.error(f"Error getting job performance metrics: {e}")
+            return None
 
     @error_handler
     async def bulk_import_jobs(self, company_id: str, jobs_data: list[dict]) -> BulkImportResult | None:

@@ -26,6 +26,10 @@ from src.controllers.blog.blog_feedback_controller import BlogFeedbackController
 from src.controllers.blog.blog_agent_controller import BlogAgentController
 from src.controllers.blog.blog_prompt_mutations import PromptMutationController
 
+# Job Actions Controllers
+from src.controllers.jobs.actions import JobActionsController
+from src.services.job_actions_analytics import JobActionsAnalyticsService
+
 
 from src.logger import init_logger
 
@@ -193,6 +197,16 @@ class ControllerFactory:
         :return:
         """
         return self._get_controller('prompt_mutation_controller', PromptMutationController)
+
+    def get_job_actions_controller(self) -> JobActionsController:
+        """Get JobActionsController instance"""
+        self.logger.info(f"Getting JobActionsController")
+        return self._get_controller('job_actions', JobActionsController)
+
+    def get_job_actions_analytics_controller(self) -> JobActionsAnalyticsService:
+        """Get JobActionsAnalyticsService instance"""
+        self.logger.info(f"Getting JobActionsAnalyticsService")
+        return self._get_controller('job_actions_analytics', JobActionsAnalyticsService)
 
     def _get_controller(self, name: str, controller_class):
         """Thread-safe controller getter with double-checked locking"""

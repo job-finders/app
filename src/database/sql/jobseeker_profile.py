@@ -61,6 +61,8 @@ class JobSeekerProfileORM(Base):
     following_companies = relationship("CompanyFollowingORM", back_populates="jobseeker_follower")
     resumes_list = relationship("JobSeekerCVORM", back_populates="jobseeker_profile", cascade="all, delete-orphan")
     saved_jobs = relationship("SavedJobORM", back_populates="jobseeker_profile", cascade="all, delete-orphan")
+    liked_jobs = relationship("JobLikeORM", back_populates="jobseeker_profile")
+    shared_jobs = relationship("JobShareORM", back_populates="jobseeker_profile")
 
     @classmethod
     def create_if_not_table(cls):
@@ -122,5 +124,7 @@ class JobSeekerProfileORM(Base):
             data['following_companies'] = [company_follow.to_dict() for company_follow in self.following_companies]
             data['resumes_list'] = [resume.to_dict() for resume in self.resumes_list]
             data['saved_jobs'] = [job.to_dict() for job in self.saved_jobs]
+            data['liked_jobs'] = [like.to_dict() for like in self.liked_jobs]
+            data['shared_jobs'] = [share.to_dict() for share in self.shared_jobs]
 
         return data
