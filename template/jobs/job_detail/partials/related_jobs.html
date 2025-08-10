@@ -1,0 +1,36 @@
+{# ================================ #}
+{# Partial: related_jobs.html #}
+{# ================================ #}
+
+<div class="stats-card p-4 mb-4 slide-up">
+    <div class="stats-header">
+        <i class="fas fa-link bg-info text-white"></i>
+        <h3>Related Jobs</h3>
+    </div>
+
+    {% if related_jobs %}
+        <div class="related-jobs-list">
+            {% for job in related_jobs %}
+                <div class="related-job-item mb-3">
+                    <a href="{{ url_for('jobs.job_details', job_id=job.job_id) }}" class="d-flex align-items-center">
+                        <div class="me-3">
+                            <img src="{{ job.company.logo_url }}" alt="{{ job.company.name }} Logo"
+                                 class="related-job-logo">
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1">{{ job.title }}</h6>
+                            <small class="text-muted">{{ job.company.name }}</small>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-data-state">
+            <i class="fas fa-search"></i>
+            <p class="mb-0">No related jobs found</p>
+            <small>Check back later for more opportunities</small>
+        </div>
+    {% endif %}
+</div>
+

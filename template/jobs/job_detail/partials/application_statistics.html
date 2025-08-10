@@ -1,0 +1,68 @@
+{# ================================ #}
+{# Partial: application_statistics.html #}
+{# ================================ #}
+
+{% set app_stats = job_statistics.application_stats %}
+<div class="stats-card p-4 mb-4 slide-up">
+    <div class="stats-header">
+        <i class="fas fa-chart-bar bg-primary text-white"></i>
+        <h3>Application Statistics</h3>
+    </div>
+
+    <div class="metric-grid mb-4">
+        <div class="metric-item">
+            {% if app_stats.total_applications == 0 %}
+                <span class="metric-value badge-success">
+          <i class="fas fa-star me-1"></i>Be First!
+        </span>
+            {% else %}
+                <span class="metric-value">{{ app_stats.total_applications }}</span>
+            {% endif %}
+            <small class="metric-label">Total Applications</small>
+        </div>
+        <div class="metric-item">
+            <span class="metric-value">{{ "%.1f"|format(app_stats.applications_per_day) }}</span>
+            <small class="metric-label">Applications per Day</small>
+        </div>
+        <div class="metric-item">
+            {% if app_stats.recent_application_trend == "increasing" %}
+                <span class="metric-value badge-success">
+          <i class="fas fa-arrow-up me-1"></i>Growing
+        </span>
+            {% elif app_stats.recent_application_trend == "decreasing" %}
+                <span class="metric-value badge-warning">
+          <i class="fas fa-arrow-down me-1"></i>Declining
+        </span>
+            {% else %}
+                <span class="metric-value badge-neutral">
+          <i class="fas fa-minus me-1"></i>Stable
+        </span>
+            {% endif %}
+            <small class="metric-label">Recent Trend</small>
+        </div>
+    </div>
+
+    <!-- Application Sources -->
+    {% if app_stats.application_sources %}
+        <div class="mb-3">
+            <h6 class="fw-semibold mb-2">Application Sources</h6>
+            <div class="d-flex flex-wrap gap-2">
+                {% for source, count in app_stats.application_sources.items() %}
+                    <span class="badge badge-primary">{{ source.title() }}: {{ count }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Competition Level -->
+    <div class="comparison-row">
+        <span class="small fw-semibold">Competition Level:</span>
+        {% if app_stats.application_rate_category == "high" %}
+            <span class="badge badge-danger">High Competition</span>
+        {% elif app_stats.application_rate_category == "medium" %}
+            <span class="badge badge-warning">Medium Competition</span>
+        {% else %}
+            <span class="badge badge-success">Low Competition</span>
+        {% endif %}
+    </div>
+</div>

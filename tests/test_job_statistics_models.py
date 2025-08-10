@@ -174,19 +174,19 @@ class TestTrendAnalysis:
     def test_trend_data_point_creation(self):
         """Test creating TrendDataPoint"""
         point = TrendDataPoint(
-            date=date(2025, 1, 15),
+            date_created=date(2025, 1, 15),
             count=5
         )
-        
-        assert point.date == date(2025, 1, 15)
+
+        assert point.date_created == date(2025, 1, 15)
         assert point.count == 5
     
     def test_trend_analysis_creation(self):
         """Test creating TrendAnalysis with valid data"""
         daily_apps = [
-            TrendDataPoint(date=date(2025, 1, 10), count=2),
-            TrendDataPoint(date=date(2025, 1, 11), count=3),
-            TrendDataPoint(date=date(2025, 1, 12), count=5),
+            TrendDataPoint(date_created=date(2025, 1, 10), count=2),
+            TrendDataPoint(date_created=date(2025, 1, 11), count=3),
+            TrendDataPoint(date_created=date(2025, 1, 12), count=5),
         ]
         
         trends = TrendAnalysis(
@@ -207,15 +207,15 @@ class TestTrendAnalysis:
         """Test has_trend_data computed property"""
         with_data = TrendAnalysis(
             daily_applications=[
-                TrendDataPoint(date=date(2025, 1, 10), count=2),
-                TrendDataPoint(date=date(2025, 1, 11), count=3),
-                TrendDataPoint(date=date(2025, 1, 12), count=5),
+                TrendDataPoint(date_created=date(2025, 1, 10), count=2),
+                TrendDataPoint(date_created=date(2025, 1, 11), count=3),
+                TrendDataPoint(date_created=date(2025, 1, 12), count=5),
             ]
         )
         
         insufficient_data = TrendAnalysis(
             daily_applications=[
-                TrendDataPoint(date=date(2025, 1, 10), count=2),
+                TrendDataPoint(date_created=date(2025, 1, 10), count=2),
             ]
         )
         
@@ -278,8 +278,8 @@ class TestJobStatistics:
         
         trends = TrendAnalysis(
             daily_applications=[
-                TrendDataPoint(date=date(2025, 1, 10), count=2),
-                TrendDataPoint(date=date(2025, 1, 11), count=3),
+                TrendDataPoint(date_created=date(2025, 1, 10), count=2),
+                TrendDataPoint(date_created=date(2025, 1, 11), count=3),
             ]
         )
         

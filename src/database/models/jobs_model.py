@@ -771,9 +771,11 @@ class Job(BaseModel):
         now = utc_time()
         last_7_days = now - timedelta(days=7)
         previous_7_days = now - timedelta(days=14)
-        
+
+        # noinspection PyTypeChecker
         recent_count = sum(1 for app in self.applications if app.applied_date >= last_7_days)
-        previous_count = sum(1 for app in self.applications 
+        # noinspection PyTypeChecker
+        previous_count = sum(1 for app in self.applications
                            if previous_7_days <= app.applied_date < last_7_days)
         
         if recent_count > previous_count * 1.2:
@@ -793,6 +795,7 @@ class Job(BaseModel):
         # Get applications from last 7 days
         now = utc_time()
         last_7_days = now - timedelta(days=7)
+        # noinspection PyTypeChecker
         recent_apps = [app for app in self.applications if app.applied_date >= last_7_days]
         
         if len(recent_apps) < 2:
@@ -1101,6 +1104,14 @@ class JobApplication(BaseModel):
     jobseeker_profile: Optional[JobSeekerProfile] = Field(default=None)
 
     model_config = ConfigDict(from_attributes=True)
+
+    @property
+    def applied_date_as_datetime(self) -> datetime:
+        """
+        :return:
+        """
+        # noinspection PyTypeChecker
+        return self.applied_date
 
     @property
     def is_recent_application(self):

@@ -1,0 +1,44 @@
+{# ================================ #}
+{# Partial: job_header.html #}
+{# ================================ #}
+
+<div class="stats-card p-4 mb-4 fade-in">
+    <div class="d-flex align-items-start justify-content-between mb-3">
+        <div>
+            <h1 class="h2 fw-bold text-dark mb-2">{{ job.title }}</h1>
+            <p class="h6 text-primary mb-2">{{ job.company_name }}</p>
+            <p class="text-muted mb-0">
+                <i class="fas fa-map-marker-alt me-1"></i>{{ job.location }}
+                <span class="mx-2">•</span>
+                <i class="fas fa-calendar-alt me-1"></i>Posted {{ job.created_at.strftime('%B %d, %Y') }}
+            </p>
+        </div>
+        <div class="text-end">
+            <div class="badge-modern badge-success">
+                <i class="fas fa-circle me-1"></i>Open
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="metric-grid">
+        <div class="metric-item">
+            <small class="text-muted d-block">Salary</small>
+            <span class="fw-semibold">{{ job.salary | default("Competitive") }}</span>
+        </div>
+        <div class="metric-item">
+            <small class="text-muted d-block">Type</small>
+            <span class="fw-semibold">{{ job.employment_type }}</span>
+        </div>
+        <div class="metric-item">
+            <small class="text-muted d-block">Remote</small>
+            <span class="fw-semibold">{{ job.remote_policy }}</span>
+        </div>
+        {% if job.application_deadline %}
+            <div class="metric-item">
+                <small class="text-muted d-block">Deadline</small>
+                <span class="fw-semibold">{{ job.application_deadline.strftime('%b %d, %Y') }}</span>
+            </div>
+        {% endif %}
+    </div>
+</div>

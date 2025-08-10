@@ -608,8 +608,13 @@ async def job_details(user: User, job_id: str):
     resume_controller = get_controller('resume')
 
     # Get job with statistics for enhanced detail page
-    job, job_statistics = await job_search_controller.get_job_with_statistics(job_id)
-    
+    # With this safer version:
+    result = await job_search_controller.get_job_with_statistics(job_id=job_id)
+    if result is None:
+        # Handle job not found case
+        return jsonify({"error": "Job not found"}), 404
+
+    job, job_statistics = result
     if not job or job.status != "active":
         # Check for fake data if enabled
         if store.is_fake_mode():
@@ -659,7 +664,7 @@ async def job_details(user: User, job_id: str):
         'meta_description': job.seo_description,
     }
 
-    return render_template('jobs/job_detail.html', **context)
+    return render_template('jobs/job_detail/job_detail.html', **context)
 
 @jobs_search_route.get('/location/<string:location>')
 @flask_error_handler

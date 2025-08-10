@@ -5,28 +5,15 @@ from typing import Optional
 
 # Flask Core
 from flask import Flask
-
 # SQLAlchemy Core & ORM
 from sqlalchemy import or_, desc, String, case, true, select, func
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import cast
-from sqlalchemy.sql.operators import and_
+from src.services.job_statistics_service import JobStatisticsService
 
 # App Core
 from src.controllers.controller import Controllers, error_handler
-from src.database.sql import escape_like
-
-# Domain Models (aggregated)
-from src.database.models import (
-    Job,
-    JobApplication,
-    JobStatusEnum,
-    JobCategory,
-    JobSeekerProfile,
-    JobSeekerCV,
-)
-
 # SQL Models (ORMs)
 from src.database import (
     CompanyORM,
@@ -38,6 +25,18 @@ from src.database import (
     JobSeekerProfileORM,
     JobSeekerCVORM,
 )
+# Domain Models (aggregated)
+from src.database.models import (
+    JobStatistics,
+    Job,
+    JobApplication,
+    JobStatusEnum,
+    JobCategory,
+    JobSeekerProfile,
+    JobSeekerCV,
+)
+from src.database.sql import escape_like
+
 
 # noinspection DuplicatedCode
 class JobsSearchController(Controllers):
@@ -246,14 +245,24 @@ class JobsSearchController(Controllers):
     @error_handler
     async def get_complete_job_by_id(self, job_id: str) -> Job | None:
         """
-
+        Get complete job with all relationships
         :param job_id:
         :return:
         """
         with self.get_session() as session:
             job_orm = (
-                session.query(JobsORM).filter_by(job_id=job_id)
-                .options(joinedload(JobsORM.category)).first()
+                session.query(JobsORM)
+                .filter_by(job_id=job_id)
+                .options(
+                    joinedload(JobsORM.company),
+                    joinedload(JobsORM.category),
+                    joinedload(JobsORM.applications),
+                    joinedload(JobsORM.interested_jobseekers),
+                    joinedload(JobsORM.approval_request),
+                    joinedload(JobsORM.version_history),
+                    joinedload(JobsORM.ats_reports)
+                )
+                .first()
             )
             return Job(**job_orm.to_dict(include_relationship=True)) if job_orm else None
 
@@ -268,9 +277,8 @@ class JobsSearchController(Controllers):
         Returns:
             Tuple of (Job, JobStatistics) or (None, None) if job not found
         """
-        from src.services.job_statistics_service import JobStatisticsService
-        from src.database.models.job_statistics import JobStatistics
-        
+
+        self.logger.info("We are running get_job_statistics")
         # Get the job first
         job = await self.get_complete_job_by_id(job_id)
         if not job:
@@ -280,7 +288,6 @@ class JobsSearchController(Controllers):
             # Get statistics using the service
             statistics_service = JobStatisticsService()
             statistics = await statistics_service.get_job_statistics(job_id)
-            
             return job, statistics
             
         except Exception as e:

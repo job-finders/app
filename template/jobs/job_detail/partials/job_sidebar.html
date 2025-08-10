@@ -1,0 +1,130 @@
+{# ================================ #}
+{# Partial: job_sidebar.html #}
+{# ================================ #}
+
+<div class="sidebar-card">
+    <!-- Application CTA -->
+    <div class="stats-card p-4 mb-4">
+        <div class="text-center mb-3">
+            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                 style="width: 60px; height: 60px;">
+                <i class="fas fa-user-check fa-2x text-primary"></i>
+            </div>
+        </div>
+        <h3 class="h5 fw-bold text-center mb-3">Apply with Confidence</h3>
+
+        {% if user_has_applied %}
+            <div class="alert alert-success text-center">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Application Submitted</strong>
+                <div class="small mt-1">
+                    <a href="{{ url_for('jobseeker_applications.list_applications') }}" class="text-decoration-none">
+                        View in applications →
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="d-grid">
+                <button class="btn btn-primary btn-lg" id="start-application">
+                    <i class="fas fa-rocket me-2"></i>Start Application
+                </button>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Key Insights -->
+    {% if job_statistics %}
+        <div class="stats-card p-4 mb-4">
+            <div class="stats-header">
+                <i class="fas fa-lightbulb bg-warning text-white"></i>
+                <h3>Key Insights</h3>
+            </div>
+
+            <div class="space-y-3">
+                {% for insight in job_statistics.summary_insights %}
+                    <div class="d-flex align-items-start mb-2">
+                        <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                        <small>{{ insight }}</small>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Attractiveness Score -->
+            <div class="comparison-row mt-3 pt-3 border-top">
+                <small class="text-muted">Attractiveness Score:</small>
+                <div>
+                    {% set score = job_statistics.overall_attractiveness_score %}
+                    {% if score >= 75 %}
+                        <span class="badge badge-success">{{ "%.0f"|format(score) }}/100</span>
+                    {% elif score >= 50 %}
+                        <span class="badge badge-warning">{{ "%.0f"|format(score) }}/100</span>
+                    {% else %}
+                        <span class="badge badge-danger">{{ "%.0f"|format(score) }}/100</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- CV Analysis Tool -->
+    <div class="stats-card p-4 mb-4">
+        <h4 class="h6 fw-bold mb-3">
+            <i class="fas fa-chart-line text-primary me-2"></i>
+            Candidate Fit Analysis
+        </h4>
+        <p class="text-muted small mb-3">
+            Get AI-powered insights on how well your CV matches this role.
+        </p>
+
+        <form id="analysis-form">
+            <div class="mb-3">
+                <select class="form-select" id="cv_select" name="cv_id" required>
+                    <option value="">-- Choose CV --</option>
+                    {% for resume in list_resumes %}
+                        <option value="{{ resume.cv_id }}">{{ resume.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-outline-primary w-100" id="analyze-btn">
+                <i class="fas fa-search me-2"></i>Analyze Match
+            </button>
+        </form>
+
+        <!-- Analysis Results -->
+        <div id="match-results" class="d-none mt-3">
+            <div class="border-top pt-3">
+                <h6 class="fw-semibold mb-2">Match Analysis</h6>
+                <div id="match-summary" class="small text-muted"></div>
+                <div id="match-score" class="mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cover Letter Generator -->
+    <div class="stats-card p-4">
+        <h4 class="h6 fw-bold mb-3">
+            <i class="fas fa-file-text text-success me-2"></i>
+            AI Cover Letter Generator
+        </h4>
+        <p class="text-muted small mb-3">
+            Create a personalized cover letter that highlights your best qualifications.
+        </p>
+
+        <form id="cover-letter-form">
+            <div class="mb-3">
+                <select class="form-select" id="tone_select" name="tone">
+                    <option value="professional" selected>Professional</option>
+                    <option value="enthusiastic">Enthusiastic</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="formal">Formal</option>
+                    <option value="concise">Concise</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-outline-success w-100" id="generate-btn" disabled>
+                <i class="fas fa-magic me-2"></i>Generate Cover Letter
+            </button>
+        </form>
+    </div>
+</div>

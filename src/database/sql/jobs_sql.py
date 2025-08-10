@@ -206,7 +206,7 @@ class JobsORM(Base):
     country = Column(String(NAME_LEN), index=True)
     geo_location = Column(String(100))  # "lat,lng" for mapping
 
-    # Timeline
+    # Timeline - Posted at is the date the job went live = created_at is the date the job was created
     posted_at = Column(DateTime(timezone=True), default=utc_time, index=True)
     expires_at = Column(DateTime(timezone=True), index=True)
     application_deadline = Column(DateTime(timezone=True))

@@ -1,0 +1,128 @@
+{# ================================ #}
+{# Partial: job_statistics_scripts.html #}
+{# ================================ #}
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Pass statistics data to JavaScript -->
+{% if job_statistics %}
+    <script>
+        window.jobStatisticsData = {
+            trends: {
+                daily_applications: [
+                    {% if job_statistics.trends.daily_applications %}
+                        {% for point in job_statistics.trends.daily_applications %}
+                            {
+                                date: '{{ point.date.isoformat() }}',
+                                count: {{ point.count }}
+                            }{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    {% endif %}
+                ]
+            }
+        };
+    </script>
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize trend chart
+        {% if job_statistics and job_statistics.trends and job_statistics.trends.has_trend_data %}
+            const ctx = document.getElementById('applicationTrendChart');
+            if (ctx) {
+                const chartData = {
+                    labels: [
+                        {% for point in job_statistics.trends.daily_applications %}
+                            '{{ point.date.strftime("%m/%d") }}'{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    ],
+                    datasets: [{
+                        label: 'Applications',
+                        data: [
+                            {% for point in job_statistics.trends.daily_applications %}
+                                {{ point.count }}{% if not loop.last %},{% endif %}
+                            {% endfor %}
+                        ],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: 'rgb(59, 130, 246)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                };
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {display: false}
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {color: 'rgba(0,0,0,0.1)'}
+                            },
+                            x: {
+                                grid: {display: false}
+                            }
+                        }
+                    }
+                });
+            }
+        {% endif %}
+
+        // Application form interactions
+        const cvSelect = document.getElementById('cv_select');
+        const generateBtn = document.getElementById('generate-btn');
+
+        if (cvSelect && generateBtn) {
+            cvSelect.addEventListener('change', function () {
+                generateBtn.disabled = !this.value;
+            });
+        }
+
+        // Animate metric values
+        const metricValues = document.querySelectorAll('.metric-value');
+        metricValues.forEach(element => {
+            const text = element.textContent;
+            const number = parseFloat(text);
+            if (!isNaN(number) && number > 0) {
+                element.style.opacity = '0';
+                setTimeout(() => {
+                    element.style.opacity = '1';
+                    element.style.transform = 'scale(1.1)';
+                    setTimeout(() => {
+                        element.style.transform = 'scale(1)';
+                    }, 200);
+                }, Math.random() * 500);
+            }
+        });
+    });
+</script>
+
+{#job Actions scripts #}
+<script>
+    function likeJob(jobId) {
+        // Implement like job functionality
+        console.log('Liking job with ID:', jobId);
+        // Example: fetch('/api/like-job', { method: 'POST', body: JSON.stringify({ jobId: jobId }) });
+    }
+
+    function saveJob(jobId) {
+        // Implement save job functionality
+        console.log('Saving job with ID:', jobId);
+        // Example: fetch('/api/save-job', { method: 'POST', body: JSON.stringify({ jobId: jobId }) });
+    }
+
+    function shareJob(jobId) {
+        // Implement share job functionality
+        console.log('Sharing job with ID:', jobId);
+        // Example: fetch('/api/share-job', { method: 'POST', body: JSON.stringify({ jobId: jobId }) });
+    }
+</script>

@@ -1,0 +1,65 @@
+{# Main template: job_statistics.html #}
+{% extends "jobseekers/layout/page.html" %}
+{% block title %}{{ meta_title }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobs/job-statistics.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid py-4">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8 col-md-7">
+                <!-- Job Header -->
+                {% include "jobs/job_detail/partials/job_header.html" %}
+
+                <!-- Job Description & Skills -->
+                {% include "jobs/job_detail/partials/job_details.html" %}
+
+                <!-- Application Statistics -->
+                {% if job_statistics and job_statistics.application_stats %}
+                    {% include 'jobs/job_detail/partials/application_statistics.html' %}
+                {% endif %}
+
+                <!-- Job Competitiveness -->
+                {% if job_statistics and job_statistics.competitiveness %}
+                    {% include 'jobs/job_detail/partials/competitiveness_metrics.html' %}
+                {% endif %}
+
+                <!-- Application Trends -->
+                {% if job_statistics and job_statistics.trends %}
+                    {% include 'jobs/job_detail/partials/trend_analysis.html' %}
+                {% endif %}
+
+                <!-- Company Statistics -->
+                {% if job_statistics and job_statistics.company_stats %}
+                    {% include 'jobs/job_detail/partials/company_statistics.html' %}
+                {% endif %}
+
+                <!-- Statistics Disclaimer -->
+                {% if job_statistics %}
+                    {% include 'jobs/job_detail/partials/statistics_disclaimer.html' %}
+                {% endif %}
+                <!-- Related Jobs -->
+                {% if related_jobs %}
+                    {% include 'jobs/job_detail/partials/related_jobs.html' %}
+                {% endif %}
+                {% include "jobs/job_detail/partials/job_actions.html" %}
+            </div>
+            <!-- Sidebar -->
+            <div class="col-lg-4 col-md-5">
+                {% include 'jobs/job_detail/partials/job_sidebar.html' %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {% include 'jobs/job_detail/partials/job_statistics_scripts.html' %}
+{% endblock %}
+
+
+
+

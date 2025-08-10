@@ -1,0 +1,68 @@
+{# ================================ #}
+{# Partial: trend_analysis.html #}
+{# ================================ #}
+
+<div class="stats-card p-4 mb-4 slide-up">
+    <div class="stats-header">
+        <i class="fas fa-chart-line bg-info text-white"></i>
+        <h3>Application Trends</h3>
+    </div>
+
+    {% if job_statistics.trends.has_trend_data %}
+        <!-- Trend Summary -->
+        <div class="metric-grid mb-4">
+            <div class="metric-item">
+                {% if job_statistics.trends.application_velocity == "accelerating" %}
+                    <span class="metric-value badge-success">
+          <i class="fas fa-rocket me-1"></i>Accelerating
+        </span>
+                {% elif job_statistics.trends.application_velocity == "decelerating" %}
+                    <span class="metric-value badge-warning">
+          <i class="fas fa-arrow-down me-1"></i>Slowing
+        </span>
+                {% else %}
+                    <span class="metric-value badge-info">
+          <i class="fas fa-equals me-1"></i>Steady
+        </span>
+                {% endif %}
+                <small class="metric-label">Application Velocity</small>
+            </div>
+            <div class="metric-item">
+                {% if job_statistics.trends.trend_direction == "increasing" %}
+                    <span class="metric-value badge-success">
+          <i class="fas fa-trending-up me-1"></i>Rising
+        </span>
+                {% elif job_statistics.trends.trend_direction == "decreasing" %}
+                    <span class="metric-value badge-danger">
+          <i class="fas fa-trending-down me-1"></i>Falling
+        </span>
+                {% else %}
+                    <span class="metric-value badge-neutral">
+          <i class="fas fa-minus me-1"></i>Stable
+        </span>
+                {% endif %}
+                <small class="metric-label">Overall Trend</small>
+            </div>
+            <div class="metric-item">
+                <span class="metric-value">{{ job_statistics.trends.total_days_tracked }}</span>
+                <small class="metric-label">Days Tracked</small>
+            </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="chart-container">
+            <canvas id="applicationTrendChart"></canvas>
+        </div>
+    {% else %}
+        <div class="no-data-state">
+            <i class="fas fa-clock"></i>
+            {% if job_statistics.application_stats.days_since_posted < 7 %}
+                <p class="mb-0">New posting - trend data developing</p>
+                <small>Check back in a few days for trend analysis</small>
+            {% else %}
+                <p class="mb-0">Insufficient data for trend analysis</p>
+                <small>More applications needed to show trends</small>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>

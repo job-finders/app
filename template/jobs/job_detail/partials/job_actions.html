@@ -1,0 +1,31 @@
+{# ================================ #}
+{# Partial: job_actions.html #}
+{# ================================ #}
+
+<div class="job-actions-card p-4 mb-4 slide-up">
+    <div class="stats-header">
+        <i class="fas fa-wrench bg-primary text-white"></i>
+        <h3>Job Actions</h3>
+    </div>
+
+    <div class="action-buttons mt-3">
+        <a href="{{ url_for('company_search.view_company_by_company_id', company_id=job.company_id) }}"
+           class="btn btn-primary me-2">
+            <i class="fas fa-building me-1"></i> View Company Page
+        </a>
+
+        <button class="btn btn-success me-2" onclick="likeJob('{{ job.job_id }}')">
+            <i class="fas fa-thumbs-up me-1"></i> Like Job
+        </button>
+
+        <button class="btn btn-warning me-2" onclick="saveJob('{{ job.job_id }}')">
+            <i class="fas fa-bookmark me-1"></i> Save Job
+        </button>
+
+        <button class="btn btn-info me-2" onclick="shareJob('{{ job.job_id }}')">
+            <i class="fas fa-share me-1"></i> Share Job
+        </button>
+    </div>
+</div>
+
+

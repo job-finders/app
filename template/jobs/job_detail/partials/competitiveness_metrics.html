@@ -1,0 +1,88 @@
+{# ================================ #}
+{# Partial: competitiveness_metrics.html #}
+{# ================================ #}
+
+{% if job_statistics.competitiveness.has_ats_data %}
+    <div class="stats-card p-4 mb-4 slide-up">
+        <div class="stats-header">
+            <i class="fas fa-trophy bg-warning text-white"></i>
+            <h3>Job Competitiveness</h3>
+        </div>
+
+        <!-- Match Score Overview -->
+        <div class="metric-grid mb-4">
+            <div class="metric-item">
+                {% if job_statistics.competitiveness.average_match_score %}
+                    {% set avg_score = job_statistics.competitiveness.average_match_score %}
+                    {% if avg_score >= 75 %}
+                        <span class="metric-value badge-success">{{ "%.0f"|format(avg_score) }}%</span>
+                    {% elif avg_score >= 50 %}
+                        <span class="metric-value badge-warning">{{ "%.0f"|format(avg_score) }}%</span>
+                    {% else %}
+                        <span class="metric-value badge-danger">{{ "%.0f"|format(avg_score) }}%</span>
+                    {% endif %}
+                {% else %}
+                    <span class="metric-value badge-neutral">N/A</span>
+                {% endif %}
+                <small class="metric-label">Average Match Score</small>
+            </div>
+            <div class="metric-item">
+                {% if job_statistics.competitiveness.ats_readiness_percentage >= 60 %}
+                    <span class="metric-value badge-success">
+          {{ "%.0f"|format(job_statistics.competitiveness.ats_readiness_percentage) }}%
+        </span>
+                {% elif job_statistics.competitiveness.ats_readiness_percentage >= 30 %}
+                    <span class="metric-value badge-warning">
+          {{ "%.0f"|format(job_statistics.competitiveness.ats_readiness_percentage) }}%
+        </span>
+                {% else %}
+                    <span class="metric-value badge-danger">
+          {{ "%.0f"|format(job_statistics.competitiveness.ats_readiness_percentage) }}%
+        </span>
+                {% endif %}
+                <small class="metric-label">Well-Matched Applicants</small>
+            </div>
+        </div>
+
+        <!-- Top Keywords -->
+        <div class="row g-3">
+            {% if job_statistics.competitiveness.top_matched_keywords %}
+                <div class="col-md-6">
+                    <h6 class="fw-semibold mb-2 text-success">
+                        <i class="fas fa-check-circle me-1"></i>Most Matched Skills
+                    </h6>
+                    <div class="d-flex flex-wrap">
+                        {% for keyword in job_statistics.competitiveness.top_matched_keywords[:5] %}
+                            <span class="keyword-tag keyword-matched">{{ keyword }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if job_statistics.competitiveness.top_missing_keywords %}
+                <div class="col-md-6">
+                    <h6 class="fw-semibold mb-2 text-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Often Missing Skills
+                    </h6>
+                    <div class="d-flex flex-wrap">
+                        {% for keyword in job_statistics.competitiveness.top_missing_keywords[:5] %}
+                            <span class="keyword-tag keyword-missing">{{ keyword }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% else %}
+    <div class="stats-card p-4 mb-4">
+        <div class="stats-header">
+            <i class="fas fa-trophy bg-warning text-white"></i>
+            <h3>Job Competitiveness</h3>
+        </div>
+        <div class="no-data-state">
+            <i class="fas fa-chart-line"></i>
+            <p class="mb-0">Match analysis not available yet</p>
+            <small>Data will appear as applications are processed</small>
+        </div>
+    </div>
+{% endif %}

@@ -1,0 +1,35 @@
+{# ================================ #}
+{# Partial: job_details.html #}
+{# ================================ #}
+
+<div class="job-details-card p-4 mb-4 slide-up">
+    <div class="stats-header">
+        <i class="fas fa-file-alt bg-primary text-white"></i>
+        <h3>Job Description</h3>
+    </div>
+
+    <div class="job-description">
+        <p class="mb-4">{{ job.description }}</p>
+    </div>
+
+    <div class="stats-header">
+        <i class="fas fa-tools bg-warning text-white"></i>
+        <h3>Required Skills</h3>
+    </div>
+
+    <div class="skills-list">
+        {% if job.skills %}
+            <div class="d-flex flex-wrap gap-2">
+                {% for skill in job.skills %}
+                    <span class="badge badge-primary">{{ skill }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-data-state">
+                <i class="fas fa-question"></i>
+                <p class="mb-0">No specific skills listed</p>
+                <small>Check the job description for more details</small>
+            </div>
+        {% endif %}
+    </div>
+</div>
