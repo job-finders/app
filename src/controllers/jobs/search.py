@@ -212,18 +212,36 @@ class JobsSearchController(Controllers):
                 "page_size": page_size}
             
     @error_handler
-    async def get_job_by_id(self, job_id: str) -> Job | None:
-        """Retrieve a single active job by its ID."""
+    async def get_job_by_id(self, job_id: str, include_statistics: bool = False) -> Job | None:
+        """
+        Retrieve a single active job by its ID.
+        
+        Args:
+            job_id: The job ID to retrieve
+            include_statistics: Whether to include comprehensive statistics (slower)
+            
+        Returns:
+            Job object or None if not found
+        """
         if not (isinstance(job_id, str) and job_id.strip()):
             self.logger.error("Job ID can only be a string")
             return None
 
-        with self.get_session() as session:
-            job_orm = session.query(JobsORM).filter(
-                JobsORM.job_id == job_id,
-                JobsORM.status == JobStatusEnum.ACTIVE.value
-            ).first()
-            return Job(**job_orm.to_dict()) if job_orm else None
+        if include_statistics:
+            # Use the comprehensive method that includes statistics
+            job, statistics = await self.get_job_with_statistics(job_id)
+            if job and statistics:
+                # Attach statistics to job object for template access
+                job._statistics = statistics
+            return job
+        else:
+            # Original fast method
+            with self.get_session() as session:
+                job_orm = session.query(JobsORM).filter(
+                    JobsORM.job_id == job_id,
+                    JobsORM.status == JobStatusEnum.ACTIVE.value
+                ).first()
+                return Job(**job_orm.to_dict()) if job_orm else None
 
     @error_handler
     async def get_complete_job_by_id(self, job_id: str) -> Job | None:
@@ -238,6 +256,37 @@ class JobsSearchController(Controllers):
                 .options(joinedload(JobsORM.category)).first()
             )
             return Job(**job_orm.to_dict(include_relationship=True)) if job_orm else None
+
+    @error_handler
+    async def get_job_with_statistics(self, job_id: str):
+        """
+        Get job with comprehensive statistics
+        
+        Args:
+            job_id: The job ID to get statistics for
+            
+        Returns:
+            Tuple of (Job, JobStatistics) or (None, None) if job not found
+        """
+        from src.services.job_statistics_service import JobStatisticsService
+        from src.database.models.job_statistics import JobStatistics
+        
+        # Get the job first
+        job = await self.get_complete_job_by_id(job_id)
+        if not job:
+            return None, None
+        
+        try:
+            # Get statistics using the service
+            statistics_service = JobStatisticsService()
+            statistics = await statistics_service.get_job_statistics(job_id)
+            
+            return job, statistics
+            
+        except Exception as e:
+            self.logger.error(f"Error getting job statistics for {job_id}: {e}")
+            # Return job without statistics rather than failing completely
+            return job, None
 
     @error_handler
     async def get_application_by_id(self, application_id: str) -> JobApplication | None:

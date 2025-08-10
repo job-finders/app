@@ -607,13 +607,16 @@ async def job_details(user: User, job_id: str):
     job_search_controller = get_controller('jobs_search')
     resume_controller = get_controller('resume')
 
-    job = await job_search_controller.get_job_by_id(job_id)
+    # Get job with statistics for enhanced detail page
+    job, job_statistics = await job_search_controller.get_job_with_statistics(job_id)
+    
     if not job or job.status != "active":
         # Check for fake data if enabled
         if store.is_fake_mode():
             fake_job = store.jobs.get(job_id)
             if fake_job:
                 job = fake_job
+                job_statistics = None  # No statistics for fake jobs
             else:
                 return await gone(user=user, search_term=job_id)
         else:
@@ -648,6 +651,7 @@ async def job_details(user: User, job_id: str):
     context = {
         'current_user': user,
         'job': job,
+        'job_statistics': job_statistics,
         'list_resumes': list_resumes,
         'related_jobs': related_jobs,
         'user_has_applied': user_has_applied,

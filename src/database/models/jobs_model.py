@@ -746,6 +746,75 @@ class Job(BaseModel):
         job_data = {**core, **optional_updates, **kwargs}
         return cls(**job_data)
 
+    # New computed properties for statistics
+    @computed_field(return_type=float)
+    @property
+    def applications_per_day(self) -> float:
+        """Calculate average applications per day since posting"""
+        if not self.posted_at:
+            return 0.0
+        
+        days_since_posted = (utc_time() - self.posted_at).days
+        days_since_posted = max(1, days_since_posted)  # Avoid division by zero
+        
+        total_applications = len(self.applications) if self.applications else 0
+        return total_applications / days_since_posted
+
+    @computed_field(return_type=str)
+    @property
+    def application_trend_direction(self) -> str:
+        """Determine if applications are increasing/decreasing over recent period"""
+        if not self.applications or len(self.applications) < 2:
+            return "stable"
+        
+        # Compare last 7 days vs previous 7 days
+        now = utc_time()
+        last_7_days = now - timedelta(days=7)
+        previous_7_days = now - timedelta(days=14)
+        
+        recent_count = sum(1 for app in self.applications if app.applied_date >= last_7_days)
+        previous_count = sum(1 for app in self.applications 
+                           if previous_7_days <= app.applied_date < last_7_days)
+        
+        if recent_count > previous_count * 1.2:
+            return "increasing"
+        elif recent_count < previous_count * 0.8:
+            return "decreasing"
+        else:
+            return "stable"
+
+    @computed_field(return_type=str)
+    @property
+    def application_velocity(self) -> str:
+        """Calculate application velocity: accelerating, decelerating, or steady"""
+        if not self.applications or len(self.applications) < 3:
+            return "steady"
+        
+        # Get applications from last 7 days
+        now = utc_time()
+        last_7_days = now - timedelta(days=7)
+        recent_apps = [app for app in self.applications if app.applied_date >= last_7_days]
+        
+        if len(recent_apps) < 2:
+            return "steady"
+        
+        # Sort by date and calculate daily changes
+        recent_apps.sort(key=lambda x: x.applied_date)
+        
+        # Simple trend calculation based on first vs last few days
+        first_half = recent_apps[:len(recent_apps)//2]
+        second_half = recent_apps[len(recent_apps)//2:]
+        
+        first_half_rate = len(first_half) / max(1, len(first_half))
+        second_half_rate = len(second_half) / max(1, len(second_half))
+        
+        if second_half_rate > first_half_rate * 1.5:
+            return "accelerating"
+        elif second_half_rate < first_half_rate * 0.7:
+            return "decelerating"
+        else:
+            return "steady"
+
     model_config = ConfigDict(
         # automatically str() any HttpUrl, Decimal, datetime, etc.
         json_encoders={

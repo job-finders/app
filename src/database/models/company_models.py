@@ -290,6 +290,61 @@ class Company(BaseModel):
 
         return has_contact_info and has_location_info and has_descriptive_info
 
+    # New computed properties for statistics
+    @property
+    def jobs_posted_last_12_months(self) -> int:
+        """Count jobs posted in the last 12 months"""
+        if not self.jobs:
+            return 0
+        
+        cutoff_date = utc_time() - timedelta(days=365)
+        return sum(1 for job in self.jobs if job.posted_at and job.posted_at >= cutoff_date)
+
+    @property
+    def average_applications_per_job_last_12_months(self) -> float:
+        """Calculate average applications per job for jobs posted in last 12 months"""
+        recent_jobs = [job for job in (self.jobs or []) 
+                      if job.posted_at and job.posted_at >= (utc_time() - timedelta(days=365))]
+        
+        if not recent_jobs:
+            return 0.0
+        
+        total_applications = sum(len(job.applications or []) for job in recent_jobs)
+        return total_applications / len(recent_jobs)
+
+    @property
+    def hiring_activity_level(self) -> str:
+        """Determine company hiring activity level based on recent job postings"""
+        jobs_12_months = self.jobs_posted_last_12_months
+        active_jobs = self.active_jobs
+        
+        if jobs_12_months >= 20 or active_jobs >= 10:
+            return "high"
+        elif jobs_12_months >= 5 or active_jobs >= 3:
+            return "medium"
+        else:
+            return "low"
+
+    @property
+    def average_time_to_fill_positions(self) -> Optional[float]:
+        """Calculate average time to fill positions in days"""
+        if not self.jobs:
+            return None
+        
+        filled_positions = []
+        for job in self.jobs:
+            if job.status == 'closed' and job.applications:
+                # Find the hired application
+                hired_app = next((app for app in job.applications
+                                if hasattr(app, 'application_stage') and 
+                                app.application_stage == 'Hired'), None)
+                if hired_app and job.posted_at:
+                    days_to_fill = (hired_app.applied_date - job.posted_at).days
+                    if days_to_fill > 0:  # Sanity check
+                        filled_positions.append(days_to_fill)
+        
+        return sum(filled_positions) / len(filled_positions) if filled_positions else None
+
     @field_validator("phone_number")
     def validate_phone_number(cls, v):
         if v and not re.match(r"^\+?[\d\s\-()]{7,20}$", v):
