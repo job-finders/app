@@ -27,12 +27,36 @@
   - `employers/` - Employer-specific business logic
   - `billing/` - Payment and subscription processing
   - `jobs/` - Job search, matching, and workflow controllers
+    - `actions` - job actions controller for managing user actions such as sharing & saving jobs
+    - `auto_categorizer` - controller for categorizing job posts automatically based on the context of the job
+    - `industrial_taxonomy` - controllers for building and managing industrial taxonomy for the entire platform
+    - `search` - controllers for accessing listed and unlisted jobs in the system with added analytics
+    - `workflow` - controllers related to controlling the workflow of the job post within the system
   - `jobseekers/` - Job seeker profile and application management
+  - `admin/admin_controller.py` - Controller for administrative operations, moderation, compliance, analytics and security.
+  - `admin/user_security_engines.py` - Risk analysis engines for evaluating employer & candidate-related behaviors on the job platform.
+  - `agents/` - Employer & JobSeekers AI Agents for enhancing platform usability and improving quality of jobs, application process & Resume Building
+  - `analytics/` - user engagements controller and retention manager for promoting user engagements on the platform
+  - `ats/` - Algorithm Based ATS Controller Toolkit for local based ATS Analysis for Employers and Jobseekers
+  - `billing/` - The BillingController exposes an asynchronous API that coordinates between
+the web layer and the underlying billing services (plans, subscriptions,
+invoices, payments, events, and cron jobs)
+  - `blog/`- blog workflow , search, feedback and agent controller
+    - `blog_agent_controller.py` - Generation of Blog Topics and Articles Based on AI Agents
+    - `blog_feedback_controller.pr` - Controller that **copies** Hashnode analytics into a local
+    PerformanceORM row and optionally computes a feedback score.
+    - `blog-prompt-mutations.py` - Controller to Mutate Blog Article and Topic Generation Prompts based on Feedback from previous blog postings
+    - `blog_search_controller.py` - Controller for publicly accessible endpoints for the platforms blog
+    - `blog_workflow_controller.py` - Controller for administrative purposes and admin access to the blogging entire system
+    - `utils.py` - Blog related utilities such as image generators and more
+  - `notifications/` - centralized Notifications services controller for sending notices to the platform interface
+  - `resumes/` - resumes JobSeeker CV Controller for managing and accessing jobseekers cv's
+
 
 ### Data Layer
 - `src/database/` - Database models, migrations, and SQL utilities
-  - `models/` - SQLAlchemy ORM models
-  - `sql/` - Raw SQL queries and database utilities
+  - `models/` - Pydantic Data Models, for Validation and parts of Business Logic
+  - `sql/` - SQLAlchemy ORM models
   - `migrations/` - Database schema changes
 
 ### Services & Utilities
