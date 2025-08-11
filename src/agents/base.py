@@ -1,3 +1,44 @@
+
+"""
+Core agent framework for an AI-driven HR & recruitment assistant.
+
+This module defines the base abstractions and utilities used by all specialised agents,
+including:
+
+* Usage and rate-limit tracking
+* Model routing based on task type, user role, and prompt content
+* Structured memory (per-user & per-agent) with Redis caching
+* Automatic fallback to free-tier models when quotas are exceeded
+* Centralised logging and error handling
+
+Typical flow for a concrete agent
+---------------------------------
+1. Inherit from `BaseAgent`.
+2. Implement the three abstract methods:
+   - `system_prompt()` – the static system instruction
+   - `prompt()` – the dynamic prompt template
+   - `output_model()` – the Pydantic model describing the expected response structure
+3. Invoke `await agent_instance.run(...)` which:
+   - Checks usage limits
+   - Selects the best model (or fallback)
+   - Retrieves cached results when possible
+   - Performs the LLM call
+   - Stores the interaction in memory
+   - Returns a fully-typed Pydantic object
+
+Key design decisions
+--------------------
+- All agents share the same memory namespace per user, making cross-agent context possible.
+- Model routing is *declarative*: the mapping from task type → model lives in
+  `BaseAgent.ROUTING_RULES` and is overridable per subclass.
+- Usage tiers are enforced centrally; individual agents do not need quota logic.
+- Redis-backed caching is transparent via the `@cached` decorator.
+
+Public symbols
+--------------
+ModelType, UserRole, UsageTier, TaskType, UsageTracker, BaseAgent
+"""
+
 from __future__ import annotations
 import inspect
 from abc import ABC, abstractmethod
@@ -16,6 +57,31 @@ from src.utils.route_helpers import get_service
 
 
 class ModelType(str, Enum):
+    """
+    Canonical identifiers for LLMs available through the OpenRouter gateway.
+
+    Members
+    -------
+    GPT4 : str
+        OpenAI GPT-4.
+    CLAUDE : str
+        Anthropic Claude-3 Haiku.
+    DEEPSEEK_CHAT : str
+        DeepSeek Chat v3 (balanced).
+    DEEPSEEK_REASONER : str
+        DeepSeek R1 reasoning model.
+    DEEPSEEK_CODER : str
+        Alias to DeepSeek Chat v3, optimised for code.
+    DEEPSEEK_V3_FREE : str
+        Zero-cost variant of DeepSeek Chat v3.
+    MOONSHOT_KIMI_K2 : str
+        Moonshot Kimi K2 (premium).
+    MOONSHOT_KIMI_K2_FREE : str
+        Zero-cost variant of Kimi K2.
+    DEEPSEEK_CHIMERA_FREE : str
+        Community-hosted chimera of DeepSeek R1 (free).
+    """
+
     GPT4 = "openai/gpt-4"
     CLAUDE = "anthropic/claude-3-haiku"
     DEEPSEEK_CHAT = "deepseek/deepseek-chat-v3-0324"
@@ -28,6 +94,11 @@ class ModelType(str, Enum):
 
 
 class UserRole(str, Enum):
+    """
+        Roles recognised by the platform.
+        Used primarily for model routing and permission scoping.
+    """
+
     JOB_SEEKER = "job_seeker"
     EMPLOYER = "employer"
     RECRUITER = "recruiter"
@@ -37,6 +108,15 @@ class UserRole(str, Enum):
 
 
 class UsageTier(Enum):
+    """
+    Subscription tiers controlling daily / monthly request allowances.
+
+    Members map to dictionaries with keys:
+
+    - daily_limit : int
+    - monthly_limit : int
+    """
+
     FREE = {"daily_limit": 10, "monthly_limit": 100}
     BASIC = {"daily_limit": 50, "monthly_limit": 1000}
     PREMIUM = {"daily_limit": 200, "monthly_limit": 5000}
@@ -44,6 +124,22 @@ class UsageTier(Enum):
 
 
 class UsageTracker:
+    """
+    Lightweight in-memory (Redis-ready) quota tracker.
+
+    Parameters
+    ----------
+    user_id : str
+        Unique identifier for the user.
+    tier : UsageTier, optional
+        Defaults to ``UsageTier.FREE``.
+
+    Examples
+    --------
+    >>> tracker = UsageTracker("alice")
+    >>> tracker.record()  # returns True if within limits, else False
+    """
+
     def __init__(self, user_id: str, tier: UsageTier = UsageTier.FREE):
         self.user_id = user_id
         self.tier = tier
@@ -78,7 +174,13 @@ class UsageTracker:
 
 
 class TaskType(str, Enum):
-    """agents must select the task type they wish to execute from this task types"""
+    """
+        Enumeration of canonical task intents that agents can advertise.
+
+        These values are used by `BaseAgent.select_model` to pick an
+        appropriate LLM and can be overridden per subclass.
+    """
+
     # Job Seeker Utilities
     RESUME = "resume"
     COVER_LETTER = "cover letter"
@@ -126,6 +228,41 @@ class TaskType(str, Enum):
 
 
 class BaseAgent(ABC):
+    """
+    Asynchronous, memory-backed agent base class.
+
+    Concrete implementations must provide three pieces of information:
+
+    1. `system_prompt()` – static system instructions
+    2. `prompt()` – dynamic prompt builder
+    3. `output_model()` – Pydantic schema for structured responses
+
+    Parameters
+    ----------
+    user_id : str
+        The user this agent instance is acting on behalf of.
+    usage_tier : UsageTier, optional
+        Quota tier; defaults to FREE.
+
+    Attributes
+    ----------
+    name : str
+        Defaults to the class name, can be overridden for nicer logging.
+    memory : AgentMemoryStore
+        Per-user, per-agent persistent memory (Redis).
+    usage : UsageTracker
+        Handles quota enforcement.
+    client : OpenRouterClient
+        Thin async wrapper around OpenRouter REST API.
+    """
+
+    ROUTING_RULES: dict[str, ModelType]
+    """
+    Mapping from task type (or phrase) to the recommended model.
+
+    Subclasses may extend or replace this dict to customise routing.
+    """
+
     ROUTING_RULES: dict[str, ModelType] = {
         # --- Job Seeker Utilities ---
         "resume": ModelType.DEEPSEEK_CHAT,
@@ -185,18 +322,42 @@ class BaseAgent(ABC):
         self.client.init_app()
 
     @abstractmethod
-    def system_prompt(self) -> str: ...
+    def system_prompt(self) -> str: 
+        """Return the static system instruction string."""        
+        ...
 
     @abstractmethod
-    def prompt(self, *args, **kwargs) -> str: ...
+    def prompt(self, *args, **kwargs) -> str: 
+        """
+        Build the per-request prompt.
+        May be a coroutine; the base class will await it if necessary.
+        """
+        ...
 
     @abstractmethod
-    def output_model(self) -> Type[BaseModel]: ...
+    def output_model(self) -> Type[BaseModel]: 
+        """Return the Pydantic model that describes the LLM response schema."""       
+        ...
 
 
     @classmethod
-    def select_model(cls, user_prompt: str, user_role: UserRole | None = None,
-                     task_type: str | None = None) -> ModelType:
+    def select_model(cls, user_prompt: str, user_role: UserRole | None = None, task_type: str | None = None) -> ModelType:
+        """
+        Heuristic model router.
+
+        Priority order
+        --------------
+        1. Exact `task_type` match in `ROUTING_RULES`.
+        2. Keyword lookup in lower-cased prompt.
+        3. Role-specific overrides (e.g. employer+screening).
+        4. Default to `DEEPSEEK_CHAT`.
+
+        Returns
+        -------
+        ModelType
+            The chosen model identifier.
+        """
+
         text = user_prompt.lower()
 
         if user_role == UserRole.EMPLOYER and "screening" in text:
@@ -247,6 +408,33 @@ class BaseAgent(ABC):
 
     @cached(ttl=3600)
     async def run(self, user_role: UserRole | None = None, task_type: str | None = None, *args, **kwargs) -> BaseModel:
+        """
+        High-level entry point.
+
+        Steps
+        -----
+        1. Builds / awaits the prompt.
+        2. Checks the memory cache.
+        3. Selects the optimal model (or fallback).
+        4. Records usage.
+        5. Calls the LLM via `client.structured_completion`.
+        6. Stores the exchange in memory.
+        7. Returns a validated Pydantic object.
+
+        Raises
+        ------
+        RuntimeError
+            If all quotas are exhausted.
+        ValueError
+            If both primary and fallback models fail to produce output.
+
+        Notes
+        -----
+        The method is wrapped with `@cached(ttl=3600)` so that identical
+        invocations (same agent, same prompt, same kwargs) are served from
+        Redis for one hour.
+        """
+
         prompt = self.prompt(*args, **kwargs)
         if inspect.iscoroutine(prompt):
             prompt = await prompt
