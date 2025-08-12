@@ -63,6 +63,7 @@ class JobSeekerProfileORM(Base):
     saved_jobs = relationship("SavedJobORM", back_populates="jobseeker_profile", cascade="all, delete-orphan")
     liked_jobs = relationship("JobLikeORM", back_populates="jobseeker_profile")
     shared_jobs = relationship("JobShareORM", back_populates="jobseeker_profile")
+    referrals_made = relationship("JobReferralORM", back_populates="referrer")
 
     @classmethod
     def create_if_not_table(cls):
@@ -126,5 +127,6 @@ class JobSeekerProfileORM(Base):
             data['saved_jobs'] = [job.to_dict() for job in self.saved_jobs]
             data['liked_jobs'] = [like.to_dict() for like in self.liked_jobs]
             data['shared_jobs'] = [share.to_dict() for share in self.shared_jobs]
+            data['referrals_made'] = [referral.to_dict() for referral in self.referrals_made if referral]
 
         return data

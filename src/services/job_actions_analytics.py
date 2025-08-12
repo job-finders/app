@@ -1,8 +1,9 @@
 # Standard Library
 import json
 import uuid
+import inspect
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Callable
 
 # Third-party
 from pydantic import BaseModel, Field
@@ -16,6 +17,7 @@ from sqlalchemy.orm import joinedload
 
 # Controllers
 from src.controllers.controller import Controllers, error_handler
+from src.services.billing.schemas_interfaces import BillingServiceInterface
 
 # Domain Models
 # These models are defined inline since they're specific to analytics
@@ -96,15 +98,68 @@ class CompanyEngagementStats(BaseModel):
         from_attributes = True
 
 
-class JobActionsAnalyticsService(Controllers):
-    """Service for tracking and analyzing job actions analytics"""
+class JobActionsAnalyticsService(BillingServiceInterface):
+    """
+    Service for tracking and analyzing job actions analytics.
+    
+    This service follows the established service interface pattern and provides
+    comprehensive analytics tracking for job actions including likes, saves, shares,
+    and engagement metrics. It integrates with the caching layer and provides
+    detailed reporting capabilities for business intelligence.
+    
+    Architecture Integration:
+        - Inherits from BillingServiceInterface for consistent service patterns
+        - Uses execute() method for dynamic method dispatch
+        - Implements comprehensive error handling and logging
+        - Returns standardized result objects for consistent API responses
+        - Integrates with caching layer for performance optimization
+        - Provides analytics tracking for business intelligence
+    
+    Dependencies:
+        - Database session factory for data persistence
+        - Cache manager for performance optimization
+        - Logging system for audit trail and debugging
+    
+    Business Rules:
+        - All analytics events require valid job and user validation
+        - Analytics data is cached for performance optimization
+        - All operations are transactional with proper rollback handling
+        - Comprehensive metrics tracking for business intelligence
+    """
 
-    def __init__(self, factory):
-        super().__init__(factory)
+    def __init__(self, session_factory):
+        """
+        Initialize JobActionsAnalyticsService with dependencies.
+        
+        Args:
+            session_factory: Callable that returns database session instances
+        """
+        super().__init__()
+        self.session_factory = session_factory
         self.analytics_events = []  # In-memory buffer for events
 
-    def init_app(self, app: Flask):
-        super().init_app(app=app)
+        # Define the interface map for dynamic method execution
+        self.__interface_map: Dict[str, Callable] = {
+            'track_job_action': self.track_job_action,
+            'get_job_engagement_metrics': self.get_job_engagement_metrics,
+            'get_company_engagement_stats': self.get_company_engagement_stats,
+            'generate_job_actions_report': self.generate_job_actions_report,
+            'get_user_engagement_history': self.get_user_engagement_history,
+            'get_popular_jobs_by_engagement': self.get_popular_jobs_by_engagement,
+            'interface_schema': self._interface_schema,
+            'describe_analytics': self._describe_analytics
+        }
+
+        from src.utils.route_helpers import get_service
+        self.logger = get_service('logger')()(self.__class__.__name__)
+
+        # Initialize cache manager for analytics caching
+        try:
+            from src.cache.job_actions_cache_manager import job_actions_cache_manager
+            self.cache_manager = job_actions_cache_manager
+        except ImportError:
+            self.logger.warning("Cache manager not available for analytics service")
+            self.cache_manager = None
 
     @error_handler
     async def track_job_action(self, event_type: str, user_id: Optional[str], job_id: str,
@@ -117,7 +172,7 @@ class JobActionsAnalyticsService(Controllers):
             metadata = {}
 
         # Get company_id for the job
-        with self.get_session() as session:
+        with self.session_factory() as session:
             job_orm = session.query(JobsORM).filter_by(job_id=job_id).first()
             if not job_orm:
                 return False
@@ -147,7 +202,7 @@ class JobActionsAnalyticsService(Controllers):
         if not job_id:
             return None
 
-        with self.get_session() as session:
+        with self.session_factory() as session:
             # Get basic job info
             job_orm = session.query(JobsORM).filter_by(job_id=job_id).first()
             if not job_orm:
@@ -197,7 +252,7 @@ class JobActionsAnalyticsService(Controllers):
         if not company_id:
             return None
 
-        with self.get_session() as session:
+        with self.session_factory() as session:
             # Get all jobs for the company
             company_jobs = session.query(JobsORM.job_id).filter_by(company_id=company_id).subquery()
 
@@ -278,7 +333,7 @@ class JobActionsAnalyticsService(Controllers):
         end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=days)
 
-        with self.get_session() as session:
+        with self.session_factory() as session:
             # Get company jobs
             company_jobs = session.query(JobsORM).filter_by(company_id=company_id).all()
             job_ids = [job.job_id for job in company_jobs]
@@ -368,7 +423,7 @@ class JobActionsAnalyticsService(Controllers):
         if not job_ids:
             return {}
 
-        with self.get_session() as session:
+        with self.session_factory() as session:
             # Generate daily buckets
             days = (end_date - start_date).days
             daily_likes = [0] * days
@@ -436,7 +491,7 @@ class JobActionsAnalyticsService(Controllers):
         end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=days)
 
-        with self.get_session() as session:
+        with self.session_factory() as session:
             # Get user's likes in period
             likes = session.query(JobLikeORM).filter(
                 JobLikeORM.user_id == user_id,
@@ -478,7 +533,7 @@ class JobActionsAnalyticsService(Controllers):
         end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=days)
 
-        with self.get_session() as session:
+        with self.session_factory() as session:
             # Query jobs with engagement counts
             popular_jobs = session.query(
                 JobsORM.job_id,
@@ -523,3 +578,112 @@ class JobActionsAnalyticsService(Controllers):
                 }
                 for job in popular_jobs
             ]
+
+    def _interface_schema(self) -> Dict[str, Any]:
+        """
+        Get the interface schema for the analytics service.
+        
+        Returns:
+            Dictionary describing available methods and their parameters
+        """
+        return {
+            "service_name": "JobActionsAnalyticsService",
+            "description": "Service for tracking and analyzing job actions analytics",
+            "version": "1.0.0",
+            "methods": {
+                "track_job_action": {
+                    "description": "Track a job action event for analytics",
+                    "parameters": {
+                        "event_type": {"type": "str", "required": True,
+                                       "description": "Type of event (job_like, job_unlike, etc.)"},
+                        "user_id": {"type": "str", "required": False, "description": "User ID performing the action"},
+                        "job_id": {"type": "str", "required": True, "description": "Job ID being acted upon"},
+                        "metadata": {"type": "dict", "required": False, "description": "Additional event metadata"}
+                    },
+                    "returns": {"type": "bool", "description": "True if event was tracked successfully"}
+                },
+                "get_job_engagement_metrics": {
+                    "description": "Get comprehensive engagement metrics for a specific job",
+                    "parameters": {
+                        "job_id": {"type": "str", "required": True, "description": "Job ID to get metrics for"}
+                    },
+                    "returns": {"type": "JobEngagementMetrics", "description": "Engagement metrics object"}
+                },
+                "get_company_engagement_stats": {
+                    "description": "Get engagement statistics for all jobs from a company",
+                    "parameters": {
+                        "company_id": {"type": "str", "required": True, "description": "Company ID to get stats for"},
+                        "days": {"type": "int", "required": False, "default": 30,
+                                 "description": "Number of days to analyze"}
+                    },
+                    "returns": {"type": "CompanyEngagementStats", "description": "Company engagement statistics"}
+                },
+                "generate_job_actions_report": {
+                    "description": "Generate comprehensive job actions analytics report for a company",
+                    "parameters": {
+                        "company_id": {"type": "str", "required": True,
+                                       "description": "Company ID to generate report for"},
+                        "days": {"type": "int", "required": False, "default": 30,
+                                 "description": "Report period in days"}
+                    },
+                    "returns": {"type": "JobActionsReport", "description": "Comprehensive analytics report"}
+                },
+                "get_user_engagement_history": {
+                    "description": "Get a user's job engagement history",
+                    "parameters": {
+                        "user_id": {"type": "str", "required": True, "description": "User ID to get history for"},
+                        "days": {"type": "int", "required": False, "default": 30,
+                                 "description": "Number of days to analyze"}
+                    },
+                    "returns": {"type": "dict", "description": "User engagement history data"}
+                },
+                "get_popular_jobs_by_engagement": {
+                    "description": "Get most popular jobs based on recent engagement",
+                    "parameters": {
+                        "limit": {"type": "int", "required": False, "default": 10,
+                                  "description": "Number of jobs to return"},
+                        "days": {"type": "int", "required": False, "default": 7,
+                                 "description": "Number of days to analyze"}
+                    },
+                    "returns": {"type": "list", "description": "List of popular jobs with engagement data"}
+                }
+            }
+        }
+
+    def _describe_analytics(self) -> Dict[str, Any]:
+        """
+        Describe the analytics service capabilities and current status.
+        
+        Returns:
+            Dictionary with service description and status information
+        """
+        return {
+            "service_type": "analytics",
+            "capabilities": [
+                "Event tracking for job actions",
+                "Engagement metrics calculation",
+                "Company-level analytics reporting",
+                "User engagement history tracking",
+                "Popular jobs identification",
+                "Conversion rate analysis",
+                "Trend analysis and reporting"
+            ],
+            "supported_events": [
+                "job_like", "job_unlike", "job_save", "job_unsave",
+                "job_share", "job_view", "job_apply"
+            ],
+            "metrics_tracked": [
+                "likes", "saves", "shares", "views", "applications",
+                "engagement_rate", "conversion_rates", "growth_rates"
+            ],
+            "reporting_features": [
+                "Daily engagement trends",
+                "Top performing jobs",
+                "Company engagement statistics",
+                "User engagement patterns",
+                "Platform performance analysis"
+            ],
+            "caching_enabled": self.cache_manager is not None,
+            "events_buffered": len(self.analytics_events),
+            "status": "active"
+        }

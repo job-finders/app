@@ -171,6 +171,13 @@ class JobActionsCacheService:
         pattern = self._generate_key('user_saved_jobs', user_id, '*')
         self._delete_pattern(pattern)
 
+    def invalidate_user_profile_cache(self, user_id: str) -> None:
+        """Invalidate user profile cache that might include saved jobs count"""
+        # This method invalidates user profile cache that might contain
+        # aggregated data like saved jobs count, liked jobs count, etc.
+        key = self._generate_key('user_profile', user_id)
+        self.cache.delete(key)
+
     # Company Jobs Caching
     def get_company_jobs(self, company_id: str, limit: int = 20, offset: int = 0,
                          query: str = "", category_id: str = "") -> Optional[Dict[str, Any]]:

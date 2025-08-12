@@ -178,6 +178,7 @@ class JobsORM(Base):
     ats_reports = relationship("ATSReportORM", back_populates="job")
     likes = relationship("JobLikeORM", back_populates="job")
     shares = relationship("JobShareORM", back_populates="job")
+    referrals = relationship("JobReferralORM", back_populates="job")
 
     # Indexes
     __table_args__ = (
@@ -259,7 +260,8 @@ class JobsORM(Base):
             "likes": [like.to_dict() for like in self.likes] if include_relationship else [],
             "shares": [share.to_dict() for share in self.shares] if include_relationship else [],
             "like_count": len(self.likes) if self.likes else 0,
-            "share_count": len(self.shares) if self.shares else 0
+            "share_count": len(self.shares) if self.shares else 0,
+            "referrals": [referral.to_dict() for referral in self.referrals if referral] if include_relationship else []
         }
 
     def generate_and_set_slug(self):
@@ -359,6 +361,7 @@ class JobApplicationORM(Base):
 
     ats_report = relationship("ATSReportORM", uselist=False, back_populates="job_application")
     job = relationship("JobsORM", back_populates="applications")
+    referral = relationship("JobReferralORM", back_populates="application", uselist=False)
 
     def to_dict(self, include_relationships=False) -> dict:
         return {
@@ -385,6 +388,7 @@ class JobApplicationORM(Base):
             "review_summary": self.review_summary,
             "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationships else None,
             "ats_report": self.ats_report.to_dict() if self.ats_report and include_relationships else None,
+            "referral": self.referral.to_dict() if self.referral and include_relationships else None
         }
 
     @classmethod
@@ -587,28 +591,14 @@ class JobLikeORM(Base):
             cls.__table__.drop(bind=engine)
 
     def to_dict(self, include_relationships=False) -> dict:
-        data = {
+        return {
             "like_id": self.like_id,
             "user_id": self.user_id,
             "job_id": self.job_id,
             "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
+            "job": self.job.to_dict() if include_relationship and self.job else None,
+            "jobseeker_profile": self.jobseeker_profile.to_dict() if include_relationship and self.jobseeker_profile else None
         }
-
-        if include_relationships:
-            if self.jobseeker_profile:
-                data["jobseeker_profile"] = {
-                    "user_uid": self.jobseeker_profile.user_uid,
-                    "first_name": getattr(self.jobseeker_profile, 'first_name', None),
-                    "last_name": getattr(self.jobseeker_profile, 'last_name', None)
-                }
-            if self.job:
-                data["job"] = {
-                    "job_id": self.job.job_id,
-                    "title": self.job.title,
-                    "company_id": self.job.company_id
-                }
-
-        return data
 
     @property
     def is_recent(self) -> bool:
@@ -655,31 +645,19 @@ class JobShareORM(Base):
         if inspect(engine).has_table(cls.__tablename__):
             cls.__table__.drop(bind=engine)
 
-    def to_dict(self, include_relationships=False) -> dict:
-        data = {
+    def to_dict(self, include_relationship=False) -> dict:
+        return {
             "share_id": self.share_id,
             "user_id": self.user_id,
             "job_id": self.job_id,
             "share_method": self.share_method,
             "shared_at": self.shared_at.replace(tzinfo=timezone.utc).isoformat() if self.shared_at else None,
             "referral_code": self.referral_code,
+            "job": self.job.to_dict() if include_relationship and self.job else None,
+            "jobseeker_profile": self.jobseeker_profile.to_dict() if include_relationship and self.jobseeker_profile else None
         }
 
-        if include_relationships:
-            if self.jobseeker_profile:
-                data["jobseeker_profile"] = {
-                    "user_uid": self.jobseeker_profile.user_uid,
-                    "first_name": getattr(self.jobseeker_profile, 'first_name', None),
-                    "last_name": getattr(self.jobseeker_profile, 'last_name', None)
-                }
-            if self.job:
-                data["job"] = {
-                    "job_id": self.job.job_id,
-                    "title": self.job.title,
-                    "company_id": self.job.company_id
-                }
 
-        return data
 
     @property
     def is_anonymous(self) -> bool:

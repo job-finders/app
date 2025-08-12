@@ -195,13 +195,15 @@ async def view_profile(user: User):
     job_actions_controller = get_controller('job_actions')
 
     profile = await job_seeker_profile_controller.get_complete_profile_by_uid(user_uid=user.uid)
+
     saved_jobs = await job_actions_controller.get_user_saved_jobs(user.uid)
 
     context = dict(
         current_user=user,
         profile=profile,
-        saved_jobs=saved_jobs['data']['jobs'] if saved_jobs['success'] else []
+        saved_jobs=saved_jobs.jobs if saved_jobs.success else []
     )
+
     return render_template("jobseekers/profiles/view.html", **context)
 
 

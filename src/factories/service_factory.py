@@ -4,6 +4,8 @@ from typing import Dict, Any
 from src.services.http_service.http_request_service import HttpRequestService
 from src.services.hashnode.hashnode_agemt_interface import HashnodeAgentCommandRegistry
 from src.services.hashnode.hashnode_client import HashnodeService
+from src.services.job_actions_service import JobActionsService
+from src.services.job_actions_analytics import JobActionsAnalyticsService
 from src.services.ip_address_service import get_ip_address
 from src.logger import init_logger
 from src.emailer import SendMail
@@ -135,6 +137,50 @@ class ServiceFactory:
         if 'http_request' not in self._services:
             self._services['http_request'] = HttpRequestService()
         return self._services['http_request']
+
+    def get_job_actions_service(self) -> JobActionsService:
+        """
+        Get or create a singleton instance of the JobActionsService.
+        
+        This service handles all job actions business logic including likes,
+        saves, shares, and engagement statistics. It follows the established
+        service interface pattern for consistent API access.
+        
+        Returns:
+            JobActionsService: Service instance for job actions operations
+            
+        Dependencies:
+            - Database session factory for data persistence
+            - Cache manager for performance optimization
+            - Analytics service for event tracking (lazy loaded)
+        """
+        if 'job_actions' not in self._services:
+            # Get database session factory from app context
+            from src.database.sql import Session
+            self._services['job_actions'] = JobActionsService(Session)
+        return self._services['job_actions']
+
+    def get_job_actions_analytics_service(self) -> JobActionsAnalyticsService:
+        """
+        Get or create a singleton instance of the JobActionsAnalyticsService.
+        
+        This service handles analytics tracking and reporting for job actions
+        including engagement metrics, company statistics, and user behavior
+        analysis. It follows the established service interface pattern.
+        
+        Returns:
+            JobActionsAnalyticsService: Service instance for analytics operations
+            
+        Dependencies:
+            - Database session factory for data persistence
+            - Cache manager for performance optimization (optional)
+            - Logging system for audit trail and debugging
+        """
+        if 'job_actions_analytics' not in self._services:
+            # Get database session factory from app context
+            from src.database.sql import Session
+            self._services['job_actions_analytics'] = JobActionsAnalyticsService(Session)
+        return self._services['job_actions_analytics']
 
     #########################################################
     # internal use

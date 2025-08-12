@@ -28,7 +28,8 @@ def _get_controller_map():
         'candidate_benchmarking': 'get_candidate_benchmark_controller',
         'blog_feedback_controller': 'get_blog_feedback_controller',
         'blog_agent_controller': 'get_blog_agent_controller',
-        'prompt_mutation_controller': 'get_prompt_mutation_controller'
+        'prompt_mutation_controller': 'get_prompt_mutation_controller',
+        'job_actions': 'get_job_actions_controller'
     }
 
 def get_controller(controller_name: str):
@@ -85,6 +86,8 @@ def _get_service_map():
         'hashnode': 'get_hashnode_service',
         'hashnode_commander': 'get_hashnode_command_registry',
         'http_request': 'get_http_request_service',
+        'job_actions': 'get_job_actions_service',
+        'job_actions_analytics': 'get_job_actions_analytics_service',
 
     }
 

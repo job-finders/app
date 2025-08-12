@@ -28,7 +28,6 @@ from src.controllers.blog.blog_prompt_mutations import PromptMutationController
 
 # Job Actions Controllers
 from src.controllers.jobs.actions import JobActionsController
-from src.services.job_actions_analytics import JobActionsAnalyticsService
 
 
 from src.logger import init_logger
@@ -202,11 +201,6 @@ class ControllerFactory:
         """Get JobActionsController instance"""
         self.logger.info(f"Getting JobActionsController")
         return self._get_controller('job_actions', JobActionsController)
-
-    def get_job_actions_analytics_controller(self) -> JobActionsAnalyticsService:
-        """Get JobActionsAnalyticsService instance"""
-        self.logger.info(f"Getting JobActionsAnalyticsService")
-        return self._get_controller('job_actions_analytics', JobActionsAnalyticsService)
 
     def _get_controller(self, name: str, controller_class):
         """Thread-safe controller getter with double-checked locking"""

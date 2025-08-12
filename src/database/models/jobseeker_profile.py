@@ -103,6 +103,9 @@ class JobSeekerProfile(BaseModel):
         return v
 
     @property
+    def saved_jobs_count(self):
+        return len(self.saved_jobs)
+    @property
     def full_names(self) -> str:
         """full names"""
         return f"{self.first_name.lower()} {self.last_name.lower()}"

@@ -1,13 +1,46 @@
 """
 Job Actions Monitoring and Alerting System
 
-Provides real-time monitoring, alerting, and performance tracking for job actions.
-Includes:
-- Real-time metrics collection
-- Performance threshold monitoring
-- Error rate tracking
-- Automated alerting
-- Dashboard data preparation
+Comprehensive real-time monitoring, alerting, and performance tracking system
+for job actions operations with intelligent threshold monitoring, automated
+alerting, and comprehensive dashboard data preparation.
+
+This module provides a complete monitoring solution for job actions operations
+including real-time metrics collection, performance threshold monitoring,
+error rate tracking, automated alerting with cooldown periods, and comprehensive
+dashboard data preparation for operational visibility.
+
+Monitoring Features:
+- Real-time metrics collection with time-series storage
+- Performance threshold monitoring with configurable alerts
+- Error rate tracking and anomaly detection
+- Automated alerting with cooldown periods and severity levels
+- Dashboard data preparation with historical trend analysis
+- System resource monitoring integration
+- Database performance monitoring
+- User engagement analytics integration
+
+Architecture Integration:
+- Follows established monitoring patterns and conventions
+- Integrates with existing logging and alerting infrastructure
+- Provides consistent metrics format across all operations
+- Supports both development and production monitoring configurations
+- Includes comprehensive error handling and fallback mechanisms
+
+Alert Management:
+- Configurable alert thresholds and conditions
+- Multiple severity levels (low, medium, high, critical)
+- Cooldown periods to prevent alert spam
+- Multiple notification channels (log, email, webhook)
+- Alert history tracking and analysis
+
+Performance Monitoring:
+- Response time tracking with percentile analysis
+- Error rate monitoring with trend detection
+- Database connection pool monitoring
+- System resource utilization tracking
+- Cache performance monitoring
+- User engagement metrics tracking
 """
 
 import time
@@ -44,14 +77,60 @@ class Alert:
 
 
 class MetricsCollector:
-    """Real-time metrics collector with time-series storage"""
+    """
+    Real-time metrics collector with time-series storage and comprehensive analysis.
+    
+    This class provides efficient collection and storage of various metric types
+    including counters, gauges, and histograms with thread-safe operations and
+    configurable retention policies. It supports real-time monitoring and
+    historical analysis with optimized memory usage.
+    
+    Metric Types Supported:
+        - Counters: Always increasing values (e.g., total requests, errors)
+        - Gauges: Point-in-time values that can increase/decrease (e.g., memory usage)
+        - Histograms: Distribution of values for statistical analysis (e.g., response times)
+    
+    Features:
+        - Thread-safe operations with proper locking mechanisms
+        - Configurable retention policies for memory management
+        - Time-series storage with efficient querying capabilities
+        - Label support for multi-dimensional metrics
+        - Automatic cleanup of old data points
+        - Statistical analysis for histogram metrics
+    
+    Performance Considerations:
+        - Uses deque with maxlen for efficient memory management
+        - Thread-safe operations with minimal lock contention
+        - Optimized data structures for fast reads and writes
+        - Configurable retention to balance memory usage and history
+    """
 
     def __init__(self, max_points_per_metric: int = 1000):
+        """
+        Initialize the metrics collector with configurable retention.
+        
+        Args:
+            max_points_per_metric: Maximum number of data points to retain per metric
+                                 for memory management and performance optimization
+        """
+        # Time-series storage with automatic cleanup
         self.metrics = defaultdict(lambda: deque(maxlen=max_points_per_metric))
-        self.counters = defaultdict(float)
-        self.gauges = defaultdict(float)
-        self.histograms = defaultdict(list)
+
+        # Current values for different metric types
+        self.counters = defaultdict(float)  # Always increasing values
+        self.gauges = defaultdict(float)  # Point-in-time values
+        self.histograms = defaultdict(list)  # Distribution values
+
+        # Thread safety for concurrent access
         self.lock = Lock()
+
+        # Configuration
+        self.max_points_per_metric = max_points_per_metric
+        self.max_histogram_values = 100  # Limit histogram values for memory efficiency
+
+        # Metrics about metrics (meta-metrics)
+        self.collection_start_time = utc_time()
+        self.total_metrics_collected = 0
 
     def record_counter(self, name: str, value: float = 1, labels: Optional[Dict] = None):
         """Record counter metric (always increasing)"""

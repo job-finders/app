@@ -8,28 +8,34 @@ from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 
 from src.controllers.controller import error_handler
-from src.utils.route_helpers import get_controller
-from src.authentication.auth_utils import require_auth, get_current_user
-from src.firewall.job_actions_security import job_actions_rate_limiter
+from src.utils.route_helpers import get_controller, get_service
 
+from src.authentication import (
+    employer_login,
+    system_admin_login,
+    jobseeker_login,
+    employer_job_access_required,
+    require_billing_role,
+)
+from src.database.models.users import User
 # Create blueprint
 jobs_analytics_bp = Blueprint('jobs_analytics', __name__)
 
 
-@jobs_analytics_bp.route('/api/jobs/<job_id>/engagement', methods=['GET'])
-@cross_origin()
+@jobs_analytics_bp.route('/api/jobs/<string:job_id>/engagement', methods=['GET'])
+@employer_login
 @error_handler
-async def get_job_engagement_metrics(job_id):
+async def get_job_engagement_metrics(user: User, job_id: str):
     """Get engagement metrics for a specific job"""
     try:
-        analytics_service = get_controller('job_actions_analytics')
+        analytics_service = get_service('job_actions_analytics')
         if not analytics_service:
             return jsonify({
                 "success": False,
                 "message": "Analytics service not available"
             }), 503
 
-        metrics = await analytics_service.get_job_engagement_metrics(job_id)
+        metrics = await analytics_service.execute('get_job_engagement_metrics', job_id)
 
         if not metrics:
             return jsonify({
@@ -59,14 +65,14 @@ async def get_popular_jobs():
         limit = min(int(request.args.get('limit', 10)), 50)  # Max 50 jobs
         days = min(int(request.args.get('days', 7)), 30)  # Max 30 days
 
-        analytics_service = get_controller('job_actions_analytics')
+        analytics_service = get_service('job_actions_analytics')
         if not analytics_service:
             return jsonify({
                 "success": False,
                 "message": "Analytics service not available"
             }), 503
 
-        popular_jobs = await analytics_service.get_popular_jobs_by_engagement(
+        popular_jobs = await analytics_service.execute('get_popular_jobs_by_engagement', 
             limit=limit,
             days=days
         )
@@ -92,14 +98,14 @@ async def get_popular_jobs():
         }), 500
 
 
-@jobs_analytics_bp.route('/api/company/<company_id>/engagement', methods=['GET'])
+@jobs_analytics_bp.route('/api/company/<string:company_id>/engagement', methods=['GET'])
 @cross_origin()
-@require_auth
+@employer_login
 @error_handler
-async def get_company_engagement_stats(company_id):
+async def get_company_engagement_stats(user: User, company_id: str):
     """Get engagement statistics for a company (requires authentication)"""
     try:
-        current_user = get_current_user()
+        current_user = user
         if not current_user:
             return jsonify({
                 "success": False,
@@ -109,7 +115,7 @@ async def get_company_engagement_stats(company_id):
         # Get query parameters
         days = min(int(request.args.get('days', 30)), 90)  # Max 90 days
 
-        analytics_service = get_controller('job_actions_analytics')
+        analytics_service = get_service('job_actions_analytics')
         if not analytics_service:
             return jsonify({
                 "success": False,
@@ -118,7 +124,7 @@ async def get_company_engagement_stats(company_id):
 
         # TODO: Add authorization check - ensure user can access this company's data
 
-        engagement_stats = await analytics_service.get_company_engagement_stats(
+        engagement_stats = await analytics_service.execute('get_company_engagement_stats',
             company_id=company_id,
             days=days
         )
@@ -148,12 +154,12 @@ async def get_company_engagement_stats(company_id):
 
 @jobs_analytics_bp.route('/api/company/<company_id>/analytics-report', methods=['GET'])
 @cross_origin()
-@require_auth
+@employer_login
 @error_handler
-async def get_company_analytics_report(company_id):
+async def get_company_analytics_report(user: User, company_id: str):
     """Get comprehensive analytics report for a company"""
     try:
-        current_user = get_current_user()
+        current_user = user
         if not current_user:
             return jsonify({
                 "success": False,
@@ -163,7 +169,7 @@ async def get_company_analytics_report(company_id):
         # Get query parameters
         days = min(int(request.args.get('days', 30)), 90)  # Max 90 days
 
-        analytics_service = get_controller('job_actions_analytics')
+        analytics_service = get_service('job_actions_analytics')
         if not analytics_service:
             return jsonify({
                 "success": False,
@@ -172,7 +178,7 @@ async def get_company_analytics_report(company_id):
 
         # TODO: Add authorization check - ensure user can access this company's data
 
-        report = await analytics_service.generate_job_actions_report(
+        report = await analytics_service.execute('generate_job_actions_report',
             company_id=company_id,
             days=days
         )
@@ -200,14 +206,14 @@ async def get_company_analytics_report(company_id):
         }), 500
 
 
-@jobs_analytics_bp.route('/api/company/<company_id>/dashboard/enhanced', methods=['GET'])
+@jobs_analytics_bp.route('/api/company/<string:company_id>/dashboard/enhanced', methods=['GET'])
 @cross_origin()
-@require_auth
+@employer_login
 @error_handler
-async def get_enhanced_company_dashboard(company_id):
+async def get_enhanced_company_dashboard(user: User, company_id: str):
     """Get enhanced company dashboard with job actions analytics"""
     try:
-        current_user = get_current_user()
+        current_user = user
         if not current_user:
             return jsonify({
                 "success": False,
@@ -243,14 +249,14 @@ async def get_enhanced_company_dashboard(company_id):
         }), 500
 
 
-@jobs_analytics_bp.route('/api/jobs/<job_id>/performance', methods=['GET'])
+@jobs_analytics_bp.route('/api/jobs/<string:job_id>/performance', methods=['GET'])
 @cross_origin()
-@require_auth
+@employer_login
 @error_handler
-async def get_job_performance_metrics(job_id):
+async def get_job_performance_metrics(user: User, job_id: str):
     """Get comprehensive performance metrics for a specific job"""
     try:
-        current_user = get_current_user()
+        current_user = user
         if not current_user:
             return jsonify({
                 "success": False,
@@ -286,14 +292,14 @@ async def get_job_performance_metrics(job_id):
         }), 500
 
 
-@jobs_analytics_bp.route('/api/users/<user_id>/engagement-history', methods=['GET'])
+@jobs_analytics_bp.route('/api/users/<string:user_id>/engagement-history', methods=['GET'])
 @cross_origin()
-@require_auth
+@employer_login
 @error_handler
-async def get_user_engagement_history(user_id):
+async def get_user_engagement_history(user: User, user_id: str):
     """Get user's job engagement history"""
     try:
-        current_user = get_current_user()
+        current_user = user
         if not current_user:
             return jsonify({
                 "success": False,
@@ -306,14 +312,14 @@ async def get_user_engagement_history(user_id):
         # Get query parameters
         days = min(int(request.args.get('days', 30)), 90)  # Max 90 days
 
-        analytics_service = get_controller('job_actions_analytics')
+        analytics_service = get_service('job_actions_analytics')
         if not analytics_service:
             return jsonify({
                 "success": False,
                 "message": "Analytics service not available"
             }), 503
 
-        history = await analytics_service.get_user_engagement_history(
+        history = await analytics_service.execute('get_user_engagement_history',
             user_id=user_id,
             days=days
         )
@@ -334,15 +340,14 @@ async def get_user_engagement_history(user_id):
             "message": "Internal server error"
         }), 500
 
-
-# Rate limiting for analytics endpoints
-@jobs_analytics_bp.before_request
-def apply_rate_limiting():
-    """Apply rate limiting to analytics endpoints"""
-    if request.endpoint and 'analytics' in request.endpoint:
-        # Apply more lenient rate limiting for analytics (read-only operations)
-        return job_actions_rate_limiter.check_rate_limit(
-            identifier=request.remote_addr,
-            limit=100,  # 100 requests per minute for analytics
-            window=60
-        )
+# # Rate limiting for analytics endpoints
+# @jobs_analytics_bp.before_request
+# def apply_rate_limiting():
+#     """Apply rate limiting to analytics endpoints"""
+#     if request.endpoint and 'analytics' in request.endpoint:
+#         # Apply more lenient rate limiting for analytics (read-only operations)
+#         return job_actions_rate_limiter.check_rate_limit(
+#             identifier=request.remote_addr,
+#             limit=100,  # 100 requests per minute for analytics
+#             window=60
+#         )

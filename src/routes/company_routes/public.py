@@ -310,13 +310,13 @@ try:
     from src.cache.cache_redis import cached
 
     # Cache company profile for 30 minutes
-    api_company_profile = cached(timeout=1800)(api_company_profile)
+    api_company_profile = cached(ttl=1800)(api_company_profile)
 
     # Cache company statistics for 1 hour
-    api_company_statistics = cached(timeout=3600)(api_company_statistics)
+    api_company_statistics = cached(ttl=3600)(api_company_statistics)
 
     # Cache company categories for 2 hours
-    api_company_categories = cached(timeout=7200)(api_company_categories)
+    api_company_categories = cached(ttl=7200)(api_company_categories)
 
 except ImportError:
     # Caching not available
