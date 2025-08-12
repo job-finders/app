@@ -19,30 +19,22 @@
                 {% include "jobs/job_detail/partials/job_details.html" %}
 
                 <!-- Application Statistics -->
-                {% if job_statistics and job_statistics.application_stats %}
-                    {% include 'jobs/job_detail/partials/application_statistics.html' %}
-                {% endif %}
+
+                {% include 'jobs/job_detail/partials/application_statistics.html' %}
 
                 <!-- Job Competitiveness -->
-                {% if job_statistics and job_statistics.competitiveness %}
-                    {% include 'jobs/job_detail/partials/competitiveness_metrics.html' %}
-                {% endif %}
-
-                <!-- Application Trends -->
-                {% if job_statistics and job_statistics.trends %}
-                    {% include 'jobs/job_detail/partials/trend_analysis.html' %}
-                {% endif %}
-
-                <!-- Company Statistics -->
-
-                {% if job_statistics and job_statistics.company_stats %}
-                    {% include 'jobs/job_detail/partials/company_statistics.html' %}
-                {% endif %}
-
-                <!-- Statistics Disclaimer -->
-                {% if job_statistics %}
-                    {% include 'jobs/job_detail/partials/statistics_disclaimer.html' %}
-                {% endif %}
+                
+                {% include 'jobs/job_detail/partials/competitiveness_metrics.html' %}
+                
+                <!-- Application Trends -->               
+                {% include 'jobs/job_detail/partials/trend_analysis.html' %}
+                
+                <!-- Company Statistics -->                
+                {% include 'jobs/job_detail/partials/company_statistics.html' %}
+                
+                                
+                {% include 'jobs/job_detail/partials/statistics_disclaimer.html' %}
+                
                 <!-- Related Jobs -->
                 {% if related_jobs %}
                     {% include 'jobs/job_detail/partials/related_jobs.html' %}

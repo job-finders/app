@@ -2,6 +2,7 @@
 {# Partial: company_statistics.html #}
 {# ================================ #}
 
+{% set company_stats = job_statistics.company_stats if job_statistics and job_statistics.company_stats else {} %}
 <div class="stats-card p-4 mb-4 slide-up">
     <div class="stats-header">
         <i class="fas fa-building bg-success text-white"></i>
@@ -11,36 +12,71 @@
     <!-- Key Metrics -->
     <div class="metric-grid mb-4">
         <div class="metric-item">
-            <span class="metric-value">{{ job_statistics.company_stats.total_jobs_12_months }}</span>
-            <small class="metric-label">Jobs Posted (12 months)</small>
-        </div>
-        <div class="metric-item">
-            <span class="metric-value">{{ "%.1f"|format(job_statistics.company_stats.average_applications_per_job) }}</span>
-            <small class="metric-label">Avg Applications/Job</small>
-        </div>
-        <div class="metric-item">
-            {% if job_statistics.company_stats.application_response_rate >= 70 %}
-                <span class="metric-value badge-success">
-          {{ "%.0f"|format(job_statistics.company_stats.application_response_rate) }}%
-        </span>
-            {% elif job_statistics.company_stats.application_response_rate >= 50 %}
-                <span class="metric-value badge-warning">
-          {{ "%.0f"|format(job_statistics.company_stats.application_response_rate) }}%
-        </span>
+            {% if company_stats.total_jobs_12_months is defined %}
+                <span class="metric-value">{{ company_stats.total_jobs_12_months }}</span>
             {% else %}
-                <span class="metric-value badge-danger">
-          {{ "%.0f"|format(job_statistics.company_stats.application_response_rate) }}%
-        </span>
+                <span class="metric-value badge-neutral placeholder-shimmer">--</span>
+            {% endif %}
+            <small class="metric-label">Jobs Posted (12 months)</small>
+            {% if company_stats.total_jobs_12_months is not defined %}
+                <div class="placeholder-text">
+                    <small class="text-muted">Company hiring activity tracking</small>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="metric-item">
+            {% if company_stats.average_applications_per_job is defined %}
+                <span class="metric-value">{{ "%.1f"|format(company_stats.average_applications_per_job) }}</span>
+            {% else %}
+                <span class="metric-value badge-neutral placeholder-shimmer">--</span>
+            {% endif %}
+            <small class="metric-label">Avg Applications/Job</small>
+            {% if company_stats.average_applications_per_job is not defined %}
+                <div class="placeholder-text">
+                    <small class="text-muted">Average competition level</small>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="metric-item">
+            {% if company_stats.application_response_rate is defined %}
+                {% if company_stats.application_response_rate >= 70 %}
+                    <span class="metric-value badge-success">
+                        {{ "%.0f"|format(company_stats.application_response_rate) }}%
+                    </span>
+                {% elif company_stats.application_response_rate >= 50 %}
+                    <span class="metric-value badge-warning">
+                        {{ "%.0f"|format(company_stats.application_response_rate) }}%
+                    </span>
+                {% else %}
+                    <span class="metric-value badge-danger">
+                        {{ "%.0f"|format(company_stats.application_response_rate) }}%
+                    </span>
+                {% endif %}
+            {% else %}
+                <span class="metric-value badge-neutral placeholder-shimmer">--%</span>
             {% endif %}
             <small class="metric-label">Response Rate</small>
+            {% if company_stats.application_response_rate is not defined %}
+                <div class="placeholder-text">
+                    <small class="text-muted">Applicant communication rate</small>
+                </div>
+            {% endif %}
         </div>
+        
         <div class="metric-item">
-            {% if job_statistics.company_stats.average_time_to_fill %}
-                <span class="metric-value">{{ "%.0f"|format(job_statistics.company_stats.average_time_to_fill) }}</span>
+            {% if company_stats.average_time_to_fill is defined %}
+                <span class="metric-value">{{ "%.0f"|format(company_stats.average_time_to_fill) }}</span>
             {% else %}
-                <span class="metric-value">N/A</span>
+                <span class="metric-value badge-neutral placeholder-shimmer">--</span>
             {% endif %}
             <small class="metric-label">Days to Fill</small>
+            {% if company_stats.average_time_to_fill is not defined %}
+                <div class="placeholder-text">
+                    <small class="text-muted">Typical hiring timeline</small>
+                </div>
+            {% endif %}
         </div>
     </div>
 
@@ -51,19 +87,37 @@
             <div>
                 <strong class="small">Hiring Insight:</strong>
                 <p class="small mb-0 mt-1">
-                    {% if job_statistics.company_stats.is_active_hirer and job_statistics.company_stats.response_rate_category in ["excellent", "good"] %}
-                        This company actively hires and has a good track record of responding to applicants.
-                    {% elif job_statistics.company_stats.is_active_hirer %}
-                        This company is actively hiring but response rates vary. Consider following up on your
-                        application.
-                    {% elif job_statistics.company_stats.response_rate_category in ["excellent", "good"] %}
-                        While this company hires less frequently, they have excellent communication with applicants.
+                    {% if company_stats.is_active_hirer is defined and company_stats.response_rate_category is defined %}
+                        {% if company_stats.is_active_hirer and company_stats.response_rate_category in ["excellent", "good"] %}
+                            This company actively hires and has a good track record of responding to applicants.
+                        {% elif company_stats.is_active_hirer %}
+                            This company is actively hiring but response rates vary. Consider following up on your application.
+                        {% elif company_stats.response_rate_category in ["excellent", "good"] %}
+                            While this company hires less frequently, they have excellent communication with applicants.
+                        {% else %}
+                            This company has limited hiring activity. Consider this as one of several opportunities you're pursuing.
+                        {% endif %}
                     {% else %}
-                        This company has limited hiring activity. Consider this as one of several opportunities you're
-                        pursuing.
+                        <span class="text-muted placeholder-shimmer">Analyzing company hiring patterns and communication practices...</span>
                     {% endif %}
                 </p>
             </div>
         </div>
     </div>
+
+    <!-- Data Status Indicator -->
+    {% if not (job_statistics and job_statistics.company_stats) %}
+        <div class="mt-3 p-3 bg-light rounded">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-info-circle text-success me-2"></i>
+                <div>
+                    <strong>Company Analysis</strong>
+                    <p class="mb-0 text-muted small">
+                        We're gathering historical data about this company's hiring patterns, response rates, and typical timelines.
+                        This helps you understand what to expect from your application.
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 </div>

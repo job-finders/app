@@ -2,34 +2,221 @@
 {# Partial: job_details.html #}
 {# ================================ #}
 
-<div class="job-details-card p-4 mb-4 slide-up">
+<div class="stats-card p-4 mb-4 slide-up">
     <div class="stats-header">
-        <i class="fas fa-file-alt bg-primary text-white"></i>
+        <i class="fas fa-briefcase bg-primary text-white"></i>
+        <h3>Job Overview</h3>
+    </div>
+
+    <!-- Key Job Details -->
+    <div class="metric-grid mb-4">
+        <div class="metric-item">
+            <span class="metric-value font-size-md">{{ job.position_type if job.position_type else 'Not specified' }}</span>
+            <small class="metric-label">Position Type</small>
+        </div>
+        <div class="metric-item">
+            <span class="metric-value font-size-md">{{ job.remote_policy if job.remote_policy else 'Not specified' }}</span>
+            <small class="metric-label">Remote Policy</small>
+        </div>
+        <div class="metric-item">
+            <span class="metric-value font-size-md">{{ job.experience_level if job.experience_level else 'Not specified' }}</span>
+            <small class="metric-label">Experience Level</small>
+        </div>
+        <div class="metric-item">
+            
+            {% if job.salary_min or job.salary_max %}
+                <span class="metric-value font-size-md"> {{ job.salary_min|format_currency }} - {{ job.salary_max|format_currency }}</span>
+            {% else %}
+                <span class="metric-value badge-neutral">Not disclosed</span>
+            {% endif %}
+            <small class="metric-label">Salary Range</small>
+        </div>
+    </div>
+
+    <!-- Location & Timeline -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <h6 class="fw-semibold mb-2">
+                <i class="fas fa-map-marker-alt me-1"></i>Location
+            </h6>
+            <p class="mb-0">{{ job.location if job.location else 'Location not specified' }}</p>
+        </div>
+        <div class="col-md-6">
+            <h6 class="fw-semibold mb-2">
+                <i class="fas fa-calendar-alt me-1"></i>Timeline
+            </h6>
+            <p class="mb-0 small">
+                Posted: {{ job.posted_at.strftime('%B %d, %Y') if job.posted_at else 'Date not available' }}<br>
+                {% if job.application_deadline %}
+                    Apply by: {{ job.application_deadline.strftime('%B %d, %Y') }}
+                {% else %}
+                    No application deadline specified
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Job Description -->
+<div class="stats-card p-4 mb-4 slide-up">
+    <div class="stats-header">
+        <i class="fas fa-file-alt bg-info text-white"></i>
         <h3>Job Description</h3>
     </div>
 
     <div class="job-description">
-        <p class="mb-4">{{ job.description }}</p>
+        {% if job.description %}
+            <div class="job-content">{{ job.description | safe }}</div>
+        {% else %}
+            <div class="no-data-state">
+                <i class="fas fa-file-alt"></i>
+                <p class="mb-0">Job description not available</p>
+                <small>Contact the employer for more details</small>
+            </div>
+        {% endif %}
     </div>
+</div>
 
+<!-- Skills & Requirements -->
+<div class="stats-card p-4 mb-4 slide-up">
     <div class="stats-header">
-        <i class="fas fa-tools bg-warning text-white"></i>
-        <h3>Required Skills</h3>
+        <i class="fas fa-cogs bg-warning text-white"></i>
+        <h3>Skills & Requirements</h3>
     </div>
 
-    <div class="skills-list">
-        {% if job.skills %}
+    <!-- Required Skills -->
+    <div class="mb-4">
+        <h6 class="fw-semibold mb-2 text-danger">
+            <i class="fas fa-exclamation-circle me-1"></i>Required Skills
+        </h6>
+        {% if job.required_skills %}
             <div class="d-flex flex-wrap gap-2">
-                {% for skill in job.skills %}
-                    <span class="badge badge-primary">{{ skill }}</span>
+                {% for skill in job.required_skills %}
+                    <span class="badge badge-danger">{{ skill }}</span>
                 {% endfor %}
             </div>
         {% else %}
-            <div class="no-data-state">
-                <i class="fas fa-question"></i>
-                <p class="mb-0">No specific skills listed</p>
-                <small>Check the job description for more details</small>
-            </div>
+            <p class="text-muted small mb-0">No specific required skills listed - check job description</p>
         {% endif %}
+    </div>
+
+    <!-- Preferred Skills -->
+    <div class="mb-4">
+        <h6 class="fw-semibold mb-2 text-success">
+            <i class="fas fa-plus-circle me-1"></i>Preferred Skills
+        </h6>
+        {% if job.preferred_skills %}
+            <div class="d-flex flex-wrap gap-2">
+                {% for skill in job.preferred_skills %}
+                    <span class="badge badge-success">{{ skill }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted small mb-0">No preferred skills specified</p>
+        {% endif %}
+    </div>
+
+    <!-- Education Requirements -->
+    {% if job.education_requirements %}
+        <div class="mb-4">
+            <h6 class="fw-semibold mb-2 text-primary">
+                <i class="fas fa-graduation-cap me-1"></i>Education Requirements
+            </h6>
+            <div class="education-requirements">
+                {% for key, value in job.education_requirements.items() %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-medium">{{ key.replace('_', ' ').title() }}:</span>
+                        <span class="badge badge-primary">{{ value }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Application Process -->
+<div class="stats-card p-4 mb-4 slide-up">
+    <div class="stats-header">
+        <i class="fas fa-paper-plane bg-success text-white"></i>
+        <h3>Application Process</h3>
+    </div>
+
+    <!-- Application Instructions -->
+    {% if job.application_instructions %}
+        <div class="mb-4">
+            <h6 class="fw-semibold mb-2">How to Apply</h6>
+            <div class="application-instructions bg-light p-3 rounded">
+                {{ job.application_instructions | safe }}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Required Documents -->
+    {% if job.required_documents %}
+        <div class="mb-4">
+            <h6 class="fw-semibold mb-2">
+                <i class="fas fa-file-upload me-1"></i>Required Documents
+            </h6>
+            <ul class="list-unstyled">
+                {% for doc in job.required_documents %}
+                    <li class="mb-1">
+                        <i class="fas fa-check text-success me-2"></i>{{ doc }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <!-- Application URL -->
+    {% if job.application_url %}
+        <div class="mb-3">
+            <a href="{{ job.application_url }}" target="_blank" class="btn btn-primary">
+                <i class="fas fa-external-link-alt me-2"></i>Apply Now
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Job Quality Indicators -->
+    <div class="row g-3 mt-3">
+        <div class="col-md-4">
+            <div class="metric-item text-center">
+                {% if job.job_quality_score %}
+                    {% if job.job_quality_score >= 80 %}
+                        <span class="metric-value badge-success">{{ job.job_quality_score }}%</span>
+                    {% elif job.job_quality_score >= 60 %}
+                        <span class="metric-value badge-warning">{{ job.job_quality_score }}%</span>
+                    {% else %}
+                        <span class="metric-value badge-danger">{{ job.job_quality_score }}%</span>
+                    {% endif %}
+                {% else %}
+                    <span class="metric-value badge-neutral">--</span>
+                {% endif %}
+                <small class="metric-label">Job Quality Score</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-item text-center">
+                {% if job.job_completeness_score %}
+                    <span class="metric-value">{{ job.job_completeness_score }}/10</span>
+                {% else %}
+                    <span class="metric-value badge-neutral">--</span>
+                {% endif %}
+                <small class="metric-label">Completeness</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-item text-center">
+                {% if job.readability_is_ok %}
+                    <span class="metric-value badge-success">
+                        <i class="fas fa-check me-1"></i>Good
+                    </span>
+                {% else %}
+                    <span class="metric-value badge-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Needs Work
+                    </span>
+                {% endif %}
+                <small class="metric-label">Readability</small>
+            </div>
+        </div>
     </div>
 </div>

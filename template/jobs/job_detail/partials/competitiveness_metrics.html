@@ -2,87 +2,121 @@
 {# Partial: competitiveness_metrics.html #}
 {# ================================ #}
 
-{% if job_statistics.competitiveness.has_ats_data %}
-    <div class="stats-card p-4 mb-4 slide-up">
-        <div class="stats-header">
-            <i class="fas fa-trophy bg-warning text-white"></i>
-            <h3>Job Competitiveness</h3>
-        </div>
+<div class="stats-card p-4 mb-4 slide-up">
+    <div class="stats-header">
+        <i class="fas fa-trophy bg-warning text-white"></i>
+        <h3>Job Competitiveness</h3>
+    </div>
 
-        <!-- Match Score Overview -->
-        <div class="metric-grid mb-4">
-            <div class="metric-item">
-                {% if job_statistics.competitiveness.average_match_score %}
-                    {% set avg_score = job_statistics.competitiveness.average_match_score %}
-                    {% if avg_score >= 75 %}
-                        <span class="metric-value badge-success">{{ "%.0f"|format(avg_score) }}%</span>
-                    {% elif avg_score >= 50 %}
-                        <span class="metric-value badge-warning">{{ "%.0f"|format(avg_score) }}%</span>
-                    {% else %}
-                        <span class="metric-value badge-danger">{{ "%.0f"|format(avg_score) }}%</span>
-                    {% endif %}
+    <!-- Match Score Overview -->
+    <div class="metric-grid mb-4">
+        <div class="metric-item">
+            {% if job_statistics and job_statistics.competitiveness and job_statistics.competitiveness.has_ats_data and job_statistics.competitiveness.average_match_score %}
+                {% set avg_score = job_statistics.competitiveness.average_match_score %}
+                {% if avg_score >= 75 %}
+                    <span class="metric-value badge-success">{{ "%.0f"|format(avg_score) }}%</span>
+                {% elif avg_score >= 50 %}
+                    <span class="metric-value badge-warning">{{ "%.0f"|format(avg_score) }}%</span>
                 {% else %}
-                    <span class="metric-value badge-neutral">N/A</span>
+                    <span class="metric-value badge-danger">{{ "%.0f"|format(avg_score) }}%</span>
                 {% endif %}
-                <small class="metric-label">Average Match Score</small>
-            </div>
-            <div class="metric-item">
+            {% else %}
+                <span class="metric-value badge-neutral placeholder-shimmer">--</span>
+            {% endif %}
+            <small class="metric-label">Average Match Score</small>
+            {% if not (job_statistics and job_statistics.competitiveness and job_statistics.competitiveness.has_ats_data) %}
+                <div class="placeholder-text">
+                    <small class="text-muted">Available after applications processed</small>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="metric-item">
+            {% if job_statistics and job_statistics.competitiveness and job_statistics.competitiveness.has_ats_data and job_statistics.competitiveness.ats_readiness_percentage is defined %}
                 {% if job_statistics.competitiveness.ats_readiness_percentage >= 60 %}
                     <span class="metric-value badge-success">
-          {{ "%.0f"|format(job_statistics.competitiveness.ats_readiness_percentage) }}%
-        </span>
+                        {{ "%.0f"|format(job_statistics.competitiveness.ats_readiness_percentage) }}%
+                    </span>
                 {% elif job_statistics.competitiveness.ats_readiness_percentage >= 30 %}
                     <span class="metric-value badge-warning">
-          {{ "%.0f"|format(job_statistics.competitiveness.ats_readiness_percentage) }}%
-        </span>
+                        {{ "%.0f"|format(job_statistics.competitiveness.ats_readiness_percentage) }}%
+                    </span>
                 {% else %}
                     <span class="metric-value badge-danger">
-          {{ "%.0f"|format(job_statistics.competitiveness.ats_readiness_percentage) }}%
-        </span>
+                        {{ "%.0f"|format(job_statistics.competitiveness.ats_readiness_percentage) }}%
+                    </span>
                 {% endif %}
-                <small class="metric-label">Well-Matched Applicants</small>
+            {% else %}
+                <span class="metric-value badge-neutral placeholder-shimmer">--</span>
+            {% endif %}
+            <small class="metric-label">Well-Matched Applicants</small>
+            {% if not (job_statistics and job_statistics.competitiveness and job_statistics.competitiveness.has_ats_data) %}
+                <div class="placeholder-text">
+                    <small class="text-muted">Calculated from applicant data</small>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Skills Analysis -->
+    <div class="row g-3">
+        <div class="col-md-6">
+            <h6 class="fw-semibold mb-2 text-success">
+                <i class="fas fa-check-circle me-1"></i>Most Matched Skills
+            </h6>
+            <div class="d-flex flex-wrap">
+                {% if job_statistics and job_statistics.competitiveness and job_statistics.competitiveness.has_ats_data and job_statistics.competitiveness.top_matched_keywords %}
+                    {% for keyword in job_statistics.competitiveness.top_matched_keywords[:5] %}
+                        <span class="keyword-tag keyword-matched">{{ keyword }}</span>
+                    {% endfor %}
+                {% else %}
+                    <!-- Placeholder keywords -->
+                    <span class="keyword-tag keyword-placeholder placeholder-shimmer">Skill analysis</span>
+                    <span class="keyword-tag keyword-placeholder placeholder-shimmer">In progress</span>
+                    <span class="keyword-tag keyword-placeholder placeholder-shimmer">Loading...</span>
+                {% endif %}
+            </div>
+            {% if not (job_statistics and job_statistics.competitiveness and job_statistics.competitiveness.has_ats_data) %}
+                <small class="text-muted mt-2 d-block">Shows skills most commonly found in qualifying applications</small>
+            {% endif %}
+        </div>
+
+        <div class="col-md-6">
+            <h6 class="fw-semibold mb-2 text-warning">
+                <i class="fas fa-exclamation-triangle me-1"></i>Often Missing Skills
+            </h6>
+            <div class="d-flex flex-wrap">
+                {% if job_statistics and job_statistics.competitiveness and job_statistics.competitiveness.has_ats_data and job_statistics.competitiveness.top_missing_keywords %}
+                    {% for keyword in job_statistics.competitiveness.top_missing_keywords[:5] %}
+                        <span class="keyword-tag keyword-missing">{{ keyword }}</span>
+                    {% endfor %}
+                {% else %}
+                    <!-- Placeholder keywords -->
+                    <span class="keyword-tag keyword-placeholder placeholder-shimmer">Gap analysis</span>
+                    <span class="keyword-tag keyword-placeholder placeholder-shimmer">Pending data</span>
+                    <span class="keyword-tag keyword-placeholder placeholder-shimmer">Coming soon</span>
+                {% endif %}
+            </div>
+            {% if not (job_statistics and job_statistics.competitiveness and job_statistics.competitiveness.has_ats_data) %}
+                <small class="text-muted mt-2 d-block">Highlights skills that could improve match rates</small>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Data Status Indicator -->
+    {% if not (job_statistics and job_statistics.competitiveness and job_statistics.competitiveness.has_ats_data) %}
+        <div class="mt-3 p-3 bg-light rounded">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-info-circle text-primary me-2"></i>
+                <div>
+                    <strong>Competitiveness Analysis</strong>
+                    <p class="mb-0 text-muted small">
+                        This analysis becomes available once we've processed applications for this role. 
+                        It will show how well applicants typically match your requirements.
+                    </p>
+                </div>
             </div>
         </div>
+    {% endif %}
+</div>
 
-        <!-- Top Keywords -->
-        <div class="row g-3">
-            {% if job_statistics.competitiveness.top_matched_keywords %}
-                <div class="col-md-6">
-                    <h6 class="fw-semibold mb-2 text-success">
-                        <i class="fas fa-check-circle me-1"></i>Most Matched Skills
-                    </h6>
-                    <div class="d-flex flex-wrap">
-                        {% for keyword in job_statistics.competitiveness.top_matched_keywords[:5] %}
-                            <span class="keyword-tag keyword-matched">{{ keyword }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-
-            {% if job_statistics.competitiveness.top_missing_keywords %}
-                <div class="col-md-6">
-                    <h6 class="fw-semibold mb-2 text-warning">
-                        <i class="fas fa-exclamation-triangle me-1"></i>Often Missing Skills
-                    </h6>
-                    <div class="d-flex flex-wrap">
-                        {% for keyword in job_statistics.competitiveness.top_missing_keywords[:5] %}
-                            <span class="keyword-tag keyword-missing">{{ keyword }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-{% else %}
-    <div class="stats-card p-4 mb-4">
-        <div class="stats-header">
-            <i class="fas fa-trophy bg-warning text-white"></i>
-            <h3>Job Competitiveness</h3>
-        </div>
-        <div class="no-data-state">
-            <i class="fas fa-chart-line"></i>
-            <p class="mb-0">Match analysis not available yet</p>
-            <small>Data will appear as applications are processed</small>
-        </div>
-    </div>
-{% endif %}

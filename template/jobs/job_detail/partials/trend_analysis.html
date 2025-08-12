@@ -8,44 +8,77 @@
         <h3>Application Trends</h3>
     </div>
 
-    {% if job_statistics.trends.has_trend_data %}
+    {% if job_statistics and job_statistics.trends and job_statistics.trends.has_trend_data %}
         <!-- Trend Summary -->
         <div class="metric-grid mb-4">
             <div class="metric-item">
-                {% if job_statistics.trends.application_velocity == "accelerating" %}
-                    <span class="metric-value badge-success">
-          <i class="fas fa-rocket me-1"></i>Accelerating
-        </span>
-                {% elif job_statistics.trends.application_velocity == "decelerating" %}
-                    <span class="metric-value badge-warning">
-          <i class="fas fa-arrow-down me-1"></i>Slowing
-        </span>
+                {% if job_statistics.trends.application_velocity is defined %}
+                    {% if job_statistics.trends.application_velocity == "accelerating" %}
+                        <span class="metric-value badge-success">
+                            <i class="fas fa-rocket me-1"></i>Accelerating
+                        </span>
+                    {% elif job_statistics.trends.application_velocity == "decelerating" %}
+                        <span class="metric-value badge-warning">
+                            <i class="fas fa-arrow-down me-1"></i>Slowing
+                        </span>
+                    {% else %}
+                        <span class="metric-value badge-info">
+                            <i class="fas fa-equals me-1"></i>Steady
+                        </span>
+                    {% endif %}
                 {% else %}
-                    <span class="metric-value badge-info">
-          <i class="fas fa-equals me-1"></i>Steady
-        </span>
+                    <span class="metric-value badge-neutral placeholder-shimmer">
+                        <i class="fas fa-chart-line me-1"></i>Analyzing
+                    </span>
                 {% endif %}
                 <small class="metric-label">Application Velocity</small>
+                {% if job_statistics.trends.application_velocity is not defined %}
+                    <div class="placeholder-text">
+                        <small class="text-muted">Rate of change in applications</small>
+                    </div>
+                {% endif %}
             </div>
+            
             <div class="metric-item">
-                {% if job_statistics.trends.trend_direction == "increasing" %}
-                    <span class="metric-value badge-success">
-          <i class="fas fa-trending-up me-1"></i>Rising
-        </span>
-                {% elif job_statistics.trends.trend_direction == "decreasing" %}
-                    <span class="metric-value badge-danger">
-          <i class="fas fa-trending-down me-1"></i>Falling
-        </span>
+                {% if job_statistics.trends.trend_direction is defined %}
+                    {% if job_statistics.trends.trend_direction == "increasing" %}
+                        <span class="metric-value badge-success">
+                            <i class="fas fa-trending-up me-1"></i>Rising
+                        </span>
+                    {% elif job_statistics.trends.trend_direction == "decreasing" %}
+                        <span class="metric-value badge-danger">
+                            <i class="fas fa-trending-down me-1"></i>Falling
+                        </span>
+                    {% else %}
+                        <span class="metric-value badge-neutral">
+                            <i class="fas fa-minus me-1"></i>Stable
+                        </span>
+                    {% endif %}
                 {% else %}
-                    <span class="metric-value badge-neutral">
-          <i class="fas fa-minus me-1"></i>Stable
-        </span>
+                    <span class="metric-value badge-neutral placeholder-shimmer">
+                        <i class="fas fa-chart-area me-1"></i>Computing
+                    </span>
                 {% endif %}
                 <small class="metric-label">Overall Trend</small>
+                {% if job_statistics.trends.trend_direction is not defined %}
+                    <div class="placeholder-text">
+                        <small class="text-muted">7-day trend direction</small>
+                    </div>
+                {% endif %}
             </div>
+            
             <div class="metric-item">
-                <span class="metric-value">{{ job_statistics.trends.total_days_tracked }}</span>
+                {% if job_statistics.trends.total_days_tracked is defined %}
+                    <span class="metric-value">{{ job_statistics.trends.total_days_tracked }}</span>
+                {% else %}
+                    <span class="metric-value badge-neutral placeholder-shimmer">--</span>
+                {% endif %}
                 <small class="metric-label">Days Tracked</small>
+                {% if job_statistics.trends.total_days_tracked is not defined %}
+                    <div class="placeholder-text">
+                        <small class="text-muted">Active tracking period</small>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
@@ -54,15 +87,69 @@
             <canvas id="applicationTrendChart"></canvas>
         </div>
     {% else %}
-        <div class="no-data-state">
-            <i class="fas fa-clock"></i>
-            {% if job_statistics.application_stats.days_since_posted < 7 %}
-                <p class="mb-0">New posting - trend data developing</p>
-                <small>Check back in a few days for trend analysis</small>
-            {% else %}
-                <p class="mb-0">Insufficient data for trend analysis</p>
-                <small>More applications needed to show trends</small>
-            {% endif %}
+        <!-- Enhanced No Data State -->
+        <div class="metric-grid mb-4">
+            <div class="metric-item">
+                <span class="metric-value badge-neutral placeholder-shimmer">
+                    <i class="fas fa-chart-line me-1"></i>Pending
+                </span>
+                <small class="metric-label">Application Velocity</small>
+                <div class="placeholder-text">
+                    <small class="text-muted">Requires multiple data points</small>
+                </div>
+            </div>
+            
+            <div class="metric-item">
+                <span class="metric-value badge-neutral placeholder-shimmer">
+                    <i class="fas fa-chart-area me-1"></i>Building
+                </span>
+                <small class="metric-label">Overall Trend</small>
+                <div class="placeholder-text">
+                    <small class="text-muted">Trend analysis developing</small>
+                </div>
+            </div>
+            
+            <div class="metric-item">
+                {% if job_statistics and job_statistics.application_stats and job_statistics.application_stats.days_since_posted is defined %}
+                    <span class="metric-value">{{ job_statistics.application_stats.days_since_posted }}</span>
+                {% else %}
+                    <span class="metric-value badge-neutral placeholder-shimmer">--</span>
+                {% endif %}
+                <small class="metric-label">Days Tracked</small>
+                <div class="placeholder-text">
+                    <small class="text-muted">Need 7+ days for trends</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Placeholder -->
+        <div class="chart-placeholder">
+            <div class="d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f8f9fa; border: 1px dashed #dee2e6; border-radius: 8px;">
+                <div class="text-center">
+                    <i class="fas fa-chart-line fa-3x text-muted mb-3 placeholder-shimmer"></i>
+                    <p class="text-muted mb-0">Trend Chart</p>
+                    <small class="text-muted">Available with sufficient data</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Status -->
+        <div class="mt-3 p-3 bg-light rounded">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-info-circle text-info me-2"></i>
+                <div>
+                    <strong>Trend Analysis Status</strong>
+                    {% if job_statistics and job_statistics.application_stats and job_statistics.application_stats.days_since_posted is defined and job_statistics.application_stats.days_since_posted < 7 %}
+                        <p class="mb-0 text-muted small">
+                            New posting - trend data developing. Check back in {{ 7 - job_statistics.application_stats.days_since_posted }} days for comprehensive trend analysis.
+                        </p>
+                    {% else %}
+                        <p class="mb-0 text-muted small">
+                            Trend analysis requires multiple application data points over time. Charts and velocity metrics will appear as more data becomes available.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     {% endif %}
 </div>
