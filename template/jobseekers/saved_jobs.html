@@ -1,0 +1,403 @@
+{% extends "jobseekers/layout/page.html" %}
+
+{% block content %}
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-info mb-0">
+                <i class="ti-bookmark mr-2"></i>My Saved Jobs
+            </h2>
+            {% if pagination.total > 0 %}
+                <small class="text-muted">
+                    Showing {{ pagination.offset + 1 }} -
+                    {{ min(pagination.offset + pagination.limit, pagination.total) }}
+                    of {{ pagination.total }} saved jobs
+                </small>
+            {% endif %}
+        </div>
+
+        {% if jobs %}
+            <div class="row">
+                {% for job in jobs %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card shadow-sm h-100 saved-job-card" data-job-id="{{ job.job_id }}">
+                            <div class="card-body">
+                                <!-- Job Title and Company -->
+                                <h5 class="card-title text-primary mb-1">
+                                    <a href="{{ url_for('jobs.view_job', job_id=job.job_id) }}"
+                                       class="text-decoration-none">
+                                        {{ job.title }}
+                                    </a>
+                                </h5>
+                                <p class="mb-2 text-muted small">
+                                    <i class="ti-location-pin"></i>
+                                    {% if job.company_name %}
+                                        {{ job.company_name }} •
+                                        {{ job.city or job.province or 'Location not specified' }}
+                                    {% else %}
+                                        Company information not available •
+                                        {{ job.city or job.province or 'Location not specified' }}
+                                    {% endif %}
+                                </p>
+
+                                <!-- Job Type and Salary -->
+                                <div class="mb-2">
+                                    {% if job.position_type %}
+                                        <span class="badge badge-secondary mr-1">{{ job.position_type|title }}</span>
+                                    {% endif %}
+                                    {% if job.salary_min and job.salary_max %}
+                                        <span class="badge badge-success">R{{ "{:,}".format(job.salary_min|int) }} - R{{ "{:,}".format(job.salary_max|int) }}</span>
+                                    {% elif job.salary_min %}
+                                        <span class="badge badge-success">From R{{ "{:,}".format(job.salary_min|int) }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Job Description Preview -->
+                                {% if job.description %}
+                                    <p class="text-muted small mb-2" style="max-height: 60px; overflow: hidden;">
+                                        {{ job.description[:120] }}{% if job.description|length > 120 %}...{% endif %}
+                                    </p>
+                                {% endif %}
+
+                                <!-- Save Date -->
+                                <p class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="ti-calendar mr-1"></i>
+                                        Saved on {{ job.saved_at[:10] if job.saved_at else 'Recently' }}
+                                    </small>
+                                </p>
+
+                                <!-- Action Buttons -->
+                                <div class="mt-auto d-flex justify-content-between flex-wrap">
+                                    <a href="{{ url_for('jobs.view_job', job_id=job.job_id) }}"
+                                       class="btn btn-sm btn-outline-info mb-1">
+                                        <i class="ti-eye mr-1"></i>View Job
+                                    </a>
+
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger mb-1 unsave-job-btn"
+                                            data-job-id="{{ job.job_id }}"
+                                            data-job-title="{{ job.title }}"
+                                            title="Remove from saved jobs">
+                                        <i class="ti-trash mr-1"></i>Remove
+                                    </button>
+
+                                    <a href="{{ url_for('jobseekers.apply') }}?job_id={{ job.job_id }}"
+                                       class="btn btn-sm btn-primary mb-1">
+                                        <i class="ti-check mr-1"></i>Apply Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <!
+            -- Pagination -->
+            {% if pagination.total > pagination.limit %}
+                <nav aria-label="Saved jobs pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% set prev_offset = pagination.offset - pagination.limit %}
+                        {% set next_offset = pagination.offset + pagination.limit %}
+
+                        {% if pagination.offset > 0 %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="{{ url_for('jobseekers.saved_jobs', offset=prev_offset, limit=pagination.limit) }}">
+                                    <i class="ti-angle-left"></i> Previous
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="ti-angle-left"></i> Previous</span>
+                            </li>
+                        {% endif %}
+
+                        <!-- Page numbers -->
+                        {% set total_pages = (pagination.total + pagination.limit - 1) // pagination.limit %}
+                        {% set current_page = (pagination.offset // pagination.limit) + 1 %}
+
+                        {% for page_num in range(max(1, current_page - 2), min(total_pages + 1, current_page + 3)) %}
+                            {% set page_offset = (page_num - 1) * pagination.limit %}
+                            {% if page_num == current_page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link"
+                                       href="{{ url_for('jobseekers.saved_jobs', offset=page_offset, limit=pagination.limit) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if next_offset < pagination.total %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="{{ url_for('jobseekers.saved_jobs', offset=next_offset, limit=pagination.limit) }}">
+                                    Next <i class="ti-angle-right"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next <i class="ti-angle-right"></i></span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+
+        {% else %}
+            <!-- Empty State -->
+            <div class="alert alert-info text-center">
+                <div class="mb-3">
+                    <i class="ti-bookmark display-4 text-muted"></i>
+                </div>
+                <h4 class="mb-2">No Saved Jobs Yet</h4>
+                <p class="mb-3">You haven't saved any jobs yet. Start browsing and save jobs that interest you!</p>
+                <a href="{{ url_for('jobs.list_jobs') }}" class="btn btn-primary">
+                    <i class="ti-search mr-1"></i>Browse Jobs
+                </a>
+            </div>
+        {% endif %}
+    </div>
+    <!--
+    Confirmation Modal for Unsaving Jobs -->
+    <div class="modal fade" id="unsaveJobModal" tabindex="-1" role="dialog" aria-labelledby="unsaveJobModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="unsaveJobModalLabel">Remove Saved Job</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to remove "<span id="jobTitleToUnsave"></span>" from your saved jobs?</p>
+                    <p class="text-muted small">You can always save it again later if you change your mind.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmUnsaveBtn">
+                        <i class="ti-trash mr-1"></i>Remove Job
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}{% block styles %}
+    <style>
+        .saved-job-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid #e9ecef;
+        }
+
+        .saved-job-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title a {
+            color: #17a2b8;
+            text-decoration: none;
+        }
+
+        .card-title a:hover {
+            color: #138496;
+            text-decoration: underline;
+        }
+
+        .badge-secondary {
+            background-color: #6c757d;
+        }
+
+        .badge-success {
+            background-color: #28a745;
+        }
+
+        .pagination .page-link {
+            color: #17a2b8;
+            border-color: #dee2e6;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #17a2b8;
+            border-color: #17a2b8;
+            color: white;
+        }
+
+        .pagination .page-link:hover {
+            color: #138496;
+            background-color: #e9ecef;
+            border-color: #dee2e6;
+        }
+
+        .unsave-job-btn:hover {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .d-flex.justify-content-between {
+                flex-direction: column;
+                align-items: flex-start !important;
+            }
+
+            .d-flex.justify-content-between small {
+                margin-top: 0.5rem;
+            }
+
+            .card-body .d-flex {
+                flex-direction: column;
+            }
+
+            .card-body .d-flex .btn {
+                margin-bottom: 0.25rem;
+                width: 100%;
+            }
+        }
+
+        /* Loading state for unsave action */
+        .unsave-job-btn.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .unsave-job-btn.loading::after {
+            content: "";
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-left: 5px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+{% endblock %}{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Handle unsave job functionality
+            let jobIdToUnsave = null;
+
+            // Show confirmation modal when unsave button is clicked
+            document.querySelectorAll('.unsave-job-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    jobIdToUnsave = this.getAttribute('data-job-id');
+                    const jobTitle = this.getAttribute('data-job-title');
+
+                    document.getElementById('jobTitleToUnsave').textContent = jobTitle;
+                    $('#unsaveJobModal').modal('show');
+                });
+            });
+
+            // Handle confirmation of unsave action
+            document.getElementById('confirmUnsaveBtn').addEventListener('click', function () {
+                if (!jobIdToUnsave) return;
+
+                const confirmBtn = this;
+                const originalText = confirmBtn.innerHTML;
+
+                // Show loading state
+                confirmBtn.innerHTML = '<i class="ti-reload"></i> Removing...';
+                confirmBtn.disabled = true;
+
+                // Make API call to unsave the job
+                fetch(`/api/jobs/${jobIdToUnsave}/save`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove the job card from the page
+                            const jobCard = document.querySelector(`[data-job-id="${jobIdToUnsave}"]`);
+                            if (jobCard) {
+                                jobCard.style.transition = 'opacity 0.3s ease';
+                                jobCard.style.opacity = '0';
+                                setTimeout(() => {
+                                    jobCard.remove();
+
+                                    // Check if there are no more jobs and show empty state
+                                    const remainingJobs = document.querySelectorAll('.saved-job-card');
+                                    if (remainingJobs.length === 0) {
+                                        location.reload(); // Reload to show empty state
+                                    }
+                                }, 300);
+                            }
+
+                            // Show success message
+                            showNotification('Job removed from saved jobs successfully', 'success');
+
+                            // Close modal
+                            $('#unsaveJobModal').modal('hide');
+                        } else {
+                            showNotification(data.message || 'Failed to remove job from saved jobs', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('An error occurred while removing the job', 'error');
+                    })
+                    .finally(() => {
+                        // Reset button state
+                        confirmBtn.innerHTML = originalText;
+                        confirmBtn.disabled = false;
+                        jobIdToUnsave = null;
+                    });
+            });
+
+            // Reset modal state when closed
+            $('#unsaveJobModal').on('hidden.bs.modal', function () {
+                jobIdToUnsave = null;
+                document.getElementById('confirmUnsaveBtn').innerHTML = '<i class="ti-trash mr-1"></i>Remove Job';
+                document.getElementById('confirmUnsaveBtn').disabled = false;
+            });
+
+            // Utility function to show notifications
+            function showNotification(message, type) {
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+                notification.style.position = 'fixed';
+                notification.style.top = '20px';
+                notification.style.right = '20px';
+                notification.style.zIndex = '9999';
+                notification.style.minWidth = '300px';
+
+                notification.innerHTML = `
+            ${message}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        `;
+
+                document.body.appendChild(notification);
+
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+        });
+    </script>
+{% endblock %}

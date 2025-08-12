@@ -4,7 +4,7 @@
   "description": "Automatically triggers debugging analysis after each task completion to analyze code changes, perform syntax and static analysis, check dependencies, and create summaries",
   "version": "1",
   "when": {
-    "type": "fileEdited",
+    "type": "userTriggered",
     "patterns": [
       "src/**/*.py",
       "tests/**/*.py",

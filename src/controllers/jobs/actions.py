@@ -1214,7 +1214,7 @@ class JobActionsController(Controllers):
                     message="Invalid user ID parameter",
                     error_code=JobActionErrorCode.VALIDATION_ERROR
                 )
-
+            self.logger.info(f"Get User Saved Jobs : {user_id}")
             # Validate pagination parameters
             limit = max(1, min(limit, 100))  # Ensure reasonable limits (1-100)
             offset = max(0, offset)  # Ensure non-negative offset
@@ -1244,7 +1244,7 @@ class JobActionsController(Controllers):
                     session.query(SavedJobORM)
                     .options(joinedload(SavedJobORM.job))
                     .filter_by(user_id=user_id)
-                    .order_by(SavedJobORM.saved_at.desc())
+                    .order_by(SavedJobORM.created_at.desc())
                     .offset(offset)
                     .limit(limit)
                 )
@@ -1261,7 +1261,7 @@ class JobActionsController(Controllers):
                         # Convert ORM to dictionary
                         job_data = saved.job.to_dict()
                         # Add save-specific metadata
-                        job_data['saved_at'] = saved.saved_at.replace(tzinfo=timezone.utc).isoformat()
+                        job_data['saved_at'] = saved.created_at.replace(tzinfo=timezone.utc).isoformat()
                         job_data['saved_job_id'] = saved.saved_job_id
                         jobs_data.append(job_data)
 

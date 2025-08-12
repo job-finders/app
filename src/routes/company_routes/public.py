@@ -3,14 +3,10 @@ Company Public Profile Routes
 
 Public-facing routes for company profiles that job seekers can view.
 """
-
 from flask import Blueprint, render_template, request, jsonify, abort
-from typing import Optional
-
+from src.firewall.job_actions_security import secure_job_action
 from src.routes import flask_error_handler
 from src.utils.route_helpers import get_controller
-from src.cache.cache_redis import cached
-from src.firewall.job_actions_security import secure_job_action, sanitize_input
 
 # Blueprint definition
 company_public_bp = Blueprint('company_public', __name__, url_prefix='/company')

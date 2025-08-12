@@ -4,7 +4,7 @@
   "description": "Automatically analyzes code changes after task completion and generates or updates documentation for new functions, classes, modules, and inter-module dependencies while maintaining documentation standards",
   "version": "1",
   "when": {
-    "type": "fileEdited",
+    "type": "userTriggered",
     "patterns": [
       "src/**/*.py",
       "app.py",

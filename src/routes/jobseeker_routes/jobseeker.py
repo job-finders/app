@@ -1,5 +1,5 @@
 # Flask Core
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, request, flash, redirect, url_for
 # Authentication
 from src.authentication import jobseeker_login
 # Domain Models
@@ -7,7 +7,7 @@ from src.database.models import JobSeekerCV, User
 # Routes
 from src.routes import flask_error_handler
 # Utilities
-from src.utils.route_helpers import get_controller
+from src.utils.route_helpers import get_controller, get_service
 
 jobseeker_route = Blueprint('jobseekers', __name__,  url_prefix="/jobseeker")
 
@@ -82,6 +82,7 @@ async def apply(user: User):
 async def saved_jobs(user: User):
     """Retrieves paginated list of jobs saved by the job seeker"""
     # Get pagination parameters
+    logger = get_service("logger")()("GET SAVED JOBS")
     limit = min(int(request.args.get('limit', 20)), 100)  # Max 100 items
     offset = max(int(request.args.get('offset', 0)), 0)
 
@@ -95,18 +96,18 @@ async def saved_jobs(user: User):
         offset=offset
     )
 
-    if not result.get('success'):
+    if not result.success:
         flash("Error retrieving saved jobs", "danger")
         return redirect(url_for('jobseekers.dashboard'))
 
     # Prepare context with pagination info
     context = {
         'current_user': user,
-        'jobs': result['data']['jobs'],
+        'jobs': result.jobs,
         'pagination': {
-            'total': result['data']['total_count'],
-            'limit': limit,
-            'offset': offset
+            'total': result.total_count,
+            'limit': result.limit,
+            'offset': result.offset
         }
     }
     
