@@ -634,10 +634,7 @@ async def job_details(user: User, job_id: str):
         related_jobs = await job_search_controller.get_similar_jobs(job_id=job.job_id)
     
     # Get resumes - use fake ones if job was fake
-    if job.job_id in store.jobs:
-        list_resumes = list(store.resumes.values())[:2]  # Get first couple fake resumes
-    else:
-        list_resumes = await resume_controller.list_cvs_for_user(user_id=user.uid)
+    list_resumes = await resume_controller.list_cvs_for_user(user_uid=user.uid)
 
     # Check if user has already applied for this job
     user_has_applied = False

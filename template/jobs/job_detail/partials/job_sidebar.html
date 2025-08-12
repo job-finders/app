@@ -25,6 +25,7 @@
             </div>
         {% else %}
             <div class="d-grid">
+
                 <button class="btn btn-primary btn-lg" id="start-application">
                     <i class="fas fa-rocket me-2"></i>Start Application
                 </button>
@@ -81,7 +82,7 @@
                 <select class="form-select" id="cv_select" name="cv_id" required>
                     <option value="">-- Choose CV --</option>
                     {% for resume in list_resumes %}
-                        <option value="{{ resume.cv_id }}">{{ resume.title }}</option>
+                        <option value="{{ resume.cv_id }}">{{ resume.professional_title|title }}</option>
                     {% endfor %}
                 </select>
             </div>

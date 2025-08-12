@@ -196,7 +196,7 @@ class ResumeController(Controllers):
             jobseeker_cv = JobSeekerCV(**cv_orm.to_dict(include_relationships=True))
 
             # Log the Pydantic model to ensure it is correctly populated
-            self.logger.info(f"PYDANTIC MODEL ================================")
+            self.logger.info(f"PYDANTIC MODEL =========RESUME=======================")
             # self.logger.info(f"{jobseeker_cv}")
 
             return jobseeker_cv
@@ -329,6 +329,7 @@ class ResumeController(Controllers):
             for cv in cvs:
                 _cv = await self.get_cv_by_id(cv_id=cv.cv_id)
                 result.append(_cv)
+                self.logger.info(f"Found Resume : {_cv.user_uid}")
 
             return result
 

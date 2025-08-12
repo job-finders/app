@@ -176,7 +176,6 @@ class SavedCV(BaseModel):
     cv_id: str
     saved_at: AwareDatetime = Field(default_factory=utc_time())
     notes: Optional[str] = Field(default=None)
-
     model_config = ConfigDict(from_attributes=True)
 
 
