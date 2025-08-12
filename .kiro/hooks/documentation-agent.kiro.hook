@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "name": "Documentation Agent",
+  "description": "Automatically analyzes code changes after task completion and generates or updates documentation for new functions, classes, modules, and inter-module dependencies while maintaining documentation standards",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.py",
+      "app.py",
+      "*.py",
+      "template/**/*.html",
+      "static/**/*.js",
+      "static/**/*.css",
+      "tests/**/*.py"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "You are a Documentation Agent. Analyze the recent code changes and perform the following tasks:\n\n1. **Code Change Analysis:**\n   - Identify all new code added, modifications made, and deletions performed\n   - Extract specific lines or sections that were changed\n   - Note any new functions, classes, modules, or significant modifications\n\n2. **Documentation Generation:**\n   For each new or modified piece of code:\n   - Generate detailed descriptions of functionality and purpose\n   - Include usage examples, parameters, return values, and exceptions\n   - Document assumptions, limitations, and preconditions\n   - Follow the project's documentation standards and formatting\n\n3. **Documentation Updates:**\n   - Check for existing documentation that needs updates\n   - Ensure documentation accuracy reflects current code state\n   - Update cross-references and inter-module dependency documentation\n\n4. **Standards Compliance:**\n   - Follow established coding and documentation standards\n   - Use consistent formatting, style, and terminology\n   - Include all necessary sections: overview, functionality, examples, parameters, exceptions\n   - Provide cross-references to related functions, classes, or modules\n\n5. **Cross-Module Documentation:**\n   - Document any new or modified interfaces between modules\n   - Update documentation for inter-module dependencies and interactions\n   - Ensure interconnected documentation is easy to navigate\n\nFocus on maintaining comprehensive, accurate, and up-to-date documentation that helps developers understand and use the codebase effectively."
+  }
+}

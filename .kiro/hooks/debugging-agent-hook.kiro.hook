@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "Debugging Agent",
+  "description": "Automatically triggers debugging analysis after each task completion to analyze code changes, perform syntax and static analysis, check dependencies, and create summaries",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.py",
+      "tests/**/*.py",
+      "app.py",
+      "*.py"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "# Debugging Agent Prompt\n## Hook Trigger\n- **Event:** After each task completion.\n- **Action:** Automatically trigger the debugging agent to analyze the code changes made during the task.\n## Context\n- Load spec files for the tasks being run at the moment of the code changes in order to understand the changes\n- Load steering documents in order to understand the overall project for debugging purposes.\n## Code Change Analysis\n1. **Capture Code Changes:**\n   - Identify all new code added, modifications made, and deletions performed during the task.\n   - Extract the specific lines or sections of code that were changed.\n2. **Syntax and Static Analysis:**\n   - Perform a thorough syntax check to identify any syntax errors.\n   - Use static analysis tools to detect potential issues such as:\n     - Unused variables.\n     - Unreachable code.\n     - Type mismatches.\n     - Inconsistent naming conventions.\n     - Inconsistent coding conventions not meeting steering conventions.\t\n\t\t\n\t\n3. **Dependency and Import Checks:**\n   - Verify that all necessary imports are present in the code.\n   - For each missing import:\n     - Check if the missing module, class, or method is scheduled to be implemented in subsequent tasks.\n     - If not, create a task to add the missing import.\n     - If the missing code is in another module, correct the import statement and continue.\n4. **Dynamic Analysis:**\n   - Do not Run unit tests and integration tests - Use Static Analysis.\n   - Check for logical errors and edge cases that may not be caught by static analysis.\n5. **Cross-Module Checks:**\n   - If the missing code is in another module, ensure that the import statements are correctly resolved.\n   - If necessary, create a task to address any unresolved dependencies.\n## Issue Reporting and Resolution\n1. if not already created - create a debug sub folder inside the spec folder for saving summaries and logs\n1. **Log Issues: and save in debug[task number]summary.md**\n2. **create summary of the completed task and save in task[number]summary.md**"
+  }
+}
