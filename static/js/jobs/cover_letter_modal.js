@@ -17,6 +17,7 @@ class CoverLetterModal {
         this.currentApplicationId = null;
         this.currentSessionId = null;
         this.generatedCoverLetter = null;
+        this.initialized = false;
         
         this.init();
     }
@@ -24,29 +25,42 @@ class CoverLetterModal {
     init() {
         this.bindEvents();
         this.setupCharacterCounter();
+
+        // Delay initialization to ensure all templates are loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => this.initializeModal(), 100);
+            });
+        } else {
+            setTimeout(() => this.initializeModal(), 100);
+        }
+    }
+
+    initializeModal() {
+        this.modal = document.getElementById('coverLetterModal');
+        this.editModal = document.getElementById('editCoverLetterModal');
+
+        if (this.modal) {
+            this.bindModalEvents();
+            this.initialized = true;
+        }
     }
     
     bindEvents() {
         // Modal trigger buttons
         document.addEventListener('click', (e) => {
-            if (e.target.matches('#generate-cover-letter-btn, #standalone-cover-letter-btn')) {
+            if (e.target.closest('#generate-cover-letter-btn, #standalone-cover-letter-btn')) {
                 e.preventDefault();
                 this.handleModalTrigger(e);
-            }
-        });
-        
-        // Modal form events
-        document.addEventListener('DOMContentLoaded', () => {
-            this.modal = document.getElementById('coverLetterModal');
-            this.editModal = document.getElementById('editCoverLetterModal');
-            
-            if (this.modal) {
-                this.bindModalEvents();
             }
         });
     }
     
     bindModalEvents() {
+        if (!this.modal) {
+            return;
+        }
+        
         // Generate button
         const generateBtn = this.modal.querySelector('#generate-cover-letter-btn');
         if (generateBtn) {
@@ -122,6 +136,12 @@ class CoverLetterModal {
     
     handleModalTrigger(event) {
         const button = event.target.closest('button');
+
+        if (!button) {
+            console.error('Button not found');
+            return;
+        }
+        
         this.currentJobId = button.dataset.jobId;
         
         // Get application ID if available
@@ -129,13 +149,27 @@ class CoverLetterModal {
         if (continueBtn) {
             this.currentApplicationId = continueBtn.dataset.applicationId;
         }
+
+        // Ensure modal is initialized before proceeding
+        if (!this.initialized) {
+            this.initializeModal();
+        }
+
+        if (!this.modal) {
+            console.error('Cover letter modal not found');
+            return;
+        }
         
         // Populate job information
         this.populateJobInfo();
         
         // Show modal
-        const bootstrapModal = new bootstrap.Modal(this.modal);
-        bootstrapModal.show();
+        try {
+            const bootstrapModal = new bootstrap.Modal(this.modal);
+            bootstrapModal.show();
+        } catch (error) {
+            console.error('CoverLetterModal: Failed to show modal:', error);
+        }
     }
     
     populateJobInfo() {

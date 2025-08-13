@@ -34,17 +34,9 @@ class ApplicationWorkflow {
         if (continueBtn) {
             continueBtn.addEventListener('click', (e) => this.handleContinueApplication(e));
         }
-        
-        // Generate Cover Letter buttons
-        const generateBtn = document.getElementById('generate-cover-letter-btn');
-        if (generateBtn) {
-            generateBtn.addEventListener('click', (e) => this.handleGenerateCoverLetter(e));
-        }
-        
-        const standaloneBtn = document.getElementById('standalone-cover-letter-btn');
-        if (standaloneBtn) {
-            standaloneBtn.addEventListener('click', (e) => this.handleGenerateCoverLetter(e));
-        }
+
+        // Generate Cover Letter buttons - Remove conflict with cover_letter_modal.js
+        // These are now handled by CoverLetterModal class
         
         // View Progress button
         const progressBtn = document.getElementById('view-progress');
@@ -140,26 +132,8 @@ class ApplicationWorkflow {
                 this.showError('Unknown next step: ' + nextStep);
         }
     }
-    
-    async handleGenerateCoverLetter(event) {
-        event.preventDefault();
-        
-        const button = event.target.closest('button');
-        const jobId = button.dataset.jobId;
-        
-        if (!jobId) {
-            this.showError('Job ID not found');
-            return;
-        }
-        
-        // If no application exists, start one first
-        if (!this.currentApplicationId) {
-            await this.handleStartApplication(event);
-            return;
-        }
-        
-        this.showCoverLetterModal(jobId, this.currentApplicationId);
-    }
+
+    // Remove handleGenerateCoverLetter - handled by CoverLetterModal class
     
     async handleViewProgress(event) {
         event.preventDefault();

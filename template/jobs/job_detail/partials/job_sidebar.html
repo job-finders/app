@@ -61,10 +61,10 @@
                         data-job-id="{{ job.job_id }}">
                     <i class="fas fa-rocket me-2"></i>Start Application
                 </button>
-                <button type="button" class="btn btn-outline-primary btn-workflow" id="generate-cover-letter-btn" 
-                        data-job-id="{{ job.job_id }}">
-                    <i class="fas fa-file-text me-2"></i>Generate Cover Letter
-                </button>
+                {#                <button type="button" class="btn btn-outline-primary btn-workflow" id="generate-cover-letter-btn" #}
+                {#                        data-job-id="{{ job.job_id }}">#}
+                {#                    <i class="fas fa-file-text me-2"></i>Generate Cover Letter#}
+                {#                </button>#}
             </div>
         {% endif %}
     </div>
@@ -157,5 +157,3 @@
     </div>
 </div>
 
-<!-- Include Cover Letter Modal -->
-{% include 'jobs/job_detail/partials/cover_letter_modal.html' %}

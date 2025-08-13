@@ -1,5 +1,5 @@
 # Standard Library
-from typing import TypedDict, List, Tuple
+from typing import TypedDict, List, Tuple, Optional
 import time
 # Flask Core
 from flask import Blueprint, render_template, request, jsonify
@@ -99,32 +99,6 @@ def get_fake_jobs(keyword: str = None) -> list[Job]:
     return list(store.jobs.values())
 
 
-# Fix 3: User profile fetching method - add null checks
-async def get_user_profile(self, user_id: str):
-    """Get user profile with null checking"""
-    try:
-        with self.get_session() as session:
-            user = session.query(UserORM).filter(UserORM.uid == user_id).first()
-
-            if not user:
-                self.logger.warning(f"No user found with ID: {user_id}")
-                return None
-
-            # Safe attribute access
-            profile_data = {
-                'uid': user.uid,
-                'first_name': getattr(user, 'first_name', ''),
-                'last_name': getattr(user, 'last_name', ''),
-                'email': getattr(user, 'email', ''),
-                # Add other fields as needed
-            }
-
-            return profile_data
-
-    except Exception as e:
-        self.logger.error(f"Error fetching user profile {user_id}: {str(e)}")
-        return None
-
 
 async def calculate_batch_match_scores(jobs: List[Job], user: User, job_search_controller: JobsSearchController) -> \
 List[Job]:
@@ -140,7 +114,7 @@ List[Job]:
         List of jobs with match_score attribute added
     """
     from src.services.optimized_match_scoring import optimizer
-
+    profile_controller = get_controller("job_seeker_profile")
     logger = get_service('logger')()("Batch Match Scores :")
 
     if not user or not user.uid or not jobs:
@@ -152,7 +126,7 @@ List[Job]:
 
     try:
         # Get user profile with caching
-        user_profile = await get_user_profile_for_matching(user_id=user.uid)
+        user_profile = await profile_controller.get_complete_profile_by_uid(user_uid=user.uid)
         logger.info(f"What we Found : {user_profile}")
         if not user_profile:
             # User has no profile - return jobs without match scores
@@ -618,6 +592,7 @@ async def job_details(user: User, job_id: str):
     Returns:
         HTML page with job details and related jobs.
     """
+    logger = get_service("logger")()("JOB DETAILS")
     job_search_controller = get_controller('jobs_search')
     resume_controller = get_controller('resume')
 
@@ -662,7 +637,7 @@ async def job_details(user: User, job_id: str):
                 user_has_applied = any(app.job_id == job_id for app in user_applications)
             except Exception:
                 # If there's an error checking application status, default to False
-                self.logger.info('THERE WAS NO USER APPLICATION FOUND')
+                logger.info('THERE WAS NO USER APPLICATION FOUND')
                 user_has_applied = False
 
     context = {

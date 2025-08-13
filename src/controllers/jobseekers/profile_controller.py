@@ -45,7 +45,6 @@ class JobSeekerProfilesController(Controllers):
     def init_app(self, app: Flask):
         super().init_app(app=app)
 
-
     async def create_profile(self, profile_data: JobSeekerProfile) -> JobSeekerProfile | None:
         """Create a new JobSeekerProfile."""
         if not isinstance(profile_data,JobSeekerProfile):
