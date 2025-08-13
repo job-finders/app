@@ -1,0 +1,213 @@
+{# ================================ #}
+{# Partial: workflow_progress.html #}
+{# ================================ #}
+
+{% if application_progress %}
+<!-- Workflow Progress Indicator -->
+<div class="workflow-progress-section mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="mb-0 fw-semibold">
+            <i class="fas fa-tasks text-primary me-2"></i>
+            Application Progress
+        </h6>
+        <span class="status-badge status-{{ application_progress.workflow_step }}">
+            {{ application_progress.workflow_step_display }}
+        </span>
+    </div>
+    
+    <!-- Progress Steps -->
+    <ul class="workflow-steps">
+        <li class="workflow-step {{ 'completed' if application_progress.completion_percentage >= 10 else 'pending' }} {{ 'current' if application_progress.workflow_step == 'draft' else '' }}">
+            <div class="workflow-step-icon">
+                {% if application_progress.completion_percentage >= 10 %}
+                    <i class="fas fa-check"></i>
+                {% elif application_progress.workflow_step == 'draft' %}
+                    <i class="fas fa-edit"></i>
+                {% else %}
+                    <i class="far fa-circle"></i>
+                {% endif %}
+            </div>
+            <div class="workflow-step-label">Started</div>
+        </li>
+        
+        <li class="workflow-step {{ 'completed' if application_progress.completion_percentage >= 40 else 'pending' }} {{ 'current' if application_progress.workflow_step == 'cover_letter' else '' }}">
+            <div class="workflow-step-icon">
+                {% if application_progress.completion_percentage >= 40 %}
+                    <i class="fas fa-check"></i>
+                {% elif application_progress.workflow_step == 'cover_letter' %}
+                    <i class="fas fa-file-text"></i>
+                {% else %}
+                    <i class="far fa-circle"></i>
+                {% endif %}
+            </div>
+            <div class="workflow-step-label">Cover Letter</div>
+        </li>
+        
+        {% if job.required_questionnaire and job.required_questionnaire|length > 0 %}
+        <li class="workflow-step {{ 'completed' if application_progress.completion_percentage >= 70 else 'pending' }} {{ 'current' if application_progress.workflow_step == 'questionnaires' else '' }}">
+            <div class="workflow-step-icon">
+                {% if application_progress.completion_percentage >= 70 %}
+                    <i class="fas fa-check"></i>
+                {% elif application_progress.workflow_step == 'questionnaires' %}
+                    <i class="fas fa-clipboard-list"></i>
+                {% else %}
+                    <i class="far fa-circle"></i>
+                {% endif %}
+            </div>
+            <div class="workflow-step-label">Questions</div>
+        </li>
+        {% endif %}
+        
+        <li class="workflow-step {{ 'completed' if application_progress.completion_percentage >= 90 else 'pending' }} {{ 'current' if application_progress.workflow_step == 'review' else '' }}">
+            <div class="workflow-step-icon">
+                {% if application_progress.completion_percentage >= 90 %}
+                    <i class="fas fa-check"></i>
+                {% elif application_progress.workflow_step == 'review' %}
+                    <i class="fas fa-eye"></i>
+                {% else %}
+                    <i class="far fa-circle"></i>
+                {% endif %}
+            </div>
+            <div class="workflow-step-label">Review</div>
+        </li>
+        
+        <li class="workflow-step {{ 'completed' if application_progress.completion_percentage >= 100 else 'pending' }} {{ 'current' if application_progress.workflow_step == 'submitted' else '' }}">
+            <div class="workflow-step-icon">
+                {% if application_progress.completion_percentage >= 100 %}
+                    <i class="fas fa-check"></i>
+                {% elif application_progress.workflow_step == 'submitted' %}
+                    <i class="fas fa-paper-plane"></i>
+                {% else %}
+                    <i class="far fa-circle"></i>
+                {% endif %}
+            </div>
+            <div class="workflow-step-label">Submit</div>
+        </li>
+    </ul>
+    
+    <!-- Progress Bar -->
+    <div class="mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <small class="text-muted">Overall Progress</small>
+            <small class="fw-semibold text-primary">{{ application_progress.completion_percentage }}%</small>
+        </div>
+        <div class="progress" style="height: 8px;">
+            <div class="progress-bar bg-primary" 
+                 role="progressbar" 
+                 style="width: {{ application_progress.completion_percentage }}%"
+                 aria-valuenow="{{ application_progress.completion_percentage }}" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Next Step Information -->
+    {% if application_progress.next_step and application_progress.workflow_step != 'submitted' %}
+    <div class="mt-3 p-3 bg-light rounded">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-info-circle text-primary me-2"></i>
+            <div>
+                <div class="fw-semibold">Next Step:</div>
+                <div class="small text-muted">
+                    {% if application_progress.next_step == 'cover_letter' %}
+                        Generate a personalized cover letter for this position
+                    {% elif application_progress.next_step == 'questionnaires' %}
+                        Complete the required questionnaires for this job
+                    {% elif application_progress.next_step == 'review' %}
+                        Review your application before final submission
+                    {% elif application_progress.next_step == 'submit' %}
+                        Submit your completed application
+                    {% else %}
+                        Continue with your application process
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Application Quality Score -->
+    {% if application_progress.validation_score %}
+    <div class="mt-3">
+        <div class="d-flex align-items-center justify-content-between">
+            <span class="small text-muted">Application Quality</span>
+            <div class="d-flex align-items-center">
+                {% set score = application_progress.validation_score %}
+                {% if score >= 90 %}
+                    <span class="badge bg-success me-2">Excellent</span>
+                {% elif score >= 75 %}
+                    <span class="badge bg-primary me-2">Good</span>
+                {% elif score >= 60 %}
+                    <span class="badge bg-warning me-2">Fair</span>
+                {% else %}
+                    <span class="badge bg-secondary me-2">Needs Work</span>
+                {% endif %}
+                <span class="small fw-semibold">{{ score }}/100</span>
+            </div>
+        </div>
+        <div class="progress mt-2" style="height: 4px;">
+            <div class="progress-bar 
+                        {% if score >= 90 %}bg-success
+                        {% elif score >= 75 %}bg-primary
+                        {% elif score >= 60 %}bg-warning
+                        {% else %}bg-secondary{% endif %}" 
+                 style="width: {{ score }}%"></div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Time Tracking -->
+    {% if application_progress.workflow_duration_minutes %}
+    <div class="mt-3 text-center">
+        <small class="text-muted">
+            <i class="fas fa-clock me-1"></i>
+            Time spent: {{ "%.0f"|format(application_progress.workflow_duration_minutes) }} minutes
+        </small>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Workflow Progress Modal Template (Hidden) -->
+<div class="modal fade progress-modal" id="workflowProgressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-tasks me-2"></i>
+                    Application Progress Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Progress content will be populated by JavaScript -->
+                <div id="progress-modal-content">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="mt-2">Loading progress details...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="continue-from-modal">
+                    <i class="fas fa-play me-2"></i>Continue Application
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Circular Progress Ring Component -->
+<template id="progress-ring-template">
+    <div class="progress-ring">
+        <svg>
+            <circle class="progress-ring-bg" cx="30" cy="30" r="25"></circle>
+            <circle class="progress-ring-fill" cx="30" cy="30" r="25"></circle>
+        </svg>
+        <div class="progress-ring-text"></div>
+    </div>
+</template>

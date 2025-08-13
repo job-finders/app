@@ -1250,6 +1250,15 @@ class JobApplication(BaseModel):
     missing_requirements: list[str] = Field(default_factory=list)
     review_summary: Optional[str] = Field(default=None)
 
+    # New workflow fields
+    workflow_step: str = Field(default="draft")  # draft, cover_letter, questionnaires, review, submitted
+    cover_letter_session_id: Optional[str] = None
+    questionnaire_start_time: Optional[AwareDatetime] = None
+    questionnaire_completion_time: Optional[AwareDatetime] = None
+    time_spent_on_questionnaires: Optional[int] = None  # seconds
+    workflow_started_at: Optional[AwareDatetime] = Field(default_factory=utc_time)
+    workflow_completed_at: Optional[AwareDatetime] = None
+
     # relationships
     ats_report: Optional[ATSReport] = Field(default=None)
     job: Optional[Job] = Field(None)  # Relationship to JobModel
@@ -1360,6 +1369,92 @@ class JobApplication(BaseModel):
                 if getattr(resume, "cv_id", None) == self.cv_id:
                     return resume
         return None
+
+    # New workflow properties
+    @property
+    def workflow_completion_percentage(self) -> int:
+        """Calculate workflow completion percentage"""
+        steps = {
+            'draft': 10,
+            'cover_letter': 40,
+            'questionnaires': 70,
+            'review': 90,
+            'submitted': 100
+        }
+        return steps.get(self.workflow_step, 0)
+    
+    @property
+    def is_workflow_complete(self) -> bool:
+        """Check if workflow is complete"""
+        return self.workflow_step == 'submitted'
+    
+    @property
+    def next_workflow_step(self) -> Optional[str]:
+        """Get next step in workflow"""
+        steps = ['draft', 'cover_letter', 'questionnaires', 'review', 'submitted']
+        try:
+            current_index = steps.index(self.workflow_step)
+            return steps[current_index + 1] if current_index < len(steps) - 1 else None
+        except ValueError:
+            return 'cover_letter'
+    
+    @property
+    def workflow_duration_minutes(self) -> Optional[float]:
+        """Get total workflow duration in minutes"""
+        if self.workflow_started_at and self.workflow_completed_at:
+            delta = self.workflow_completed_at - self.workflow_started_at
+            return delta.total_seconds() / 60
+        return None
+    
+    @property
+    def questionnaire_duration_minutes(self) -> Optional[float]:
+        """Get questionnaire completion time in minutes"""
+        if self.time_spent_on_questionnaires:
+            return self.time_spent_on_questionnaires / 60
+        return None
+    
+    @property
+    def has_cover_letter_session(self) -> bool:
+        """Check if application has an associated cover letter session"""
+        return bool(self.cover_letter_session_id)
+    
+    @property
+    def questionnaires_completed(self) -> bool:
+        """Check if questionnaires have been completed"""
+        return bool(self.questionnaire_completion_time)
+    
+    @property
+    def workflow_step_display(self) -> str:
+        """Get human-readable workflow step"""
+        step_names = {
+            'draft': 'Draft Created',
+            'cover_letter': 'Cover Letter Generated',
+            'questionnaires': 'Questionnaires Completed',
+            'review': 'Ready for Review',
+            'submitted': 'Application Submitted'
+        }
+        return step_names.get(self.workflow_step, 'Unknown Step')
+    
+    def update_workflow_step(self, new_step: str) -> None:
+        """Update workflow step and set completion time if final step"""
+        self.workflow_step = new_step
+        self.updated_at = utc_time()
+        
+        if new_step == 'submitted' and not self.workflow_completed_at:
+            self.workflow_completed_at = utc_time()
+            if self.application_stage == 'DRAFT':
+                self.application_stage = JobApplicationStatusEnum.APPLIED.value
+                self.applied_date = utc_time()
+    
+    def start_questionnaire_timer(self) -> None:
+        """Start questionnaire timer"""
+        self.questionnaire_start_time = utc_time()
+    
+    def complete_questionnaires(self, time_spent_seconds: int) -> None:
+        """Complete questionnaires and record timing"""
+        self.questionnaire_completion_time = utc_time()
+        self.time_spent_on_questionnaires = time_spent_seconds
+        self.workflow_step = 'review'
 
 # Pydantic Models
 class StatusCounts(BaseModel):

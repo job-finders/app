@@ -1,0 +1,345 @@
+{# ================================ #}
+{# Template: questionnaire.html #}
+{# ================================ #}
+
+{% extends "jobseekers/layout/page.html" %}
+{% block title %}Application Questionnaire - {{ job.title }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobs/application_workflow.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/applications/questionnaire.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="questionnaire-container">
+    <!-- Header Section -->
+    <div class="questionnaire-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="job-context">
+                        <h1 class="questionnaire-title">Application Questionnaire</h1>
+                        <div class="job-info">
+                            <h2 class="job-title">{{ job.title }}</h2>
+                            <p class="company-name">{{ job.company_name }}</p>
+                            <div class="job-meta">
+                                <span class="location">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    {{ job.location }}
+                                </span>
+                                {% if job.salary_display %}
+                                <span class="salary">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                    {{ job.salary_display }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <!-- Timer Component -->
+                    <div class="timer-card">
+                        <div class="timer-display" id="timer-display">
+                            <div class="timer-circle">
+                                <svg class="timer-svg" viewBox="0 0 100 100">
+                                    <circle class="timer-bg" cx="50" cy="50" r="45"></circle>
+                                    <circle class="timer-progress" cx="50" cy="50" r="45" id="timer-progress-circle"></circle>
+                                </svg>
+                                <div class="timer-text">
+                                    <div class="time-remaining" id="time-remaining">{{ questionnaire.time_limit }}:00</div>
+                                    <div class="timer-label">remaining</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timer-status" id="timer-status">
+                            <i class="fas fa-clock text-primary"></i>
+                            <span>Timer will start when you begin</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="progress-section">
+        <div class="container">
+            <div class="progress-wrapper">
+                <div class="progress-info">
+                    <span class="progress-text">
+                        Question <span id="current-question">1</span> of <span id="total-questions">{{ questionnaire.questions|length }}</span>
+                    </span>
+                    <span class="progress-percentage" id="progress-percentage">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="questionnaire-content">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <!-- Instructions -->
+                    <div class="instructions-card" id="instructions-card">
+                        <div class="card-body">
+                            <h3 class="instructions-title">
+                                <i class="fas fa-info-circle text-primary"></i>
+                                Instructions
+                            </h3>
+                            <div class="instructions-content">
+                                <p>{{ questionnaire.description or "Please answer all questions honestly and completely. Your responses will help us better understand your qualifications and fit for this role." }}</p>
+                                <ul class="instructions-list">
+                                    <li>You have <strong>{{ questionnaire.time_limit }} minutes</strong> to complete all questions</li>
+                                    <li>All questions marked with <span class="required-indicator">*</span> are required</li>
+                                    <li>You can navigate between questions using the Previous/Next buttons</li>
+                                    <li>Your progress is automatically saved as you go</li>
+                                    <li>You'll receive warnings at 5 minutes and 1 minute remaining</li>
+                                    <li>The questionnaire will auto-submit when time expires</li>
+                                </ul>
+                            </div>
+                            <div class="instructions-actions">
+                                <button type="button" class="btn btn-primary btn-lg" id="start-questionnaire">
+                                    <i class="fas fa-play me-2"></i>Start Questionnaire
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Questionnaire Form -->
+                    <form id="questionnaire-form" class="questionnaire-form" style="display: none;">
+                        <input type="hidden" name="application_id" value="{{ application.application_id }}">
+                        <input type="hidden" name="questionnaire_id" value="{{ questionnaire.questionnaire_id }}">
+                        
+                        <!-- Questions Container -->
+                        <div class="questions-container" id="questions-container">
+                            {% for question in questionnaire.questions %}
+                            <div class="question-card" id="question-{{ loop.index }}" data-question-id="{{ question.question_id }}" 
+                                 style="display: {{ 'block' if loop.first else 'none' }};">
+                                <div class="question-header">
+                                    <div class="question-number">{{ loop.index }}</div>
+                                    <div class="question-content">
+                                        <h4 class="question-text">
+                                            {{ question.question_text }}
+                                            {% if question.required %}
+                                                <span class="required-indicator">*</span>
+                                            {% endif %}
+                                        </h4>
+                                        {% if question.question_type == 'text' and question.max_length %}
+                                        <div class="question-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            Maximum {{ question.max_length }} characters
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="question-body">
+                                    {% if question.question_type == 'multiple_choice' %}
+                                        <!-- Multiple Choice Question -->
+                                        <div class="form-group">
+                                            {% for option in question.options %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" 
+                                                       name="question_{{ question.question_id }}" 
+                                                       id="q{{ question.question_id }}_{{ loop.index }}"
+                                                       value="{{ option }}"
+                                                       {% if question.required %}required{% endif %}>
+                                                <label class="form-check-label" for="q{{ question.question_id }}_{{ loop.index }}">
+                                                    {{ option }}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    
+                                    {% elif question.question_type == 'text' %}
+                                        <!-- Text Question -->
+                                        <div class="form-group">
+                                            <textarea class="form-control question-textarea" 
+                                                      name="question_{{ question.question_id }}"
+                                                      id="q{{ question.question_id }}"
+                                                      rows="4"
+                                                      {% if question.max_length %}maxlength="{{ question.max_length }}"{% endif %}
+                                                      {% if question.required %}required{% endif %}
+                                                      placeholder="Enter your answer here..."></textarea>
+                                            {% if question.max_length %}
+                                            <div class="character-count">
+                                                <small class="text-muted">
+                                                    <span class="char-count">0</span> / {{ question.max_length }} characters
+                                                </small>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    
+                                    {% elif question.question_type == 'boolean' %}
+                                        <!-- Yes/No Question -->
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" 
+                                                       name="question_{{ question.question_id }}" 
+                                                       id="q{{ question.question_id }}_yes"
+                                                       value="yes"
+                                                       {% if question.required %}required{% endif %}>
+                                                <label class="form-check-label" for="q{{ question.question_id }}_yes">
+                                                    Yes
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" 
+                                                       name="question_{{ question.question_id }}" 
+                                                       id="q{{ question.question_id }}_no"
+                                                       value="no"
+                                                       {% if question.required %}required{% endif %}>
+                                                <label class="form-check-label" for="q{{ question.question_id }}_no">
+                                                    No
+                                                </label>
+                                            </div>
+                                        </div>
+                                    
+                                    {% elif question.question_type == 'rating' %}
+                                        <!-- Rating Question -->
+                                        <div class="form-group">
+                                            <div class="rating-container">
+                                                <div class="rating-labels">
+                                                    <span class="rating-label-min">{{ question.min_rating or 1 }}</span>
+                                                    <span class="rating-label-max">{{ question.max_rating or 5 }}</span>
+                                                </div>
+                                                <div class="rating-inputs">
+                                                    {% set min_rating = question.min_rating or 1 %}
+                                                    {% set max_rating = question.max_rating or 5 %}
+                                                    {% for rating in range(min_rating, max_rating + 1) %}
+                                                    <div class="rating-option">
+                                                        <input class="form-check-input" type="radio" 
+                                                               name="question_{{ question.question_id }}" 
+                                                               id="q{{ question.question_id }}_{{ rating }}"
+                                                               value="{{ rating }}"
+                                                               {% if question.required %}required{% endif %}>
+                                                        <label class="rating-label" for="q{{ question.question_id }}_{{ rating }}">
+                                                            {{ rating }}
+                                                        </label>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Navigation -->
+                        <div class="question-navigation">
+                            <div class="nav-buttons">
+                                <button type="button" class="btn btn-outline-secondary" id="prev-question" disabled>
+                                    <i class="fas fa-chevron-left me-2"></i>Previous
+                                </button>
+                                <button type="button" class="btn btn-primary" id="next-question">
+                                    Next<i class="fas fa-chevron-right ms-2"></i>
+                                </button>
+                                <button type="submit" class="btn btn-success" id="submit-questionnaire" style="display: none;">
+                                    <i class="fas fa-check me-2"></i>Submit Answers
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Completion Card -->
+                    <div class="completion-card" id="completion-card" style="display: none;">
+                        <div class="card-body text-center">
+                            <div class="completion-icon">
+                                <i class="fas fa-check-circle text-success"></i>
+                            </div>
+                            <h3 class="completion-title">Questionnaire Completed!</h3>
+                            <p class="completion-message">
+                                Thank you for completing the questionnaire. Your responses have been saved and will be reviewed along with your application.
+                            </p>
+                            <div class="completion-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value" id="completion-time">0</div>
+                                    <div class="stat-label">Minutes</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="questions-answered">0</div>
+                                    <div class="stat-label">Questions Answered</div>
+                                </div>
+                            </div>
+                            <div class="completion-actions">
+                                <a href="{{ url_for('application_workflow.review_application', application_id=application.application_id) }}" 
+                                   class="btn btn-primary btn-lg">
+                                    <i class="fas fa-eye me-2"></i>Review Application
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Warning Modals -->
+<div class="modal fade" id="timeWarningModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Time Warning
+                </h5>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0" id="warning-message">You have 5 minutes remaining to complete the questionnaire.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning" data-bs-dismiss="modal">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="autoSubmitModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-clock me-2"></i>
+                    Time Expired
+                </h5>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Time has expired. Your questionnaire is being automatically submitted with your current answers.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/applications/questionnaire.js') }}"></script>
+    <script>
+        // Pass questionnaire data to JavaScript
+        window.questionnaireData = {
+            questionnaire_id: '{{ questionnaire.questionnaire_id }}',
+            application_id: '{{ application.application_id }}',
+            time_limit: {{ questionnaire.time_limit }},
+            total_questions: {{ questionnaire.questions|length }},
+            questions: [
+                {% for question in questionnaire.questions %}
+                {
+                    question_id: '{{ question.question_id }}',
+                    question_type: '{{ question.question_type }}',
+                    required: {{ question.required|lower }},
+                    max_length: {{ question.max_length or 'null' }}
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        };
+    </script>
+{% endblock %}

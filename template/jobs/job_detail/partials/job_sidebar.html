@@ -23,11 +23,47 @@
                     </a>
                 </div>
             </div>
+        {% elif application_in_progress %}
+            <!-- Application in Progress -->
+            <div class="application-progress-card mb-3 fade-in">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <small class="text-muted">Application Progress</small>
+                    <small class="text-primary fw-semibold">{{ application_progress.completion_percentage }}%</small>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-primary" role="progressbar" 
+                         style="width: {{ application_progress.completion_percentage }}%"
+                         aria-valuenow="{{ application_progress.completion_percentage }}" 
+                         aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="small text-muted mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Current Step: {{ application_progress.workflow_step_display }}
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary btn-workflow" id="continue-application" 
+                            data-application-id="{{ application_progress.application_id }}"
+                            data-next-step="{{ application_progress.next_step }}">
+                        <i class="fas fa-play me-2"></i>Continue Application
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="view-progress"
+                            data-bs-toggle="modal" data-bs-target="#workflowProgressModal">
+                        <i class="fas fa-list me-2"></i>View Details
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Include detailed progress indicators -->
+            {% include 'jobs/job_detail/partials/workflow_progress.html' %}
         {% else %}
-            <div class="d-grid">
-
-                <button class="btn btn-primary btn-lg" id="start-application">
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary btn-lg btn-workflow" id="start-application" 
+                        data-job-id="{{ job.job_id }}">
                     <i class="fas fa-rocket me-2"></i>Start Application
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-workflow" id="generate-cover-letter-btn" 
+                        data-job-id="{{ job.job_id }}">
+                    <i class="fas fa-file-text me-2"></i>Generate Cover Letter
                 </button>
             </div>
         {% endif %}
@@ -112,20 +148,14 @@
             Create a personalized cover letter that highlights your best qualifications.
         </p>
 
-        <form id="cover-letter-form">
-            <div class="mb-3">
-                <select class="form-select" id="tone_select" name="tone">
-                    <option value="professional" selected>Professional</option>
-                    <option value="enthusiastic">Enthusiastic</option>
-                    <option value="friendly">Friendly</option>
-                    <option value="formal">Formal</option>
-                    <option value="concise">Concise</option>
-                </select>
-            </div>
-
-            <button type="submit" class="btn btn-outline-success w-100" id="generate-btn" disabled>
+        <div class="d-grid">
+            <button type="button" class="btn btn-outline-success w-100 btn-workflow" id="standalone-cover-letter-btn" 
+                    data-job-id="{{ job.job_id }}">
                 <i class="fas fa-magic me-2"></i>Generate Cover Letter
             </button>
-        </form>
+        </div>
     </div>
 </div>
+
+<!-- Include Cover Letter Modal -->
+{% include 'jobs/job_detail/partials/cover_letter_modal.html' %}

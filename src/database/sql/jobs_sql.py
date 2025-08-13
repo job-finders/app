@@ -359,6 +359,15 @@ class JobApplicationORM(Base):
     missing_requirements = Column(JSON)
     review_summary = Column(Text)
 
+    # New workflow fields
+    workflow_step = Column(String(50), default='draft', nullable=False)
+    cover_letter_session_id = Column(String(ID_LEN), nullable=True, index=True)
+    questionnaire_start_time = Column(DateTime(timezone=True), nullable=True)
+    questionnaire_completion_time = Column(DateTime(timezone=True), nullable=True)
+    time_spent_on_questionnaires = Column(Integer, nullable=True)  # seconds
+    workflow_started_at = Column(DateTime(timezone=True), default=utc_time)
+    workflow_completed_at = Column(DateTime(timezone=True), nullable=True)
+
     ats_report = relationship("ATSReportORM", uselist=False, back_populates="job_application")
     job = relationship("JobsORM", back_populates="applications")
     referral = relationship("JobReferralORM", back_populates="application", uselist=False)
@@ -386,6 +395,14 @@ class JobApplicationORM(Base):
             "validation_score": self.validation_score,
             "missing_requirements": self.missing_requirements,
             "review_summary": self.review_summary,
+            # New workflow fields
+            "workflow_step": self.workflow_step,
+            "cover_letter_session_id": self.cover_letter_session_id,
+            "questionnaire_start_time": self.questionnaire_start_time.replace(tzinfo=timezone.utc).isoformat() if self.questionnaire_start_time else None,
+            "questionnaire_completion_time": self.questionnaire_completion_time.replace(tzinfo=timezone.utc).isoformat() if self.questionnaire_completion_time else None,
+            "time_spent_on_questionnaires": self.time_spent_on_questionnaires,
+            "workflow_started_at": self.workflow_started_at.replace(tzinfo=timezone.utc).isoformat() if self.workflow_started_at else None,
+            "workflow_completed_at": self.workflow_completed_at.replace(tzinfo=timezone.utc).isoformat() if self.workflow_completed_at else None,
             "jobseeker_profile": self.jobseeker_profile.to_dict() if self.jobseeker_profile and include_relationships else None,
             "ats_report": self.ats_report.to_dict() if self.ats_report and include_relationships else None,
             "referral": self.referral.to_dict() if self.referral and include_relationships else None

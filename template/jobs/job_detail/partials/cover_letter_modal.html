@@ -1,0 +1,318 @@
+{# ================================ #}
+{# Partial: cover_letter_modal.html #}
+{# ================================ #}
+
+<!-- Cover Letter Generation Modal -->
+<div class="modal fade cover-letter-modal" id="coverLetterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-text me-2"></i>
+                    AI Cover Letter Generator
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Loading State -->
+                <div id="cover-letter-loading" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Generating cover letter...</span>
+                    </div>
+                    <div class="mt-3">
+                        <h6 class="fw-semibold">Generating Your Cover Letter</h6>
+                        <p class="text-muted small">Our AI is analyzing the job requirements and crafting a personalized cover letter for you...</p>
+                        <div class="progress mt-3" style="height: 6px;">
+                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="cover-letter-error" class="alert alert-danger" style="display: none;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">Generation Failed</h6>
+                            <p class="mb-0 small" id="error-message">Unable to generate cover letter. Please try again.</p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-outline-danger btn-sm" id="retry-generation">
+                            <i class="fas fa-redo me-1"></i>Try Again
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form State -->
+                <div id="cover-letter-form">
+                    <form id="coverLetterGenerationForm">
+                        <!-- Job Information Display -->
+                        <div class="job-info-card mb-4 p-3 bg-light rounded">
+                            <div class="d-flex align-items-start">
+                                <div class="job-icon me-3">
+                                    <i class="fas fa-briefcase text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="fw-semibold mb-1" id="modal-job-title">{{ job.title if job else 'Job Title' }}</h6>
+                                    <p class="text-muted small mb-1" id="modal-company-name">{{ job.company_name if job else 'Company Name' }}</p>
+                                    <div class="small text-muted">
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        <span id="modal-job-location">{{ job.location if job else 'Location' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CV Selection -->
+                        <div class="mb-4">
+                            <label for="cv-select" class="form-label fw-semibold">
+                                <i class="fas fa-file-pdf text-danger me-2"></i>
+                                Select Your CV
+                            </label>
+                            <select class="form-select" id="cv-select" name="cv_id" required>
+                                <option value="">-- Choose your CV --</option>
+                                {% if list_resumes %}
+                                    {% for resume in list_resumes %}
+                                        <option value="{{ resume.cv_id }}" data-title="{{ resume.professional_title }}">
+                                            {{ resume.professional_title|title }}
+                                            {% if resume.updated_at %}
+                                                <small class="text-muted">(Updated {{ resume.updated_at.strftime('%b %d, %Y') }})</small>
+                                            {% endif %}
+                                        </option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Your CV will be analyzed to create a personalized cover letter
+                            </div>
+                        </div>
+
+                        <!-- Tone Selection -->
+                        <div class="mb-4">
+                            <label for="tone-select" class="form-label fw-semibold">
+                                <i class="fas fa-palette text-info me-2"></i>
+                                Writing Tone
+                            </label>
+                            <select class="form-select" id="tone-select" name="tone" required>
+                                <option value="">-- Select tone --</option>
+                                <option value="professional">Professional - Formal and business-appropriate</option>
+                                <option value="enthusiastic">Enthusiastic - Energetic and passionate</option>
+                                <option value="confident">Confident - Assertive and self-assured</option>
+                                <option value="friendly">Friendly - Warm and approachable</option>
+                                <option value="creative">Creative - Innovative and expressive</option>
+                                <option value="analytical">Analytical - Data-driven and logical</option>
+                            </select>
+                            <div class="form-text">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                Choose a tone that matches the company culture and role
+                            </div>
+                        </div>
+
+                        <!-- Draft Cover Letter Input -->
+                        <div class="mb-4">
+                            <label for="draft-cover-letter" class="form-label fw-semibold">
+                                <i class="fas fa-edit text-warning me-2"></i>
+                                Draft Cover Letter <span class="text-muted small">(Optional)</span>
+                            </label>
+                            <textarea class="form-control" id="draft-cover-letter" name="draft_cover_letter" 
+                                      rows="6" placeholder="Enter your draft cover letter here, or leave blank for AI to create from scratch..."></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-magic me-1"></i>
+                                Provide a draft to improve, or leave blank for a completely new cover letter
+                            </div>
+                            <div class="character-count mt-2">
+                                <small class="text-muted">
+                                    <span id="char-count">0</span> characters
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Additional Instructions -->
+                        <div class="mb-4">
+                            <label for="additional-instructions" class="form-label fw-semibold">
+                                <i class="fas fa-comments text-secondary me-2"></i>
+                                Additional Instructions <span class="text-muted small">(Optional)</span>
+                            </label>
+                            <textarea class="form-control" id="additional-instructions" name="additional_instructions" 
+                                      rows="3" placeholder="Any specific points you'd like to highlight or include..."></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-star me-1"></i>
+                                Mention specific achievements, skills, or experiences to emphasize
+                            </div>
+                        </div>
+
+                        <!-- Generation Options -->
+                        <div class="mb-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-3">
+                                        <i class="fas fa-cogs text-primary me-2"></i>
+                                        Generation Options
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="include-salary-expectations" name="include_salary_expectations">
+                                                <label class="form-check-label" for="include-salary-expectations">
+                                                    Include salary expectations
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="include-availability" name="include_availability" checked>
+                                                <label class="form-check-label" for="include-availability">
+                                                    Include availability
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="include-references" name="include_references">
+                                                <label class="form-check-label" for="include-references">
+                                                    Mention references available
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="include-portfolio" name="include_portfolio">
+                                                <label class="form-check-label" for="include-portfolio">
+                                                    Include portfolio/work samples
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Success State -->
+                <div id="cover-letter-success" style="display: none;">
+                    <div class="alert alert-success">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Cover Letter Generated Successfully!</h6>
+                                <p class="mb-0 small">Your personalized cover letter is ready for review and use.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generated Cover Letter Display -->
+                    <div class="generated-cover-letter">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h6 class="fw-semibold mb-0">
+                                <i class="fas fa-file-text text-success me-2"></i>
+                                Your Cover Letter
+                            </h6>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary" id="copy-cover-letter" title="Copy to clipboard">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="download-cover-letter" title="Download as PDF">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="edit-cover-letter" title="Edit cover letter">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="cover-letter-content border rounded p-3 bg-white" id="generated-cover-letter-content">
+                            <!-- Generated content will be inserted here -->
+                        </div>
+
+                        <!-- Cover Letter Stats -->
+                        <div class="cover-letter-stats mt-3">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="stat-item">
+                                        <div class="stat-value fw-bold text-primary" id="word-count">0</div>
+                                        <div class="stat-label small text-muted">Words</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-item">
+                                        <div class="stat-value fw-bold text-success" id="readability-score">0</div>
+                                        <div class="stat-label small text-muted">Readability</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-item">
+                                        <div class="stat-value fw-bold text-info" id="match-score">0%</div>
+                                        <div class="stat-label small text-muted">Job Match</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <!-- Form State Buttons -->
+                <div id="form-buttons">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-success" id="generate-cover-letter-btn">
+                        <i class="fas fa-magic me-2"></i>Generate Cover Letter
+                    </button>
+                </div>
+
+                <!-- Success State Buttons -->
+                <div id="success-buttons" style="display: none;">
+                    <button type="button" class="btn btn-outline-secondary" id="regenerate-cover-letter">
+                        <i class="fas fa-redo me-2"></i>Generate New
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Close
+                    </button>
+                    <button type="button" class="btn btn-success" id="use-cover-letter">
+                        <i class="fas fa-check me-2"></i>Use This Cover Letter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cover Letter Edit Modal -->
+<div class="modal fade" id="editCoverLetterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>
+                    Edit Cover Letter
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCoverLetterForm">
+                    <div class="mb-3">
+                        <label for="edit-cover-letter-content" class="form-label fw-semibold">Cover Letter Content</label>
+                        <textarea class="form-control" id="edit-cover-letter-content" rows="15" required></textarea>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Make your edits and save to update the cover letter
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-cover-letter-edits">
+                    <i class="fas fa-save me-2"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

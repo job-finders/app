@@ -57,7 +57,7 @@ async def generate_cover_letter(user: User, job_id: str):
         cv_id: str = data.get("cv_id") if data else None
 
         # Validate tone input
-        valid_tones = ["professional", "enthusiastic", "friendly", "formal", "concise"]
+        valid_tones = ["professional", "enthusiastic", "confident", "friendly", "creative", "analytical", "formal", "concise"]
         if tone.lower() not in valid_tones:
             return jsonify({
                 "error": f"Invalid tone. Valid options: {', '.join(valid_tones)}"
