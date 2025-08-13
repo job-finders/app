@@ -1,0 +1,648 @@
+/**
+ * Application Review Styles
+ * 
+ * CSS styles for the application review page including
+ * summary sections, validation display, and submission interface.
+ */
+
+/* ===== Container and Layout ===== */
+.review-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* ===== Header Section ===== */
+.review-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 0;
+}
+
+.review-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.job-info {
+    margin-top: 1rem;
+}
+
+.job-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.company-name {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.job-meta {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.job-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+}
+
+/* ===== Status Card ===== */
+.status-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.status-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.status-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: white;
+}
+
+.status-description {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+}
+
+/* ===== Progress Section ===== */
+.progress-section {
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 0;
+}
+
+.progress-wrapper {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.progress-text {
+    font-weight: 600;
+    color: #495057;
+}
+
+.progress-percentage {
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+.progress-bar-container {
+    height: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #0d6efd 0%, #6610f2 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* ===== Content Section ===== */
+.review-content {
+    padding: 2rem 0;
+}
+
+/* ===== Review Sections ===== */
+.review-section {
+    background: white;
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.review-section.validation-issues {
+    border-left: 4px solid #dc3545;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f8f9fa;
+    background: #fafbfc;
+}
+
+.section-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.section-content {
+    padding: 2rem;
+}
+
+/* ===== Summary Grid ===== */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.summary-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.summary-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+/* ===== Cover Letter Preview ===== */
+.cover-letter-preview {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.cover-letter-content {
+    padding: 1.5rem;
+    background: white;
+    font-family: 'Georgia', serif;
+    line-height: 1.6;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.cover-letter-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0d6efd;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+/* ===== Missing Content ===== */
+.missing-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px dashed #dee2e6;
+}
+
+.missing-icon {
+    font-size: 3rem;
+    color: #6c757d;
+    opacity: 0.5;
+}
+
+.missing-text h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.missing-text p {
+    color: #6c757d;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ===== Questionnaire Summary ===== */
+.questionnaire-summary {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.questionnaire-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.questionnaire-answers {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.answer-item {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.answer-item:last-child {
+    border-bottom: none;
+}
+
+.question-text {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.answer-text {
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+/* ===== Match Analysis ===== */
+.match-analysis-summary {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.match-score-display {
+    flex-shrink: 0;
+}
+
+.score-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.score-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.score-label {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.match-insights {
+    flex: 1;
+}
+
+.match-insights h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.insights-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.insights-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    color: #495057;
+}
+
+.insights-list li::before {
+    content: '✓';
+    color: #198754;
+    font-weight: bold;
+    font-size: 1rem;
+    margin-top: 0.1rem;
+}
+
+/* ===== Validation Issues ===== */
+.issues-list {
+    space-y: 1rem;
+}
+
+.issue-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+}
+
+.issue-icon {
+    font-size: 1.25rem;
+    margin-top: 0.25rem;
+}
+
+.issue-content {
+    flex: 1;
+}
+
+.issue-title {
+    font-weight: 600;
+    color: #dc3545;
+    margin-bottom: 0.5rem;
+}
+
+.issue-description {
+    color: #6c757d;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+}
+
+/* ===== Sidebar Cards ===== */
+.actions-card,
+.checklist-card,
+.tips-card {
+    background: white;
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 1.5rem;
+    background: #fafbfc;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* ===== Checklist ===== */
+.checklist {
+    space-y: 1rem;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.checklist-item:last-child {
+    border-bottom: none;
+}
+
+.checklist-item.completed .checklist-title {
+    color: #198754;
+}
+
+.checklist-icon {
+    font-size: 1.25rem;
+    margin-top: 0.125rem;
+}
+
+.checklist-content {
+    flex: 1;
+}
+
+.checklist-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #495057;
+}
+
+.checklist-description {
+    font-size: 0.875rem;
+    color: #6c757d;
+    line-height: 1.4;
+}
+
+/* ===== Tips ===== */
+.tips-list {
+    space-y: 1rem;
+}
+
+.tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #495057;
+}
+
+.tip-item i {
+    margin-top: 0.125rem;
+    font-size: 1rem;
+}
+
+/* ===== Submission Modal ===== */
+.submission-icon {
+    font-size: 4rem;
+    color: #198754;
+    margin-bottom: 1rem;
+}
+
+.final-checklist {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.final-checklist .form-check {
+    margin-bottom: 1rem;
+}
+
+.final-checklist .form-check:last-child {
+    margin-bottom: 0;
+}
+
+.final-checklist .form-check-label {
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 768px) {
+    .review-header {
+        padding: 1.5rem 0;
+    }
+    
+    .review-title {
+        font-size: 1.5rem;
+    }
+    
+    .job-title {
+        font-size: 1.25rem;
+    }
+    
+    .job-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .status-card {
+        margin-top: 1.5rem;
+        padding: 1rem;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+    }
+    
+    .section-content {
+        padding: 1.5rem;
+    }
+    
+    .summary-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .match-analysis-summary {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .missing-content {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem;
+    }
+    
+    .issue-item {
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+    
+    .card-header,
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .review-content {
+        padding: 1rem 0;
+    }
+    
+    .section-header {
+        padding: 1rem;
+    }
+    
+    .section-content {
+        padding: 1rem;
+    }
+    
+    .cover-letter-stats,
+    .questionnaire-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .final-checklist {
+        padding: 1rem;
+    }
+}
+
+/* ===== Animation Utilities ===== */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.slide-up {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}

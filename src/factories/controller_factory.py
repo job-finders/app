@@ -18,6 +18,7 @@ from src.controllers.jobs import JobsWorkflowController
 from src.controllers.jobseekers import JobSeekerProfilesController
 from src.controllers.resumes import ResumeController
 from src.controllers.users import UsersController
+from src.controllers.applications.application_workflow_controller import ApplicationWorkflowController
 
 # ------------------------
 # ----------blog controllers
@@ -200,6 +201,12 @@ class ControllerFactory:
     def get_job_actions_controller(self) -> JobActionsController:
         """Get JobActionsController instance"""
         self.logger.info(f"Getting JobActionsController")
+        return self._get_controller('job_actions', JobActionsController)
+
+    def get_application_workflow_controller(self) -> ApplicationWorkflowController:
+        """Get ApplicationWorkflowController instance"""
+        self.logger.info(f"Getting ApplicationWorkflowController")
+        return self._get_controller('application_workflow', ApplicationWorkflowController)
         return self._get_controller('job_actions', JobActionsController)
 
     def _get_controller(self, name: str, controller_class):

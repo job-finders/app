@@ -1,0 +1,404 @@
+{# ================================ #}
+{# Template: employers/applications/dashboard.html #}
+{# ================================ #}
+
+{% extends "employers/layout/page.html" %}
+{% block title %}Application Dashboard - {{ company.company_name }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/employers/applications.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="applications-dashboard">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="dashboard-title">Application Dashboard</h1>
+                    <p class="dashboard-subtitle">Manage and review job applications for {{ company.company_name }}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="dashboard-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ total_applications }}</div>
+                            <div class="stat-label">Total Applications</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ new_applications }}</div>
+                            <div class="stat-label">New Today</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Controls -->
+    <div class="dashboard-controls">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="filters-section">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="job-filter" class="form-label">Job Position</label>
+                                <select class="form-select" id="job-filter" name="job_id">
+                                    <option value="">All Jobs</option>
+                                    {% for job in company_jobs %}
+                                    <option value="{{ job.job_id }}" {{ 'selected' if request.args.get('job_id') == job.job_id else '' }}>
+                                        {{ job.title }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="status-filter" class="form-label">Status</label>
+                                <select class="form-select" id="status-filter" name="status">
+                                    <option value="">All Statuses</option>
+                                    <option value="pending" {{ 'selected' if request.args.get('status') == 'pending' else '' }}>Pending Review</option>
+                                    <option value="reviewed" {{ 'selected' if request.args.get('status') == 'reviewed' else '' }}>Reviewed</option>
+                                    <option value="shortlisted" {{ 'selected' if request.args.get('status') == 'shortlisted' else '' }}>Shortlisted</option>
+                                    <option value="interview" {{ 'selected' if request.args.get('status') == 'interview' else '' }}>Interview</option>
+                                    <option value="rejected" {{ 'selected' if request.args.get('status') == 'rejected' else '' }}>Rejected</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="date-filter" class="form-label">Date Range</label>
+                                <select class="form-select" id="date-filter" name="date_range">
+                                    <option value="">All Time</option>
+                                    <option value="today" {{ 'selected' if request.args.get('date_range') == 'today' else '' }}>Today</option>
+                                    <option value="week" {{ 'selected' if request.args.get('date_range') == 'week' else '' }}>This Week</option>
+                                    <option value="month" {{ 'selected' if request.args.get('date_range') == 'month' else '' }}>This Month</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="quality-filter" class="form-label">Quality Score</label>
+                                <select class="form-select" id="quality-filter" name="quality_score">
+                                    <option value="">All Scores</option>
+                                    <option value="excellent" {{ 'selected' if request.args.get('quality_score') == 'excellent' else '' }}>Excellent (90+)</option>
+                                    <option value="good" {{ 'selected' if request.args.get('quality_score') == 'good' else '' }}>Good (75-89)</option>
+                                    <option value="fair" {{ 'selected' if request.args.get('quality_score') == 'fair' else '' }}>Fair (60-74)</option>
+                                    <option value="poor" {{ 'selected' if request.args.get('quality_score') == 'poor' else '' }}>Poor (<60)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="controls-section">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label for="sort-by" class="form-label">Sort By</label>
+                                <select class="form-select" id="sort-by" name="sort_by">
+                                    <option value="date_desc" {{ 'selected' if request.args.get('sort_by') == 'date_desc' else '' }}>Newest First</option>
+                                    <option value="date_asc" {{ 'selected' if request.args.get('sort_by') == 'date_asc' else '' }}>Oldest First</option>
+                                    <option value="score_desc" {{ 'selected' if request.args.get('sort_by') == 'score_desc' else '' }}>Highest Score</option>
+                                    <option value="score_asc" {{ 'selected' if request.args.get('sort_by') == 'score_asc' else '' }}>Lowest Score</option>
+                                    <option value="name_asc" {{ 'selected' if request.args.get('sort_by') == 'name_asc' else '' }}>Name A-Z</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-outline-primary" id="apply-filters">
+                                        <i class="fas fa-filter me-1"></i>Apply
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="clear-filters">
+                                        <i class="fas fa-times me-1"></i>Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="bulk-actions" id="bulk-actions" style="display: none;">
+        <div class="container-fluid">
+            <div class="bulk-actions-bar">
+                <div class="selected-count">
+                    <span id="selected-count">0</span> applications selected
+                </div>
+                <div class="bulk-buttons">
+                    <button type="button" class="btn btn-success btn-sm" id="bulk-shortlist">
+                        <i class="fas fa-star me-1"></i>Shortlist
+                    </button>
+                    <button type="button" class="btn btn-warning btn-sm" id="bulk-interview">
+                        <i class="fas fa-calendar me-1"></i>Interview
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" id="bulk-reject">
+                        <i class="fas fa-times me-1"></i>Reject
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="bulk-export">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applications List -->
+    <div class="applications-content">
+        <div class="container-fluid">
+            {% if applications %}
+            <div class="applications-table-container">
+                <table class="table applications-table">
+                    <thead>
+                        <tr>
+                            <th width="40">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="select-all">
+                                </div>
+                            </th>
+                            <th>Candidate</th>
+                            <th>Job Position</th>
+                            <th>Applied Date</th>
+                            <th>Quality Score</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in applications %}
+                        <tr class="application-row" data-application-id="{{ application.application_id }}">
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input application-checkbox" type="checkbox" 
+                                           value="{{ application.application_id }}">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="candidate-info">
+                                    <div class="candidate-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="candidate-details">
+                                        <div class="candidate-name">{{ application.candidate_name }}</div>
+                                        <div class="candidate-email">{{ application.candidate_email }}</div>
+                                        {% if application.candidate_phone %}
+                                        <div class="candidate-phone">{{ application.candidate_phone }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="job-info">
+                                    <div class="job-title">{{ application.job_title }}</div>
+                                    <div class="job-location">{{ application.job_location }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="application-date">
+                                    <div class="date-primary">{{ application.applied_date.strftime('%b %d, %Y') }}</div>
+                                    <div class="date-secondary">{{ application.applied_date.strftime('%I:%M %p') }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="quality-score">
+                                    {% set score = application.validation_score or 0 %}
+                                    {% if score >= 90 %}
+                                        <span class="badge bg-success">{{ score }}/100</span>
+                                        <div class="score-label">Excellent</div>
+                                    {% elif score >= 75 %}
+                                        <span class="badge bg-primary">{{ score }}/100</span>
+                                        <div class="score-label">Good</div>
+                                    {% elif score >= 60 %}
+                                        <span class="badge bg-warning">{{ score }}/100</span>
+                                        <div class="score-label">Fair</div>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ score }}/100</span>
+                                        <div class="score-label">Poor</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="application-status">
+                                    {% if application.status == 'pending' %}
+                                        <span class="status-badge status-pending">
+                                            <i class="fas fa-clock"></i>Pending
+                                        </span>
+                                    {% elif application.status == 'reviewed' %}
+                                        <span class="status-badge status-reviewed">
+                                            <i class="fas fa-eye"></i>Reviewed
+                                        </span>
+                                    {% elif application.status == 'shortlisted' %}
+                                        <span class="status-badge status-shortlisted">
+                                            <i class="fas fa-star"></i>Shortlisted
+                                        </span>
+                                    {% elif application.status == 'interview' %}
+                                        <span class="status-badge status-interview">
+                                            <i class="fas fa-calendar"></i>Interview
+                                        </span>
+                                    {% elif application.status == 'rejected' %}
+                                        <span class="status-badge status-rejected">
+                                            <i class="fas fa-times"></i>Rejected
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="application-actions">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                onclick="viewApplication('{{ application.application_id }}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle dropdown-toggle-split" 
+                                                data-bs-toggle="dropdown">
+                                            <span class="visually-hidden">Toggle Dropdown</span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#" onclick="shortlistApplication('{{ application.application_id }}')">
+                                                <i class="fas fa-star me-2"></i>Shortlist
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="scheduleInterview('{{ application.application_id }}')">
+                                                <i class="fas fa-calendar me-2"></i>Schedule Interview
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item" href="#" onclick="downloadCV('{{ application.application_id }}')">
+                                                <i class="fas fa-download me-2"></i>Download CV
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="addNotes('{{ application.application_id }}')">
+                                                <i class="fas fa-sticky-note me-2"></i>Add Notes
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="rejectApplication('{{ application.application_id }}')">
+                                                <i class="fas fa-times me-2"></i>Reject
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <div class="pagination-container">
+                <nav aria-label="Applications pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.prev_num, **request.args) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != pagination.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for(request.endpoint, page=page_num, **request.args) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.next_num, **request.args) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="pagination-info">
+                    Showing {{ pagination.per_page * (pagination.page - 1) + 1 }} to 
+                    {{ pagination.per_page * pagination.page if pagination.page < pagination.pages else pagination.total }} 
+                    of {{ pagination.total }} applications
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <!-- Empty State -->
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3>No Applications Found</h3>
+                <p>There are no applications matching your current filters.</p>
+                <button type="button" class="btn btn-outline-primary" id="clear-filters-empty">
+                    <i class="fas fa-filter me-2"></i>Clear Filters
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Notes Modal -->
+<div class="modal fade" id="notesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Notes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="notesForm">
+                    <input type="hidden" id="notes-application-id">
+                    <div class="mb-3">
+                        <label for="application-notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="application-notes" rows="4" 
+                                  placeholder="Add your notes about this application..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="application-rating" class="form-label">Rating</label>
+                        <select class="form-select" id="application-rating">
+                            <option value="">No Rating</option>
+                            <option value="5">5 - Excellent</option>
+                            <option value="4">4 - Good</option>
+                            <option value="3">3 - Average</option>
+                            <option value="2">2 - Below Average</option>
+                            <option value="1">1 - Poor</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-notes">Save Notes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/employers/applications.js') }}"></script>
+    <script>
+        // Pass data to JavaScript
+        window.applicationsData = {
+            companyId: '{{ company.company_id }}',
+            totalApplications: {{ total_applications }},
+            currentFilters: {
+                jobId: '{{ request.args.get("job_id", "") }}',
+                status: '{{ request.args.get("status", "") }}',
+                dateRange: '{{ request.args.get("date_range", "") }}',
+                qualityScore: '{{ request.args.get("quality_score", "") }}',
+                sortBy: '{{ request.args.get("sort_by", "date_desc") }}'
+            }
+        };
+    </script>
+{% endblock %}

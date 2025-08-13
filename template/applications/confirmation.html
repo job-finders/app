@@ -1,0 +1,339 @@
+{# ================================ #}
+{# Template: confirmation.html #}
+{# ================================ #}
+
+{% extends "jobseekers/layout/page.html" %}
+{% block title %}Application Submitted - {{ job.title }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobs/application_workflow.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/applications/confirmation.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="confirmation-container">
+    <!-- Success Header -->
+    <div class="confirmation-header">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center">
+                    <div class="success-animation">
+                        <div class="success-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="success-ripple"></div>
+                    </div>
+                    <h1 class="confirmation-title">Application Submitted Successfully!</h1>
+                    <p class="confirmation-subtitle">
+                        Your application for <strong>{{ job.title }}</strong> at <strong>{{ job.company_name }}</strong> has been received.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="confirmation-content">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <!-- Application Details Card -->
+                    <div class="details-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-clipboard-check me-2"></i>
+                                Application Details
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">Reference Number</div>
+                                    <div class="detail-value reference-number">
+                                        {{ application.application_id[:8].upper() }}
+                                        <button type="button" class="btn btn-outline-primary btn-sm ms-2" id="copy-reference">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Submitted On</div>
+                                    <div class="detail-value">{{ application.workflow_completed_at.strftime('%B %d, %Y at %I:%M %p') }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Job Title</div>
+                                    <div class="detail-value">{{ job.title }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Company</div>
+                                    <div class="detail-value">{{ job.company_name }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Location</div>
+                                    <div class="detail-value">{{ job.location }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Application Quality</div>
+                                    <div class="detail-value">
+                                        {% set score = application.validation_score or 85 %}
+                                        {% if score >= 90 %}
+                                            <span class="badge bg-success">Excellent ({{ score }}/100)</span>
+                                        {% elif score >= 75 %}
+                                            <span class="badge bg-primary">Good ({{ score }}/100)</span>
+                                        {% elif score >= 60 %}
+                                            <span class="badge bg-warning">Fair ({{ score }}/100)</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ score }}/100</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- What Happens Next -->
+                    <div class="next-steps-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-route me-2"></i>
+                                What Happens Next?
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline">
+                                <div class="timeline-item active">
+                                    <div class="timeline-icon">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <h4>Application Submitted</h4>
+                                        <p>Your application has been successfully submitted and is now in the employer's system.</p>
+                                        <small class="text-muted">Just completed</small>
+                                    </div>
+                                </div>
+                                <div class="timeline-item">
+                                    <div class="timeline-icon">
+                                        <i class="fas fa-eye"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <h4>Initial Review</h4>
+                                        <p>The hiring team will review your application and assess your qualifications.</p>
+                                        <small class="text-muted">Within 2-3 business days</small>
+                                    </div>
+                                </div>
+                                <div class="timeline-item">
+                                    <div class="timeline-icon">
+                                        <i class="fas fa-phone"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <h4>Contact & Interview</h4>
+                                        <p>If selected, you'll be contacted for an interview or additional information.</p>
+                                        <small class="text-muted">Within 1-2 weeks</small>
+                                    </div>
+                                </div>
+                                <div class="timeline-item">
+                                    <div class="timeline-icon">
+                                        <i class="fas fa-handshake"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <h4>Decision</h4>
+                                        <p>The final hiring decision will be communicated to you.</p>
+                                        <small class="text-muted">Within 2-4 weeks</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Application Summary -->
+                    <div class="summary-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-list-check me-2"></i>
+                                Application Summary
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="summary-stats">
+                                <div class="stat-item">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-clock text-info"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">{{ application.workflow_duration_minutes or 0 }}</div>
+                                        <div class="stat-label">Minutes Spent</div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-file-text text-success"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">{{ 'Yes' if application.cover_letter else 'No' }}</div>
+                                        <div class="stat-label">Cover Letter</div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-clipboard-list text-warning"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">{{ 'Yes' if application.questionnaires_completed else 'No' }}</div>
+                                        <div class="stat-label">Questionnaire</div>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-chart-line text-primary"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-value">{{ application.validation_score or 85 }}%</div>
+                                        <div class="stat-label">Quality Score</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="actions-card">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <a href="{{ url_for('jobseeker_applications.list_applications') }}" class="btn btn-primary btn-lg w-100">
+                                        <i class="fas fa-list me-2"></i>
+                                        View All Applications
+                                    </a>
+                                </div>
+                                <div class="col-md-6">
+                                    <a href="{{ url_for('jobs_search.search_jobs') }}" class="btn btn-outline-primary btn-lg w-100">
+                                        <i class="fas fa-search me-2"></i>
+                                        Find More Jobs
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tips Card -->
+                    <div class="tips-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                Tips While You Wait
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="tips-list">
+                                <div class="tip-item">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-bell text-info"></i>
+                                    </div>
+                                    <div class="tip-content">
+                                        <h5>Stay Alert</h5>
+                                        <p>Check your email regularly for updates from the employer. Sometimes they may reach out sooner than expected.</p>
+                                    </div>
+                                </div>
+                                <div class="tip-item">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-search text-success"></i>
+                                    </div>
+                                    <div class="tip-content">
+                                        <h5>Keep Applying</h5>
+                                        <p>Don't put all your eggs in one basket. Continue applying to other relevant positions to increase your chances.</p>
+                                    </div>
+                                </div>
+                                <div class="tip-item">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-user-tie text-warning"></i>
+                                    </div>
+                                    <div class="tip-content">
+                                        <h5>Prepare for Interviews</h5>
+                                        <p>Research the company and practice common interview questions to be ready if they call.</p>
+                                    </div>
+                                </div>
+                                <div class="tip-item">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-network-wired text-primary"></i>
+                                    </div>
+                                    <div class="tip-content">
+                                        <h5>Network</h5>
+                                        <p>Connect with employees at the company on LinkedIn to learn more about the role and company culture.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Social Sharing -->
+                    <div class="sharing-card">
+                        <div class="card-body text-center">
+                            <h4 class="mb-3">Share Your Success!</h4>
+                            <p class="text-muted mb-4">Let your network know about your job application progress.</p>
+                            <div class="sharing-buttons">
+                                <button type="button" class="btn btn-outline-primary" id="share-linkedin">
+                                    <i class="fab fa-linkedin me-2"></i>LinkedIn
+                                </button>
+                                <button type="button" class="btn btn-outline-info" id="share-twitter">
+                                    <i class="fab fa-twitter me-2"></i>Twitter
+                                </button>
+                                <button type="button" class="btn btn-outline-success" id="share-whatsapp">
+                                    <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Reminder Modal -->
+<div class="modal fade" id="reminderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-bell me-2"></i>
+                    Set Application Reminder
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Get reminded to follow up on your application if you don't hear back.</p>
+                <div class="mb-3">
+                    <label for="reminder-days" class="form-label">Remind me in:</label>
+                    <select class="form-select" id="reminder-days">
+                        <option value="7">1 week</option>
+                        <option value="14" selected>2 weeks</option>
+                        <option value="21">3 weeks</option>
+                        <option value="30">1 month</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="set-reminder">Set Reminder</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/applications/confirmation.js') }}"></script>
+    <script>
+        // Pass application data to JavaScript
+        window.confirmationData = {
+            application_id: '{{ application.application_id }}',
+            job_id: '{{ job.job_id }}',
+            job_title: '{{ job.title }}',
+            company_name: '{{ job.company_name }}',
+            reference_number: '{{ application.application_id[:8].upper() }}',
+            submitted_at: '{{ application.workflow_completed_at.isoformat() if application.workflow_completed_at else "" }}'
+        };
+    </script>
+{% endblock %}

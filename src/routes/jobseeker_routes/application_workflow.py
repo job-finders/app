@@ -395,6 +395,173 @@ async def submit_questionnaire(user: User):
         }), 500
 
 
+@application_workflow_bp.route('/applications/<string:application_id>/review', methods=['GET'])
+@flask_error_handler
+@jobseeker_login
+async def review_application(user: User, application_id: str):
+    """
+    Display the application review page
+    
+    Args:
+        user: Authenticated user from decorator
+        application_id: ID of the application
+        
+    Returns:
+        Rendered review template
+    """
+    from flask import render_template
+    
+    controller = get_controller('application_workflow')
+    
+    try:
+        # Get application details
+        application_result = await controller.get_application_status(
+            application_id=application_id,
+            user_id=user.id
+        )
+        
+        if not application_result.get("success", False):
+            return render_template('errors/404.html'), 404
+        
+        application = application_result.get("application")
+        if not application:
+            return render_template('errors/404.html'), 404
+        
+        # Get job details
+        job_controller = get_controller('jobs_search')
+        job = await job_controller.get_job_by_id(job_id=application.job_id)
+        
+        if not job:
+            return render_template('errors/404.html'), 404
+        
+        # Get questionnaire submission if exists
+        questionnaire_submission = None
+        if application.questionnaires_completed:
+            questionnaire_submission = await controller.get_questionnaire_submission(
+                application_id=application_id,
+                user_id=user.id
+            )
+        
+        # Get match analysis if exists
+        match_analysis = None
+        try:
+            employee_agents_controller = get_controller('employee_agents')
+            match_analysis = await employee_agents_controller.analyze_job_match(
+                user_id=user.id,
+                job_id=application.job_id,
+                cv_id=application.cv_id
+            )
+        except Exception as e:
+            controller.logger.warning(f"Could not load match analysis: {e}")
+        
+        # Validate application and get issues
+        validation_result = await controller.validate_application(
+            application_id=application_id,
+            user_id=user.id
+        )
+        
+        validation_issues = validation_result.get("issues", []) if validation_result.get("success") else []
+        
+        return render_template('applications/review.html',
+                             application=application,
+                             job=job,
+                             questionnaire_submission=questionnaire_submission,
+                             match_analysis=match_analysis,
+                             validation_issues=validation_issues)
+        
+    except Exception as e:
+        controller.logger.exception("Failed to load review page")
+        return render_template('errors/500.html'), 500
+
+
+
+@application_workflow_bp.route('/applications/<string:application_id>/save-draft', methods=['POST'])
+@flask_error_handler
+@jobseeker_login
+async def save_application_draft(user: User, application_id: str):
+    """
+    Save application as draft
+    
+    Args:
+        user: Authenticated user from decorator
+        application_id: ID of the application
+        
+    Returns:
+        JSON response with save result
+    """
+    controller = get_controller('application_workflow')
+    
+    try:
+        result = await controller.save_application_draft(
+            application_id=application_id,
+            user_id=user.id
+        )
+        
+        status_code = 200 if result.get("success", False) else 400
+        return jsonify(result), status_code
+        
+    except Exception as e:
+        controller.logger.exception("Failed to save draft")
+        return jsonify({
+            "success": False,
+            "message": "Failed to save draft",
+            "error": str(e)
+        }), 500
+
+
+@application_workflow_bp.route('/applications/<string:application_id>/confirmation', methods=['GET'])
+@flask_error_handler
+@jobseeker_login
+async def application_confirmation(user: User, application_id: str):
+    """
+    Display the application submission confirmation page
+    
+    Args:
+        user: Authenticated user from decorator
+        application_id: ID of the application
+        
+    Returns:
+        Rendered confirmation template
+    """
+    from flask import render_template
+    
+    controller = get_controller('application_workflow')
+    
+    try:
+        # Get application details
+        application_result = await controller.get_application_status(
+            application_id=application_id,
+            user_id=user.id
+        )
+        
+        if not application_result.get("success", False):
+            return render_template('errors/404.html'), 404
+        
+        application = application_result.get("application")
+        if not application:
+            return render_template('errors/404.html'), 404
+        
+        # Ensure application is submitted
+        if application.workflow_step != 'submitted':
+            from flask import redirect, url_for
+            return redirect(url_for('application_workflow.review_application', application_id=application_id))
+        
+        # Get job details
+        job_controller = get_controller('jobs_search')
+        job = await job_controller.get_job_by_id(job_id=application.job_id)
+        
+        if not job:
+            return render_template('errors/404.html'), 404
+        
+        return render_template('applications/confirmation.html',
+                             application=application,
+                             job=job)
+        
+    except Exception as e:
+        controller.logger.exception("Failed to load confirmation page")
+        return render_template('errors/500.html'), 500
+
+
 @application_workflow_bp.route('/applications/<string:application_id>/questionnaires/timer/start', methods=['POST'])
 @flask_error_handler
 @jobseeker_login
@@ -428,8 +595,7 @@ async def start_questionnaire_timer(user: User, application_id: str):
             "error": str(e)
         }), 500
 
-@applic
-ation_workflow_bp.route('/applications/<string:application_id>/questionnaires', methods=['POST'])
+@application_workflow_bp.route('/applications/<string:application_id>/questionnaires', methods=['POST'])
 @flask_error_handler
 @jobseeker_login
 async def submit_questionnaire_answers(user: User, application_id: str):

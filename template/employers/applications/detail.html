@@ -1,0 +1,505 @@
+{# ================================ #}
+{# Template: employers/applications/detail.html #}
+{# ================================ #}
+
+{% extends "employers/layout/page.html" %}
+{% block title %}{{ candidate.name }} - Application Details{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/employers/application-detail.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="application-detail">
+    <!-- Header Section -->
+    <div class="detail-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="breadcrumb-nav">
+                        <a href="{{ url_for('employers.applications_dashboard') }}" class="breadcrumb-link">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Applications
+                        </a>
+                    </div>
+                    <div class="candidate-header">
+                        <div class="candidate-avatar-large">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="candidate-info">
+                            <h1 class="candidate-name">{{ candidate.name }}</h1>
+                            <p class="candidate-title">{{ candidate.professional_title or 'Job Seeker' }}</p>
+                            <div class="candidate-contact">
+                                <span class="contact-item">
+                                    <i class="fas fa-envelope"></i>{{ candidate.email }}
+                                </span>
+                                {% if candidate.phone %}
+                                <span class="contact-item">
+                                    <i class="fas fa-phone"></i>{{ candidate.phone }}
+                                </span>
+                                {% endif %}
+                                {% if candidate.location %}
+                                <span class="contact-item">
+                                    <i class="fas fa-map-marker-alt"></i>{{ candidate.location }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="application-meta">
+                        <div class="meta-item">
+                            <div class="meta-label">Applied For</div>
+                            <div class="meta-value">{{ job.title }}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Application Date</div>
+                            <div class="meta-value">{{ application.applied_date.strftime('%B %d, %Y') }}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Status</div>
+                            <div class="meta-value">
+                                {% if application.status == 'pending' %}
+                                    <span class="status-badge status-pending">
+                                        <i class="fas fa-clock"></i>Pending Review
+                                    </span>
+                                {% elif application.status == 'reviewed' %}
+                                    <span class="status-badge status-reviewed">
+                                        <i class="fas fa-eye"></i>Reviewed
+                                    </span>
+                                {% elif application.status == 'shortlisted' %}
+                                    <span class="status-badge status-shortlisted">
+                                        <i class="fas fa-star"></i>Shortlisted
+                                    </span>
+                                {% elif application.status == 'interview' %}
+                                    <span class="status-badge status-interview">
+                                        <i class="fas fa-calendar"></i>Interview Scheduled
+                                    </span>
+                                {% elif application.status == 'rejected' %}
+                                    <span class="status-badge status-rejected">
+                                        <i class="fas fa-times"></i>Rejected
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="quality-score-display">
+                        {% set score = application.validation_score or 0 %}
+                        <div class="score-circle">
+                            <div class="score-value">{{ score }}</div>
+                            <div class="score-label">Quality Score</div>
+                        </div>
+                        <div class="score-details">
+                            {% if score >= 90 %}
+                                <div class="score-rating excellent">Excellent Match</div>
+                                <div class="score-description">This candidate meets all requirements and shows exceptional qualifications.</div>
+                            {% elif score >= 75 %}
+                                <div class="score-rating good">Good Match</div>
+                                <div class="score-description">This candidate meets most requirements and shows strong qualifications.</div>
+                            {% elif score >= 60 %}
+                                <div class="score-rating fair">Fair Match</div>
+                                <div class="score-description">This candidate meets some requirements but may need additional consideration.</div>
+                            {% else %}
+                                <div class="score-rating poor">Needs Review</div>
+                                <div class="score-description">This candidate may not meet key requirements for this position.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="action-buttons">
+                        {% if application.status != 'shortlisted' %}
+                        <button type="button" class="btn btn-success" id="shortlist-btn">
+                            <i class="fas fa-star me-2"></i>Shortlist
+                        </button>
+                        {% endif %}
+                        {% if application.status != 'interview' %}
+                        <button type="button" class="btn btn-primary" id="interview-btn">
+                            <i class="fas fa-calendar me-2"></i>Schedule Interview
+                        </button>
+                        {% endif %}
+                        {% if application.status != 'rejected' %}
+                        <button type="button" class="btn btn-outline-danger" id="reject-btn">
+                            <i class="fas fa-times me-2"></i>Reject
+                        </button>
+                        {% endif %}
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" id="download-cv-btn">
+                                    <i class="fas fa-download me-2"></i>Download CV
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" id="add-notes-btn">
+                                    <i class="fas fa-sticky-note me-2"></i>Add Notes
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="contact-candidate-btn">
+                                    <i class="fas fa-envelope me-2"></i>Contact Candidate
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="detail-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Cover Letter Section -->
+                    {% if application.cover_letter %}
+                    <div class="detail-section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-file-text text-success me-2"></i>
+                                Cover Letter
+                            </h3>
+                            <div class="section-meta">
+                                <span class="word-count">{{ application.cover_letter.split()|length }} words</span>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="cover-letter-content">
+                                {{ application.cover_letter|safe_html|nl2br }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Questionnaire Responses -->
+                    {% if questionnaire_submission %}
+                    <div class="detail-section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-clipboard-list text-info me-2"></i>
+                                Questionnaire Responses
+                            </h3>
+                            <div class="section-meta">
+                                <span class="completion-time">Completed in {{ questionnaire_submission.completion_time_minutes }} minutes</span>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="questionnaire-responses">
+                                {% for answer in questionnaire_submission.answers %}
+                                <div class="response-item">
+                                    <div class="question-text">{{ answer.question.question_text }}</div>
+                                    <div class="answer-content">
+                                        {% if answer.question.question_type == 'multiple_choice' %}
+                                            <span class="answer-choice">{{ answer.answer_text }}</span>
+                                        {% elif answer.question.question_type == 'rating' %}
+                                            <div class="rating-display">
+                                                {% for i in range(1, (answer.question.max_rating or 5) + 1) %}
+                                                    <i class="fas fa-star {{ 'filled' if i <= (answer.answer_data[0]|int) else 'empty' }}"></i>
+                                                {% endfor %}
+                                                <span class="rating-value">{{ answer.answer_data[0] }}/{{ answer.question.max_rating or 5 }}</span>
+                                            </div>
+                                        {% else %}
+                                            <div class="answer-text">{{ answer.answer_text }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Match Analysis -->
+                    {% if match_analysis %}
+                    <div class="detail-section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-chart-line text-warning me-2"></i>
+                                Job Match Analysis
+                            </h3>
+                            <div class="section-meta">
+                                <span class="match-score">{{ match_analysis.overall_score }}/100 Match</span>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="match-analysis-content">
+                                <div class="match-summary">
+                                    <h5>Summary</h5>
+                                    <p>{{ match_analysis.summary }}</p>
+                                </div>
+                                
+                                {% if match_analysis.insights %}
+                                <div class="match-insights">
+                                    <h5>Key Insights</h5>
+                                    <ul class="insights-list">
+                                        {% for insight in match_analysis.insights %}
+                                        <li>{{ insight }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                                
+                                {% if match_analysis.matched_keywords %}
+                                <div class="keywords-section">
+                                    <h5>Matched Keywords</h5>
+                                    <div class="keywords-list">
+                                        {% for keyword in match_analysis.matched_keywords %}
+                                        <span class="keyword-tag matched">{{ keyword }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if match_analysis.missing_keywords %}
+                                <div class="keywords-section">
+                                    <h5>Missing Keywords</h5>
+                                    <div class="keywords-list">
+                                        {% for keyword in match_analysis.missing_keywords %}
+                                        <span class="keyword-tag missing">{{ keyword }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- CV Preview -->
+                    <div class="detail-section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-file-pdf text-danger me-2"></i>
+                                Curriculum Vitae
+                            </h3>
+                            <div class="section-actions">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="download-cv-detail">
+                                    <i class="fas fa-download me-1"></i>Download
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="view-cv-fullscreen">
+                                    <i class="fas fa-expand me-1"></i>Full Screen
+                                </button>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="cv-preview">
+                                {% if cv_content %}
+                                    <div class="cv-content">{{ cv_content|safe_html }}</div>
+                                {% else %}
+                                    <div class="cv-placeholder">
+                                        <i class="fas fa-file-pdf"></i>
+                                        <p>CV preview not available. Click download to view the full document.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Application Timeline -->
+                    <div class="sidebar-section">
+                        <div class="section-header">
+                            <h4 class="section-title">
+                                <i class="fas fa-history me-2"></i>
+                                Application Timeline
+                            </h4>
+                        </div>
+                        <div class="section-content">
+                            <div class="timeline">
+                                <div class="timeline-item">
+                                    <div class="timeline-icon">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-title">Application Submitted</div>
+                                        <div class="timeline-date">{{ application.applied_date.strftime('%B %d, %Y at %I:%M %p') }}</div>
+                                    </div>
+                                </div>
+                                
+                                {% if application.viewed_at %}
+                                <div class="timeline-item">
+                                    <div class="timeline-icon">
+                                        <i class="fas fa-eye"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-title">Application Viewed</div>
+                                        <div class="timeline-date">{{ application.viewed_at.strftime('%B %d, %Y at %I:%M %p') }}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if application.status == 'shortlisted' %}
+                                <div class="timeline-item">
+                                    <div class="timeline-icon">
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-title">Shortlisted</div>
+                                        <div class="timeline-date">{{ application.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes and Rating -->
+                    <div class="sidebar-section">
+                        <div class="section-header">
+                            <h4 class="section-title">
+                                <i class="fas fa-sticky-note me-2"></i>
+                                Notes & Rating
+                            </h4>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="edit-notes-btn">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                        <div class="section-content">
+                            <div class="notes-content">
+                                {% if application.employer_notes %}
+                                    <div class="current-notes">{{ application.employer_notes|nl2br }}</div>
+                                {% else %}
+                                    <div class="no-notes">No notes added yet.</div>
+                                {% endif %}
+                            </div>
+                            
+                            {% if application.rating %}
+                            <div class="rating-display">
+                                <div class="rating-label">Rating:</div>
+                                <div class="rating-stars">
+                                    {% for i in range(1, 6) %}
+                                        <i class="fas fa-star {{ 'filled' if i <= application.rating else 'empty' }}"></i>
+                                    {% endfor %}
+                                    <span class="rating-value">{{ application.rating }}/5</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="sidebar-section">
+                        <div class="section-header">
+                            <h4 class="section-title">
+                                <i class="fas fa-bolt me-2"></i>
+                                Quick Actions
+                            </h4>
+                        </div>
+                        <div class="section-content">
+                            <div class="quick-actions">
+                                <button type="button" class="btn btn-outline-primary w-100 mb-2" id="send-email-btn">
+                                    <i class="fas fa-envelope me-2"></i>Send Email
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary w-100 mb-2" id="schedule-call-btn">
+                                    <i class="fas fa-phone me-2"></i>Schedule Call
+                                </button>
+                                <button type="button" class="btn btn-outline-info w-100 mb-2" id="view-profile-btn">
+                                    <i class="fas fa-user me-2"></i>View Full Profile
+                                </button>
+                                <button type="button" class="btn btn-outline-warning w-100" id="compare-candidates-btn">
+                                    <i class="fas fa-balance-scale me-2"></i>Compare Candidates
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Application Stats -->
+                    <div class="sidebar-section">
+                        <div class="section-header">
+                            <h4 class="section-title">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                Application Stats
+                            </h4>
+                        </div>
+                        <div class="section-content">
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <div class="stat-value">{{ application.workflow_duration_minutes or 0 }}</div>
+                                    <div class="stat-label">Minutes to Complete</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">{{ 'Yes' if application.cover_letter else 'No' }}</div>
+                                    <div class="stat-label">Cover Letter</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">{{ questionnaire_submission.answer_count if questionnaire_submission else 0 }}</div>
+                                    <div class="stat-label">Questions Answered</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">{{ application.views_count or 0 }}</div>
+                                    <div class="stat-label">Profile Views</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notes Modal -->
+<div class="modal fade" id="notesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Notes & Rating</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="notesForm">
+                    <div class="mb-3">
+                        <label for="application-notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="application-notes" rows="6" 
+                                  placeholder="Add your notes about this candidate...">{{ application.employer_notes or '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="application-rating" class="form-label">Rating</label>
+                        <select class="form-select" id="application-rating">
+                            <option value="">No Rating</option>
+                            <option value="5" {{ 'selected' if application.rating == 5 else '' }}>5 - Excellent</option>
+                            <option value="4" {{ 'selected' if application.rating == 4 else '' }}>4 - Good</option>
+                            <option value="3" {{ 'selected' if application.rating == 3 else '' }}>3 - Average</option>
+                            <option value="2" {{ 'selected' if application.rating == 2 else '' }}>2 - Below Average</option>
+                            <option value="1" {{ 'selected' if application.rating == 1 else '' }}>1 - Poor</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-notes">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/employers/application-detail.js') }}"></script>
+    <script>
+        // Pass data to JavaScript
+        window.applicationDetailData = {
+            applicationId: '{{ application.application_id }}',
+            candidateId: '{{ candidate.id }}',
+            jobId: '{{ job.job_id }}',
+            currentStatus: '{{ application.status }}',
+            hasNotes: {{ 'true' if application.employer_notes else 'false' }},
+            currentRating: {{ application.rating or 'null' }}
+        };
+    </script>
+{% endblock %}

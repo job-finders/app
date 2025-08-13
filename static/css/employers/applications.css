@@ -1,0 +1,590 @@
+/**
+ * Employer Applications Dashboard Styles
+ * 
+ * CSS styles for the employer application management interface
+ * including dashboard, filtering, sorting, and bulk actions.
+ */
+
+/* ===== Dashboard Layout ===== */
+.applications-dashboard {
+    min-height: 100vh;
+    background: #f8f9fa;
+}
+
+/* ===== Header Section ===== */
+.dashboard-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 0;
+}
+
+.dashboard-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-subtitle {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+}
+
+.dashboard-stats {
+    display: flex;
+    gap: 2rem;
+    justify-content: flex-end;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    color: white;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 0.25rem;
+}
+
+/* ===== Controls Section ===== */
+.dashboard-controls {
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1.5rem 0;
+}
+
+.filters-section .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.controls-section .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-select {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* ===== Bulk Actions ===== */
+.bulk-actions {
+    background: #fff3cd;
+    border-bottom: 1px solid #ffeaa7;
+    padding: 0.75rem 0;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bulk-actions-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.selected-count {
+    font-weight: 600;
+    color: #856404;
+}
+
+.bulk-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.bulk-buttons .btn {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+/* ===== Applications Content ===== */
+.applications-content {
+    padding: 2rem 0;
+}
+
+.applications-table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.applications-table {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.applications-table thead {
+    background: #f8f9fa;
+}
+
+.applications-table th {
+    border: none;
+    padding: 1rem 0.75rem;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.applications-table td {
+    border: none;
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.application-row:hover {
+    background-color: #f8f9fa;
+}
+
+/* ===== Candidate Info ===== */
+.candidate-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.candidate-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.candidate-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.candidate-name {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+.candidate-email {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.125rem;
+}
+
+.candidate-phone {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* ===== Job Info ===== */
+.job-info {
+    min-width: 0;
+}
+
+.job-title {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+.job-location {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* ===== Application Date ===== */
+.application-date {
+    text-align: center;
+}
+
+.date-primary {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.125rem;
+}
+
+.date-secondary {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* ===== Quality Score ===== */
+.quality-score {
+    text-align: center;
+}
+
+.quality-score .badge {
+    font-size: 0.8rem;
+    padding: 0.375rem 0.5rem;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.score-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* ===== Status Badges ===== */
+.application-status {
+    text-align: center;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-reviewed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-shortlisted {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-interview {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* ===== Application Actions ===== */
+.application-actions {
+    text-align: center;
+}
+
+.application-actions .btn {
+    font-size: 0.8rem;
+    padding: 0.375rem 0.5rem;
+}
+
+.application-actions .dropdown-menu {
+    font-size: 0.875rem;
+}
+
+.application-actions .dropdown-item {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.application-actions .dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* ===== Pagination ===== */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+}
+
+.pagination {
+    margin: 0;
+}
+
+.pagination .page-link {
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    padding: 0.5rem 0.75rem;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.pagination-info {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* ===== Empty State ===== */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: #6c757d;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+/* ===== Form Checkboxes ===== */
+.form-check-input {
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: 0;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* ===== Modal Enhancements ===== */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+    padding: 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 1.5rem;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 1200px) {
+    .dashboard-stats {
+        gap: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .dashboard-header {
+        padding: 1.5rem 0;
+    }
+    
+    .dashboard-stats {
+        justify-content: center;
+        margin-top: 1rem;
+    }
+    
+    .filters-section .row {
+        gap: 0.5rem;
+    }
+    
+    .applications-table-container {
+        overflow-x: auto;
+    }
+    
+    .applications-table {
+        min-width: 800px;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-controls {
+        padding: 1rem 0;
+    }
+    
+    .bulk-actions-bar {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .bulk-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .pagination-container {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .candidate-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .candidate-avatar {
+        align-self: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .applications-content {
+        padding: 1rem 0;
+    }
+    
+    .dashboard-title {
+        font-size: 1.5rem;
+    }
+    
+    .dashboard-subtitle {
+        font-size: 0.9rem;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+    }
+    
+    .applications-table th,
+    .applications-table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .empty-state {
+        padding: 2rem 1rem;
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+    }
+}
+
+/* ===== Animation Utilities ===== */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.slide-up {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* ===== Loading States ===== */
+.loading-row {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ===== Hover Effects ===== */
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.applications-table-container:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* ===== Focus States ===== */
+.btn:focus,
+.form-select:focus,
+.form-check-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* ===== Print Styles ===== */
+@media print {
+    .dashboard-header,
+    .dashboard-controls,
+    .bulk-actions,
+    .pagination-container,
+    .application-actions {
+        display: none !important;
+    }
+    
+    .applications-table-container {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+    
+    .applications-table th,
+    .applications-table td {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+}

@@ -11,7 +11,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
 
 from src.controllers.controller import Controllers, error_handler
-from src.database.models.jobs_model import JobApplication, JobApplicationORM, JobApplicationStatusEnum
+from src.database.models.jobs_model import JobApplication, JobApplicationStatusEnum
 from src.database.models.application_workflow import (
     ApplicationWorkflowResult,
     QuestionnaireResult,
@@ -27,6 +27,9 @@ from src.database.sql.questionnaires import (
 )
 from src.utils.route_helpers import get_controller
 from src.logger import init_logger
+from flask import session as flask_session
+import json
+import traceback
 
 
 class ApplicationWorkflowController(Controllers):
@@ -35,6 +38,7 @@ class ApplicationWorkflowController(Controllers):
     def __init__(self, factory):
         super().__init__(factory)
         self.logger = init_logger(self.__class__.__name__)
+        self.logger.info("ApplicationWorkflowController initialized successfully")
     
     @error_handler
     async def start_application_process(
@@ -662,7 +666,234 @@ class ApplicationWorkflowController(Controllers):
                 "success": False,
                 "message": f"Failed to submit questionnaire: {str(e)}"
             }
+    
+    @error_handler
+    async def get_questionnaire_submission(
+        self,
+        application_id: str,
+        user_id: str
+    ) -> Optional[Dict[str, any]]:
+        """
+        Get questionnaire submission for an application
+        
+        Args:
+            application_id: ID of the application
+            user_id: ID of the user
+            
+        Returns:
+            Questionnaire submission data or None
+        """
+        try:
+            with self.get_session() as session:
+                submission = session.query(QuestionnaireSubmissionORM).filter(
+                    and_(
+                        QuestionnaireSubmissionORM.application_id == application_id,
+                        QuestionnaireSubmissionORM.user_id == user_id,
+                        QuestionnaireSubmissionORM.is_complete == True
+                    )
+                ).first()
+                
+                if submission:
+                    return submission.to_dict()
+                return None
+                
+        except Exception as e:
+            self.logger.exception("Failed to get questionnaire submission")
+            return None
+    
+    @error_handler
+    async def validate_application(
+        self,
+        application_id: str,
+        user_id: str
+    ) -> Dict[str, any]:
+        """
+        Validate application and return any issues
+        
+        Args:
+            application_id: ID of the application
+            user_id: ID of the user
+            
+        Returns:
+            Dictionary with validation result and issues
+        """
+        try:
+            with self.get_session() as session:
+                application = session.query(JobApplicationORM).filter(
+                    and_(
+                        JobApplicationORM.application_id == application_id,
+                        JobApplicationORM.user_id == user_id
+                    )
+                ).first()
+                
+                if not application:
+                    return {
+                        "success": False,
+                        "message": "Application not found"
+                    }
+                
+                issues = []
+                
+                # Check cover letter
+                if not application.cover_letter:
+                    issues.append({
+                        "title": "Cover Letter Missing",
+                        "description": "Adding a cover letter significantly improves your chances of getting noticed.",
+                        "action_url": f"/jobs/{application.job_id}#cover-letter",
+                        "action_text": "Add Cover Letter"
+                    })
+                
+                # Check questionnaire completion
+                job_controller = get_controller('jobs_search')
+                job = await job_controller.get_job_by_id(job_id=application.job_id)
+                
+                if job and job.required_questionnaire and not application.questionnaires_completed:
+                    issues.append({
+                        "title": "Questionnaire Incomplete",
+                        "description": "This job requires completion of a questionnaire before submission.",
+                        "action_url": f"/api/applications/workflow/applications/{application_id}/questionnaires",
+                        "action_text": "Complete Questionnaire"
+                    })
+                
+                return {
+                    "success": True,
+                    "issues": issues,
+                    "validation_score": max(0, 100 - (len(issues) * 25))
                 }
+                
+        except Exception as e:
+            self.logger.exception("Failed to validate application")
+            return {
+                "success": False,
+                "message": f"Failed to validate application: {str(e)}"
+            }
+    
+    @error_handler
+    async def submit_final_application(
+        self,
+        application_id: str,
+        user_id: str,
+        confirmed: bool = False
+    ) -> Dict[str, any]:
+        """
+        Submit the final application
+        
+        Args:
+            application_id: ID of the application
+            user_id: ID of the user
+            confirmed: Whether user confirmed submission
+            
+        Returns:
+            Dictionary with submission result
+        """
+        self.logger.info(f"Submitting final application {application_id}")
+        
+        try:
+            if not confirmed:
+                return {
+                    "success": False,
+                    "message": "Application submission must be confirmed"
+                }
+            
+            with self.get_session() as session:
+                application = session.query(JobApplicationORM).filter(
+                    and_(
+                        JobApplicationORM.application_id == application_id,
+                        JobApplicationORM.user_id == user_id
+                    )
+                ).first()
+                
+                if not application:
+                    return {
+                        "success": False,
+                        "message": "Application not found"
+                    }
+                
+                if application.workflow_step == 'submitted':
+                    return {
+                        "success": False,
+                        "message": "Application has already been submitted"
+                    }
+                
+                # Validate application before submission
+                validation_result = await self.validate_application(application_id, user_id)
+                if validation_result.get("issues"):
+                    return {
+                        "success": False,
+                        "message": "Please address all validation issues before submitting",
+                        "issues": validation_result.get("issues")
+                    }
+                
+                # Submit application
+                application.workflow_step = 'submitted'
+                application.workflow_completed_at = datetime.utcnow()
+                application.application_stage = 'SUBMITTED'
+                
+                session.commit()
+                
+                self.logger.info(f"Successfully submitted application {application_id}")
+                
+                return {
+                    "success": True,
+                    "message": "Application submitted successfully",
+                    "application_id": application_id,
+                    "reference_number": application_id[:8].upper()
+                }
+                
+        except Exception as e:
+            self.logger.exception("Failed to submit final application")
+            return {
+                "success": False,
+                "message": f"Failed to submit application: {str(e)}"
+            }
+    
+    @error_handler
+    async def save_application_draft(
+        self,
+        application_id: str,
+        user_id: str
+    ) -> Dict[str, any]:
+        """
+        Save application as draft
+        
+        Args:
+            application_id: ID of the application
+            user_id: ID of the user
+            
+        Returns:
+            Dictionary with save result
+        """
+        try:
+            with self.get_session() as session:
+                application = session.query(JobApplicationORM).filter(
+                    and_(
+                        JobApplicationORM.application_id == application_id,
+                        JobApplicationORM.user_id == user_id
+                    )
+                ).first()
+                
+                if not application:
+                    return {
+                        "success": False,
+                        "message": "Application not found"
+                    }
+                
+                # Update last modified timestamp
+                application.updated_at = datetime.utcnow()
+                session.commit()
+                
+                return {
+                    "success": True,
+                    "message": "Draft saved successfully"
+                }
+                
+        except Exception as e:
+            self.logger.exception("Failed to save application draft")
+            return {
+                "success": False,
+                "message": f"Failed to save draft: {str(e)}"
+            }
+                
                 
         except Exception as e:
             self.logger.error(f"Error linking cover letter to application: {e}")
@@ -993,7 +1224,7 @@ class ApplicationWorkflowController(Controllers):
         try:
             with self.get_session() as session:
                 # Get application with relationships
-                application = session.query(JobApplicationORM).options(
+                application_orm = session.query(JobApplicationORM).options(
                     joinedload(JobApplicationORM.job),
                     joinedload(JobApplicationORM.ats_report)
                 ).filter(
@@ -1003,7 +1234,7 @@ class ApplicationWorkflowController(Controllers):
                     )
                 ).first()
                 
-                if not application:
+                if not application_orm:
                     return SubmissionResult(
                         success=False,
                         message="Application not found"
@@ -1020,22 +1251,24 @@ class ApplicationWorkflowController(Controllers):
                     )
                 
                 # Update application status
-                application.application_stage = JobApplicationStatusEnum.APPLIED.value
-                application.workflow_step = "submitted"
-                application.applied_date = datetime.utcnow()
-                application.workflow_completed_at = datetime.utcnow()
-                application.validation_score = validation_result.score
-                application.missing_requirements = validation_result.missing_requirements
-                
+                application_orm.application_stage = JobApplicationStatusEnum.APPLIED.value
+                application_orm.workflow_step = "submitted"
+                application_orm.applied_date = datetime.utcnow()
+                application_orm.workflow_completed_at = datetime.utcnow()
+                application_orm.validation_score = validation_result.score
+                application_orm.missing_requirements = validation_result.missing_requirements
+                application = JobApplication(**JobApplicationORM.to_dict())
                 # Attach match analysis if exists
                 await self._attach_match_analysis(application, session)
                 
                 # Update job application count
-                if application.job:
-                    application.job.application_count = (application.job.application_count or 0) + 1
+                if application_orm.job:
+                    # This may not be necessary but we will keep it for now
+                    application_orm.job.application_count = (application.job.application_count or 0) + 1
                 
+                
+                application = JobApplication(**JobApplicationORM.to_dict())
                 session.commit()
-                
                 # Send notifications
                 await self._send_application_notifications(application)
                 
@@ -1055,7 +1288,7 @@ class ApplicationWorkflowController(Controllers):
                 message=f"Failed to submit application: {str(e)}"
             )
     
-    async def _validate_final_application(self, application: JobApplicationORM) -> ValidationResult:
+    async def _validate_final_application(self, application: JobApplication) -> ValidationResult:
         """
         Perform final validation of application before submission
         
@@ -1131,7 +1364,7 @@ class ApplicationWorkflowController(Controllers):
                 validation_errors=[f"Validation error: {str(e)}"]
             )
     
-    async def _attach_match_analysis(self, application: JobApplicationORM, session):
+    async def _attach_match_analysis(self, application: JobApplication, session):
         """
         Attach the most recent match analysis report to application
         
@@ -1158,7 +1391,7 @@ class ApplicationWorkflowController(Controllers):
             self.logger.warning(f"Could not attach match analysis: {e}")
             # Don't fail application submission if ATS report attachment fails
     
-    async def _send_application_notifications(self, application: JobApplicationORM):
+    async def _send_application_notifications(self, application: JobApplication):
         """
         Send notifications for successful application submission
         
@@ -1179,7 +1412,7 @@ class ApplicationWorkflowController(Controllers):
             self.logger.error(f"Error sending application notifications: {e}")
             # Don't fail application submission if notifications fail
     
-    async def _send_jobseeker_confirmation(self, application: JobApplicationORM, notifications_controller):
+    async def _send_jobseeker_confirmation(self, application: JobApplication, notifications_controller):
         """
         Send confirmation notification to job seeker
         
@@ -1211,7 +1444,7 @@ class ApplicationWorkflowController(Controllers):
         except Exception as e:
             self.logger.error(f"Error sending jobseeker confirmation: {e}")
     
-    async def _send_employer_notification(self, application: JobApplicationORM, notifications_controller):
+    async def _send_employer_notification(self, application: JobApplication, notifications_controller):
         """
         Send new application notification to employer
         
@@ -1308,4 +1541,437 @@ class ApplicationWorkflowController(Controllers):
             return {
                 "success": False,
                 "message": f"Failed to get application status: {str(e)}"
+            }    
+  
+  # Enhanced Error Handling and Session Management Methods
+    
+    @error_handler
+    async def handle_workflow_error(
+        self,
+        application_id: str,
+        user_id: str,
+        error_type: str,
+        error_message: str,
+        recovery_options: List[str] = None
+    ) -> Dict[str, any]:
+        """
+        Handle workflow errors with recovery options
+        
+        Args:
+            application_id: ID of the application
+            user_id: ID of the user
+            error_type: Type of error (validation, timeout, system, etc.)
+            error_message: Human-readable error message
+            recovery_options: List of recovery actions available
+            
+        Returns:
+            Dictionary with error handling result and recovery options
+        """
+        self.logger.error(f"Workflow error for application {application_id}: {error_type} - {error_message}")
+        
+        try:
+            # Log error details for debugging
+            error_details = {
+                "application_id": application_id,
+                "user_id": user_id,
+                "error_type": error_type,
+                "error_message": error_message,
+                "timestamp": datetime.utcnow().isoformat(),
+                "stack_trace": traceback.format_exc()
+            }
+            
+            self.logger.error(f"Detailed error info: {json.dumps(error_details, indent=2)}")
+            
+            # Determine recovery options based on error type
+            if not recovery_options:
+                recovery_options = self._get_default_recovery_options(error_type)
+            
+            # Save error state for potential recovery
+            await self._save_error_state(application_id, user_id, error_details)
+            
+            return {
+                "success": False,
+                "error_type": error_type,
+                "message": error_message,
+                "recovery_options": recovery_options,
+                "error_id": f"{application_id}_{int(datetime.utcnow().timestamp())}",
+                "support_contact": "support@jobfinders.site"
+            }
+            
+        except Exception as e:
+            self.logger.critical(f"Error in error handler: {e}")
+            return {
+                "success": False,
+                "error_type": "system_critical",
+                "message": "A critical system error occurred. Please contact support.",
+                "recovery_options": ["contact_support", "try_again_later"],
+                "support_contact": "support@jobfinders.site"
+            }
+    
+    def _get_default_recovery_options(self, error_type: str) -> List[str]:
+        """
+        Get default recovery options based on error type
+        
+        Args:
+            error_type: Type of error
+            
+        Returns:
+            List of recovery option codes
+        """
+        recovery_map = {
+            "validation": ["fix_validation_errors", "save_draft", "contact_support"],
+            "timeout": ["extend_session", "save_progress", "restart_step"],
+            "system": ["retry_operation", "save_draft", "contact_support"],
+            "network": ["retry_operation", "check_connection", "save_offline"],
+            "permission": ["login_again", "contact_support"],
+            "data": ["reload_data", "clear_cache", "contact_support"]
+        }
+        
+        return recovery_map.get(error_type, ["retry_operation", "contact_support"])
+    
+    async def _save_error_state(self, application_id: str, user_id: str, error_details: Dict):
+        """
+        Save error state for potential recovery
+        
+        Args:
+            application_id: ID of the application
+            user_id: ID of the user
+            error_details: Error details dictionary
+        """
+        try:
+            # Save to session for immediate recovery
+            flask_session[f"error_state_{application_id}"] = {
+                "error_details": error_details,
+                "timestamp": datetime.utcnow().isoformat(),
+                "recovery_attempted": False
+            }
+            
+            # Could also save to database for persistent error tracking
+            # This would be useful for analytics and support
+            
+        except Exception as e:
+            self.logger.error(f"Failed to save error state: {e}")
+    
+    @error_handler
+    async def preserve_session_progress(
+        self,
+        application_id: str,
+        user_id: str,
+        progress_data: Dict[str, any]
+    ) -> Dict[str, any]:
+        """
+        Preserve session progress to prevent data loss
+        
+        Args:
+            application_id: ID of the application
+            user_id: ID of the user
+            progress_data: Current progress data to preserve
+            
+        Returns:
+            Dictionary with preservation result
+        """
+        self.logger.info(f"Preserving session progress for application {application_id}")
+        
+        try:
+            # Save to Flask session
+            session_key = f"progress_{application_id}_{user_id}"
+            flask_session[session_key] = {
+                "progress_data": progress_data,
+                "timestamp": datetime.utcnow().isoformat(),
+                "expires_at": (datetime.utcnow() + timedelta(hours=24)).isoformat()
+            }
+            
+            # Also save to database for persistence across browser sessions
+            with self.get_session() as session:
+                application = session.query(JobApplicationORM).filter(
+                    and_(
+                        JobApplicationORM.application_id == application_id,
+                        JobApplicationORM.user_id == user_id
+                    )
+                ).first()
+                
+                if application:
+                    # Store progress in a JSON field or separate table
+                    application.session_progress = progress_data
+                    application.progress_saved_at = datetime.utcnow()
+                    session.commit()
+            
+            return {
+                "success": True,
+                "message": "Progress saved successfully",
+                "expires_at": (datetime.utcnow() + timedelta(hours=24)).isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to preserve session progress: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to save progress: {str(e)}"
+            }
+    
+    @error_handler
+    async def restore_session_progress(
+        self,
+        application_id: str,
+        user_id: str
+    ) -> Dict[str, any]:
+        """
+        Restore previously saved session progress
+        
+        Args:
+            application_id: ID of the application
+            user_id: ID of the user
+            
+        Returns:
+            Dictionary with restored progress data
+        """
+        self.logger.info(f"Restoring session progress for application {application_id}")
+        
+        try:
+            # Try to restore from Flask session first
+            session_key = f"progress_{application_id}_{user_id}"
+            session_data = flask_session.get(session_key)
+            
+            if session_data:
+                expires_at = datetime.fromisoformat(session_data["expires_at"])
+                if datetime.utcnow() < expires_at:
+                    return {
+                        "success": True,
+                        "progress_data": session_data["progress_data"],
+                        "restored_from": "session",
+                        "saved_at": session_data["timestamp"]
+                    }
+            
+            # Try to restore from database
+            with self.get_session() as session:
+                application = session.query(JobApplicationORM).filter(
+                    and_(
+                        JobApplicationORM.application_id == application_id,
+                        JobApplicationORM.user_id == user_id
+                    )
+                ).first()
+                
+                if application and application.session_progress:
+                    # Check if progress is not too old (24 hours)
+                    if (application.progress_saved_at and 
+                        datetime.utcnow() - application.progress_saved_at < timedelta(hours=24)):
+                        
+                        return {
+                            "success": True,
+                            "progress_data": application.session_progress,
+                            "restored_from": "database",
+                            "saved_at": application.progress_saved_at.isoformat()
+                        }
+            
+            return {
+                "success": False,
+                "message": "No saved progress found or progress has expired"
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to restore session progress: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to restore progress: {str(e)}"
+            }
+    
+    @error_handler
+    async def extend_session_timeout(
+        self,
+        application_id: str,
+        user_id: str,
+        extension_minutes: int = 30
+    ) -> Dict[str, any]:
+        """
+        Extend session timeout for active applications
+        
+        Args:
+            application_id: ID of the application
+            user_id: ID of the user
+            extension_minutes: Minutes to extend session
+            
+        Returns:
+            Dictionary with extension result
+        """
+        self.logger.info(f"Extending session timeout for application {application_id} by {extension_minutes} minutes")
+        
+        try:
+            # Extend Flask session
+            flask_session.permanent = True
+            flask_session.permanent_session_lifetime = timedelta(minutes=extension_minutes)
+            
+            # Update database record
+            with self.get_session() as session:
+                application = session.query(JobApplicationORM).filter(
+                    and_(
+                        JobApplicationORM.application_id == application_id,
+                        JobApplicationORM.user_id == user_id
+                    )
+                ).first()
+                
+                if application:
+                    application.session_extended_at = datetime.utcnow()
+                    application.session_expires_at = datetime.utcnow() + timedelta(minutes=extension_minutes)
+                    session.commit()
+            
+            return {
+                "success": True,
+                "message": f"Session extended by {extension_minutes} minutes",
+                "new_expiry": (datetime.utcnow() + timedelta(minutes=extension_minutes)).isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to extend session timeout: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to extend session: {str(e)}"
+            }
+    
+    @error_handler
+    async def cleanup_expired_sessions(self) -> Dict[str, any]:
+        """
+        Clean up expired application sessions and temporary data
+        
+        Returns:
+            Dictionary with cleanup results
+        """
+        self.logger.info("Starting cleanup of expired application sessions")
+        
+        try:
+            cleanup_count = 0
+            
+            with self.get_session() as session:
+                # Find expired draft applications (older than 7 days)
+                expired_drafts = session.query(JobApplicationORM).filter(
+                    and_(
+                        JobApplicationORM.application_stage == "DRAFT",
+                        JobApplicationORM.created_at < datetime.utcnow() - timedelta(days=7)
+                    )
+                ).all()
+                
+                for draft in expired_drafts:
+                    # Clean up related data
+                    session.query(CoverLetterSessionORM).filter(
+                        and_(
+                            CoverLetterSessionORM.user_id == draft.user_id,
+                            CoverLetterSessionORM.job_id == draft.job_id
+                        )
+                    ).delete()
+                    
+                    session.query(QuestionnaireSubmissionORM).filter(
+                        QuestionnaireSubmissionORM.application_id == draft.application_id
+                    ).delete()
+                    
+                    session.delete(draft)
+                    cleanup_count += 1
+                
+                # Clean up expired cover letter sessions
+                expired_sessions = session.query(CoverLetterSessionORM).filter(
+                    CoverLetterSessionORM.expires_at < datetime.utcnow()
+                ).all()
+                
+                for expired_session in expired_sessions:
+                    session.delete(expired_session)
+                    cleanup_count += 1
+                
+                session.commit()
+            
+            self.logger.info(f"Cleaned up {cleanup_count} expired sessions")
+            
+            return {
+                "success": True,
+                "message": f"Cleaned up {cleanup_count} expired sessions",
+                "cleanup_count": cleanup_count
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to cleanup expired sessions: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to cleanup sessions: {str(e)}"
+            }
+    
+    @error_handler
+    async def get_error_recovery_options(
+        self,
+        application_id: str,
+        user_id: str,
+        error_id: str
+    ) -> Dict[str, any]:
+        """
+        Get available recovery options for a specific error
+        
+        Args:
+            application_id: ID of the application
+            user_id: ID of the user
+            error_id: ID of the error
+            
+        Returns:
+            Dictionary with recovery options and instructions
+        """
+        try:
+            # Get saved error state
+            error_state = flask_session.get(f"error_state_{application_id}")
+            
+            if not error_state:
+                return {
+                    "success": False,
+                    "message": "Error state not found or has expired"
+                }
+            
+            error_details = error_state["error_details"]
+            error_type = error_details.get("error_type", "unknown")
+            
+            # Get recovery options with detailed instructions
+            recovery_options = {
+                "fix_validation_errors": {
+                    "title": "Fix Validation Errors",
+                    "description": "Review and correct the validation errors in your application",
+                    "action": "redirect_to_validation",
+                    "url": f"/applications/{application_id}/validate"
+                },
+                "save_draft": {
+                    "title": "Save as Draft",
+                    "description": "Save your current progress and continue later",
+                    "action": "save_draft",
+                    "url": f"/api/applications/workflow/applications/{application_id}/draft"
+                },
+                "retry_operation": {
+                    "title": "Try Again",
+                    "description": "Retry the last operation that failed",
+                    "action": "retry_last_operation",
+                    "url": f"/api/applications/workflow/applications/{application_id}/retry"
+                },
+                "extend_session": {
+                    "title": "Extend Session",
+                    "description": "Get more time to complete your application",
+                    "action": "extend_session",
+                    "url": f"/api/applications/workflow/applications/{application_id}/extend-session"
+                },
+                "contact_support": {
+                    "title": "Contact Support",
+                    "description": "Get help from our support team",
+                    "action": "contact_support",
+                    "url": "/support",
+                    "email": "support@jobfinders.site"
+                }
+            }
+            
+            # Get applicable options for this error type
+            applicable_options = self._get_default_recovery_options(error_type)
+            filtered_options = {k: v for k, v in recovery_options.items() if k in applicable_options}
+            
+            return {
+                "success": True,
+                "error_type": error_type,
+                "error_message": error_details.get("error_message"),
+                "recovery_options": filtered_options,
+                "error_timestamp": error_details.get("timestamp")
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get recovery options: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to get recovery options: {str(e)}"
             }

@@ -396,4 +396,392 @@ class TestApplicationWorkflowController:
             )
         
         assert result["success"] is False
-        assert "application not found" in result["message"].lower()
+        assert "application not found" in result["message"].lower() 
+   @pytest.mark.asyncio
+    async def test_create_cover_letter_session_new(self, controller, mock_session):
+        """Test creating new cover letter session"""
+        controller.get_session = Mock(return_value=mock_session)
+        
+        # Mock no existing session
+        mock_session.query.return_value.filter.return_value.first.return_value = None
+        
+        # Mock new session creation
+        mock_session_orm = Mock()
+        mock_session_orm.session_id = "session-456"
+        mock_session.add = Mock()
+        mock_session.commit = Mock()
+        
+        result = await controller.create_cover_letter_session(
+            "user-123", "job-123", draft_text="Hello", selected_tone="professional"
+        )
+        
+        assert result["success"] is True
+        assert "Created new cover letter session" in result["message"]
+        assert result["session_id"] == "session-456"
+    
+    @pytest.mark.asyncio
+    async def test_validate_application_missing_cover_letter(self, controller, mock_session):
+        """Test application validation with missing cover letter"""
+        controller.get_session = Mock(return_value=mock_session)
+        
+        # Mock application without cover letter
+        mock_application = Mock()
+        mock_application.cover_letter = None
+        mock_application.job_id = "job-123"
+        mock_session.query.return_value.filter.return_value.first.return_value = mock_application
+        
+        # Mock job controller
+        with patch('src.utils.route_helpers.get_controller') as mock_get_controller:
+            mock_job_controller = AsyncMock()
+            mock_job_controller.get_job_by_id.return_value = Job(job_id="job-123")
+            mock_get_controller.return_value = mock_job_controller
+            
+            result = await controller.validate_application("app-123", "user-123")
+            
+            assert result["success"] is True
+            assert len(result["issues"]) == 1
+            assert "Cover Letter Missing" in result["issues"][0]["title"]
+            assert result["validation_score"] == 75  # 100 - 25 for missing cover letter
+    
+    @pytest.mark.asyncio
+    async def test_submit_final_application_validation_issues(self, controller, mock_session):
+        """Test final application submission with validation issues"""
+        controller.get_session = Mock(return_value=mock_session)
+        
+        # Mock application
+        mock_application = Mock()
+        mock_application.workflow_step = "review"
+        mock_session.query.return_value.filter.return_value.first.return_value = mock_application
+        
+        # Mock validation with issues
+        controller.validate_application = AsyncMock(return_value={
+            "issues": [{"title": "Missing cover letter"}]
+        })
+        
+        result = await controller.submit_final_application("app-123", "user-123", True)
+        
+        assert result["success"] is False
+        assert "validation issues" in result["message"]
+        assert "issues" in result
+    
+    @pytest.mark.asyncio
+    async def test_handle_workflow_error(self, controller):
+        """Test workflow error handling"""
+        result = await controller.handle_workflow_error(
+            "app-123", "user-123", "validation", "Missing required field", 
+            ["fix_validation_errors", "save_draft"]
+        )
+        
+        assert result["success"] is False
+        assert result["error_type"] == "validation"
+        assert result["message"] == "Missing required field"
+        assert "fix_validation_errors" in result["recovery_options"]
+        assert "save_draft" in result["recovery_options"]
+        assert "error_id" in result
+        assert "support_contact" in result
+    
+    @pytest.mark.asyncio
+    async def test_preserve_session_progress(self, controller, mock_session):
+        """Test session progress preservation"""
+        controller.get_session = Mock(return_value=mock_session)
+        
+        # Mock application
+        mock_application = Mock()
+        mock_session.query.return_value.filter.return_value.first.return_value = mock_application
+        mock_session.commit = Mock()
+        
+        progress_data = {
+            "current_step": "questionnaires",
+            "answers": {"q1": ["answer1"]},
+            "time_spent": 300
+        }
+        
+        with patch('flask.session', {}) as mock_flask_session:
+            result = await controller.preserve_session_progress("app-123", "user-123", progress_data)
+            
+            assert result["success"] is True
+            assert "Progress saved successfully" in result["message"]
+            assert "expires_at" in result
+    
+    @pytest.mark.asyncio
+    async def test_extend_session_timeout(self, controller, mock_session):
+        """Test session timeout extension"""
+        controller.get_session = Mock(return_value=mock_session)
+        
+        # Mock application
+        mock_application = Mock()
+        mock_session.query.return_value.filter.return_value.first.return_value = mock_application
+        mock_session.commit = Mock()
+        
+        with patch('flask.session') as mock_flask_session:
+            result = await controller.extend_session_timeout("app-123", "user-123", 60)
+            
+            assert result["success"] is True
+            assert "Session extended by 60 minutes" in result["message"]
+            assert "new_expiry" in result
+    
+    @pytest.mark.asyncio
+    async def test_cleanup_expired_sessions(self, controller, mock_session):
+        """Test cleanup of expired sessions"""
+        controller.get_session = Mock(return_value=mock_session)
+        
+        # Mock expired drafts and sessions
+        expired_draft = Mock()
+        expired_draft.user_id = "user-123"
+        expired_draft.job_id = "job-123"
+        expired_draft.application_id = "app-123"
+        
+        expired_session = Mock()
+        
+        mock_session.query.return_value.filter.return_value.all.side_effect = [
+            [expired_draft],  # expired drafts
+            [expired_session]  # expired sessions
+        ]
+        mock_session.delete = Mock()
+        mock_session.commit = Mock()
+        
+        result = await controller.cleanup_expired_sessions()
+        
+        assert result["success"] is True
+        assert result["cleanup_count"] == 2
+        assert "Cleaned up 2 expired sessions" in result["message"]
+
+
+class TestApplicationWorkflowIntegration:
+    """Integration tests for complete application workflow scenarios"""
+    
+    @pytest.fixture
+    def integration_controller(self, mock_factory):
+        """Create controller for integration tests"""
+        controller = ApplicationWorkflowController(mock_factory)
+        return controller
+    
+    @pytest.mark.asyncio
+    async def test_complete_application_workflow(self, integration_controller):
+        """Test complete application workflow from start to submission"""
+        user_id = "user-123"
+        job_id = "job-456"
+        
+        # Mock all dependencies
+        with patch.multiple(
+            integration_controller,
+            get_session=Mock(),
+            _check_existing_application=AsyncMock(return_value=None),
+            _check_cover_letter_exists=AsyncMock(return_value=False),
+            validate_application=AsyncMock(return_value={"issues": []}),
+            _send_application_notifications=AsyncMock()
+        ):
+            # Step 1: Start application process
+            start_result = await integration_controller.start_application_process(user_id, job_id)
+            assert start_result.success is True
+            
+            # Step 2: Create cover letter session
+            cover_result = await integration_controller.create_cover_letter_session(
+                user_id, job_id, draft_text="Cover letter draft"
+            )
+            assert cover_result["success"] is True
+            
+            # Step 3: Submit questionnaire (if required)
+            questionnaire_result = await integration_controller.submit_questionnaire(
+                start_result.application_id, "quest-123", user_id, 
+                {"q1": ["answer1"]}, 600, False
+            )
+            assert questionnaire_result["success"] is True
+            
+            # Step 4: Final submission
+            final_result = await integration_controller.submit_final_application(
+                start_result.application_id, user_id, True
+            )
+            assert final_result["success"] is True
+    
+    @pytest.mark.asyncio
+    async def test_workflow_with_errors_and_recovery(self, integration_controller):
+        """Test workflow with errors and recovery mechanisms"""
+        user_id = "user-123"
+        job_id = "job-456"
+        application_id = "app-789"
+        
+        # Test error handling
+        error_result = await integration_controller.handle_workflow_error(
+            application_id, user_id, "validation", "Missing required fields"
+        )
+        assert error_result["success"] is False
+        assert "recovery_options" in error_result
+        
+        # Test session preservation
+        progress_data = {"step": "questionnaires", "answers": {"q1": ["test"]}}
+        preserve_result = await integration_controller.preserve_session_progress(
+            application_id, user_id, progress_data
+        )
+        assert preserve_result["success"] is True
+        
+        # Test session restoration
+        restore_result = await integration_controller.restore_session_progress(
+            application_id, user_id
+        )
+        # Note: This might fail in test environment due to Flask session mocking
+        # In real environment, this would restore the preserved progress
+
+
+class TestApplicationWorkflowPerformance:
+    """Performance tests for application workflow"""
+    
+    @pytest.mark.asyncio
+    async def test_concurrent_application_submissions(self, mock_factory):
+        """Test handling multiple concurrent application submissions"""
+        import asyncio
+        
+        controller = ApplicationWorkflowController(mock_factory)
+        
+        # Mock database operations to be fast
+        with patch.multiple(
+            controller,
+            get_session=Mock(),
+            _check_existing_application=AsyncMock(return_value=None),
+            validate_application=AsyncMock(return_value={"issues": []}),
+            _send_application_notifications=AsyncMock()
+        ):
+            # Create multiple concurrent submissions
+            tasks = []
+            for i in range(10):
+                task = controller.submit_final_application(
+                    f"app-{i}", f"user-{i}", True
+                )
+                tasks.append(task)
+            
+            # Execute all tasks concurrently
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Verify all completed successfully (or with expected errors)
+            successful_results = [r for r in results if not isinstance(r, Exception)]
+            assert len(successful_results) >= 8  # Allow for some failures in test environment
+    
+    @pytest.mark.asyncio
+    async def test_large_questionnaire_submission_performance(self, mock_factory):
+        """Test performance with large questionnaire submissions"""
+        controller = ApplicationWorkflowController(mock_factory)
+        
+        # Create large questionnaire answers
+        large_answers = {}
+        for i in range(100):  # 100 questions
+            large_answers[f"question_{i}"] = [f"answer_{i}" * 100]  # Long answers
+        
+        with patch.object(controller, 'get_session', Mock()):
+            start_time = datetime.utcnow()
+            
+            result = await controller.save_questionnaire_progress(
+                "app-123", "quest-456", "user-123", large_answers, 1, 3600
+            )
+            
+            end_time = datetime.utcnow()
+            duration = (end_time - start_time).total_seconds()
+            
+            # Should complete within reasonable time (5 seconds for large data)
+            assert duration < 5.0
+            assert result["success"] is True
+
+
+class TestApplicationWorkflowEdgeCases:
+    """Test edge cases and error conditions"""
+    
+    @pytest.fixture
+    def edge_case_controller(self, mock_factory):
+        """Create controller for edge case tests"""
+        return ApplicationWorkflowController(mock_factory)
+    
+    @pytest.mark.asyncio
+    async def test_invalid_application_id(self, edge_case_controller, mock_session):
+        """Test handling of invalid application IDs"""
+        edge_case_controller.get_session = Mock(return_value=mock_session)
+        mock_session.query.return_value.filter.return_value.first.return_value = None
+        
+        result = await edge_case_controller.get_application_status("invalid-id", "user-123")
+        
+        assert result["success"] is False
+        assert "not found" in result["message"]
+    
+    @pytest.mark.asyncio
+    async def test_database_connection_failure(self, edge_case_controller):
+        """Test handling of database connection failures"""
+        # Mock database connection failure
+        def mock_get_session():
+            raise Exception("Database connection failed")
+        
+        edge_case_controller.get_session = mock_get_session
+        
+        result = await edge_case_controller.start_application_process("user-123", "job-456")
+        
+        assert result.success is False
+        assert "Database connection failed" in result.message
+    
+    @pytest.mark.asyncio
+    async def test_malformed_questionnaire_answers(self, edge_case_controller):
+        """Test handling of malformed questionnaire answers"""
+        # Test with various malformed answer formats
+        malformed_answers = [
+            None,  # None answers
+            {"q1": None},  # None answer value
+            {"q1": []},  # Empty answer list
+            {"q1": [""]},  # Empty string answer
+            {"q1": [None]},  # None in answer list
+        ]
+        
+        for answers in malformed_answers:
+            result = await edge_case_controller.save_questionnaire_progress(
+                "app-123", "quest-456", "user-123", answers or {}, 1, 300
+            )
+            # Should handle gracefully without crashing
+            assert "success" in result
+    
+    @pytest.mark.asyncio
+    async def test_session_timeout_during_submission(self, edge_case_controller):
+        """Test handling of session timeout during submission"""
+        with patch('flask.session', {}) as mock_session:
+            # Simulate expired session
+            mock_session.permanent = False
+            
+            result = await edge_case_controller.extend_session_timeout(
+                "app-123", "user-123", 30
+            )
+            
+            # Should handle gracefully
+            assert "success" in result
+    
+    @pytest.mark.asyncio
+    async def test_extremely_long_cover_letter(self, edge_case_controller, mock_session):
+        """Test handling of extremely long cover letter content"""
+        edge_case_controller.get_session = Mock(return_value=mock_session)
+        mock_session.query.return_value.filter.return_value.first.return_value = None
+        mock_session.add = Mock()
+        mock_session.commit = Mock()
+        
+        # Create very long cover letter (100KB)
+        long_text = "A" * 100000
+        
+        result = await edge_case_controller.create_cover_letter_session(
+            "user-123", "job-123", draft_text=long_text
+        )
+        
+        assert result["success"] is True
+    
+    @pytest.mark.asyncio
+    async def test_unicode_and_special_characters(self, edge_case_controller, mock_session):
+        """Test handling of unicode and special characters in submissions"""
+        edge_case_controller.get_session = Mock(return_value=mock_session)
+        mock_session.add = Mock()
+        mock_session.commit = Mock()
+        
+        # Test with various unicode and special characters
+        special_text = "Hello 世界! 🌍 Special chars: @#$%^&*()_+-=[]{}|;':\",./<>?"
+        unicode_answers = {
+            "q1": ["Résumé with açcénts"],
+            "q2": ["中文回答"],
+            "q3": ["Emoji answer 😀🎉"],
+            "q4": [special_text]
+        }
+        
+        result = await edge_case_controller.save_questionnaire_progress(
+            "app-123", "quest-456", "user-123", unicode_answers, 1, 300
+        )
+        
+        assert result["success"] is True

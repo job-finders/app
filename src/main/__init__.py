@@ -19,6 +19,7 @@ def _register_blueprints(app):
     from src.routes.blog_routes import blog_route
     from src.routes.users_routes import users_route
     from src.routes.jobseeker_routes import jobseeker_route, jobseeker_profiles_bp, jobseeker_applications_route
+    from src.routes.jobseeker_routes.application_workflow import application_workflow_bp
     from src.routes.resumes_routes import resume_routes
     from src.routes.cron_routes import cron_route
     from src.routes.ats_routes import ats_tool_route
@@ -33,7 +34,7 @@ def _register_blueprints(app):
     blueprints = [
         auth_route, home_route, jobs_workflow_route, jobs_search_route, jobs_actions_bp, jobs_analytics_bp,
         seo_route, blog_route, users_route, jobseeker_route,
-        jobseeker_profiles_bp, resume_routes, jobseeker_applications_route,
+        jobseeker_profiles_bp, resume_routes, jobseeker_applications_route, application_workflow_bp,
         cron_route, ats_tool_route, company_bp, company_search_routes, company_public_bp, billing_route,
         system_admin_route,
         employee_agents_route, employer_agents_route, employer_route

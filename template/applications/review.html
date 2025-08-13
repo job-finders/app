@@ -1,0 +1,510 @@
+{# ================================ #}
+{# Template: review.html #}
+{# ================================ #}
+
+{% extends "jobseekers/layout/page.html" %}
+{% block title %}Review Application - {{ job.title }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jobs/application_workflow.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/applications/review.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="review-container">
+    <!-- Header Section -->
+    <div class="review-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="job-context">
+                        <h1 class="review-title">Review Your Application</h1>
+                        <div class="job-info">
+                            <h2 class="job-title">{{ job.title }}</h2>
+                            <p class="company-name">{{ job.company_name }}</p>
+                            <div class="job-meta">
+                                <span class="location">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    {{ job.location }}
+                                </span>
+                                {% if job.salary_display %}
+                                <span class="salary">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                    {{ job.salary_display }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <!-- Application Status -->
+                    <div class="status-card">
+                        <div class="status-icon">
+                            <i class="fas fa-eye text-primary"></i>
+                        </div>
+                        <div class="status-content">
+                            <h3 class="status-title">Ready for Review</h3>
+                            <p class="status-description">Please review all sections before submitting</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="progress-section">
+        <div class="container">
+            <div class="progress-wrapper">
+                <div class="progress-info">
+                    <span class="progress-text">Application Progress</span>
+                    <span class="progress-percentage">{{ application.completion_percentage }}%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: {{ application.completion_percentage }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="review-content">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Application Summary -->
+                    <div class="review-section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-clipboard-check text-primary"></i>
+                                Application Summary
+                            </h3>
+                            <div class="section-status">
+                                {% if application.validation_score >= 90 %}
+                                    <span class="badge bg-success">Excellent</span>
+                                {% elif application.validation_score >= 75 %}
+                                    <span class="badge bg-primary">Good</span>
+                                {% elif application.validation_score >= 60 %}
+                                    <span class="badge bg-warning">Fair</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Needs Work</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="summary-grid">
+                                <div class="summary-item">
+                                    <div class="summary-label">Application ID</div>
+                                    <div class="summary-value">{{ application.application_id[:8] }}...</div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="summary-label">Started</div>
+                                    <div class="summary-value">{{ application.workflow_started_at.strftime('%B %d, %Y at %I:%M %p') if application.workflow_started_at else 'N/A' }}</div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="summary-label">Time Spent</div>
+                                    <div class="summary-value">{{ application.workflow_duration_minutes or 0 }} minutes</div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="summary-label">Quality Score</div>
+                                    <div class="summary-value">{{ application.validation_score or 0 }}/100</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cover Letter Section -->
+                    <div class="review-section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-file-text text-success"></i>
+                                Cover Letter
+                            </h3>
+                            <div class="section-actions">
+                                {% if application.cover_letter %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Complete
+                                    </span>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="edit-cover-letter">
+                                        <i class="fas fa-edit me-1"></i>Edit
+                                    </button>
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Missing
+                                    </span>
+                                    <button type="button" class="btn btn-primary btn-sm" id="add-cover-letter">
+                                        <i class="fas fa-plus me-1"></i>Add Cover Letter
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            {% if application.cover_letter %}
+                                <div class="cover-letter-preview">
+                                    <div class="cover-letter-content">
+                                        {{ application.cover_letter|safe_html|nl2br }}
+                                    </div>
+                                    <div class="cover-letter-stats">
+                                        <div class="stat-item">
+                                            <span class="stat-value">{{ application.cover_letter.split()|length }}</span>
+                                            <span class="stat-label">Words</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-value">{{ application.cover_letter|length }}</span>
+                                            <span class="stat-label">Characters</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="missing-content">
+                                    <div class="missing-icon">
+                                        <i class="fas fa-file-text"></i>
+                                    </div>
+                                    <div class="missing-text">
+                                        <h4>Cover Letter Not Added</h4>
+                                        <p>A personalized cover letter can significantly improve your application. Consider adding one to stand out.</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Questionnaire Section -->
+                    {% if questionnaire_submission %}
+                    <div class="review-section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-clipboard-list text-info"></i>
+                                Questionnaire Responses
+                            </h3>
+                            <div class="section-actions">
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i>Complete
+                                </span>
+                                <small class="text-muted ms-2">
+                                    Completed in {{ questionnaire_submission.completion_time_minutes }} minutes
+                                </small>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="questionnaire-summary">
+                                <div class="questionnaire-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-value">{{ questionnaire_submission.answer_count }}</span>
+                                        <span class="stat-label">Questions Answered</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-value">{{ questionnaire_submission.completion_time_minutes }}</span>
+                                        <span class="stat-label">Minutes</span>
+                                    </div>
+                                </div>
+                                <div class="questionnaire-answers">
+                                    {% for answer in questionnaire_submission.answers %}
+                                    <div class="answer-item">
+                                        <div class="question-text">{{ answer.question.question_text }}</div>
+                                        <div class="answer-text">{{ answer.answer_text }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Match Analysis Section -->
+                    {% if match_analysis %}
+                    <div class="review-section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-chart-line text-warning"></i>
+                                Job Match Analysis
+                            </h3>
+                            <div class="section-actions">
+                                <span class="badge bg-info">
+                                    Score: {{ match_analysis.overall_score }}/100
+                                </span>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="match-analysis-summary">
+                                <div class="match-score-display">
+                                    <div class="score-circle">
+                                        <div class="score-value">{{ match_analysis.overall_score }}</div>
+                                        <div class="score-label">Match Score</div>
+                                    </div>
+                                </div>
+                                <div class="match-insights">
+                                    <h5>Key Insights</h5>
+                                    <ul class="insights-list">
+                                        {% for insight in match_analysis.insights[:3] %}
+                                        <li>{{ insight }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Validation Issues -->
+                    {% if validation_issues %}
+                    <div class="review-section validation-issues">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                                Issues to Address
+                            </h3>
+                            <div class="section-actions">
+                                <span class="badge bg-danger">{{ validation_issues|length }} Issues</span>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="issues-list">
+                                {% for issue in validation_issues %}
+                                <div class="issue-item">
+                                    <div class="issue-icon">
+                                        <i class="fas fa-exclamation-circle text-danger"></i>
+                                    </div>
+                                    <div class="issue-content">
+                                        <div class="issue-title">{{ issue.title }}</div>
+                                        <div class="issue-description">{{ issue.description }}</div>
+                                        {% if issue.action_url %}
+                                        <a href="{{ issue.action_url }}" class="btn btn-outline-primary btn-sm mt-2">
+                                            <i class="fas fa-edit me-1"></i>{{ issue.action_text or 'Fix Issue' }}
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Application Actions -->
+                    <div class="actions-card">
+                        <div class="card-header">
+                            <h4 class="card-title">
+                                <i class="fas fa-rocket me-2"></i>
+                                Ready to Submit?
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            {% if validation_issues %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>{{ validation_issues|length }} issue(s) found</strong>
+                                    <p class="mb-0 mt-1">Please address the issues above before submitting your application.</p>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-outline-primary" disabled>
+                                        <i class="fas fa-paper-plane me-2"></i>Submit Application
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="save-draft">
+                                        <i class="fas fa-save me-2"></i>Save as Draft
+                                    </button>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <strong>Application Ready!</strong>
+                                    <p class="mb-0 mt-1">Your application looks great and is ready for submission.</p>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-success btn-lg" id="submit-application">
+                                        <i class="fas fa-paper-plane me-2"></i>Submit Application
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="save-draft">
+                                        <i class="fas fa-save me-2"></i>Save as Draft
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Application Checklist -->
+                    <div class="checklist-card">
+                        <div class="card-header">
+                            <h4 class="card-title">
+                                <i class="fas fa-tasks me-2"></i>
+                                Application Checklist
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="checklist">
+                                <div class="checklist-item {{ 'completed' if application.cover_letter else 'pending' }}">
+                                    <div class="checklist-icon">
+                                        {% if application.cover_letter %}
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        {% else %}
+                                            <i class="far fa-circle text-muted"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="checklist-content">
+                                        <div class="checklist-title">Cover Letter</div>
+                                        <div class="checklist-description">
+                                            {% if application.cover_letter %}
+                                                Personalized cover letter added
+                                            {% else %}
+                                                Add a cover letter to improve your chances
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {% if job.required_questionnaire %}
+                                <div class="checklist-item {{ 'completed' if questionnaire_submission else 'pending' }}">
+                                    <div class="checklist-icon">
+                                        {% if questionnaire_submission %}
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        {% else %}
+                                            <i class="far fa-circle text-muted"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="checklist-content">
+                                        <div class="checklist-title">Questionnaire</div>
+                                        <div class="checklist-description">
+                                            {% if questionnaire_submission %}
+                                                All questions answered
+                                            {% else %}
+                                                Complete required questionnaire
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <div class="checklist-item {{ 'completed' if match_analysis else 'pending' }}">
+                                    <div class="checklist-icon">
+                                        {% if match_analysis %}
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        {% else %}
+                                            <i class="far fa-circle text-muted"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="checklist-content">
+                                        <div class="checklist-title">Match Analysis</div>
+                                        <div class="checklist-description">
+                                            {% if match_analysis %}
+                                                Job match analysis completed
+                                            {% else %}
+                                                Run job match analysis
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="checklist-item completed">
+                                    <div class="checklist-icon">
+                                        <i class="fas fa-check-circle text-success"></i>
+                                    </div>
+                                    <div class="checklist-content">
+                                        <div class="checklist-title">CV Attached</div>
+                                        <div class="checklist-description">Your CV is attached to this application</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tips Card -->
+                    <div class="tips-card">
+                        <div class="card-header">
+                            <h4 class="card-title">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                Application Tips
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="tips-list">
+                                <div class="tip-item">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <span>Applications with cover letters are 3x more likely to get responses</span>
+                                </div>
+                                <div class="tip-item">
+                                    <i class="fas fa-clock text-info"></i>
+                                    <span>Most employers review applications within 48 hours</span>
+                                </div>
+                                <div class="tip-item">
+                                    <i class="fas fa-chart-line text-success"></i>
+                                    <span>Higher match scores increase interview chances by 40%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submission Confirmation Modal -->
+<div class="modal fade" id="submissionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    Submit Application
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div class="submission-icon">
+                        <i class="fas fa-rocket text-success"></i>
+                    </div>
+                </div>
+                <h4 class="text-center mb-3">Ready to Submit?</h4>
+                <p class="text-center text-muted mb-4">
+                    Once submitted, you won't be able to make changes to this application. 
+                    Make sure everything looks perfect!
+                </p>
+                <div class="final-checklist">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="confirm-accuracy">
+                        <label class="form-check-label" for="confirm-accuracy">
+                            I confirm that all information provided is accurate and complete
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="confirm-terms">
+                        <label class="form-check-label" for="confirm-terms">
+                            I agree to the terms and conditions of this application
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-arrow-left me-2"></i>Go Back
+                </button>
+                <button type="button" class="btn btn-success" id="final-submit" disabled>
+                    <i class="fas fa-paper-plane me-2"></i>Submit Application
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/applications/review.js') }}"></script>
+    <script>
+        // Pass application data to JavaScript
+        window.applicationData = {
+            application_id: '{{ application.application_id }}',
+            job_id: '{{ job.job_id }}',
+            has_cover_letter: {{ 'true' if application.cover_letter else 'false' }},
+            has_questionnaire: {{ 'true' if questionnaire_submission else 'false' }},
+            validation_score: {{ application.validation_score or 0 }},
+            validation_issues: {{ validation_issues|length if validation_issues else 0 }}
+        };
+    </script>
+{% endblock %}
