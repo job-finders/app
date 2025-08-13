@@ -713,7 +713,6 @@ class JobsSearchController(Controllers):
             return [Job(**job_orm.to_dict()) for job_orm in jobs_orm_list
                     if job_orm and job_orm.is_active] if jobs_orm_list else []
 
-    @error_handler
     async def get_saved_jobs_for_user(self, user_id: str) -> list[Job]:
         """Get jobs saved by a user with saving metadata"""
         if not (isinstance(user_id, str) and user_id.strip()):
@@ -734,7 +733,6 @@ class JobsSearchController(Controllers):
                 for saved_job in saved_jobs_orm_list
                 if saved_job.job ] if saved_jobs_orm_list else []
 
-    @error_handler
     async def get_applied_jobs_for_user(self, user_id: str, page: int = 1, page_size: int = 20) -> tuple[
         list[JobApplication], int]:
         """Get job applications with full job details for a user with pagination

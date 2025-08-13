@@ -9,7 +9,9 @@ def boot():
         # PaymentMethodORM.delete_table()
         # BillingEventORM.delete_table()
         # CompanyBillingProfileORM.delete_table()
-
+        JobReferralORM.delete_table()
+        ApplicationStepORM.delete_table()
+        JobApplicationORM.delete_table()
         # Create all tables from scratch
         print("Creating new database schema...")
         Base.metadata.create_all(bind=engine)

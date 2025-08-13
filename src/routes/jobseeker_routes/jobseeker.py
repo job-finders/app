@@ -32,39 +32,56 @@ async def optimize_cv(user: User):
 @jobseeker_route.route('/dashboard', methods=['GET'])
 @flask_error_handler
 @jobseeker_login
+# Fix 2: User Profile - Add null check before accessing attributes
 async def dashboard(user: User):
-    """
-    Dashboard route with dynamic statistics from database
-    :param user:
-    :return:
-    """
-    # Get controllers
-    resume_controller = get_controller('resume')
-    jobs_search_controller = get_controller('jobs_search')
-    
-    # Get user CVs for backward compatibility
-    user_cvs = await resume_controller.list_cvs_for_user(user_uid=user.uid)
-    
-    # Get dynamic dashboard statistics
-    dashboard_stats = await jobs_search_controller.get_user_dashboard_statistics(user.uid)
-    
-    # Get saved jobs for display (limit to recent ones)
-    saved_jobs = await jobs_search_controller.get_saved_jobs_for_user(user.uid)
-    recent_saved_jobs = saved_jobs[:5] if saved_jobs else []  # Show only 5 most recent
-    
-    # Prepare seeker stats with dynamic data
-    seeker_stats = {
-        'count': len(user_cvs),  # Keep for backward compatibility
-        'cv_uploaded': dashboard_stats.get('cv_uploaded', False),
-        'cv_count': dashboard_stats.get('cv_count', 0),
-        'applications_count': dashboard_stats.get('applications_count', 0),
-        'saved_jobs_count': dashboard_stats.get('saved_jobs_count', 0),
-        'recent_applications_count': dashboard_stats.get('recent_applications_count', 0),
-        'saved_jobs': recent_saved_jobs
-    }
-    
-    context = dict(current_user=user, seeker_stats=seeker_stats)
-    return render_template("jobseekers/dashboard.html", **context)
+    """Dashboard route with dynamic statistics from database"""
+    logger = get_service("logger")()("JOB SEEKER ROUTER LOGGER")
+    try:
+        # Validate user object
+        if not user or not hasattr(user, 'uid'):
+            logger.error("Invalid user object")
+            return redirect(url_for('auth.login'))
+
+        # Get controllers
+        resume_controller = get_controller('resume')
+        jobs_search_controller = get_controller('jobs_search')
+
+        # Get user CVs
+        user_cvs = await resume_controller.list_cvs_for_user(user_uid=user.uid)
+
+        # Get dashboard statistics with error handling
+        try:
+            dashboard_stats = await jobs_search_controller.get_user_dashboard_statistics(user.uid)
+        except Exception as e:
+            logger.error(f"Error fetching dashboard stats: {str(e)}")
+            dashboard_stats = {}
+
+        # Get saved jobs with error handling
+        try:
+            saved_jobs = await jobs_search_controller.get_saved_jobs_for_user(user.uid)
+            recent_saved_jobs = saved_jobs[:5] if saved_jobs else []
+        except Exception as e:
+            logger.error(f"Error fetching saved jobs: {str(e)}")
+            recent_saved_jobs = []
+
+        # Safe access to user attributes
+        seeker_stats = {
+            'count': len(user_cvs) if user_cvs else 0,
+            'cv_uploaded': dashboard_stats.get('cv_uploaded', False) if dashboard_stats else False,
+            'cv_count': dashboard_stats.get('cv_count', 0) if dashboard_stats else 0,
+            'applications_count': dashboard_stats.get('applications_count', 0) if dashboard_stats else 0,
+            'saved_jobs_count': dashboard_stats.get('saved_jobs_count', 0) if dashboard_stats else 0,
+            'recent_applications_count': dashboard_stats.get('recent_applications_count', 0) if dashboard_stats else 0,
+            'saved_jobs': recent_saved_jobs
+        }
+
+        context = dict(current_user=user, seeker_stats=seeker_stats)
+        return render_template("jobseekers/dashboard.html", **context)
+
+    except Exception as e:
+        logger.error(f"Dashboard error: {str(e)}")
+        return redirect(url_for('auth.login'))
+
 
 @jobseeker_route.route('/apply', methods=['GET'])
 @flask_error_handler

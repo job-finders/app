@@ -26,6 +26,156 @@ from src.cache.cache_redis import cached
 jobs_search_route = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 
+class JobSearchContext(TypedDict):
+    current_user: User
+    jobs: List[Job]
+    page: int
+    per_page: int
+    total_pages: int
+    total_jobs: int
+    filters: dict
+
+
+class FakeDataHandler:
+    @staticmethod
+    def get_job(job_id: str) -> Optional[Job]:
+        return store.jobs.get(job_id)
+
+    @staticmethod
+    def get_related_jobs(job_id: str, count: int = 4) -> List[Job]:
+        return list(store.jobs.values())[:count]
+
+    @staticmethod
+    def get_user_resumes(user_id: str, count: int = 2) -> List[JobSeekerCV]:
+        return list(store.resumes.values())[:count]
+
+    @staticmethod
+    def check_application_status(user_id: str, job_id: str) -> bool:
+        return random.choice([True, False])
+
+
+MIN_PAGE = 1
+MAX_PAGE_SIZE = 100
+DEFAULT_PAGE = 1
+DEFAULT_PAGE_SIZE = 25
+
+
+async def parse_pagination_params(
+        default_page: int = DEFAULT_PAGE,
+        default_size: int = DEFAULT_PAGE_SIZE,
+        max_size: int = MAX_PAGE_SIZE
+) -> Tuple[int, int]:
+    """Flexible version with customizable defaults"""
+    try:
+        page = request.args.get('page', default=default_page, type=int)
+
+    except (TypeError, ValueError):
+        page = default_page
+
+    try:
+        page_size = request.args.get('page_size', default=default_size, type=int)
+
+    except (TypeError, ValueError):
+        page_size = default_size
+
+    page = max(page, MIN_PAGE)
+    page_size = max(min(page_size, max_size), 1)
+
+    return page, page_size
+
+
+def get_fake_jobs(keyword: str = None) -> list[Job]:
+    """Get jobs from fake data store, optionally filtered by keyword"""
+    if not store.is_fake_mode():
+        return []
+
+    if keyword:
+        keyword = keyword.lower()
+        return [
+            job for job in store.jobs.values()
+            if keyword in job.title.lower() or
+               (job.description and keyword in job.description.lower())
+        ]
+    return list(store.jobs.values())
+
+
+# Fix 3: User profile fetching method - add null checks
+async def get_user_profile(self, user_id: str):
+    """Get user profile with null checking"""
+    try:
+        with self.get_session() as session:
+            user = session.query(UserORM).filter(UserORM.uid == user_id).first()
+
+            if not user:
+                self.logger.warning(f"No user found with ID: {user_id}")
+                return None
+
+            # Safe attribute access
+            profile_data = {
+                'uid': user.uid,
+                'first_name': getattr(user, 'first_name', ''),
+                'last_name': getattr(user, 'last_name', ''),
+                'email': getattr(user, 'email', ''),
+                # Add other fields as needed
+            }
+
+            return profile_data
+
+    except Exception as e:
+        self.logger.error(f"Error fetching user profile {user_id}: {str(e)}")
+        return None
+
+
+async def calculate_batch_match_scores(jobs: List[Job], user: User, job_search_controller: JobsSearchController) -> \
+List[Job]:
+    """
+    Calculate quick match scores for a batch of jobs with optimized performance and caching.
+    
+    Args:
+        jobs: List of jobs to score
+        user: Current user
+        job_search_controller: Controller instance for scoring
+        
+    Returns:
+        List of jobs with match_score attribute added
+    """
+    from src.services.optimized_match_scoring import optimizer
+
+    logger = get_service('logger')()("Batch Match Scores :")
+
+    if not user or not user.uid or not jobs:
+        # Return jobs without match scores if no user or no jobs
+        for job in jobs:
+            job.match_score = None
+        logger.info(f"We could not calculate scores Jobs : {len(jobs)},  User : {user}")
+        return jobs
+
+    try:
+        # Get user profile with caching
+        user_profile = await get_user_profile_for_matching(user_id=user.uid)
+        logger.info(f"What we Found : {user_profile}")
+        if not user_profile:
+            # User has no profile - return jobs without match scores
+            for job in jobs:
+                job.match_score = None
+            logger.info("We could not calculate scores because we failed to locate user profiles")
+            return jobs
+
+        # Use optimized batch scoring service
+
+        logger.info("We are now loading Optimized Job Match Scores")
+        return await optimizer.optimize_job_listing_scores(user.uid, jobs, user_profile)
+
+    except Exception as e:
+        logger.error(f"Error in batch match scoring: {e}")
+        # Fallback: set all match scores to None
+        for job in jobs:
+            job.match_score = None
+
+    return jobs
+
+
+
 @jobs_search_route.route('/job-match-analysis/<string:job_id>', methods=['GET'])
 @user_details
 async def get_job_match_analysis(user: User, job_id: str):
@@ -244,144 +394,6 @@ async def get_job_match_analysis_by_slug(user: User, job_slug: str):
         }), 500
 
 
-class FakeDataHandler:
-    @staticmethod
-    def get_job(job_id: str) -> Optional[Job]:
-        return store.jobs.get(job_id)
-
-    @staticmethod
-    def get_related_jobs(job_id: str, count: int = 4) -> List[Job]:
-        return list(store.jobs.values())[:count]
-
-    @staticmethod
-    def get_user_resumes(user_id: str, count: int = 2) -> List[JobSeekerCV]:
-        return list(store.resumes.values())[:count]
-
-    @staticmethod
-    def check_application_status(user_id: str, job_id: str) -> bool:
-        return random.choice([True, False])
-
-
-MIN_PAGE = 1
-MAX_PAGE_SIZE = 100
-DEFAULT_PAGE = 1
-DEFAULT_PAGE_SIZE = 25
-
-async def parse_pagination_params(
-    default_page: int = DEFAULT_PAGE,
-    default_size: int = DEFAULT_PAGE_SIZE,
-    max_size: int = MAX_PAGE_SIZE
-) -> Tuple[int, int]:
-    """Flexible version with customizable defaults"""
-    try:
-        page = request.args.get('page', default=default_page, type=int)
-        
-    except (TypeError, ValueError):
-        page = default_page
-    
-    try:
-        page_size = request.args.get('page_size', default=default_size, type=int)
-        
-    except (TypeError, ValueError):
-        page_size = default_size
-
-    page = max(page, MIN_PAGE)
-    page_size = max(min(page_size, max_size), 1)
-    
-    return page, page_size
-
-
-def get_fake_jobs(keyword: str = None) -> list[Job]:
-    """Get jobs from fake data store, optionally filtered by keyword"""
-    if not store.is_fake_mode():
-        return []
-        
-    if keyword:
-        keyword = keyword.lower()
-        return [
-            job for job in store.jobs.values()
-            if keyword in job.title.lower() or
-               (job.description and keyword in job.description.lower())
-        ]
-    return list(store.jobs.values())
-
-
-# @cached(ttl=30 * 60)  # 30-minute cache TTL
-async def get_user_profile_for_matching(user_id: str) -> Optional[JobSeekerProfile]:
-    """Get user profile for match scoring with caching"""
-    logger = get_service("logger")()("GET Profile for Job Matching")
-    if not user_id:
-        return None
-    
-    try:
-        logger.info(f"Will Now try to obtain Profile for Job Matching")
-        profile_controller = get_controller('job_seeker_profile')
-        job_seeker_profile = await profile_controller.get_complete_profile_by_uid(user_uid=user_id)
-        logger.info(f"We found the Seeker Profile : {job_seeker_profile.first_name}")
-        return job_seeker_profile
-    except Exception as e:
-        print(f"Error fetching user profile for matching: {e}")
-        return None
-
-
-async def calculate_batch_match_scores(jobs: List[Job], user: User, job_search_controller: JobsSearchController) -> List[Job]:
-    """
-    Calculate quick match scores for a batch of jobs with optimized performance and caching.
-    
-    Args:
-        jobs: List of jobs to score
-        user: Current user
-        job_search_controller: Controller instance for scoring
-        
-    Returns:
-        List of jobs with match_score attribute added
-    """
-    from src.services.optimized_match_scoring import optimizer
-
-    logger = get_service('logger')()("Batch Match Scores :")
-
-    if not user or not user.uid or not jobs:
-        # Return jobs without match scores if no user or no jobs
-        for job in jobs:         
-            job.match_score = None
-        logger.info(f"We could not calculate scores Jobs : {len(jobs)},  User : {user}")
-        return jobs
-    
-    try:
-        # Get user profile with caching
-        user_profile = await get_user_profile_for_matching(user_id=user.uid)
-        logger.info(f"What we Found : {user_profile}")
-        if not user_profile:
-            # User has no profile - return jobs without match scores
-            for job in jobs:
-                job.match_score = None
-            logger.info("We could not calculate scores because we failed to locate user profiles")
-            return jobs
-        
-        # Use optimized batch scoring service
-
-        logger.info("We are now loading Optimized Job Match Scores")
-        return await optimizer.optimize_job_listing_scores(user.uid, jobs, user_profile)
-                
-    except Exception as e:
-        logger.error(f"Error in batch match scoring: {e}")
-        # Fallback: set all match scores to None
-        for job in jobs:
-            job.match_score = None
-    
-    return jobs
-
-class JobSearchContext(TypedDict):
-    current_user: User
-    jobs: List[Job]
-    page: int
-    per_page: int
-    total_pages: int
-    total_jobs: int
-    filters: dict
-
-
-
 # noinspection DuplicatedCode
 @jobs_search_route.get('/browse-jobs')
 @flask_error_handler
@@ -413,6 +425,8 @@ async def list_jobs(user: User):
 
     if not jobs and store.is_fake_mode():
         jobs = get_fake_jobs()
+        # Update total_jobs to match the fake jobs count
+        search_result['total_jobs'] = len(jobs)
 
     # Calculate match scores for jobs if user is logged in and has profile
     jobs_with_scores = await calculate_batch_match_scores(jobs, user, job_search_controller)
@@ -648,6 +662,7 @@ async def job_details(user: User, job_id: str):
                 user_has_applied = any(app.job_id == job_id for app in user_applications)
             except Exception:
                 # If there's an error checking application status, default to False
+                self.logger.info('THERE WAS NO USER APPLICATION FOUND')
                 user_has_applied = False
 
     context = {

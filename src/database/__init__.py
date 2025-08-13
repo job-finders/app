@@ -42,7 +42,7 @@ from .sql.blog_learning import (
     PromptMutationLogORM
 )
 
-
+from .sql.referral_tracking import JobReferralORM
 __all__ = [
     "ConfigurationORM",
     "CompanyORM", "CompanyFollowingORM", "CompanyCIPCORM", "CompanyVerificationDocumentORM", "DirectorDetailsORM",
@@ -60,5 +60,6 @@ __all__ = [
     "NotificationsORM",
     "ApplicationStepORM", "JobViewActivityORM", "ArchivedActivityORM", "UserSearchActivityORM",
     "AgentSessionORM",
-    "BlogTopicORM", "BlogPromptORM", "ArticleORM", "ScheduledPostORM", "PerformanceORM", "PromptMutationLogORM"
+    "BlogTopicORM", "BlogPromptORM", "ArticleORM", "ScheduledPostORM", "PerformanceORM", "PromptMutationLogORM",
+    "JobReferralORM"
 ]

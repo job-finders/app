@@ -18,8 +18,8 @@ from src.database.models import Configuration, JobSeekerProfile
 from src.database.models.referral_tracking import ReferralStatus
 
 # SQL Models (ORMs)
-from src.database import ConfigurationORM, JobSeekerProfileORM, SavedJobORM
-from src.database.models.referral_tracking import JobReferralORM
+from src.database import ConfigurationORM, JobSeekerProfileORM, SavedJobORM, JobReferralORM
+
 
 # Utilities
 from src.utils import save_file_to_storage

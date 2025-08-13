@@ -6,7 +6,6 @@ questionnaire system including questionnaires, questions, submissions, and cover
 """
 
 from sqlalchemy import text
-from src.database import get_session
 from src.logger import init_logger
 
 logger = init_logger(__name__)
@@ -113,8 +112,8 @@ def create_questionnaire_tables():
         ("questionnaire_submissions", create_questionnaire_submissions_table),
         ("questionnaire_answers", create_questionnaire_answers_table)
     ]
-    
-    with get_session() as session:
+
+    with Session() as session:
         try:
             for table_name, create_sql in tables:
                 logger.info(f"Creating table: {table_name}")

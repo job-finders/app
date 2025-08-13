@@ -1210,10 +1210,9 @@ class JobActionsController(Controllers):
         try:
             # Input validation
             if not user_id or not user_id.strip():
-                return JobListResult.error_result(
-                    message="Invalid user ID parameter",
-                    error_code=JobActionErrorCode.VALIDATION_ERROR
-                )
+                return JobListResult.error_result(message="Invalid user ID parameter",
+                                                  error_code=JobActionErrorCode.VALIDATION_ERROR)
+
             self.logger.info(f"Get User Saved Jobs : {user_id}")
             # Validate pagination parameters
             limit = max(1, min(limit, 100))  # Ensure reasonable limits (1-100)
