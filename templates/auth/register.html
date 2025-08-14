@@ -1,0 +1,610 @@
+{% extends "layout/auth.html" %}
+
+{% block title %}Register - Find Jobs in South Africa | JobFinders.site{% endblock %}
+
+{% block meta %}
+    {{ super() }}
+    <meta name="description" content="Create your free JobFinders.site account and apply to thousands of job listings across South Africa.">
+    <meta property="og:title" content="Register - JobFinders.site" />
+    <meta property="og:description" content="Create your JobFinders account to access job listings by category and location." />
+    <meta property="og:url" content="{{ url_for('auth.subscribe', _external=True) }}" />
+    <meta property="og:image" content="https://jobfinders.site/static/images/jobfinder.jpg" />
+    <meta name="robots" content="index, follow">
+{% endblock %}
+
+{% block content %}
+<div class="auth-title">Create Your Account</div>
+<div class="auth-subtitle">Register to explore thousands of job listings across South Africa.</div>
+
+<form action="{{ url_for('auth.subscribe') }}" method="POST" enctype="multipart/form-data" data-validate="true" novalidate>
+    <!-- CSRF Token -->
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    
+    <!-- Email Field -->
+    <div class="form-group">
+        <label for="email" class="form-label">
+            <i class="fas fa-envelope me-2"></i>Email Address
+        </label>
+        <input type="email" 
+               class="form-control" 
+               id="email" 
+               name="email"
+               placeholder="you@example.com" 
+               required 
+               autocomplete="email"
+               value="{{ request.form.get('email', '') }}"
+               aria-describedby="emailHelp">
+        <div id="emailHelp" class="form-text">We'll use this to send you job alerts and account updates.</div>
+    </div>
+
+    <!-- Password Field -->
+    <div class="form-group">
+        <label for="password" class="form-label">
+            <i class="fas fa-lock me-2"></i>Password
+        </label>
+        <div class="position-relative">
+            <input type="password" 
+                   class="form-control" 
+                   id="password" 
+                   name="password"
+                   placeholder="Create a strong password" 
+                   required 
+                   autocomplete="new-password"
+                   aria-describedby="passwordHelp">
+            <button type="button" 
+                    class="password-toggle position-absolute top-50 end-0 translate-middle-y me-3 border-0 bg-transparent" 
+                    onclick="togglePassword('password')"
+                    aria-label="Toggle password visibility">
+                <i class="fas fa-eye text-muted"></i>
+            </button>
+        </div>
+        <div id="passwordHelp" class="form-text">Must be at least 8 characters with uppercase, lowercase, and number.</div>
+        <div class="password-strength mt-2" id="passwordStrength"></div>
+    </div>
+
+    <!-- Confirm Password Field -->
+    <div class="form-group">
+        <label for="confirmPassword" class="form-label">
+            <i class="fas fa-lock me-2"></i>Confirm Password
+        </label>
+        <div class="position-relative">
+            <input type="password" 
+                   class="form-control" 
+                   id="confirmPassword" 
+                   name="confirmPassword"
+                   placeholder="Confirm your password" 
+                   required 
+                   autocomplete="new-password"
+                   aria-describedby="confirmPasswordHelp">
+            <button type="button" 
+                    class="password-toggle position-absolute top-50 end-0 translate-middle-y me-3 border-0 bg-transparent" 
+                    onclick="togglePassword('confirmPassword')"
+                    aria-label="Toggle password visibility">
+                <i class="fas fa-eye text-muted"></i>
+            </button>
+        </div>
+        <div id="confirmPasswordHelp" class="form-text">Re-enter your password to confirm.</div>
+    </div>
+
+    <!-- Role Selection -->
+    <div class="form-group">
+        <label for="role" class="form-label">
+            <i class="fas fa-user-tag me-2"></i>I am a
+        </label>
+        <select id="role" name="role" class="form-select" required aria-describedby="roleHelp">
+            <option value="">Choose your role</option>
+            <option value="jobseeker" {{ 'selected' if request.form.get('role') == 'jobseeker' }}>
+                Job Seeker - Looking for opportunities
+            </option>
+            <option value="employer" {{ 'selected' if request.form.get('role') == 'employer' }}>
+                Employer - Hiring talent
+            </option>
+        </select>
+        <div id="roleHelp" class="form-text">This helps us customize your experience.</div>
+    </div>
+
+    <!-- Role-specific additional fields -->
+    <div id="jobseekerFields" class="role-fields" style="display: none;">
+        <div class="form-group">
+            <label for="experience" class="form-label">
+                <i class="fas fa-briefcase me-2"></i>Years of Experience
+            </label>
+            <select id="experience" name="experience" class="form-select">
+                <option value="">Select experience level</option>
+                <option value="0-1">0-1 years (Entry Level)</option>
+                <option value="2-5">2-5 years (Mid Level)</option>
+                <option value="6-10">6-10 years (Senior Level)</option>
+                <option value="10+">10+ years (Executive Level)</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="employerFields" class="role-fields" style="display: none;">
+        <div class="form-group">
+            <label for="companyName" class="form-label">
+                <i class="fas fa-building me-2"></i>Company Name
+            </label>
+            <input type="text" 
+                   class="form-control" 
+                   id="companyName" 
+                   name="companyName"
+                   placeholder="Your company name"
+                   value="{{ request.form.get('companyName', '') }}">
+        </div>
+    </div>
+
+    <!-- Terms and Conditions -->
+    <div class="form-check mb-3">
+        <input type="checkbox" 
+               class="form-check-input" 
+               id="terms" 
+               name="terms" 
+               required
+               {{ 'checked' if request.form.get('terms') }}>
+        <label class="form-check-label" for="terms">
+            I agree to the <a href="{{ url_for('home.terms') }}" target="_blank" class="text-decoration-none">Terms of Service</a> 
+            and <a href="{{ url_for('home.privacy') }}" target="_blank" class="text-decoration-none">Privacy Policy</a>
+        </label>
+    </div>
+
+    <!-- Marketing Consent -->
+    <div class="form-check mb-4">
+        <input type="checkbox" 
+               class="form-check-input" 
+               id="marketing" 
+               name="marketing"
+               {{ 'checked' if request.form.get('marketing') }}>
+        <label class="form-check-label" for="marketing">
+            I'd like to receive job alerts and career tips via email
+        </label>
+    </div>
+
+    <!-- Register Button -->
+    <button type="submit" class="btn btn-primary-custom" id="registerBtn">
+        <i class="fas fa-user-plus me-2"></i>Create Account
+    </button>
+
+    <!-- Social Registration Section -->
+    <div class="divider">
+        <span>or sign up with</span>
+    </div>
+
+    <div class="social-login">
+        <!-- Google Registration -->
+        <button type="button" class="btn btn-social" onclick="registerWithGoogle()">
+            <i class="fab fa-google text-danger"></i>
+            Sign up with Google
+        </button>
+        
+        <!-- LinkedIn Registration -->
+        <button type="button" class="btn btn-social" onclick="registerWithLinkedIn()">
+            <i class="fab fa-linkedin text-primary"></i>
+            Sign up with LinkedIn
+        </button>
+    </div>
+
+    <!-- Login Link -->
+    <div class="auth-links">
+        <p class="mb-0">Already have an account?
+            <a href="{{ url_for('auth.login') }}" class="fw-bold">
+                <i class="fas fa-sign-in-alt me-1"></i>Log in
+            </a>
+        </p>
+    </div>
+</form>
+
+<!-- Additional Help -->
+<div class="mt-4 text-center">
+    <small class="text-muted">
+        Need help? <a href="/contact" class="text-decoration-none">Contact Support</a> |
+        <a href="/help" class="text-decoration-none">Help Center</a>
+    </small>
+</div>
+{% endblock %}
+
+{% block style %}
+    {{ super() }}
+    <style>
+        /* Password Strength Indicator */
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            background-color: var(--gray-200);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .password-strength::before {
+            content: '';
+            display: block;
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .password-strength.very-weak::before {
+            width: 20%;
+            background-color: #ef4444;
+        }
+
+        .password-strength.weak::before {
+            width: 40%;
+            background-color: #f97316;
+        }
+
+        .password-strength.fair::before {
+            width: 60%;
+            background-color: #eab308;
+        }
+
+        .password-strength.good::before {
+            width: 80%;
+            background-color: #22c55e;
+        }
+
+        .password-strength.strong::before {
+            width: 100%;
+            background-color: #16a34a;
+        }
+
+        /* Role-specific fields animation */
+        .role-fields {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .role-fields.show {
+            display: block !important;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                max-height: 200px;
+                transform: translateY(0);
+            }
+        }
+
+        /* Enhanced form validation styles */
+        .form-control.password-match {
+            border-color: var(--success-color);
+            background-color: #f0fdf4;
+        }
+
+        .form-control.password-mismatch {
+            border-color: var(--danger-color);
+            background-color: #fef2f2;
+        }
+
+        /* Terms and conditions styling */
+        .form-check-label a {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .form-check-label a:hover {
+            color: var(--secondary-color);
+        }
+    </style>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const registerForm = document.querySelector('form');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+            const roleSelect = document.getElementById('role');
+            const termsCheckbox = document.getElementById('terms');
+            const registerBtn = document.getElementById('registerBtn');
+            
+            // Focus on email field
+            emailInput.focus();
+            
+            // Role-based field display
+            roleSelect.addEventListener('change', function() {
+                const jobseekerFields = document.getElementById('jobseekerFields');
+                const employerFields = document.getElementById('employerFields');
+                
+                // Hide all role fields first
+                jobseekerFields.style.display = 'none';
+                employerFields.style.display = 'none';
+                jobseekerFields.classList.remove('show');
+                employerFields.classList.remove('show');
+                
+                // Show relevant fields
+                if (this.value === 'jobseeker') {
+                    jobseekerFields.style.display = 'block';
+                    setTimeout(() => jobseekerFields.classList.add('show'), 10);
+                } else if (this.value === 'employer') {
+                    employerFields.style.display = 'block';
+                    setTimeout(() => employerFields.classList.add('show'), 10);
+                }
+            });
+            
+            // Password strength indicator
+            passwordInput.addEventListener('input', function() {
+                updatePasswordStrength(this.value);
+                validatePasswordMatch();
+            });
+            
+            // Confirm password validation
+            confirmPasswordInput.addEventListener('input', validatePasswordMatch);
+            
+            function updatePasswordStrength(password) {
+                const strengthIndicator = document.getElementById('passwordStrength');
+                const strength = calculatePasswordStrength(password);
+                
+                strengthIndicator.className = `password-strength ${strength.level}`;
+                strengthIndicator.setAttribute('title', `Password strength: ${strength.text}`);
+            }
+            
+            function calculatePasswordStrength(password) {
+                let score = 0;
+                
+                if (password.length >= 8) score++;
+                if (/[a-z]/.test(password)) score++;
+                if (/[A-Z]/.test(password)) score++;
+                if (/[0-9]/.test(password)) score++;
+                if (/[^A-Za-z0-9]/.test(password)) score++;
+                
+                const levels = {
+                    0: { level: 'very-weak', text: 'Very Weak' },
+                    1: { level: 'weak', text: 'Weak' },
+                    2: { level: 'fair', text: 'Fair' },
+                    3: { level: 'good', text: 'Good' },
+                    4: { level: 'strong', text: 'Strong' },
+                    5: { level: 'strong', text: 'Very Strong' }
+                };
+                
+                return levels[score] || levels[0];
+            }
+            
+            function validatePasswordMatch() {
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+                
+                if (confirmPassword.length > 0) {
+                    if (password === confirmPassword) {
+                        confirmPasswordInput.classList.remove('password-mismatch');
+                        confirmPasswordInput.classList.add('password-match');
+                        clearFieldError(confirmPasswordInput);
+                    } else {
+                        confirmPasswordInput.classList.remove('password-match');
+                        confirmPasswordInput.classList.add('password-mismatch');
+                        showFieldError(confirmPasswordInput, 'Passwords do not match');
+                    }
+                } else {
+                    confirmPasswordInput.classList.remove('password-match', 'password-mismatch');
+                    clearFieldError(confirmPasswordInput);
+                }
+            }
+            
+            // Enhanced form validation
+            registerForm.addEventListener('submit', function(e) {
+                let isValid = true;
+                
+                // Email validation
+                if (!emailInput.value.trim()) {
+                    showFieldError(emailInput, 'Email is required');
+                    isValid = false;
+                } else if (!isValidEmail(emailInput.value)) {
+                    showFieldError(emailInput, 'Please enter a valid email address');
+                    isValid = false;
+                } else {
+                    clearFieldError(emailInput);
+                }
+                
+                // Password validation
+                if (!passwordInput.value.trim()) {
+                    showFieldError(passwordInput, 'Password is required');
+                    isValid = false;
+                } else if (passwordInput.value.length < 8) {
+                    showFieldError(passwordInput, 'Password must be at least 8 characters long');
+                    isValid = false;
+                } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordInput.value)) {
+                    showFieldError(passwordInput, 'Password must contain uppercase, lowercase, and number');
+                    isValid = false;
+                } else {
+                    clearFieldError(passwordInput);
+                }
+                
+                // Confirm password validation
+                if (!confirmPasswordInput.value.trim()) {
+                    showFieldError(confirmPasswordInput, 'Please confirm your password');
+                    isValid = false;
+                } else if (passwordInput.value !== confirmPasswordInput.value) {
+                    showFieldError(confirmPasswordInput, 'Passwords do not match');
+                    isValid = false;
+                } else {
+                    clearFieldError(confirmPasswordInput);
+                }
+                
+                // Role validation
+                if (!roleSelect.value) {
+                    showFieldError(roleSelect, 'Please select your role');
+                    isValid = false;
+                } else {
+                    clearFieldError(roleSelect);
+                }
+                
+                // Terms validation
+                if (!termsCheckbox.checked) {
+                    showFieldError(termsCheckbox, 'You must agree to the terms and conditions');
+                    isValid = false;
+                } else {
+                    clearFieldError(termsCheckbox);
+                }
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    const firstInvalid = registerForm.querySelector('.is-invalid');
+                    if (firstInvalid) {
+                        firstInvalid.focus();
+                    }
+                    return false;
+                }
+                
+                // Show loading state
+                registerBtn.disabled = true;
+                registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...';
+                
+                // Store form data
+                localStorage.setItem('registerEmail', emailInput.value);
+                localStorage.setItem('registerRole', roleSelect.value);
+            });
+            
+            // Real-time email validation
+            emailInput.addEventListener('blur', function() {
+                if (this.value.trim() && !isValidEmail(this.value)) {
+                    showFieldError(this, 'Please enter a valid email address');
+                } else if (this.value.trim()) {
+                    clearFieldError(this);
+                    // Check email availability
+                    checkEmailAvailability(this.value);
+                }
+            });
+            
+            // Check email availability
+            function checkEmailAvailability(email) {
+                fetch('/api/check-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ email: email })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.available) {
+                        showFieldError(emailInput, 'This email is already registered. <a href="/login">Login instead?</a>');
+                    }
+                })
+                .catch(error => {
+                    console.log('Email check failed:', error);
+                });
+            }
+            
+            // Restore form data if available
+            const savedEmail = localStorage.getItem('registerEmail');
+            const savedRole = localStorage.getItem('registerRole');
+            
+            if (savedEmail && !emailInput.value) {
+                emailInput.value = savedEmail;
+            }
+            
+            if (savedRole && !roleSelect.value) {
+                roleSelect.value = savedRole;
+                roleSelect.dispatchEvent(new Event('change'));
+            }
+            
+            // Clear saved data on successful registration
+            window.addEventListener('beforeunload', function() {
+                if (registerForm.checkValidity()) {
+                    localStorage.removeItem('registerEmail');
+                    localStorage.removeItem('registerRole');
+                }
+            });
+        });
+        
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        function showFieldError(field, message) {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+            
+            // Remove existing error message
+            const existingError = field.parentNode.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            // Add new error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.innerHTML = message;
+            
+            if (field.parentNode.classList.contains('position-relative')) {
+                field.parentNode.appendChild(errorDiv);
+            } else {
+                field.parentNode.appendChild(errorDiv);
+            }
+        }
+        
+        function clearFieldError(field) {
+            field.classList.remove('is-invalid');
+            if (field.value.trim()) {
+                field.classList.add('is-valid');
+            }
+            
+            const errorDiv = field.parentNode.querySelector('.invalid-feedback');
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+        }
+        
+        // Social registration functions
+        function registerWithGoogle() {
+            const btn = event.target.closest('button');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+            
+            window.location.href = '/auth/google/register';
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }, 5000);
+        }
+        
+        function registerWithLinkedIn() {
+            const btn = event.target.closest('button');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+            
+            window.location.href = '/auth/linkedin/register';
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }, 5000);
+        }
+        
+        // Analytics tracking
+        function trackRegistrationAttempt(method = 'email') {
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'sign_up_attempt', {
+                    'method': method,
+                    'page_title': 'Registration Page'
+                });
+            }
+        }
+        
+        // Track form submission
+        document.querySelector('form').addEventListener('submit', function() {
+            const role = document.getElementById('role').value;
+            trackRegistrationAttempt('email');
+            
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'user_role_selected', {
+                    'role': role
+                });
+            }
+        });
+    </script>
+{% endblock %}

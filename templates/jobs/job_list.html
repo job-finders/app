@@ -1,0 +1,1298 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Jobs in South Africa | JobFinders.site{% endblock %}
+
+{% block meta %}
+    {{ super() }}
+    <meta name="description" content="Browse thousands of job opportunities across South Africa. Find your dream job with JobFinders.site.">
+    <meta property="og:title" content="Jobs in South Africa - JobFinders.site" />
+    <meta property="og:description" content="Discover job opportunities across all industries and provinces in South Africa." />
+    <meta property="og:url" content="{{ url_for('jobs.job_list', _external=True) }}" />
+    <meta name="robots" content="index, follow">
+{% endblock %}
+
+{% block nav %}
+    <!-- Job Search Navigation -->
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="jobSearchDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-search me-1"></i> Browse Jobs
+        </a>
+        <ul class="dropdown-menu border-0 shadow-lg rounded-3">
+            <li><a class="dropdown-item" href="{{ url_for('jobs.job_list') }}"><i class="fas fa-list me-2 text-primary"></i>All Jobs</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('jobs.job_categories') }}"><i class="fas fa-tags me-2 text-success"></i>By Category</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('jobs.job_locations') }}"><i class="fas fa-map-marker-alt me-2 text-info"></i>By Location</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('jobs.featured_jobs') }}"><i class="fas fa-star me-2 text-warning"></i>Featured Jobs</a></li>
+        </ul>
+    </li>
+
+    <!-- Quick Filters -->
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="quickFiltersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-filter me-1"></i> Quick Filters
+        </a>
+        <ul class="dropdown-menu border-0 shadow-lg rounded-3">
+            <li><a class="dropdown-item" href="{{ url_for('jobs.job_list', job_type='full_time') }}"><i class="fas fa-clock me-2 text-primary"></i>Full Time</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('jobs.job_list', job_type='part_time') }}"><i class="fas fa-clock-o me-2 text-success"></i>Part Time</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('jobs.job_list', job_type='remote') }}"><i class="fas fa-home me-2 text-info"></i>Remote</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('jobs.job_list', posted='today') }}"><i class="fas fa-calendar-day me-2 text-warning"></i>Posted Today</a></li>
+        </ul>
+    </li>
+{% endblock %}
+
+{% block content %}
+<div class="jobs-container py-4">
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="jobs-header mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="jobs-title">
+                        <i class="fas fa-briefcase me-2"></i>
+                        {% if search_query %}
+                            Jobs for "{{ search_query }}"
+                        {% elif location %}
+                            Jobs in {{ location }}
+                        {% elif category %}
+                            {{ category }} Jobs
+                        {% else %}
+                            All Jobs in South Africa
+                        {% endif %}
+                    </h1>
+                    <p class="jobs-subtitle text-muted">
+                        {{ total_jobs|default(0) }} job{{ 's' if total_jobs != 1 else '' }} found
+                        {% if filters_applied %} with current filters{% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="jobs-actions">
+                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#saveSearchModal">
+                            <i class="fas fa-bookmark me-2"></i>Save Search
+                        </button>
+                        <div class="dropdown d-inline-block ms-2">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-sort me-2"></i>Sort
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('jobs.job_list', sort='relevance', **request.args) }}">Relevance</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('jobs.job_list', sort='date', **request.args) }}">Date Posted</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('jobs.job_list', sort='salary', **request.args) }}">Salary</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('jobs.job_list', sort='company', **request.args) }}">Company</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>     
+   <div class="row">
+            <!-- Sidebar Filters -->
+            <div class="col-lg-3 col-md-4">
+                <div class="jobs-sidebar">
+                    <!-- Search Form -->
+                    <div class="search-card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-search me-2"></i>Search Jobs</h6>
+                        </div>
+                        <div class="card-body">
+                            <form action="{{ url_for('jobs.job_list') }}" method="GET" id="jobSearchForm">
+                                <div class="mb-3">
+                                    <label for="search" class="form-label">Keywords</label>
+                                    <input type="text" class="form-control" id="search" name="search" 
+                                           placeholder="Job title, skills, company..." 
+                                           value="{{ request.args.get('search', '') }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">Location</label>
+                                    <select class="form-select" id="location" name="location">
+                                        <option value="">All Locations</option>
+                                        {% for loc in locations %}
+                                        <option value="{{ loc.slug }}" {{ 'selected' if request.args.get('location') == loc.slug }}>
+                                            {{ loc.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Category</label>
+                                    <select class="form-select" id="category" name="category">
+                                        <option value="">All Categories</option>
+                                        {% for cat in categories %}
+                                        <option value="{{ cat.slug }}" {{ 'selected' if request.args.get('category') == cat.slug }}>
+                                            {{ cat.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search me-2"></i>Search Jobs
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="filters-card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filters</h6>
+                            {% if filters_applied %}
+                            <a href="{{ url_for('jobs.job_list') }}" class="btn btn-sm btn-outline-secondary">Clear All</a>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <!-- Job Type Filter -->
+                            <div class="filter-group mb-3">
+                                <h6 class="filter-title">Job Type</h6>
+                                <div class="filter-options">
+                                    {% for job_type in job_types %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="job_type" 
+                                               value="{{ job_type.value }}" id="jobType{{ loop.index }}"
+                                               {{ 'checked' if job_type.value in request.args.getlist('job_type') }}>
+                                        <label class="form-check-label" for="jobType{{ loop.index }}">
+                                            {{ job_type.label }} ({{ job_type.count }})
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Experience Level Filter -->
+                            <div class="filter-group mb-3">
+                                <h6 class="filter-title">Experience Level</h6>
+                                <div class="filter-options">
+                                    {% for exp_level in experience_levels %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="experience" 
+                                               value="{{ exp_level.value }}" id="exp{{ loop.index }}"
+                                               {{ 'checked' if exp_level.value in request.args.getlist('experience') }}>
+                                        <label class="form-check-label" for="exp{{ loop.index }}">
+                                            {{ exp_level.label }} ({{ exp_level.count }})
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Salary Range Filter -->
+                            <div class="filter-group mb-3">
+                                <h6 class="filter-title">Salary Range</h6>
+                                <div class="salary-range">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="number" class="form-control form-control-sm" 
+                                                   name="salary_min" placeholder="Min" 
+                                                   value="{{ request.args.get('salary_min', '') }}">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="number" class="form-control form-control-sm" 
+                                                   name="salary_max" placeholder="Max" 
+                                                   value="{{ request.args.get('salary_max', '') }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Date Posted Filter -->
+                            <div class="filter-group mb-3">
+                                <h6 class="filter-title">Date Posted</h6>
+                                <div class="filter-options">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="posted" value="today" id="today"
+                                               {{ 'checked' if request.args.get('posted') == 'today' }}>
+                                        <label class="form-check-label" for="today">Today</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="posted" value="week" id="week"
+                                               {{ 'checked' if request.args.get('posted') == 'week' }}>
+                                        <label class="form-check-label" for="week">This Week</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="posted" value="month" id="month"
+                                               {{ 'checked' if request.args.get('posted') == 'month' }}>
+                                        <label class="form-check-label" for="month">This Month</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Job Alerts -->
+                    <div class="alert-card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-bell me-2"></i>Job Alerts</h6>
+                        </div>
+                        <div class="card-body text-center">
+                            <p class="small text-muted mb-3">Get notified when new jobs match your criteria</p>
+                            <button class="btn btn-success btn-sm w-100" data-bs-toggle="modal" data-bs-target="#createAlertModal">
+                                <i class="fas fa-plus me-2"></i>Create Alert
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div> 
+           <!-- Main Job Listings -->
+            <div class="col-lg-9 col-md-8">
+                <div class="jobs-main">
+                    {% if jobs %}
+                    <!-- Job Cards -->
+                    <div class="jobs-grid">
+                        {% for job in jobs %}
+                        <div class="job-card" data-job-id="{{ job.id }}">
+                            <div class="job-card-header">
+                                <div class="job-company-logo">
+                                    {% if job.company.logo %}
+                                    <img src="{{ job.company.logo }}" alt="{{ job.company.name }}" class="company-logo">
+                                    {% else %}
+                                    <div class="company-logo-placeholder">
+                                        {{ job.company.name[0]|upper }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="job-meta">
+                                    <div class="job-badges">
+                                        {% if job.is_featured %}
+                                        <span class="badge bg-warning text-dark">Featured</span>
+                                        {% endif %}
+                                        {% if job.is_urgent %}
+                                        <span class="badge bg-danger">Urgent</span>
+                                        {% endif %}
+                                        {% if job.is_remote %}
+                                        <span class="badge bg-info">Remote</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="job-actions">
+                                        <button class="btn btn-sm btn-outline-primary job-save-btn" 
+                                                data-job-id="{{ job.id }}" 
+                                                title="Save Job">
+                                            <i class="fas fa-bookmark"></i>
+                                        </button>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                    type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-h"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="shareJob('{{ job.id }}')">
+                                                    <i class="fas fa-share me-2"></i>Share Job
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="reportJob('{{ job.id }}')">
+                                                    <i class="fas fa-flag me-2"></i>Report Job
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="job-card-body">
+                                <h5 class="job-title">
+                                    <a href="{{ url_for('jobs.job_detail', job_id=job.id) }}" class="job-title-link">
+                                        {{ job.title }}
+                                    </a>
+                                </h5>
+                                
+                                <div class="job-company">
+                                    <a href="{{ url_for('company.company_profile', company_id=job.company.id) }}" 
+                                       class="company-link">
+                                        {{ job.company.name }}
+                                    </a>
+                                    {% if job.company.is_verified %}
+                                    <i class="fas fa-check-circle text-success ms-1" title="Verified Company"></i>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="job-location">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    {{ job.location }}
+                                    {% if job.work_location_type == 'remote' %}
+                                    <span class="text-success">(Remote)</span>
+                                    {% elif job.work_location_type == 'hybrid' %}
+                                    <span class="text-info">(Hybrid)</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="job-description">
+                                    {{ job.description|truncate(150) }}
+                                </div>
+                                
+                                <div class="job-tags">
+                                    {% for skill in job.skills[:3] %}
+                                    <span class="job-tag">{{ skill }}</span>
+                                    {% endfor %}
+                                    {% if job.skills|length > 3 %}
+                                    <span class="job-tag-more">+{{ job.skills|length - 3 }} more</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="job-card-footer">
+                                <div class="job-details">
+                                    <div class="job-salary">
+                                        {% if job.salary_display %}
+                                        <i class="fas fa-money-bill-wave me-1"></i>
+                                        {{ job.salary_display }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="job-type">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ job.job_type|title }}
+                                    </div>
+                                    <div class="job-posted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ job.posted_at|timeago }}
+                                    </div>
+                                </div>
+                                
+                                <div class="job-apply">
+                                    <a href="{{ url_for('jobs.job_detail', job_id=job.id) }}" 
+                                       class="btn btn-primary btn-sm">
+                                        View Details
+                                    </a>
+                                    {% if job.can_quick_apply %}
+                                    <button class="btn btn-success btn-sm ms-2 quick-apply-btn" 
+                                            data-job-id="{{ job.id }}">
+                                        Quick Apply
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if pagination.pages > 1 %}
+                    <nav aria-label="Job listings pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('jobs.job_list', page=pagination.prev_num, **request.args) }}">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in pagination.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != pagination.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('jobs.job_list', page=page_num, **request.args) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('jobs.job_list', page=pagination.next_num, **request.args) }}">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                    {% else %}
+                    <!-- No Jobs Found -->
+                    <div class="no-jobs-found text-center py-5">
+                        <div class="no-jobs-icon mb-4">
+                            <i class="fas fa-search fa-4x text-muted"></i>
+                        </div>
+                        <h4 class="mb-3">No Jobs Found</h4>
+                        <p class="text-muted mb-4">
+                            {% if search_query or filters_applied %}
+                            We couldn't find any jobs matching your criteria. Try adjusting your search or filters.
+                            {% else %}
+                            There are currently no jobs available. Check back later for new opportunities.
+                            {% endif %}
+                        </p>
+                        <div class="no-jobs-actions">
+                            {% if search_query or filters_applied %}
+                            <a href="{{ url_for('jobs.job_list') }}" class="btn btn-primary me-2">
+                                <i class="fas fa-refresh me-2"></i>View All Jobs
+                            </a>
+                            {% endif %}
+                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createAlertModal">
+                                <i class="fas fa-bell me-2"></i>Create Job Alert
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div><!
+-- Save Search Modal -->
+<div class="modal fade" id="saveSearchModal" tabindex="-1" aria-labelledby="saveSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="saveSearchModalLabel">
+                    <i class="fas fa-bookmark me-2"></i>Save Search
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="saveSearchForm">
+                    <div class="mb-3">
+                        <label for="searchName" class="form-label">Search Name</label>
+                        <input type="text" class="form-control" id="searchName" name="searchName" 
+                               placeholder="e.g., Frontend Developer Jobs in Cape Town" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="alertFrequency" class="form-label">Email Alerts</label>
+                        <select class="form-select" id="alertFrequency" name="alertFrequency">
+                            <option value="none">No alerts</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly" selected>Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        We'll save your current search criteria and notify you when new matching jobs are posted.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSearch()">Save Search</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Alert Modal -->
+<div class="modal fade" id="createAlertModal" tabindex="-1" aria-labelledby="createAlertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createAlertModalLabel">
+                    <i class="fas fa-bell me-2"></i>Create Job Alert
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createAlertForm">
+                    <div class="mb-3">
+                        <label for="alertKeywords" class="form-label">Keywords</label>
+                        <input type="text" class="form-control" id="alertKeywords" name="keywords" 
+                               placeholder="Job title, skills, company...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="alertLocation" class="form-label">Location</label>
+                        <select class="form-select" id="alertLocation" name="location">
+                            <option value="">All Locations</option>
+                            {% for loc in locations %}
+                            <option value="{{ loc.slug }}">{{ loc.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="alertCategory" class="form-label">Category</label>
+                        <select class="form-select" id="alertCategory" name="category">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.slug }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="alertFrequencyCreate" class="form-label">Alert Frequency</label>
+                        <select class="form-select" id="alertFrequencyCreate" name="frequency">
+                            <option value="daily">Daily</option>
+                            <option value="weekly" selected>Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="createAlert()">Create Alert</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block style %}
+    {{ super() }}
+    <style>
+        /* Jobs Container */
+        .jobs-container {
+            background: var(--light-bg);
+            min-height: calc(100vh - 120px);
+        }
+
+        /* Jobs Header */
+        .jobs-header {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        .jobs-title {
+            color: var(--dark-color);
+            font-weight: 700;
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .jobs-subtitle {
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .jobs-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        /* Sidebar */
+        .jobs-sidebar .card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        .jobs-sidebar .card-header {
+            background: var(--gray-50);
+            border-bottom: 1px solid var(--gray-200);
+            border-radius: 1rem 1rem 0 0 !important;
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .jobs-sidebar .card-body {
+            padding: 1.25rem;
+        }
+
+        /* Filter Groups */
+        .filter-group {
+            border-bottom: 1px solid var(--gray-200);
+            padding-bottom: 1rem;
+        }
+
+        .filter-group:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .filter-title {
+            font-weight: 600;
+            color: var(--dark-color);
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .filter-options .form-check {
+            margin-bottom: 0.5rem;
+        }
+
+        .filter-options .form-check:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-options .form-check-label {
+            font-size: 0.9rem;
+            color: var(--gray-700);
+        }
+
+        /* Job Cards */
+        .jobs-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .job-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-200);
+        }
+
+        .job-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        /* Job Card Header */
+        .job-card-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .job-company-logo {
+            margin-right: 1rem;
+        }
+
+        .company-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 0.5rem;
+            object-fit: cover;
+        }
+
+        .company-logo-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: 0.5rem;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .job-meta {
+            flex: 1;
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+        }
+
+        .job-badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .job-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Job Card Body */
+        .job-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .job-title-link {
+            color: var(--dark-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .job-title-link:hover {
+            color: var(--primary-color);
+        }
+
+        .job-company {
+            margin-bottom: 0.5rem;
+        }
+
+        .company-link {
+            color: var(--gray-600);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .company-link:hover {
+            color: var(--primary-color);
+        }
+
+        .job-location {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .job-description {
+            color: var(--gray-700);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .job-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .job-tag {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .job-tag-more {
+            color: var(--gray-500);
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        /* Job Card Footer */
+        .job-card-footer {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .job-details {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+
+        .job-apply {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* No Jobs Found */
+        .no-jobs-found {
+            background: white;
+            border-radius: 1rem;
+            padding: 3rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .no-jobs-icon {
+            opacity: 0.5;
+        }
+
+        .no-jobs-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .jobs-sidebar {
+                margin-bottom: 2rem;
+            }
+            
+            .jobs-header {
+                padding: 1.5rem;
+            }
+            
+            .jobs-title {
+                font-size: 1.5rem;
+            }
+            
+            .jobs-actions {
+                margin-top: 1rem;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .job-card {
+                padding: 1rem;
+            }
+            
+            .job-card-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .job-meta {
+                width: 100%;
+            }
+            
+            .job-details {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .job-card-footer {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+            
+            .job-apply {
+                justify-content: center;
+            }
+        }
+
+        /* Dark Theme Support */
+        [data-bs-theme="dark"] .jobs-header,
+        [data-bs-theme="dark"] .job-card,
+        [data-bs-theme="dark"] .no-jobs-found,
+        [data-bs-theme="dark"] .jobs-sidebar .card {
+            background: var(--gray-800);
+            color: white;
+        }
+
+        [data-bs-theme="dark"] .job-title-link {
+            color: white;
+        }
+
+        [data-bs-theme="dark"] .job-tag {
+            background: var(--gray-700);
+            color: var(--gray-300);
+        }
+    </style>
+{% endblock %}{% bl
+ock scripts %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize job listing functionality
+            initializeJobFilters();
+            initializeJobActions();
+            initializePagination();
+            
+            // Auto-apply filters on change
+            const filterInputs = document.querySelectorAll('input[type="checkbox"], input[type="radio"], select');
+            filterInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    if (this.type === 'checkbox' || this.type === 'radio') {
+                        applyFilters();
+                    }
+                });
+            });
+            
+            // Search form submission
+            const searchForm = document.getElementById('jobSearchForm');
+            if (searchForm) {
+                searchForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    applyFilters();
+                });
+            }
+        });
+        
+        function initializeJobFilters() {
+            // Salary range inputs
+            const salaryInputs = document.querySelectorAll('input[name="salary_min"], input[name="salary_max"]');
+            salaryInputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value) {
+                        applyFilters();
+                    }
+                });
+            });
+            
+            // Clear filters functionality
+            const clearFiltersBtn = document.querySelector('a[href="{{ url_for("jobs.job_list") }}"]');
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    clearAllFilters();
+                });
+            }
+        }
+        
+        function initializeJobActions() {
+            // Save job buttons
+            const saveButtons = document.querySelectorAll('.job-save-btn');
+            saveButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const jobId = this.getAttribute('data-job-id');
+                    toggleSaveJob(jobId, this);
+                });
+            });
+            
+            // Quick apply buttons
+            const quickApplyButtons = document.querySelectorAll('.quick-apply-btn');
+            quickApplyButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const jobId = this.getAttribute('data-job-id');
+                    quickApplyToJob(jobId);
+                });
+            });
+        }
+        
+        function initializePagination() {
+            // Add loading states to pagination links
+            const paginationLinks = document.querySelectorAll('.pagination .page-link');
+            paginationLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    showLoadingState();
+                });
+            });
+        }
+        
+        function applyFilters() {
+            const form = document.getElementById('jobSearchForm');
+            const formData = new FormData(form);
+            
+            // Add checkbox filters
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            checkboxes.forEach(checkbox => {
+                formData.append(checkbox.name, checkbox.value);
+            });
+            
+            // Add radio filters
+            const radios = document.querySelectorAll('input[type="radio"]:checked');
+            radios.forEach(radio => {
+                formData.append(radio.name, radio.value);
+            });
+            
+            // Add salary range
+            const salaryMin = document.querySelector('input[name="salary_min"]').value;
+            const salaryMax = document.querySelector('input[name="salary_max"]').value;
+            if (salaryMin) formData.append('salary_min', salaryMin);
+            if (salaryMax) formData.append('salary_max', salaryMax);
+            
+            // Build URL with parameters
+            const params = new URLSearchParams(formData);
+            const newUrl = `{{ url_for('jobs.job_list') }}?${params.toString()}`;
+            
+            showLoadingState();
+            window.location.href = newUrl;
+        }
+        
+        function clearAllFilters() {
+            // Clear form inputs
+            const form = document.getElementById('jobSearchForm');
+            form.reset();
+            
+            // Clear checkboxes and radios
+            const inputs = document.querySelectorAll('input[type="checkbox"], input[type="radio"]');
+            inputs.forEach(input => {
+                input.checked = false;
+            });
+            
+            // Clear salary inputs
+            document.querySelector('input[name="salary_min"]').value = '';
+            document.querySelector('input[name="salary_max"]').value = '';
+            
+            // Redirect to clean URL
+            window.location.href = '{{ url_for("jobs.job_list") }}';
+        }
+        
+        function toggleSaveJob(jobId, button) {
+            const icon = button.querySelector('i');
+            const isSaved = icon.classList.contains('fas');
+            
+            // Show loading state
+            button.disabled = true;
+            icon.className = 'fas fa-spinner fa-spin';
+            
+            fetch(`/api/jobs/${jobId}/save`, {
+                method: isSaved ? 'DELETE' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.saved) {
+                        icon.className = 'fas fa-bookmark';
+                        button.title = 'Unsave Job';
+                        showToast('Job saved successfully', 'success');
+                    } else {
+                        icon.className = 'far fa-bookmark';
+                        button.title = 'Save Job';
+                        showToast('Job removed from saved', 'info');
+                    }
+                } else {
+                    showToast(data.message || 'Failed to save job', 'error');
+                    // Revert icon
+                    icon.className = isSaved ? 'fas fa-bookmark' : 'far fa-bookmark';
+                }
+            })
+            .catch(error => {
+                showToast('Failed to save job', 'error');
+                icon.className = isSaved ? 'fas fa-bookmark' : 'far fa-bookmark';
+            })
+            .finally(() => {
+                button.disabled = false;
+            });
+        }
+        
+        function quickApplyToJob(jobId) {
+            // Check if user is logged in
+            fetch('/api/auth/check', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.authenticated) {
+                    showLoginModal();
+                    return;
+                }
+                
+                // Show quick apply modal
+                showQuickApplyModal(jobId);
+            })
+            .catch(error => {
+                showToast('Please log in to apply for jobs', 'warning');
+            });
+        }
+        
+        function shareJob(jobId) {
+            const jobCard = document.querySelector(`[data-job-id="${jobId}"]`);
+            const jobTitle = jobCard.querySelector('.job-title-link').textContent;
+            const jobUrl = window.location.origin + jobCard.querySelector('.job-title-link').getAttribute('href');
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: jobTitle,
+                    text: `Check out this job opportunity: ${jobTitle}`,
+                    url: jobUrl
+                });
+            } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(jobUrl).then(() => {
+                    showToast('Job link copied to clipboard', 'success');
+                });
+            }
+        }
+        
+        function reportJob(jobId) {
+            if (confirm('Are you sure you want to report this job? This will help us maintain quality listings.')) {
+                fetch(`/api/jobs/${jobId}/report`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ reason: 'inappropriate' })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Job reported successfully. Thank you for helping us maintain quality.', 'success');
+                    } else {
+                        showToast('Failed to report job', 'error');
+                    }
+                })
+                .catch(error => {
+                    showToast('Failed to report job', 'error');
+                });
+            }
+        }
+        
+        function saveSearch() {
+            const form = document.getElementById('saveSearchForm');
+            const formData = new FormData(form);
+            
+            // Add current search parameters
+            const currentParams = new URLSearchParams(window.location.search);
+            for (const [key, value] of currentParams) {
+                formData.append(`search_${key}`, value);
+            }
+            
+            fetch('/api/saved-searches', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Search saved successfully', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('saveSearchModal')).hide();
+                } else {
+                    showToast(data.message || 'Failed to save search', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Failed to save search', 'error');
+            });
+        }
+        
+        function createAlert() {
+            const form = document.getElementById('createAlertForm');
+            const formData = new FormData(form);
+            
+            fetch('/api/job-alerts', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Job alert created successfully', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('createAlertModal')).hide();
+                } else {
+                    showToast(data.message || 'Failed to create alert', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Failed to create alert', 'error');
+            });
+        }
+        
+        function showLoadingState() {
+            // Show loading overlay
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = `
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p class="mt-2">Loading jobs...</p>
+                </div>
+            `;
+            document.body.appendChild(loadingOverlay);
+        }
+        
+        function showToast(message, type = 'info') {
+            if (typeof window.showFlashMessage === 'function') {
+                window.showFlashMessage(message, type);
+            } else {
+                alert(message);
+            }
+        }
+        
+        function showLoginModal() {
+            // Redirect to login page with return URL
+            const returnUrl = encodeURIComponent(window.location.href);
+            window.location.href = `{{ url_for('auth.login') }}?next=${returnUrl}`;
+        }
+        
+        function showQuickApplyModal(jobId) {
+            // Implementation for quick apply modal
+            // This would show a modal with application form
+            console.log('Quick apply for job:', jobId);
+        }
+        
+        // Analytics tracking
+        function trackJobInteraction(action, jobId) {
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'job_interaction', {
+                    'action': action,
+                    'job_id': jobId,
+                    'page_title': 'Job Listings'
+                });
+            }
+        }
+        
+        // Track job card clicks
+        document.addEventListener('click', function(e) {
+            const jobTitleLink = e.target.closest('.job-title-link');
+            if (jobTitleLink) {
+                const jobCard = jobTitleLink.closest('.job-card');
+                const jobId = jobCard.getAttribute('data-job-id');
+                trackJobInteraction('job_clicked', jobId);
+            }
+        });
+        
+        // Infinite scroll (optional enhancement)
+        let isLoading = false;
+        
+        function initInfiniteScroll() {
+            window.addEventListener('scroll', function() {
+                if (isLoading) return;
+                
+                const scrollPosition = window.innerHeight + window.scrollY;
+                const documentHeight = document.documentElement.offsetHeight;
+                
+                if (scrollPosition >= documentHeight - 1000) {
+                    loadMoreJobs();
+                }
+            });
+        }
+        
+        function loadMoreJobs() {
+            const nextPageUrl = document.querySelector('.pagination .page-item:last-child .page-link')?.href;
+            if (!nextPageUrl) return;
+            
+            isLoading = true;
+            
+            fetch(nextPageUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newJobs = doc.querySelectorAll('.job-card');
+                
+                const jobsGrid = document.querySelector('.jobs-grid');
+                newJobs.forEach(job => {
+                    jobsGrid.appendChild(job);
+                });
+                
+                // Update pagination
+                const newPagination = doc.querySelector('.pagination');
+                const currentPagination = document.querySelector('.pagination');
+                if (newPagination && currentPagination) {
+                    currentPagination.parentNode.replaceChild(newPagination, currentPagination);
+                }
+                
+                // Reinitialize job actions for new jobs
+                initializeJobActions();
+            })
+            .catch(error => {
+                console.error('Failed to load more jobs:', error);
+            })
+            .finally(() => {
+                isLoading = false;
+            });
+        }
+        
+        // Optional: Enable infinite scroll
+        // initInfiniteScroll();
+    </script>
+    
+    <style>
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            color: var(--primary-color);
+        }
+        
+        [data-bs-theme="dark"] .loading-overlay {
+            background: rgba(31, 41, 55, 0.9);
+        }
+    </style>
+{% endblock %}

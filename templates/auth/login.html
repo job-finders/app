@@ -1,0 +1,376 @@
+{% extends "layout/auth.html" %}
+
+{% block title %}Login to Your Account | JobFinders.site{% endblock %}
+
+{% block meta %}
+    {{ super() }}
+    <meta name="description" content="Access your JobFinders account to apply for jobs, manage your profile, and track applications.">
+    <meta property="og:title" content="Login - JobFinders.site" />
+    <meta property="og:description" content="Log in to JobFinders to explore thousands of job listings and opportunities across South Africa." />
+    <meta property="og:url" content="{{ url_for('auth.login', _external=True) }}" />
+    <meta property="og:image" content="https://jobfinders.site/static/images/jobfinder.jpg" />
+    <meta name="robots" content="index, follow">
+{% endblock %}
+
+{% block content %}
+<div class="auth-title">Welcome Back</div>
+<div class="auth-subtitle">Login to discover thousands of job opportunities across South Africa.</div>
+
+<form action="{{ url_for('auth.login') }}" method="POST" enctype="multipart/form-data" data-validate="true" novalidate>
+    <!-- CSRF Token -->
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    
+    <!-- Email Field -->
+    <div class="form-group">
+        <label for="email" class="form-label">
+            <i class="fas fa-envelope me-2"></i>Email Address
+        </label>
+        <input type="email" 
+               class="form-control" 
+               id="email" 
+               name="email"
+               placeholder="you@example.com" 
+               required 
+               autocomplete="email"
+               value="{{ request.form.get('email', '') }}"
+               aria-describedby="emailHelp">
+        <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
+    </div>
+
+    <!-- Password Field -->
+    <div class="form-group">
+        <label for="password" class="form-label">
+            <i class="fas fa-lock me-2"></i>Password
+        </label>
+        <div class="position-relative">
+            <input type="password" 
+                   class="form-control" 
+                   id="password" 
+                   name="password"
+                   placeholder="Your secure password" 
+                   required 
+                   autocomplete="current-password"
+                   aria-describedby="passwordHelp">
+            <button type="button" 
+                    class="password-toggle position-absolute top-50 end-0 translate-middle-y me-3 border-0 bg-transparent" 
+                    onclick="togglePassword('password')"
+                    aria-label="Toggle password visibility">
+                <i class="fas fa-eye text-muted"></i>
+            </button>
+        </div>
+        <div id="passwordHelp" class="form-text">Enter your account password.</div>
+    </div>
+
+    <!-- Remember Me and Forgot Password -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="form-check">
+            <input class="form-check-input" 
+                   type="checkbox" 
+                   name="remember" 
+                   id="remember"
+                   {{ 'checked' if request.form.get('remember') }}>
+            <label class="form-check-label" for="remember">
+                Remember Me
+            </label>
+        </div>
+        <a href="{{ url_for('auth.password_reset') }}" class="auth-links">
+            <i class="fas fa-key me-1"></i>Forgot Password?
+        </a>
+    </div>
+
+    <!-- Login Button -->
+    <button type="submit" class="btn btn-primary-custom" id="loginBtn">
+        <i class="fas fa-sign-in-alt me-2"></i>Sign In
+    </button>
+
+    <!-- Social Login Section -->
+    <div class="divider">
+        <span>or continue with</span>
+    </div>
+
+    <div class="social-login">
+        <!-- Google Login -->
+        <button type="button" class="btn btn-social" onclick="loginWithGoogle()">
+            <i class="fab fa-google text-danger"></i>
+            Continue with Google
+        </button>
+        
+        <!-- LinkedIn Login -->
+        <button type="button" class="btn btn-social" onclick="loginWithLinkedIn()">
+            <i class="fab fa-linkedin text-primary"></i>
+            Continue with LinkedIn
+        </button>
+    </div>
+
+    <!-- Registration Link -->
+    <div class="auth-links">
+        <p class="mb-0">Don't have an account?
+            <a href="{{ url_for('auth.subscribe') }}" class="fw-bold">
+                <i class="fas fa-user-plus me-1"></i>Create one here
+            </a>
+        </p>
+    </div>
+</form>
+
+<!-- Additional Help -->
+<div class="mt-4 text-center">
+    <small class="text-muted">
+        Having trouble? <a href="/contact" class="text-decoration-none">Contact Support</a> |
+        <a href="/help" class="text-decoration-none">Help Center</a>
+    </small>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.querySelector('form');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const loginBtn = document.getElementById('loginBtn');
+            const rememberCheckbox = document.getElementById('remember');
+            
+            // Focus on email field
+            emailInput.focus();
+            
+            // Enhanced form validation
+            loginForm.addEventListener('submit', function(e) {
+                let isValid = true;
+                
+                // Email validation
+                if (!emailInput.value.trim()) {
+                    showFieldError(emailInput, 'Email is required');
+                    isValid = false;
+                } else if (!isValidEmail(emailInput.value)) {
+                    showFieldError(emailInput, 'Please enter a valid email address');
+                    isValid = false;
+                } else {
+                    clearFieldError(emailInput);
+                }
+                
+                // Password validation
+                if (!passwordInput.value.trim()) {
+                    showFieldError(passwordInput, 'Password is required');
+                    isValid = false;
+                } else {
+                    clearFieldError(passwordInput);
+                }
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Show loading state
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
+                
+                // Store form data in case of error
+                localStorage.setItem('loginEmail', emailInput.value);
+                localStorage.setItem('loginRemember', rememberCheckbox.checked);
+            });
+            
+            // Restore form data if available
+            const savedEmail = localStorage.getItem('loginEmail');
+            const savedRemember = localStorage.getItem('loginRemember');
+            
+            if (savedEmail && !emailInput.value) {
+                emailInput.value = savedEmail;
+            }
+            
+            if (savedRemember === 'true') {
+                rememberCheckbox.checked = true;
+            }
+            
+            // Clear saved data on successful login (will be handled by redirect)
+            window.addEventListener('beforeunload', function() {
+                if (loginForm.checkValidity()) {
+                    localStorage.removeItem('loginEmail');
+                    localStorage.removeItem('loginRemember');
+                }
+            });
+            
+            // Real-time validation
+            emailInput.addEventListener('blur', function() {
+                if (this.value.trim() && !isValidEmail(this.value)) {
+                    showFieldError(this, 'Please enter a valid email address');
+                } else {
+                    clearFieldError(this);
+                }
+            });
+            
+            passwordInput.addEventListener('input', function() {
+                if (this.classList.contains('is-invalid') && this.value.trim()) {
+                    clearFieldError(this);
+                }
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + Enter to submit
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    loginForm.requestSubmit();
+                }
+            });
+            
+            // Auto-fill detection
+            setTimeout(function() {
+                if (emailInput.value && passwordInput.value) {
+                    // Browser auto-filled, validate fields
+                    validateField(emailInput);
+                    validateField(passwordInput);
+                }
+            }, 500);
+        });
+        
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        function showFieldError(field, message) {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+            
+            // Remove existing error message
+            const existingError = field.parentNode.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            // Add new error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = message;
+            
+            if (field.parentNode.classList.contains('position-relative')) {
+                field.parentNode.appendChild(errorDiv);
+            } else {
+                field.parentNode.appendChild(errorDiv);
+            }
+            
+            // Focus on first invalid field
+            if (!document.querySelector('.is-invalid:focus')) {
+                field.focus();
+            }
+        }
+        
+        function clearFieldError(field) {
+            field.classList.remove('is-invalid');
+            if (field.value.trim()) {
+                field.classList.add('is-valid');
+            }
+            
+            const errorDiv = field.parentNode.querySelector('.invalid-feedback');
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+        }
+        
+        // Social login functions
+        function loginWithGoogle() {
+            // Show loading state
+            const btn = event.target.closest('button');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+            
+            // Redirect to Google OAuth
+            window.location.href = '/auth/google';
+            
+            // Reset button after delay (in case of error)
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }, 5000);
+        }
+        
+        function loginWithLinkedIn() {
+            // Show loading state
+            const btn = event.target.closest('button');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+            
+            // Redirect to LinkedIn OAuth
+            window.location.href = '/auth/linkedin';
+            
+            // Reset button after delay (in case of error)
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }, 5000);
+        }
+        
+        // Analytics tracking
+        function trackLoginAttempt(method = 'email') {
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'login_attempt', {
+                    'method': method,
+                    'page_title': 'Login Page'
+                });
+            }
+        }
+        
+        // Track form submission
+        document.querySelector('form').addEventListener('submit', function() {
+            trackLoginAttempt('email');
+        });
+        
+        // Password strength indicator (optional)
+        function showPasswordStrength(password) {
+            const strength = calculatePasswordStrength(password);
+            const indicator = document.getElementById('passwordStrength');
+            
+            if (indicator) {
+                indicator.className = `password-strength ${strength.level}`;
+                indicator.textContent = strength.text;
+            }
+        }
+        
+        function calculatePasswordStrength(password) {
+            let score = 0;
+            
+            if (password.length >= 8) score++;
+            if (/[a-z]/.test(password)) score++;
+            if (/[A-Z]/.test(password)) score++;
+            if (/[0-9]/.test(password)) score++;
+            if (/[^A-Za-z0-9]/.test(password)) score++;
+            
+            const levels = {
+                0: { level: 'very-weak', text: 'Very Weak' },
+                1: { level: 'weak', text: 'Weak' },
+                2: { level: 'fair', text: 'Fair' },
+                3: { level: 'good', text: 'Good' },
+                4: { level: 'strong', text: 'Strong' },
+                5: { level: 'very-strong', text: 'Very Strong' }
+            };
+            
+            return levels[score] || levels[0];
+        }
+        
+        // Accessibility improvements
+        document.addEventListener('keydown', function(e) {
+            // Escape key to clear form
+            if (e.key === 'Escape') {
+                const activeElement = document.activeElement;
+                if (activeElement && activeElement.tagName === 'INPUT') {
+                    activeElement.blur();
+                }
+            }
+        });
+        
+        // Form persistence for better UX
+        const formInputs = document.querySelectorAll('input[type="email"], input[type="checkbox"]');
+        formInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                if (this.type === 'email') {
+                    localStorage.setItem('loginEmail', this.value);
+                } else if (this.type === 'checkbox') {
+                    localStorage.setItem('loginRemember', this.checked);
+                }
+            });
+        });
+    </script>
+{% endblock %}

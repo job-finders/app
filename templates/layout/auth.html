@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    {% block meta %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="JobFinders.site - Find your dream job in South Africa">
+    <meta name="keywords" content="jobs, careers, employment, South Africa, job search">
+    <meta name="author" content="JobFinders.site">
+    {% endblock %}
+
+    <title>{% block title %}JobFinders.site{% endblock %}</title>
+
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+    {% block style %}
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #059669;
+            --accent-color: #f59e0b;
+            --dark-color: #1f2937;
+            --light-bg: #f8fafc;
+            --danger-color: #dc3545;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --info-color: #0dcaf0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            color: var(--dark-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-logo a {
+            text-decoration: none;
+            color: var(--primary-color);
+            font-size: 1.75rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .auth-logo i {
+            color: var(--accent-color);
+        }
+
+        .auth-title {
+            text-align: center;
+            color: var(--dark-color);
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .form-control {
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: #f9fafb;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            background-color: white;
+            outline: none;
+        }
+
+        .form-control.is-invalid {
+            border-color: var(--danger-color);
+            background-color: #fef2f2;
+        }
+
+        .form-control.is-valid {
+            border-color: var(--success-color);
+            background-color: #f0fdf4;
+        }
+
+        .invalid-feedback {
+            color: var(--danger-color);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .valid-feedback {
+            color: var(--success-color);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            width: 100%;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary-custom:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary-custom:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .form-check {
+            margin-bottom: 1rem;
+        }
+
+        .form-check-input {
+            border: 2px solid #d1d5db;
+            border-radius: 0.25rem;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .form-check-label {
+            color: var(--dark-color);
+            font-size: 0.9rem;
+        }
+
+        .auth-links {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .auth-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .auth-links a:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 1.5rem 0;
+            position: relative;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e5e7eb;
+            z-index: 1;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .social-login {
+            margin-top: 1rem;
+        }
+
+        .btn-social {
+            border: 2px solid #e5e7eb;
+            background: white;
+            color: var(--dark-color);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            width: 100%;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-social:hover {
+            border-color: var(--primary-color);
+            background: var(--light-bg);
+            transform: translateY(-1px);
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            margin-bottom: 1.5rem;
+        }
+
+        .alert {
+            border-radius: 0.5rem;
+            border: none;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+            font-size: 0.9rem;
+        }
+
+        .alert-success {
+            background-color: #f0fdf4;
+            color: #166534;
+            border-left: 4px solid var(--success-color);
+        }
+
+        .alert-danger {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .alert-warning {
+            background-color: #fffbeb;
+            color: #92400e;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .alert-info {
+            background-color: #f0f9ff;
+            color: #1e40af;
+            border-left: 4px solid var(--info-color);
+        }
+
+        .alert-dismissible .btn-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.5rem;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            opacity: 0.5;
+        }
+
+        .alert-dismissible .btn-close:hover {
+            opacity: 1;
+        }
+
+        /* Loading States */
+        .loading {
+            position: relative;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 576px) {
+            .auth-container {
+                padding: 1rem;
+            }
+
+            .auth-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .auth-logo a {
+                font-size: 1.5rem;
+            }
+
+            .auth-title {
+                font-size: 1.25rem;
+            }
+        }
+
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Focus indicators */
+        .form-control:focus,
+        .btn:focus,
+        .form-check-input:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .form-control {
+                border-width: 3px;
+            }
+
+            .btn-primary-custom {
+                border: 2px solid var(--primary-color);
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+    {% endblock %}
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <a href="/">
+                    <i class="fas fa-briefcase"></i>
+                    <span>JobFinders.site</span>
+                </a>
+            </div>
+
+            {% block flash_messages %}
+            <div class="flash-messages">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible"
+                    role="alert">
+                    <i
+                        class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+            </div>
+            {% endblock %}
+
+            {% block content %}
+            <!-- Authentication form content goes here -->
+            {% endblock %}
+        </div>
+    </div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+    {% block scripts %}
+    <script>
+        // Form validation
+        document.addEventListener('DOMContentLoaded', function () {
+            const forms = document.querySelectorAll('form');
+
+            forms.forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.classList.add('loading');
+                        submitBtn.disabled = true;
+                    }
+                });
+            });
+
+            // Auto-dismiss alerts after 5 seconds
+            const alerts = document.querySelectorAll('.alert:not(.alert-dismissible)');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+
+            // Real-time form validation
+            const inputs = document.querySelectorAll('input[required]');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function () {
+                    validateField(this);
+                });
+
+                input.addEventListener('input', function () {
+                    if (this.classList.contains('is-invalid')) {
+                        validateField(this);
+                    }
+                });
+            });
+        });
+
+        function validateField(field) {
+            const value = field.value.trim();
+            const type = field.type;
+            let isValid = true;
+            let message = '';
+
+            // Required field validation
+            if (field.hasAttribute('required') && !value) {
+                isValid = false;
+                message = 'This field is required.';
+            }
+            // Email validation
+            else if (type === 'email' && value) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    isValid = false;
+                    message = 'Please enter a valid email address.';
+                }
+            }
+            // Password validation
+            else if (type === 'password' && value && field.name === 'password') {
+                if (value.length < 8) {
+                    isValid = false;
+                    message = 'Password must be at least 8 characters long.';
+                }
+            }
+
+            // Update field appearance
+            field.classList.remove('is-valid', 'is-invalid');
+            const feedback = field.parentNode.querySelector('.invalid-feedback, .valid-feedback');
+            if (feedback) feedback.remove();
+
+            if (value) {
+                if (isValid) {
+                    field.classList.add('is-valid');
+                } else {
+                    field.classList.add('is-invalid');
+                    const feedbackDiv = document.createElement('div');
+                    feedbackDiv.className = 'invalid-feedback';
+                    feedbackDiv.textContent = message;
+                    field.parentNode.appendChild(feedbackDiv);
+                }
+            }
+        }
+
+        // Password visibility toggle
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const icon = field.parentNode.querySelector('.password-toggle i');
+
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                field.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+    {% endblock %}
+</body>
+
+</html>
