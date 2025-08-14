@@ -74,17 +74,39 @@
             background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
         }
 
-        .category-card {
-            border: 1px solid #e5e7eb;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
+/* --- Category card header thin-line style --- */
+.category-card .card-header {
+  background: transparent;
+  border-top: 6px solid var(--primary-color);   /* thin accent line */
+  border-bottom: none;
+  color: var(--dark-color);                      /* match body text */
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
 
-        .category-card:hover {
-            border-color: var(--primary-color);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
-        }
+/* ensure icon & text inherit the darker colour */
+.category-card .card-header i,
+.category-card .card-header h5 {
+  color: var(--dark-color);
+}
 
+
+.category-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--primary-color);
+  box-shadow: 0 12px 20px rgba(37, 99, 235, 0.15);
+}
+
+/* Ensure the card header gradient uses site variables */
+.hero-gradient {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+/* Consistent stat counters */
+.stats-counter {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
         .testimonial-card {
             background: white;
             border-radius: 12px;
@@ -765,17 +787,470 @@
       <p class="lead text-muted mb-4">Choose from 30+ industries and discover thousands of opportunities across South Africa.</p>
 
       <!-- Category Grid -->
-      <div class="row g-4">
-        <!-- 8 sample cards -->
-        <div class="col-sm-6 col-md-4"><a href="/jobs?category=technology" class="text-decoration-none"><div class="card category-card p-4 text-center"><i class="fas fa-code text-primary fa-3x mb-2"></i><h6 class="fw-bold mb-1">Technology</h6><small class="text-muted">1 250+ jobs</small></div></a></div>
-        <div class="col-sm-6 col-md-4"><a href="/jobs?category=healthcare"  class="text-decoration-none"><div class="card category-card p-4 text-center"><i class="fas fa-stethoscope text-success fa-3x mb-2"></i><h6 class="fw-bold mb-1">Healthcare</h6><small class="text-muted">890+ jobs</small></div></a></div>
-        <div class="col-sm-6 col-md-4"><a href="/jobs?category=finance"      class="text-decoration-none"><div class="card category-card p-4 text-center"><i class="fas fa-chart-bar text-warning fa-3x mb-2"></i><h6 class="fw-bold mb-1">Finance</h6><small class="text-muted">765+ jobs</small></div></a></div>
-        <div class="col-sm-6 col-md-4"><a href="/jobs?category=education"    class="text-decoration-none"><div class="card category-card p-4 text-center"><i class="fas fa-graduation-cap text-info fa-3x mb-2"></i><h6 class="fw-bold mb-1">Education</h6><small class="text-muted">642+ jobs</small></div></a></div>
-        <div class="col-sm-6 col-md-4"><a href="/jobs?category=engineering"  class="text-decoration-none"><div class="card category-card p-4 text-center"><i class="fas fa-cogs text-danger fa-3x mb-2"></i><h6 class="fw-bold mb-1">Engineering</h6><small class="text-muted">590+ jobs</small></div></a></div>
-        <div class="col-sm-6 col-md-4"><a href="/jobs?category=marketing"    class="text-decoration-none"><div class="card category-card p-4 text-center"><i class="fas fa-bullhorn text-purple fa-3x mb-2"></i><h6 class="fw-bold mb-1">Marketing</h6><small class="text-muted">480+ jobs</small></div></a></div>
-        <div class="col-sm-6 col-md-4"><a href="/jobs?category=retail"       class="text-decoration-none"><div class="card category-card p-4 text-center"><i class="fas fa-shopping-cart text-orange fa-3x mb-2"></i><h6 class="fw-bold mb-1">Retail</h6><small class="text-muted">720+ jobs</small></div></a></div>
-        <div class="col-sm-6 col-md-4"><a href="/jobs?category=admin"        class="text-decoration-none"><div class="card category-card p-4 text-center"><i class="fas fa-user-tie text-secondary fa-3x mb-2"></i><h6 class="fw-bold mb-1">Administration</h6><small class="text-muted">810+ jobs</small></div></a></div>
+<!-- Category Grid (all 19 categories) -->
+<div class="row g-4">
+
+  <!-- programming -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=programming" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-laptop-code fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Programming</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">3 420</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">2 980</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">120</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R1.1M</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Python</span><span class="badge bg-light text-dark small">JavaScript</span><span class="badge bg-light text-dark small">React</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
       </div>
+    </a>
+  </div>
+
+  <!-- information-technology -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=information-technology" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-server fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">IT Support</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">2 100</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">1 800</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">75</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R650k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">DevOps</span><span class="badge bg-light text-dark small">Cloud</span><span class="badge bg-light text-dark small">Cybersecurity</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- data-science -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=data-science" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-brain fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Data Science</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">1 450</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">1 300</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">95</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R1.3M</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">ML</span><span class="badge bg-light text-dark small">AI</span><span class="badge bg-light text-dark small">SQL</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- engineering -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=engineering" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-cogs fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Engineering</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">2 680</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">2 400</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">110</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R950k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">CAD</span><span class="badge bg-light text-dark small">AutoCAD</span><span class="badge bg-light text-dark small">PE</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- building-construction -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=building-construction" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-hard-hat fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Construction</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">1 800</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">1 550</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">80</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R580k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Foreman</span><span class="badge bg-light text-dark small">Plumber</span><span class="badge bg-light text-dark small">Electrician</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- business-management -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=business-management" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-briefcase fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Business Management</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">3 100</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">2 800</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">130</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R1.2M</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">PM</span><span class="badge bg-light text-dark small">Strategy</span><span class="badge bg-light text-dark small">Director</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- sales -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=sales" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-handshake fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Sales</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">2 600</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">2 250</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">90</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R780k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">BDR</span><span class="badge bg-light text-dark small">CRM</span><span class="badge bg-light text-dark small">Quota</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- finance -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=finance" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-chart-line fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Finance</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">2 400</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">2 100</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">100</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R900k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">CPA</span><span class="badge bg-light text-dark small">Auditor</span><span class="badge bg-light text-dark small">Excel</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- marketing -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=marketing" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-bullhorn fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Marketing</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">1 900</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">1 650</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">85</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R820k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">SEO</span><span class="badge bg-light text-dark small">Content</span><span class="badge bg-light text-dark small">Social</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- education -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=education" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-graduation-cap fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Education</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">1 600</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">1 400</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">70</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R520k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Teacher</span><span class="badge bg-light text-dark small">Curriculum</span><span class="badge bg-light text-dark small">e-Learning</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- healthcare-nursing -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=healthcare-nursing" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-user-nurse fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Nursing</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">2 800</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">2 500</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">110</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R720k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">RN</span><span class="badge bg-light text-dark small">NP</span><span class="badge bg-light text-dark small">Midwife</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- healthcare-other -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=healthcare-other" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-stethoscope fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Medical Practitioners</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">1 750</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">1 550</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">65</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R1.4M</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Physician</span><span class="badge bg-light text-dark small">Pharmacist</span><span class="badge bg-light text-dark small">Radiologist</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- office-admin -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=office-admin" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-desktop fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Administration</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">3 300</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">2 950</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">140</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R480k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Admin Asst</span><span class="badge bg-light text-dark small">Reception</span><span class="badge bg-light text-dark small">Clerk</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- legal -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=legal" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-balance-scale fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Legal</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">1 200</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">1 050</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">50</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R1.1M</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Lawyer</span><span class="badge bg-light text-dark small">Paralegal</span><span class="badge bg-light text-dark small">Compliance</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- hr -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=hr" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-users-cog fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Human Resources</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">1 550</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">1 350</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">60</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R820k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Recruiter</span><span class="badge bg-light text-dark small">Talent</span><span class="badge bg-light text-dark small">Payroll</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- customer-service -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=customer-service" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-headset fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Customer Service</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">2 900</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">2 600</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">110</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R500k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Call Center</span><span class="badge bg-light text-dark small">Support</span><span class="badge bg-light text-dark small">Client Success</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- cleaning-maintenance -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=cleaning-maintenance" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-broom fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Cleaning & Maintenance</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">3 700</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">3 400</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">150</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R350k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Cleaner</span><span class="badge bg-light text-dark small">Janitor</span><span class="badge bg-light text-dark small">Maintenance</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- agriculture -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=agriculture" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-tractor fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Agriculture</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">1 300</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">1 150</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">55</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R520k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Farm Mgr</span><span class="badge bg-light text-dark small">Irrigation</span><span class="badge bg-light text-dark small">Livestock</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- transport-logistics -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=transport-logistics" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-shipping-fast fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Transport & Logistics</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">2 200</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">1 950</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">90</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R580k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Driver</span><span class="badge bg-light text-dark small">Supply Chain</span><span class="badge bg-light text-dark small">Warehouse</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- community-social-welfare -->
+  <div class="col-sm-6 col-md-4">
+    <a href="/jobs?category=community-social-welfare" class="text-decoration-none">
+      <div class="category-card card h-100 p-0 overflow-hidden">
+        <div class="card-header border-0 hero-gradient text-white text-center py-4">
+          <i class="fas fa-hands-helping fa-3x mb-2 d-block"></i>
+          <h5 class="fw-bold mb-0">Community & Social</h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="row g-2 mb-3 small">
+            <div class="col-6"><span class="d-block fw-bold text-primary stats-counter">1 100</span><span class="text-muted">Total Jobs</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-success stats-counter">950</span><span class="text-muted">Active Now</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-warning stats-counter">45</span><span class="text-muted">Featured</span></div>
+            <div class="col-6"><span class="d-block fw-bold text-info stats-counter">R600k</span><span class="text-muted">Avg Max Pay</span></div>
+          </div>
+          <p class="mb-1 small text-muted">Top skills:</p>
+          <div class="d-flex flex-wrap justify-content-center gap-1"><span class="badge bg-light text-dark small">Social Worker</span><span class="badge bg-light text-dark small">NGO</span><span class="badge bg-light text-dark small">Outreach</span></div>
+        </div>
+        <div class="card-footer bg-transparent border-0 text-center pb-3"><button class="btn btn-primary-custom btn-sm px-4">View jobs <i class="fas fa-arrow-right ms-1"></i></button></div>
+      </div>
+    </a>
+  </div>
+
+</div>
     </main>
 
     <!-- Right sidebar (col-4 on lg) -->
