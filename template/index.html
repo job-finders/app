@@ -99,6 +99,14 @@
         
         /* FOOTER STYLES */
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            color: #1f2937;
+            margin: 0;
+            padding: 0;
+        }
+        
         .footer-container {
             background: linear-gradient(135deg, #1a3a7a 0%, #0a5c36 100%);
             color: white;
@@ -107,13 +115,14 @@
             overflow: hidden;
         }
         
-        .footer-wave {
+	.footer-wave {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100px;
-            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg"><path fill="%23f8fafc" fill-opacity="1" d="M0,160L48,154.7C96,149,192,139,288,128C384,117,480,107,576,128C672,149,768,203,864,213.3C960,224,1056,192,1152,165.3C1248,139,1344,117,1392,106.7L1440,96L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path></svg>') no-repeat;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%231a3a7a' fill-opacity='0.6' d='M0,160L48,154.7C96,149,192,139,288,128C384,117,480,107,576,128C672,149,768,203,864,213.3C960,224,1056,192,1152,165.3C1248,139,1344,117,1392,106.7L1440,96L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
             background-size: cover;
         }
         
@@ -139,6 +148,7 @@
             margin: 0;
             font-size: 28px;
             letter-spacing: -0.5px;
+            color: white;
         }
         
         .footer-about {
@@ -167,14 +177,17 @@
             margin-right: 8px;
         }
         
+        /* FIXED SECTION TITLES - Enhanced visibility */
         .footer-title {
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 25px;
             position: relative;
             padding-bottom: 10px;
+            color: #ffffff !important; /* Fixed color for visibility */
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3); /* Added for better contrast */
         }
-        
+
         .footer-title::after {
             content: '';
             position: absolute;
@@ -183,6 +196,7 @@
             width: 40px;
             height: 3px;
             background: var(--accent-color);
+	    background-color: #f59e0b; /* Use the accent color */
             border-radius: 3px;
         }
         
@@ -384,7 +398,8 @@
                 flex-direction: column;
                 gap: 8px;
             }
-        }    </style>
+        }
+</style>
 </head>
 <body>
 
@@ -900,7 +915,7 @@
         </div>
     </section>
     <!-- Footer Section -->
-   <footer class="footer-container">
+    <footer class="footer-container">
         <div class="footer-wave"></div>
         <div class="container footer-content">
             <div class="row">
