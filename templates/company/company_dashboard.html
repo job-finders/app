@@ -1,0 +1,926 @@
+{% extends "layout/dashboard.html" %}
+
+{% block title %}Company Dashboard - {{ company.company_name }} | Job Finders{% endblock %}
+
+{% block dashboard_title %}Company Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+
+    .company-overview {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .company-logo-dash {
+        width: 80px;
+        height: 80px;
+        border-radius: 12px;
+        object-fit: cover;
+        border: 3px solid rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .company-logo-dash i {
+        font-size: 2rem;
+        color: rgba(255,255,255,0.8);
+    }
+
+    .company-details h2 {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 700;
+    }
+
+    .company-details p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1rem;
+    }
+
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .stat-card {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .dashboard-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border: 1px solid #f0f0f0;
+    }
+
+    .card-header-custom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f8f9fa;
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .card-title i {
+        font-size: 1.1rem;
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .action-card {
+        background: white;
+        border: 2px solid #f0f0f0;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .action-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .action-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+    }
+
+    .action-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .action-description {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .recent-activity {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 0.9rem;
+    }
+
+    .activity-icon.new-application {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+
+    .activity-icon.job-posted {
+        background: rgba(37, 99, 235, 0.1);
+        color: var(--primary-color);
+    }
+
+    .activity-icon.profile-updated {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .activity-content {
+        flex-grow: 1;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .activity-description {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .activity-time {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .job-performance {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .performance-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .performance-number {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .performance-label {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .performance-change {
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .performance-change.positive {
+        color: #28a745;
+    }
+
+    .performance-change.negative {
+        color: #dc3545;
+    }
+
+    .billing-status {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .billing-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .plan-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .plan-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .plan-status.active {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+
+    .plan-status.expired {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+
+    .billing-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .billing-item {
+        text-align: center;
+    }
+
+    .billing-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        display: block;
+    }
+
+    .billing-label {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    .notifications-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .notification-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        border-left: 3px solid transparent;
+    }
+
+    .notification-item.unread {
+        background: rgba(37, 99, 235, 0.05);
+        border-left-color: var(--primary-color);
+    }
+
+    .notification-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 0.8rem;
+    }
+
+    .notification-icon.info {
+        background: rgba(37, 99, 235, 0.1);
+        color: var(--primary-color);
+    }
+
+    .notification-icon.success {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+
+    .notification-icon.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .notification-content {
+        flex-grow: 1;
+    }
+
+    .notification-title {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .notification-message {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .notification-time {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+    }
+
+    .chart-container {
+        height: 300px;
+        margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-header {
+            padding: 1.5rem;
+        }
+        
+        .company-overview {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .quick-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+        
+        .dashboard-card {
+            padding: 1.5rem;
+        }
+        
+        .job-performance {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .quick-stats {
+            grid-template-columns: 1fr;
+        }
+        
+        .billing-details {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="company-overview">
+        {% if company.logo_path %}
+        <img src="{{ company.logo_path }}" alt="{{ company.company_name }}" class="company-logo-dash">
+        {% else %}
+        <div class="company-logo-dash">
+            <i class="fas fa-building"></i>
+        </div>
+        {% endif %}
+        
+        <div class="company-details">
+            <h2>Welcome back, {{ company.company_name }}!</h2>
+            <p>Manage your jobs, view applications, and grow your team</p>
+        </div>
+    </div>
+    
+    <div class="quick-stats">
+        <div class="stat-card">
+            <span class="stat-number">{{ dashboard_stats.active_jobs|default(0) }}</span>
+            <span class="stat-label">Active Jobs</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ dashboard_stats.total_applications|default(0) }}</span>
+            <span class="stat-label">Total Applications</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ dashboard_stats.new_applications|default(0) }}</span>
+            <span class="stat-label">New This Week</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ dashboard_stats.profile_views|default(0) }}</span>
+            <span class="stat-label">Profile Views</span>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <a href="{{ url_for('company_route.post_job') }}" class="action-card">
+        <div class="action-icon">
+            <i class="fas fa-plus"></i>
+        </div>
+        <div class="action-title">Post New Job</div>
+        <div class="action-description">Create and publish a new job posting</div>
+    </a>
+    
+    <a href="{{ url_for('company_route.manage_jobs') }}" class="action-card">
+        <div class="action-icon">
+            <i class="fas fa-briefcase"></i>
+        </div>
+        <div class="action-title">Manage Jobs</div>
+        <div class="action-description">Edit, pause, or close your job postings</div>
+    </a>
+    
+    <a href="{{ url_for('company_route.view_applicants') }}" class="action-card">
+        <div class="action-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="action-title">View Applicants</div>
+        <div class="action-description">Review and manage job applications</div>
+    </a>
+    
+    <a href="{{ url_for('company_route.company_profile', company_id=company.company_id) }}" class="action-card">
+        <div class="action-icon">
+            <i class="fas fa-eye"></i>
+        </div>
+        <div class="action-title">View Public Profile</div>
+        <div class="action-description">See how candidates view your company</div>
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Job Performance -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-line"></i>
+                    Job Performance
+                </h3>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" 
+                            data-bs-toggle="dropdown">
+                        Last 30 Days
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="updatePeriod('7')">Last 7 Days</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="updatePeriod('30')">Last 30 Days</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="updatePeriod('90')">Last 90 Days</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="job-performance">
+                <div class="performance-card">
+                    <span class="performance-number">{{ performance_stats.job_views|default(0) }}</span>
+                    <div class="performance-label">Job Views</div>
+                    <div class="performance-change positive">+12% from last period</div>
+                </div>
+                <div class="performance-card">
+                    <span class="performance-number">{{ performance_stats.applications_received|default(0) }}</span>
+                    <div class="performance-label">Applications</div>
+                    <div class="performance-change positive">+8% from last period</div>
+                </div>
+                <div class="performance-card">
+                    <span class="performance-number">{{ performance_stats.profile_visits|default(0) }}</span>
+                    <div class="performance-label">Profile Visits</div>
+                    <div class="performance-change negative">-3% from last period</div>
+                </div>
+                <div class="performance-card">
+                    <span class="performance-number">{{ performance_stats.conversion_rate|default('0') }}%</span>
+                    <div class="performance-label">Conversion Rate</div>
+                    <div class="performance-change positive">+2% from last period</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-clock"></i>
+                    Recent Activity
+                </h3>
+                <a href="{{ url_for('company_route.activity_log') }}" class="btn btn-outline-primary btn-sm">
+                    View All
+                </a>
+            </div>
+            
+            <div class="recent-activity">
+                {% if recent_activities %}
+                    {% for activity in recent_activities %}
+                    <div class="activity-item">
+                        <div class="activity-icon {{ activity.type }}">
+                            <i class="{{ activity.icon }}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">{{ activity.title }}</div>
+                            <div class="activity-description">{{ activity.description }}</div>
+                            <div class="activity-time">{{ moment(activity.created_at).fromNow() }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="activity-item">
+                        <div class="activity-icon job-posted">
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">New job posted</div>
+                            <div class="activity-description">Software Developer position is now live</div>
+                            <div class="activity-time">2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon new-application">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">New application received</div>
+                            <div class="activity-description">John Smith applied for Marketing Manager</div>
+                            <div class="activity-time">4 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon profile-updated">
+                            <i class="fas fa-edit"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Company profile updated</div>
+                            <div class="activity-description">Company description and logo updated</div>
+                            <div class="activity-time">1 day ago</div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Billing Status -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-credit-card"></i>
+                    Billing & Subscription
+                </h3>
+            </div>
+            
+            <div class="billing-status">
+                <div class="billing-header">
+                    <div class="plan-name">{{ billing_info.plan_name|default('Free Plan') }}</div>
+                    <div class="plan-status {{ billing_info.status|default('active') }}">
+                        {{ billing_info.status|default('Active')|title }}
+                    </div>
+                </div>
+                
+                <div class="billing-details">
+                    <div class="billing-item">
+                        <span class="billing-value">{{ billing_info.jobs_posted|default(0) }}</span>
+                        <div class="billing-label">Jobs Posted</div>
+                    </div>
+                    <div class="billing-item">
+                        <span class="billing-value">{{ billing_info.jobs_remaining|default(5) }}</span>
+                        <div class="billing-label">Jobs Remaining</div>
+                    </div>
+                    <div class="billing-item">
+                        <span class="billing-value">{{ billing_info.days_remaining|default('∞') }}</span>
+                        <div class="billing-label">Days Left</div>
+                    </div>
+                </div>
+                
+                {% if billing_info.plan_name != 'Premium' %}
+                <div class="text-center">
+                    <a href="{{ url_for('billing_route.upgrade_plan') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-arrow-up me-2"></i>Upgrade Plan
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-bell"></i>
+                    Notifications
+                    {% if unread_notifications_count > 0 %}
+                    <span class="badge bg-danger ms-2">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </h3>
+                <a href="{{ url_for('company_route.notifications') }}" class="btn btn-outline-primary btn-sm">
+                    View All
+                </a>
+            </div>
+            
+            <div class="notifications-list">
+                {% if notifications %}
+                    {% for notification in notifications %}
+                    <div class="notification-item {% if not notification.read %}unread{% endif %}">
+                        <div class="notification-icon {{ notification.type }}">
+                            <i class="{{ notification.icon }}"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">{{ notification.title }}</div>
+                            <div class="notification-message">{{ notification.message }}</div>
+                            <div class="notification-time">{{ moment(notification.created_at).fromNow() }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="notification-item">
+                        <div class="notification-icon info">
+                            <i class="fas fa-info"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">Welcome to Job Finders!</div>
+                            <div class="notification-message">Complete your company profile to attract more candidates</div>
+                            <div class="notification-time">2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="notification-item unread">
+                        <div class="notification-icon success">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">Job posting approved</div>
+                            <div class="notification-message">Your Software Developer job is now live</div>
+                            <div class="notification-time">5 hours ago</div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Tips -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-lightbulb"></i>
+                    Tips for Success
+                </h3>
+            </div>
+            
+            <div class="list-group list-group-flush">
+                <div class="list-group-item border-0 px-0">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-check-circle text-success me-3 mt-1"></i>
+                        <div>
+                            <strong>Complete your profile</strong>
+                            <p class="mb-0 text-muted small">Add company logo, description, and contact details</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="list-group-item border-0 px-0">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-check-circle text-success me-3 mt-1"></i>
+                        <div>
+                            <strong>Write detailed job descriptions</strong>
+                            <p class="mb-0 text-muted small">Include requirements, responsibilities, and benefits</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="list-group-item border-0 px-0">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-check-circle text-success me-3 mt-1"></i>
+                        <div>
+                            <strong>Respond to applications quickly</strong>
+                            <p class="mb-0 text-muted small">Fast responses improve candidate experience</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize performance chart
+    initializePerformanceChart();
+    
+    // Load dashboard data
+    loadDashboardData();
+    
+    // Auto-refresh every 5 minutes
+    setInterval(loadDashboardData, 300000);
+});
+
+function initializePerformanceChart() {
+    const ctx = document.getElementById('performanceChart');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [{
+                label: 'Job Views',
+                data: [120, 190, 300, 250],
+                borderColor: 'rgb(37, 99, 235)',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Applications',
+                data: [25, 45, 60, 55],
+                borderColor: 'rgb(5, 150, 105)',
+                backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+async function loadDashboardData() {
+    try {
+        const response = await fetch('/api/company/dashboard-data');
+        const data = await response.json();
+        
+        if (data.success) {
+            updateDashboardStats(data.stats);
+            updateNotifications(data.notifications);
+        }
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+    }
+}
+
+function updateDashboardStats(stats) {
+    // Update stat cards
+    const statCards = document.querySelectorAll('.stat-number');
+    if (statCards.length >= 4) {
+        statCards[0].textContent = stats.active_jobs || 0;
+        statCards[1].textContent = stats.total_applications || 0;
+        statCards[2].textContent = stats.new_applications || 0;
+        statCards[3].textContent = stats.profile_views || 0;
+    }
+}
+
+function updateNotifications(notifications) {
+    // Update notification badge
+    const badge = document.querySelector('.card-title .badge');
+    const unreadCount = notifications.filter(n => !n.read).length;
+    
+    if (badge) {
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount;
+            badge.style.display = 'inline';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+function updatePeriod(days) {
+    // Update performance data for selected period
+    fetch(`/api/company/performance-data?period=${days}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update performance cards
+                updatePerformanceCards(data.performance);
+                // Update chart if needed
+                updatePerformanceChart(data.chartData);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating performance data:', error);
+        });
+}
+
+function updatePerformanceCards(performance) {
+    const cards = document.querySelectorAll('.performance-number');
+    if (cards.length >= 4) {
+        cards[0].textContent = performance.job_views || 0;
+        cards[1].textContent = performance.applications_received || 0;
+        cards[2].textContent = performance.profile_visits || 0;
+        cards[3].textContent = (performance.conversion_rate || 0) + '%';
+    }
+}
+
+function updatePerformanceChart(chartData) {
+    // Update chart with new data
+    // Implementation depends on Chart.js instance
+}
+
+// Mark notification as read
+function markNotificationRead(notificationId) {
+    fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        }
+    }).then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              // Update UI to show notification as read
+              const notification = document.querySelector(`[data-notification-id="${notificationId}"]`);
+              if (notification) {
+                  notification.classList.remove('unread');
+              }
+          }
+      });
+}
+
+// Analytics tracking
+if (typeof gtag !== 'undefined') {
+    gtag('event', 'dashboard_view', {
+        'company_id': '{{ company.company_id }}',
+        'page_location': window.location.href
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1759 @@
+{% extends "layout/dashboard.html" %}
+
+{% block title %}Post New Job - {{ company.company_name }} | Job Finders{% endblock %}
+
+{% block dashboard_title %}Post New Job{% endblock %}
+
+{% block extra_css %}
+<style>
+    .posting-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+
+    .posting-progress {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .progress-step {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        min-width: 150px;
+        justify-content: center;
+    }
+
+    .progress-step.active {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .progress-step.completed {
+        background: #28a745;
+        color: white;
+    }
+
+    .progress-step.inactive {
+        background: #f8f9fa;
+        color: var(--text-muted);
+        border: 1px solid #e9ecef;
+    }
+
+    .step-connector {
+        width: 3rem;
+        height: 2px;
+        background: #e9ecef;
+        margin: 0 0.5rem;
+        align-self: center;
+    }
+
+    .step-connector.completed {
+        background: #28a745;
+    }
+
+    .posting-form {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+
+    .form-step {
+        display: none;
+    }
+
+    .form-step.active {
+        display: block;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .section-subtitle {
+        color: var(--text-muted);
+        margin-bottom: 2rem;
+        font-size: 1rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .required {
+        color: #dc3545;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+    }
+
+    .form-control.is-invalid {
+        border-color: #dc3545;
+    }
+
+    .invalid-feedback {
+        display: block;
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .rich-editor {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        min-height: 200px;
+        transition: all 0.3s ease;
+    }
+
+    .rich-editor:focus-within {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+    }
+
+    .editor-toolbar {
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        padding: 0.75rem;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .editor-btn {
+        background: none;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 0.375rem 0.75rem;
+        color: var(--text-dark);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .editor-btn:hover {
+        background: #e9ecef;
+    }
+
+    .editor-btn.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .ai-enhance-btn {
+        background: linear-gradient(45deg, #667eea, #764ba2) !important;
+        color: white !important;
+        border: none !important;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .ai-enhance-btn:hover {
+        background: linear-gradient(45deg, #5a67d8, #6b46c1) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .editor-content {
+        padding: 1rem;
+        min-height: 150px;
+        outline: none;
+        line-height: 1.6;
+    }
+
+    .editor-content.empty:before {
+        content: attr(data-placeholder);
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    .editor-content:focus.empty:before {
+        display: none;
+    }
+
+    .character-count {
+        text-align: right;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
+
+    .character-count.warning {
+        color: #f59e0b;
+    }
+
+    .character-count.danger {
+        color: #dc3545;
+    }
+
+    .skills-input {
+        position: relative;
+    }
+
+    .skills-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .skill-tag {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .skill-tag .remove {
+        cursor: pointer;
+        font-weight: bold;
+        opacity: 0.8;
+    }
+
+    .skill-tag .remove:hover {
+        opacity: 1;
+    }
+
+    .skills-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+    }
+
+    .skill-suggestion {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .skill-suggestion:hover {
+        background: #f8f9fa;
+    }
+
+    .skill-suggestion:last-child {
+        border-bottom: none;
+    }
+
+    .salary-range {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .salary-separator {
+        font-weight: 600;
+        color: var(--text-muted);
+        text-align: center;
+    }
+
+    .job-preview {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .preview-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .company-logo-preview {
+        width: 60px;
+        height: 60px;
+        border-radius: 10px;
+        object-fit: cover;
+        border: 1px solid #e9ecef;
+    }
+
+    .preview-job-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin: 0;
+    }
+
+    .preview-company-name {
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .preview-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+
+    .preview-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .preview-description {
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .preview-skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .preview-skill {
+        background: #f8f9fa;
+        color: var(--text-dark);
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 2rem;
+        background: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        border-radius: 0 0 15px 15px;
+        margin-top: 2rem;
+    }
+
+    .btn-post {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-post:hover {
+        background: var(--secondary-color);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-post:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .posting-tips {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .tips-title {
+        color: #856404;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .tips-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .tips-list li {
+        color: #856404;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .tips-list li i {
+        margin-top: 0.25rem;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+        .posting-header {
+            padding: 1.5rem;
+        }
+        
+        .posting-form {
+            padding: 1.5rem;
+        }
+        
+        .posting-progress {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .step-connector {
+            display: none;
+        }
+        
+        .salary-range {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .salary-separator {
+            display: none;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+    }
+
+    /* AI Enhancement Modal Styles */
+    .ai-modal-content {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+    }
+
+    .ai-modal-header {
+        background: rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        padding: 1.5rem;
+    }
+
+    .ai-modal-header .modal-title {
+        color: white;
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+
+    .ai-modal-body {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 2rem;
+        color: white;
+    }
+
+    .ai-form-label {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.95rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .ai-textarea {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 15px;
+        color: white;
+        padding: 1rem;
+        resize: vertical;
+        min-height: 120px;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        transition: all 0.3s ease;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+    }
+
+    .ai-textarea:focus {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.6);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .ai-textarea::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .ai-char-count {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.8rem;
+        text-align: right;
+        margin-top: 0.5rem;
+    }
+
+    .ai-suggestions-card {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        backdrop-filter: blur(5px);
+        margin-top: 1.5rem;
+        overflow: hidden;
+    }
+
+    .ai-suggestions-header {
+        background: rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 1rem 1.5rem;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .ai-suggestions-body {
+        padding: 1.5rem;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .ai-suggestions-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .suggestion-badge {
+        display: inline-block;
+        background: linear-gradient(45deg, #ff6b6b, #feca57);
+        color: white;
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        border-radius: 25px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+    }
+
+    .suggestion-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        background: linear-gradient(45deg, #ff5252, #ffc107);
+    }
+
+    .ai-modal-footer {
+        background: rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 1.5rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .ai-btn-secondary {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .ai-btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        color: white;
+    }
+
+    .ai-btn-primary {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        border: none;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .ai-btn-primary:hover {
+        background: linear-gradient(45deg, #5a67d8, #6b46c1);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        color: white;
+    }
+
+    /* Custom scrollbar for suggestions */
+    .ai-suggestions-body::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .ai-suggestions-body::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .ai-suggestions-body::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 3px;
+    }
+
+    .ai-suggestions-body::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Posting Header -->
+<div class="posting-header">
+    <div class="text-center">
+        <h1 class="display-6 fw-bold mb-2">Post a New Job</h1>
+        <p class="lead mb-0">Create an attractive job posting to find the perfect candidates</p>
+    </div>
+</div>
+
+<!-- Progress Steps -->
+<div class="posting-progress">
+    <div class="progress-step active" id="step-1">
+        <i class="fas fa-info-circle me-2"></i>
+        <span>Job Details</span>
+    </div>
+    <div class="step-connector" id="connector-1"></div>
+    <div class="progress-step inactive" id="step-2">
+        <i class="fas fa-list-ul me-2"></i>
+        <span>Requirements</span>
+    </div>
+    <div class="step-connector" id="connector-2"></div>
+    <div class="progress-step inactive" id="step-3">
+        <i class="fas fa-eye me-2"></i>
+        <span>Preview</span>
+    </div>
+</div>
+
+<!-- Job Posting Form -->
+<form id="jobPostingForm" method="POST" action="{{ url_for('company_route.submit_job_posting') }}">
+    {{ csrf_token() }}
+    
+    <div class="posting-form">
+        <!-- Step 1: Job Details -->
+        <div class="form-step active" id="form-step-1">
+            <h2 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                Job Information
+            </h2>
+            <p class="section-subtitle">Provide the basic details about the position you're hiring for.</p>
+            
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <label for="job_title" class="form-label">
+                        Job Title <span class="required">*</span>
+                    </label>
+                    <input type="text" class="form-control" id="job_title" name="job_title" 
+                           placeholder="e.g., Senior Software Developer" required>
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="job_type" class="form-label">
+                        Job Type <span class="required">*</span>
+                    </label>
+                    <select class="form-select" id="job_type" name="job_type" required>
+                        <option value="">Select Type</option>
+                        <option value="full_time">Full Time</option>
+                        <option value="part_time">Part Time</option>
+                        <option value="contract">Contract</option>
+                        <option value="internship">Internship</option>
+                        <option value="remote">Remote</option>
+                    </select>
+                    <div class="invalid-feedback"></div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="category" class="form-label">
+                        Category <span class="required">*</span>
+                    </label>
+                    <select class="form-select" id="category" name="category" required>
+                        <option value="">Select Category</option>
+                        {% for category in job_categories %}
+                        <option value="{{ category.slug }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="experience_level" class="form-label">Experience Level</label>
+                    <select class="form-select" id="experience_level" name="experience_level">
+                        <option value="">Any Level</option>
+                        <option value="entry">Entry Level</option>
+                        <option value="mid">Mid Level</option>
+                        <option value="senior">Senior Level</option>
+                        <option value="executive">Executive</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="city" class="form-label">
+                        City <span class="required">*</span>
+                    </label>
+                    <input type="text" class="form-control" id="city" name="city" 
+                           placeholder="e.g., Cape Town" required>
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="province" class="form-label">
+                        Province <span class="required">*</span>
+                    </label>
+                    <select class="form-select" id="province" name="province" required>
+                        <option value="">Select Province</option>
+                        <option value="eastern-cape">Eastern Cape</option>
+                        <option value="free-state">Free State</option>
+                        <option value="gauteng">Gauteng</option>
+                        <option value="kwazulu-natal">KwaZulu-Natal</option>
+                        <option value="limpopo">Limpopo</option>
+                        <option value="mpumalanga">Mpumalanga</option>
+                        <option value="northern-cape">Northern Cape</option>
+                        <option value="north-west">North West</option>
+                        <option value="western-cape">Western Cape</option>
+                    </select>
+                    <div class="invalid-feedback"></div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="work_location_type" class="form-label">Work Location</label>
+                    <select class="form-select" id="work_location_type" name="work_location_type">
+                        <option value="onsite">On-site</option>
+                        <option value="remote">Remote</option>
+                        <option value="hybrid">Hybrid</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="contract_duration" class="form-label">Contract Duration</label>
+                    <input type="text" class="form-control" id="contract_duration" name="contract_duration" 
+                           placeholder="e.g., 6 months, Permanent">
+                </div>
+            </div>
+            
+            <!-- Salary Range -->
+            <div class="mb-4">
+                <label class="form-label">Salary Range (ZAR)</label>
+                <div class="salary-range">
+                    <div>
+                        <input type="number" class="form-control" id="salary_min" name="salary_min" 
+                               placeholder="Minimum salary" min="0">
+                    </div>
+                    <div class="salary-separator">to</div>
+                    <div>
+                        <input type="number" class="form-control" id="salary_max" name="salary_max" 
+                               placeholder="Maximum salary" min="0">
+                    </div>
+                </div>
+                <small class="text-muted">Leave blank if you prefer not to disclose salary information</small>
+            </div>
+            
+            <!-- Job Description -->
+            <div class="mb-4">
+                <label for="description" class="form-label">
+                    Job Description <span class="required">*</span>
+                </label>
+                <div class="rich-editor">
+                    <div class="editor-toolbar">
+                        <button type="button" class="editor-btn" data-command="bold">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button type="button" class="editor-btn" data-command="italic">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button type="button" class="editor-btn" data-command="underline">
+                            <i class="fas fa-underline"></i>
+                        </button>
+                        <button type="button" class="editor-btn" data-command="insertUnorderedList">
+                            <i class="fas fa-list-ul"></i>
+                        </button>
+                        <button type="button" class="editor-btn" data-command="insertOrderedList">
+                            <i class="fas fa-list-ol"></i>
+                        </button>
+                        <button type="button" class="editor-btn ai-enhance-btn" onclick="openAiEnhanceModal('description')">
+                            <i class="fas fa-magic"></i> AI Enhance
+                        </button>
+                    </div>
+                    <div class="editor-content" contenteditable="true" id="description_editor" 
+                         data-placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..."></div>
+                </div>
+                <textarea name="description" id="description" style="display: none;" required></textarea>
+                <div class="character-count" id="descriptionCount">0 / 5000 characters</div>
+                <div class="invalid-feedback"></div>
+            </div>
+        </div>
+
+        <!-- Step 2: Requirements -->
+        <div class="form-step" id="form-step-2">
+            <h2 class="section-title">
+                <i class="fas fa-list-ul"></i>
+                Job Requirements
+            </h2>
+            <p class="section-subtitle">Specify the qualifications and skills needed for this position.</p>
+            
+            <!-- Requirements -->
+            <div class="mb-4">
+                <label for="requirements" class="form-label">
+                    Requirements <span class="required">*</span>
+                </label>
+                <div class="rich-editor">
+                    <div class="editor-toolbar">
+                        <button type="button" class="editor-btn" data-command="bold">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button type="button" class="editor-btn" data-command="italic">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button type="button" class="editor-btn" data-command="insertUnorderedList">
+                            <i class="fas fa-list-ul"></i>
+                        </button>
+                        <button type="button" class="editor-btn" data-command="insertOrderedList">
+                            <i class="fas fa-list-ol"></i>
+                        </button>
+                        <button type="button" class="editor-btn ai-enhance-btn" onclick="openAiEnhanceModal('requirements')">
+                            <i class="fas fa-magic"></i> AI Enhance
+                        </button>
+                    </div>
+                    <div class="editor-content" contenteditable="true" id="requirements_editor" 
+                         data-placeholder="List the required qualifications, experience, and skills..."></div>
+                </div>
+                <textarea name="requirements" id="requirements" style="display: none;" required></textarea>
+                <div class="character-count" id="requirementsCount">0 / 3000 characters</div>
+                <div class="invalid-feedback"></div>
+            </div>
+            
+            <!-- Responsibilities -->
+            <div class="mb-4">
+                <label for="responsibilities" class="form-label">Responsibilities</label>
+                <div class="rich-editor">
+                    <div class="editor-toolbar">
+                        <button type="button" class="editor-btn" data-command="bold">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button type="button" class="editor-btn" data-command="italic">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button type="button" class="editor-btn" data-command="insertUnorderedList">
+                            <i class="fas fa-list-ul"></i>
+                        </button>
+                        <button type="button" class="editor-btn" data-command="insertOrderedList">
+                            <i class="fas fa-list-ol"></i>
+                        </button>
+                        <button type="button" class="editor-btn ai-enhance-btn" onclick="openAiEnhanceModal('responsibilities')">
+                            <i class="fas fa-magic"></i> AI Enhance
+                        </button>
+                    </div>
+                    <div class="editor-content" contenteditable="true" id="responsibilities_editor" 
+                         data-placeholder="Outline the key responsibilities and duties..."></div>
+                </div>
+                <textarea name="responsibilities" id="responsibilities" style="display: none;"></textarea>
+                <div class="character-count" id="responsibilitiesCount">0 / 3000 characters</div>
+            </div>
+            
+            <!-- Skills -->
+            <div class="mb-4">
+                <label class="form-label">Required Skills</label>
+                <div class="skills-input">
+                    <div class="skills-tags" id="skillsTags"></div>
+                    <input type="text" class="form-control" id="skills_input" 
+                           placeholder="Type a skill and press Enter">
+                    <div class="skills-suggestions" id="skillsSuggestions"></div>
+                </div>
+                <input type="hidden" name="skills" id="skills_hidden">
+                <small class="text-muted">Add relevant skills one by one. Press Enter to add each skill.</small>
+            </div>
+            
+            <!-- Education -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="education_required" class="form-label">Education Level</label>
+                    <select class="form-select" id="education_required" name="education_required">
+                        <option value="">Not Specified</option>
+                        <option value="matric">Matric/Grade 12</option>
+                        <option value="certificate">Certificate</option>
+                        <option value="diploma">Diploma</option>
+                        <option value="degree">Bachelor's Degree</option>
+                        <option value="honours">Honours Degree</option>
+                        <option value="masters">Master's Degree</option>
+                        <option value="phd">PhD/Doctorate</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="years_experience" class="form-label">Years of Experience</label>
+                    <select class="form-select" id="years_experience" name="years_experience">
+                        <option value="">Not Specified</option>
+                        <option value="0">Entry Level (0 years)</option>
+                        <option value="1">1+ years</option>
+                        <option value="2">2+ years</option>
+                        <option value="3">3+ years</option>
+                        <option value="5">5+ years</option>
+                        <option value="10">10+ years</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Benefits -->
+            <div class="mb-4">
+                <label for="benefits" class="form-label">Benefits & Perks</label>
+                <textarea class="form-control" id="benefits" name="benefits" rows="4" 
+                          placeholder="List the benefits, perks, and what makes your company a great place to work..."></textarea>
+                <div class="character-count" id="benefitsCount">0 / 1000 characters</div>
+            </div>
+            
+            <!-- Application Instructions -->
+            <div class="mb-4">
+                <label for="application_instructions" class="form-label">Application Instructions</label>
+                <textarea class="form-control" id="application_instructions" name="application_instructions" rows="3" 
+                          placeholder="Any specific instructions for applicants (optional)..."></textarea>
+            </div>
+        </div>
+
+        <!-- Step 3: Preview -->
+        <div class="form-step" id="form-step-3">
+            <h2 class="section-title">
+                <i class="fas fa-eye"></i>
+                Preview Your Job Posting
+            </h2>
+            <p class="section-subtitle">Review how your job posting will appear to candidates.</p>
+            
+            <div class="job-preview">
+                <div class="preview-card" id="jobPreview">
+                    <!-- Preview content will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Publishing Options -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="expires_at" class="form-label">Job Expires On</label>
+                    <input type="date" class="form-control" id="expires_at" name="expires_at">
+                    <small class="text-muted">Leave blank for no expiration date</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="featured" class="form-label">Promotion Options</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="featured" name="featured" value="1">
+                        <label class="form-check-label" for="featured">
+                            Make this job featured (+R50)
+                        </label>
+                    </div>
+                    <small class="text-muted">Featured jobs appear at the top of search results</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+        <button type="button" class="btn btn-outline-secondary" id="prevBtn" 
+                onclick="changeStep(-1)" style="display: none;">
+            <i class="fas fa-arrow-left me-2"></i>Previous
+        </button>
+        
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary" id="saveDraftBtn">
+                <i class="fas fa-save me-2"></i>Save Draft
+            </button>
+            <button type="button" class="btn btn-primary" id="nextBtn" onclick="changeStep(1)">
+                Next<i class="fas fa-arrow-right ms-2"></i>
+            </button>
+            <button type="submit" class="btn-post" id="submitBtn" style="display: none;">
+                <i class="fas fa-paper-plane me-2"></i>Post Job
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Posting Tips -->
+<div class="posting-tips">
+    <div class="tips-title">
+        <i class="fas fa-lightbulb"></i>
+        Tips for Writing Great Job Postings
+    </div>
+    <ul class="tips-list">
+        <li>
+            <i class="fas fa-check"></i>
+            <span>Use a clear, specific job title that candidates will search for</span>
+        </li>
+        <li>
+            <i class="fas fa-check"></i>
+            <span>Include salary range to attract qualified candidates</span>
+        </li>
+        <li>
+            <i class="fas fa-check"></i>
+            <span>Be specific about requirements but avoid being overly restrictive</span>
+        </li>
+        <li>
+            <i class="fas fa-check"></i>
+            <span>Highlight your company culture and what makes you unique</span>
+        </li>
+        <li>
+            <i class="fas fa-check"></i>
+            <span>Use bullet points for easy reading</span>
+        </li>
+    </ul>
+</div>
+
+<!-- AI Enhancement Modal -->
+<div class="modal modal-lg fade" id="aiEnhanceModal" tabindex="-1" aria-labelledby="aiEnhanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content ai-modal-content">
+            <div class="modal-header ai-modal-header">
+                <h5 class="modal-title" id="aiEnhanceModalLabel">✨ AI Enhance</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body ai-modal-body">
+                <!-- Prompt -->
+                <label for="aiUserPrompt" class="form-label fw-bold ai-form-label">💬 Tell me how to improve your content</label>
+                <textarea id="aiUserPrompt" class="form-control ai-textarea" rows="6" maxlength="500"
+                          placeholder="e.g. Make the tone more casual, add diversity statement, focus on technical details..."></textarea>
+                <div class="character-count ai-char-count">
+                    <span id="aiCharCount">0</span>/500 characters
+                </div>
+
+                <!-- Suggestions card -->
+                <div class="suggestions-card ai-suggestions-card" id="aiSuggestionsContainer" style="display:none">
+                    <div class="suggestions-header ai-suggestions-header">
+                        💡 Quick Suggestions
+                    </div>
+                    <div class="suggestions-body ai-suggestions-body">
+                        <div id="aiSuggestionsList" class="suggestions-container ai-suggestions-container">
+                            <!-- badges injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer ai-modal-footer">
+                <button type="button" class="btn btn-secondary ai-btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary ai-btn-primary" id="doAiEnhanceBtn">🚀 Enhance</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentStep = 1;
+const totalSteps = 3;
+let selectedSkills = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize rich text editors
+    initializeRichEditors();
+    
+    // Initialize skills input
+    initializeSkillsInput();
+    
+    // Character counting
+    setupCharacterCounting();
+    
+    // Form validation
+    setupFormValidation();
+    
+    // Auto-save functionality
+    setInterval(saveDraft, 30000); // Auto-save every 30 seconds
+});
+
+function initializeRichEditors() {
+    const editors = document.querySelectorAll('.editor-content');
+    
+    editors.forEach(editor => {
+        // Set placeholder behavior
+        if (editor.textContent.trim() === '') {
+            editor.classList.add('empty');
+        }
+        
+        editor.addEventListener('focus', function() {
+            this.classList.remove('empty');
+        });
+        
+        editor.addEventListener('blur', function() {
+            if (this.textContent.trim() === '') {
+                this.classList.add('empty');
+            }
+        });
+        
+        editor.addEventListener('input', function() {
+            updateHiddenField(this);
+            updateCharacterCount(this);
+        });
+    });
+    
+    // Editor toolbar buttons
+    document.querySelectorAll('.editor-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const command = this.dataset.command;
+            document.execCommand(command, false, null);
+            this.classList.toggle('active');
+        });
+    });
+}
+
+function updateHiddenField(editor) {
+    const fieldName = editor.id.replace('_editor', '');
+    const hiddenField = document.getElementById(fieldName);
+    if (hiddenField) {
+        hiddenField.value = editor.innerHTML;
+    }
+}
+
+function initializeSkillsInput() {
+    const skillsInput = document.getElementById('skills_input');
+    const skillsTags = document.getElementById('skillsTags');
+    const skillsSuggestions = document.getElementById('skillsSuggestions');
+    
+    skillsInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && this.value.trim()) {
+            e.preventDefault();
+            addSkill(this.value.trim());
+            this.value = '';
+            skillsSuggestions.style.display = 'none';
+        }
+    });
+    
+    skillsInput.addEventListener('input', function() {
+        if (this.value.length > 1) {
+            fetchSkillSuggestions(this.value);
+        } else {
+            skillsSuggestions.style.display = 'none';
+        }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!skillsInput.contains(e.target) && !skillsSuggestions.contains(e.target)) {
+            skillsSuggestions.style.display = 'none';
+        }
+    });
+}
+
+function addSkill(skill) {
+    if (selectedSkills.includes(skill)) return;
+    
+    selectedSkills.push(skill);
+    updateSkillsDisplay();
+    updateSkillsHidden();
+}
+
+function removeSkill(skill) {
+    selectedSkills = selectedSkills.filter(s => s !== skill);
+    updateSkillsDisplay();
+    updateSkillsHidden();
+}
+
+function updateSkillsDisplay() {
+    const skillsTags = document.getElementById('skillsTags');
+    skillsTags.innerHTML = selectedSkills.map(skill => 
+        `<span class="skill-tag">
+            ${skill}
+            <span class="remove" onclick="removeSkill('${skill}')">&times;</span>
+        </span>`
+    ).join('');
+}
+
+function updateSkillsHidden() {
+    document.getElementById('skills_hidden').value = JSON.stringify(selectedSkills);
+}
+
+async function fetchSkillSuggestions(query) {
+    try {
+        const response = await fetch(`/api/skills/suggestions?q=${encodeURIComponent(query)}`);
+        const suggestions = await response.json();
+        
+        const skillsSuggestions = document.getElementById('skillsSuggestions');
+        
+        if (suggestions.length > 0) {
+            skillsSuggestions.innerHTML = suggestions
+                .filter(skill => !selectedSkills.includes(skill))
+                .map(skill => 
+                    `<div class="skill-suggestion" onclick="addSkill('${skill}')">${skill}</div>`
+                ).join('');
+            skillsSuggestions.style.display = 'block';
+        } else {
+            skillsSuggestions.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error fetching skill suggestions:', error);
+    }
+}
+
+function setupCharacterCounting() {
+    const fields = [
+        { editor: 'description_editor', counter: 'descriptionCount', max: 5000 },
+        { editor: 'requirements_editor', counter: 'requirementsCount', max: 3000 },
+        { editor: 'responsibilities_editor', counter: 'responsibilitiesCount', max: 3000 },
+        { field: 'benefits', counter: 'benefitsCount', max: 1000 }
+    ];
+    
+    fields.forEach(field => {
+        const element = document.getElementById(field.editor || field.field);
+        if (element) {
+            element.addEventListener('input', () => updateCharacterCount(element, field.counter, field.max));
+        }
+    });
+}
+
+function updateCharacterCount(element, counterId = null, maxChars = null) {
+    if (!counterId) {
+        // Auto-detect counter ID
+        const editorId = element.id;
+        if (editorId.includes('description')) {
+            counterId = 'descriptionCount';
+            maxChars = 5000;
+        } else if (editorId.includes('requirements')) {
+            counterId = 'requirementsCount';
+            maxChars = 3000;
+        } else if (editorId.includes('responsibilities')) {
+            counterId = 'responsibilitiesCount';
+            maxChars = 3000;
+        }
+    }
+    
+    if (!counterId) return;
+    
+    const counter = document.getElementById(counterId);
+    if (!counter) return;
+    
+    const text = element.textContent || element.value || '';
+    const count = text.length;
+    
+    counter.textContent = `${count} / ${maxChars} characters`;
+    
+    counter.classList.remove('warning', 'danger');
+    if (count > maxChars * 0.9) {
+        counter.classList.add('warning');
+    }
+    if (count >= maxChars) {
+        counter.classList.add('danger');
+    }
+}
+
+function setupFormValidation() {
+    const form = document.getElementById('jobPostingForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (validateForm()) {
+            submitJobPosting();
+        }
+    });
+}
+
+function changeStep(direction) {
+    const newStep = currentStep + direction;
+    
+    if (newStep < 1 || newStep > totalSteps) return;
+    
+    if (direction > 0 && !validateCurrentStep()) return;
+    
+    // Hide current step
+    document.getElementById(`form-step-${currentStep}`).classList.remove('active');
+    document.getElementById(`step-${currentStep}`).classList.remove('active');
+    document.getElementById(`step-${currentStep}`).classList.add('completed');
+    
+    // Update connector
+    if (currentStep < totalSteps) {
+        document.getElementById(`connector-${currentStep}`).classList.add('completed');
+    }
+    
+    // Show new step
+    currentStep = newStep;
+    document.getElementById(`form-step-${currentStep}`).classList.add('active');
+    document.getElementById(`step-${currentStep}`).classList.add('active');
+    document.getElementById(`step-${currentStep}`).classList.remove('inactive');
+    
+    // Update buttons
+    updateButtons();
+    
+    // Update preview if on step 3
+    if (currentStep === 3) {
+        updatePreview();
+    }
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateButtons() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    prevBtn.style.display = currentStep > 1 ? 'block' : 'none';
+    nextBtn.style.display = currentStep < totalSteps ? 'block' : 'none';
+    submitBtn.style.display = currentStep === totalSteps ? 'block' : 'none';
+}
+
+function validateCurrentStep() {
+    const currentStepElement = document.getElementById(`form-step-${currentStep}`);
+    const requiredFields = currentStepElement.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+        const value = field.type === 'hidden' ? field.value : (field.textContent || field.value || '').trim();
+        
+        if (!value) {
+            field.classList.add('is-invalid');
+            isValid = false;
+            
+            // Show error message
+            const feedback = field.parentNode.querySelector('.invalid-feedback');
+            if (feedback) {
+                feedback.textContent = 'This field is required';
+            }
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        showToast('Please fill in all required fields', 'error');
+    }
+    
+    return isValid;
+}
+
+function validateForm() {
+    // Validate all steps
+    for (let step = 1; step <= totalSteps; step++) {
+        const stepElement = document.getElementById(`form-step-${step}`);
+        const requiredFields = stepElement.querySelectorAll('[required]');
+        
+        for (let field of requiredFields) {
+            const value = field.type === 'hidden' ? field.value : (field.textContent || field.value || '').trim();
+            
+            if (!value) {
+                showToast(`Please complete all required fields in step ${step}`, 'error');
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+function updatePreview() {
+    const preview = document.getElementById('jobPreview');
+    const formData = new FormData(document.getElementById('jobPostingForm'));
+    
+    // Get rich editor content
+    const description = document.getElementById('description_editor').innerHTML;
+    const requirements = document.getElementById('requirements_editor').innerHTML;
+    const responsibilities = document.getElementById('responsibilities_editor').innerHTML;
+    
+    const previewHTML = `
+        <div class="preview-header">
+            {% if company.logo_path %}
+            <img src="{{ company.logo_path }}" alt="{{ company.company_name }}" class="company-logo-preview">
+            {% else %}
+            <div class="company-logo-preview bg-light d-flex align-items-center justify-content-center">
+                <i class="fas fa-building text-muted"></i>
+            </div>
+            {% endif %}
+            <div>
+                <h2 class="preview-job-title">${formData.get('job_title') || 'Job Title'}</h2>
+                <p class="preview-company-name">{{ company.company_name }}</p>
+            </div>
+        </div>
+        
+        <div class="preview-meta">
+            <div class="preview-meta-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>${formData.get('city') || 'City'}, ${formData.get('province') || 'Province'}</span>
+            </div>
+            <div class="preview-meta-item">
+                <i class="fas fa-briefcase"></i>
+                <span>${formData.get('job_type') || 'Job Type'}</span>
+            </div>
+            ${formData.get('experience_level') ? `
+            <div class="preview-meta-item">
+                <i class="fas fa-chart-line"></i>
+                <span>${formData.get('experience_level')}</span>
+            </div>
+            ` : ''}
+            ${formData.get('salary_min') || formData.get('salary_max') ? `
+            <div class="preview-meta-item">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>
+                    ${formData.get('salary_min') && formData.get('salary_max') ? 
+                        `R${parseInt(formData.get('salary_min')).toLocaleString()} - R${parseInt(formData.get('salary_max')).toLocaleString()}` :
+                        formData.get('salary_min') ? `R${parseInt(formData.get('salary_min')).toLocaleString()}+` :
+                        `R${parseInt(formData.get('salary_max')).toLocaleString()}`
+                    }
+                </span>
+            </div>
+            ` : ''}
+        </div>
+        
+        <div class="preview-description">
+            <h4>Job Description</h4>
+            ${description || '<p class="text-muted">No description provided</p>'}
+        </div>
+        
+        ${requirements ? `
+        <div class="preview-description">
+            <h4>Requirements</h4>
+            ${requirements}
+        </div>
+        ` : ''}
+        
+        ${responsibilities ? `
+        <div class="preview-description">
+            <h4>Responsibilities</h4>
+            ${responsibilities}
+        </div>
+        ` : ''}
+        
+        ${selectedSkills.length > 0 ? `
+        <div class="preview-skills">
+            <h4>Required Skills</h4>
+            <div class="d-flex flex-wrap gap-2">
+                ${selectedSkills.map(skill => `<span class="preview-skill">${skill}</span>`).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        ${formData.get('benefits') ? `
+        <div class="preview-description">
+            <h4>Benefits & Perks</h4>
+            <p>${formData.get('benefits')}</p>
+        </div>
+        ` : ''}
+    `;
+    
+    preview.innerHTML = previewHTML;
+}
+
+async function submitJobPosting() {
+    const submitBtn = document.getElementById('submitBtn');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Posting Job...';
+    
+    try {
+        // Update hidden fields with editor content
+        document.getElementById('description').value = document.getElementById('description_editor').innerHTML;
+        document.getElementById('requirements').value = document.getElementById('requirements_editor').innerHTML;
+        document.getElementById('responsibilities').value = document.getElementById('responsibilities_editor').innerHTML;
+        
+        const formData = new FormData(document.getElementById('jobPostingForm'));
+        
+        const response = await fetch(document.getElementById('jobPostingForm').action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Job posted successfully!', 'success');
+            setTimeout(() => {
+                window.location.href = result.redirect_url || '/company/dashboard';
+            }, 2000);
+        } else {
+            showToast(result.message || 'Error posting job', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    } catch (error) {
+        console.error('Error posting job:', error);
+        showToast('Error posting job. Please try again.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+}
+
+async function saveDraft() {
+    try {
+        // Update hidden fields with editor content
+        document.getElementById('description').value = document.getElementById('description_editor').innerHTML;
+        document.getElementById('requirements').value = document.getElementById('requirements_editor').innerHTML;
+        document.getElementById('responsibilities').value = document.getElementById('responsibilities_editor').innerHTML;
+        
+        const formData = new FormData(document.getElementById('jobPostingForm'));
+        formData.append('save_draft', 'true');
+        
+        const response = await fetch('/api/jobs/save-draft', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Draft saved', 'success', 2000);
+        }
+    } catch (error) {
+        console.log('Error saving draft:', error);
+    }
+}
+
+function showToast(message, type, duration = 5000) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, duration);
+}
+
+// AI Enhancement Modal Functionality
+let currentAiField = null;
+
+function openAiEnhanceModal(fieldType) {
+    currentAiField = fieldType;
+    const modal = new bootstrap.Modal(document.getElementById('aiEnhanceModal'));
+    modal.show();
+    
+    // Clear previous content
+    document.getElementById('aiUserPrompt').value = '';
+    document.getElementById('aiCharCount').textContent = '0';
+    
+    // Show relevant suggestions based on field type
+    showAiSuggestions(fieldType);
+}
+
+function showAiSuggestions(fieldType) {
+    const suggestions = {
+        description: [
+            'Make it more conversational',
+            'Add company culture details',
+            'Include growth opportunities',
+            'Focus on impact and purpose',
+            'Add remote work benefits',
+            'Highlight team collaboration',
+            'Include learning opportunities',
+            'Make it more engaging'
+        ],
+        requirements: [
+            'Make requirements more specific',
+            'Add soft skills requirements',
+            'Include experience levels',
+            'Add certification requirements',
+            'Focus on must-have vs nice-to-have',
+            'Include technical skills',
+            'Add language requirements',
+            'Simplify the language'
+        ],
+        responsibilities: [
+            'Add day-to-day activities',
+            'Include project ownership',
+            'Add collaboration aspects',
+            'Focus on key deliverables',
+            'Include mentoring opportunities',
+            'Add strategic responsibilities',
+            'Include cross-functional work',
+            'Make it more actionable'
+        ]
+    };
+    
+    renderAiSuggestions(suggestions[fieldType] || []);
+}
+
+function renderAiSuggestions(suggestions = []) {
+    const container = document.getElementById('aiSuggestionsContainer');
+    const list = document.getElementById('aiSuggestionsList');
+    list.innerHTML = '';
+
+    if (suggestions?.length) {
+        suggestions.forEach(text => {
+            const badge = document.createElement('span');
+            badge.className = 'suggestion-badge';
+            badge.textContent = text;
+            badge.title = text; // Show full text on hover
+            badge.onclick = () => {
+                const prompt = document.getElementById('aiUserPrompt');
+                if (!prompt.value.includes(text)) {
+                    prompt.value += (prompt.value ? ' ' : '') + text;
+                    // Trigger character count update
+                    prompt.dispatchEvent(new Event('input'));
+                }
+            };
+            list.appendChild(badge);
+        });
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+// Character counter for AI modal
+document.addEventListener('DOMContentLoaded', function() {
+    const aiPrompt = document.getElementById('aiUserPrompt');
+    if (aiPrompt) {
+        aiPrompt.addEventListener('input', function() {
+            const count = this.value.length;
+            document.getElementById('aiCharCount').textContent = count;
+        });
+    }
+    
+    // AI Enhancement button
+    const doAiEnhanceBtn = document.getElementById('doAiEnhanceBtn');
+    if (doAiEnhanceBtn) {
+        doAiEnhanceBtn.addEventListener('click', performAiEnhancement);
+    }
+});
+
+async function performAiEnhancement() {
+    const btn = document.getElementById('doAiEnhanceBtn');
+    const originalText = btn.innerHTML;
+    const userPrompt = document.getElementById('aiUserPrompt').value;
+    
+    if (!userPrompt.trim()) {
+        showToast('Please enter a prompt for AI enhancement', 'error');
+        return;
+    }
+    
+    if (!currentAiField) {
+        showToast('No field selected for enhancement', 'error');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enhancing...';
+    
+    try {
+        // Get current content from the editor
+        const currentEditor = document.getElementById(`${currentAiField}_editor`);
+        const currentContent = currentEditor.textContent || currentEditor.innerHTML || '';
+        
+        // Simulate AI enhancement (replace with actual API call)
+        const response = await simulateAiEnhancement(currentContent, userPrompt, currentAiField);
+        
+        if (response.success) {
+            // Update the editor with enhanced content
+            currentEditor.innerHTML = response.enhancedContent;
+            
+            // Update the hidden field
+            updateHiddenField(currentEditor);
+            
+            // Update character count
+            updateCharacterCount(currentEditor);
+            
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('aiEnhanceModal')).hide();
+            
+            showToast('Content enhanced successfully!', 'success');
+        } else {
+            showToast(response.message || 'Enhancement failed', 'error');
+        }
+    } catch (error) {
+        console.error('Error enhancing content:', error);
+        showToast('Error enhancing content. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// Simulate AI enhancement (replace with actual API call to your backend)
+async function simulateAiEnhancement(content, prompt, fieldType) {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // This would be replaced with actual API call to your AI enhancement endpoint
+    // For now, we'll return enhanced content based on the prompt
+    let enhancedContent = content;
+    
+    if (prompt.toLowerCase().includes('casual')) {
+        enhancedContent = content.replace(/\b(required|must have|essential)\b/gi, 'would be great if you have');
+    }
+    
+    if (prompt.toLowerCase().includes('technical')) {
+        enhancedContent += '\n\nTechnical requirements include proficiency in relevant technologies and tools.';
+    }
+    
+    if (prompt.toLowerCase().includes('benefits')) {
+        enhancedContent += '\n\nWe offer competitive benefits including health insurance, flexible working hours, and professional development opportunities.';
+    }
+    
+    if (prompt.toLowerCase().includes('diversity')) {
+        enhancedContent += '\n\nWe are an equal opportunity employer committed to diversity and inclusion.';
+    }
+    
+    // If no specific enhancement, just add some improvements
+    if (enhancedContent === content) {
+        enhancedContent = content + '\n\nThis is an exciting opportunity to grow your career with us.';
+    }
+    
+    return {
+        success: true,
+        enhancedContent: enhancedContent
+    };
+}
+</script>
+{% endblock %}

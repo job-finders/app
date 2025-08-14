@@ -1,0 +1,560 @@
+{% extends "layout/dashboard.html" %}
+
+{% block title %}Manage Applicants - {{ company.company_name }} | Job Finders{% endblock %}
+
+{% block dashboard_title %}Applicant Management{% endblock %}
+
+{% block extra_css %}
+<style>
+  .applicants-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 15px;
+  }
+
+  .header-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .stat-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    backdrop-filter: blur(10px);
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .filters-section {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  }
+
+  .filters-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: end;
+  }
+
+  .applicant-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .applicant-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+  }
+
+  .applicant-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .applicant-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .applicant-info h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+
+  .applicant-info p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .application-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-badge.pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+  }
+
+  .status-badge.reviewed {
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--primary-color);
+  }
+
+  .status-badge.shortlisted {
+    background: rgba(5, 150, 105, 0.1);
+    color: #059669;
+  }
+
+  .status-badge.rejected {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+  }
+
+  .status-badge.hired {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+  }
+
+  .applicant-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-action {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-view {
+    background: var(--primary-color);
+    color: white;
+  }
+
+  .btn-view:hover {
+    background: var(--secondary-color);
+    color: white;
+  }
+
+  .btn-shortlist {
+    background: #059669;
+    color: white;
+  }
+
+  .btn-shortlist:hover {
+    background: #047857;
+    color: white;
+  }
+
+  .btn-reject {
+    background: #dc3545;
+    color: white;
+  }
+
+  .btn-reject:hover {
+    background: #c82333;
+    color: white;
+  }
+
+  .no-applicants {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+  }
+
+  .no-applicants i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #dee2e6;
+  }
+
+  @media (max-width: 768px) {
+    .applicants-header {
+      padding: 1.5rem;
+    }
+
+    .header-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .filters-row {
+      grid-template-columns: 1fr;
+    }
+
+    .applicant-card {
+      padding: 1.5rem;
+    }
+
+    .applicant-header {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .application-meta {
+      justify-content: center;
+    }
+
+    .applicant-actions {
+      justify-content: center;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Applicants Header -->
+<div class="applicants-header">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="display-6 fw-bold mb-2">Applicant Management</h1>
+      <p class="lead mb-0">Review and manage job applications</p>
+    </div>
+  </div>
+
+  <div class="header-stats">
+    <div class="stat-item">
+      <span class="stat-number">{{ stats.total_applications|default(0) }}</span>
+      <span class="stat-label">Total Applications</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">{{ stats.new_applications|default(0) }}</span>
+      <span class="stat-label">New This Week</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">{{ stats.shortlisted|default(0) }}</span>
+      <span class="stat-label">Shortlisted</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">{{ stats.hired|default(0) }}</span>
+      <span class="stat-label">Hired</span>
+    </div>
+  </div>
+</div>
+
+<!-- Filters Section -->
+<div class="filters-section">
+  <form id="filtersForm" method="GET">
+    <div class="filters-row">
+      <div>
+        <label for="job_filter" class="form-label">Filter by Job</label>
+        <select class="form-select" id="job_filter" name="job_id">
+          <option value="">All Jobs</option>
+          {% for job in company_jobs %}
+          <option value="{{ job.job_id }}" {% if request.args.get('job_id')==job.job_id %}selected{% endif %}>
+            {{ job.title }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="status_filter" class="form-label">Status</label>
+        <select class="form-select" id="status_filter" name="status">
+          <option value="">All Statuses</option>
+          <option value="pending" {% if request.args.get('status')=='pending' %}selected{% endif %}>Pending</option>
+          <option value="reviewed" {% if request.args.get('status')=='reviewed' %}selected{% endif %}>Reviewed</option>
+          <option value="shortlisted" {% if request.args.get('status')=='shortlisted' %}selected{% endif %}>Shortlisted
+          </option>
+          <option value="rejected" {% if request.args.get('status')=='rejected' %}selected{% endif %}>Rejected</option>
+          <option value="hired" {% if request.args.get('status')=='hired' %}selected{% endif %}>Hired</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="search" class="form-label">Search</label>
+        <input type="text" class="form-control" id="search" name="search" placeholder="Name, email, skills..."
+          value="{{ request.args.get('search', '') }}">
+      </div>
+
+      <div>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-search me-2"></i>Filter
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Applicants List -->
+<div class="applicants-list">
+  {% if applications %}
+  {% for application in applications %}
+  <div class="applicant-card" data-application-id="{{ application.application_id }}">
+    <div class="applicant-header">
+      <div class="applicant-avatar">
+        {{ application.jobseeker.first_name[0] }}{{ application.jobseeker.last_name[0] }}
+      </div>
+      <div class="applicant-info">
+        <h3>{{ application.jobseeker.first_name }} {{ application.jobseeker.last_name }}</h3>
+        <p>{{ application.jobseeker.email }}</p>
+      </div>
+    </div>
+
+    <div class="application-meta">
+      <div class="meta-item">
+        <i class="fas fa-briefcase"></i>
+        <span>{{ application.job.title }}</span>
+      </div>
+      <div class="meta-item">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Applied {{ moment(application.created_at).fromNow() }}</span>
+      </div>
+      <div class="meta-item">
+        <i class="fas fa-map-marker-alt"></i>
+        <span>{{ application.jobseeker.city|default('Location not specified') }}</span>
+      </div>
+      <div class="meta-item">
+        <span class="status-badge {{ application.status }}">{{ application.status|title }}</span>
+      </div>
+    </div>
+
+    {% if application.jobseeker.skills %}
+    <div class="skills-preview mb-3">
+      {% for skill in application.jobseeker.skills[:5] %}
+      <span class="badge bg-light text-dark me-1">{{ skill }}</span>
+      {% endfor %}
+      {% if application.jobseeker.skills|length > 5 %}
+      <span class="badge bg-secondary">+{{ application.jobseeker.skills|length - 5 }} more</span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="applicant-actions">
+      <button class="btn-action btn-view" onclick="viewApplicant('{{ application.application_id }}')">
+        <i class="fas fa-eye"></i>View Details
+      </button>
+
+      {% if application.status != 'shortlisted' %}
+      <button class="btn-action btn-shortlist"
+        onclick="updateStatus('{{ application.application_id }}', 'shortlisted')">
+        <i class="fas fa-star"></i>Shortlist
+      </button>
+      {% endif %}
+
+      {% if application.status != 'rejected' %}
+      <button class="btn-action btn-reject" onclick="updateStatus('{{ application.application_id }}', 'rejected')">
+        <i class="fas fa-times"></i>Reject
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="no-applicants">
+    <i class="fas fa-users"></i>
+    <h4>No Applications Yet</h4>
+    <p>Applications will appear here once candidates start applying to your jobs.</p>
+    <a href="{{ url_for('company_route.post_job') }}" class="btn btn-primary">
+      <i class="fas fa-plus me-2"></i>Post Your First Job
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Pagination -->
+{% if applications and applications.pages > 1 %}
+<div class="d-flex justify-content-center mt-4">
+  <nav aria-label="Applicants pagination">
+    <ul class="pagination">
+      {% if applications.has_prev %}
+      <li class="page-item">
+        <a class="page-link"
+          href="{{ url_for('company_route.view_applicants', page=applications.prev_num, **request.args) }}">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+      </li>
+      {% endif %}
+
+      {% for page_num in applications.iter_pages() %}
+      {% if page_num %}
+      {% if page_num != applications.page %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('company_route.view_applicants', page=page_num, **request.args) }}">
+          {{ page_num }}
+        </a>
+      </li>
+      {% else %}
+      <li class="page-item active">
+        <span class="page-link">{{ page_num }}</span>
+      </li>
+      {% endif %}
+      {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">...</span>
+      </li>
+      {% endif %}
+      {% endfor %}
+
+      {% if applications.has_next %}
+      <li class="page-item">
+        <a class="page-link"
+          href="{{ url_for('company_route.view_applicants', page=applications.next_num, **request.args) }}">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Initialize filters
+    setupFilters();
+  });
+
+  function setupFilters() {
+    const form = document.getElementById('filtersForm');
+    const selects = form.querySelectorAll('select');
+
+    selects.forEach(select => {
+      select.addEventListener('change', () => {
+        form.submit();
+      });
+    });
+  }
+
+  async function updateStatus(applicationId, status) {
+    const statusText = status === 'shortlisted' ? 'shortlist' :
+      status === 'rejected' ? 'reject' : status;
+
+    if (!confirm(`Are you sure you want to ${statusText} this applicant?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/applications/${applicationId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        },
+        body: JSON.stringify({ status: status })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        showToast(`Applicant ${statusText}ed successfully`, 'success');
+
+        // Update status badge
+        const card = document.querySelector(`[data-application-id="${applicationId}"]`);
+        const badge = card.querySelector('.status-badge');
+        badge.className = `status-badge ${status}`;
+        badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+
+        // Update action buttons
+        updateActionButtons(card, status);
+      } else {
+        showToast(result.message || 'Error updating status', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      showToast('Error updating status', 'error');
+    }
+  }
+
+  function updateActionButtons(card, status) {
+    const actions = card.querySelector('.applicant-actions');
+    const shortlistBtn = actions.querySelector('.btn-shortlist');
+    const rejectBtn = actions.querySelector('.btn-reject');
+
+    if (status === 'shortlisted' && shortlistBtn) {
+      shortlistBtn.style.display = 'none';
+    }
+
+    if (status === 'rejected' && rejectBtn) {
+      rejectBtn.style.display = 'none';
+    }
+  }
+
+  async function viewApplicant(applicationId) {
+    try {
+      const response = await fetch(`/api/applications/${applicationId}/details`);
+      const result = await response.json();
+
+      if (result.success) {
+        // For now, just show an alert with basic info
+        // In a real implementation, this would open a detailed modal
+        alert(`Applicant Details:\nName: ${result.data.first_name} ${result.data.last_name}\nEmail: ${result.data.email}\nStatus: ${result.data.status}`);
+      } else {
+        showToast('Error loading applicant details', 'error');
+      }
+    } catch (error) {
+      console.error('Error loading applicant details:', error);
+      showToast('Error loading applicant details', 'error');
+    }
+  }
+
+  function showToast(message, type, duration = 5000) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, duration);
+  }
+</script>
+{% endblock %}

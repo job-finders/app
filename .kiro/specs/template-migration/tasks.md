@@ -115,7 +115,7 @@
 
 ## Phase 4: Company and Employer System Templates
 
-- [ ] 4. Create company profile template
+- [x] 4. Create company profile template
   - Create `templates/company/company_profile.html` extending `layout/base.html`
   - Implement public company profile display with branding
   - Add company information, jobs, and statistics sections
@@ -123,7 +123,7 @@
   - Add follow/unfollow functionality for job seekers
   - _Requirements: 6.3, 6.4_
 
-- [ ] 4.1 Create company dashboard template
+- [x] 4.1 Create company dashboard template
   - Create `templates/company/company_dashboard.html` extending `layout/dashboard.html`
   - Implement employer dashboard with analytics and metrics
   - Add quick action buttons for common tasks
@@ -131,7 +131,7 @@
   - Add billing status and subscription information display
   - _Requirements: 6.3, 6.4_
 
-- [ ] 4.2 Create job posting template
+- [x] 4.2 Create job posting template
   - Create `templates/company/job_posting.html` extending `layout/dashboard.html`
   - Implement job posting form with rich text editor
   - Add job preview functionality and template selection
@@ -139,7 +139,7 @@
   - Add draft saving and scheduling capabilities
   - _Requirements: 6.3, 6.4, 7.2_
 
-- [ ] 4.3 Create applicant management template
+- [x] 4.3 Create applicant management template
   - Create `templates/company/applicants.html` extending `layout/dashboard.html`
   - Implement applicant listing with filtering and sorting
   - Add applicant profile views and resume display
@@ -147,7 +147,7 @@
   - Add bulk actions for applicant management
   - _Requirements: 6.3, 6.4, 7.2_
 
-- [ ] 4.4 Create company job management template
+- [x] 4.4 Create company job management template
   - Create `templates/company/manage_jobs.html` extending `layout/dashboard.html`
   - Implement job listing management with status controls
   - Add job editing, pausing, and deletion capabilities
@@ -157,7 +157,7 @@
 
 ## Phase 5: User Dashboard and Profile System Templates
 
-- [ ] 5. Create job seeker profile template
+- [x] 5. Create job seeker profile template
   - Create `templates/jobseekers/profile.html` extending `layout/dashboard.html`
   - Implement comprehensive profile editing form
   - Add profile completion progress indicator
@@ -165,7 +165,7 @@
   - Add profile visibility settings and privacy controls
   - _Requirements: 6.4, 7.2_
 
-- [ ] 5.1 Create applications management template
+- [x] 5.1 Create applications management template
   - Create `templates/jobseekers/applications.html` extending `layout/dashboard.html`
   - Implement application history with status tracking
   - Add application filtering and search capabilities
@@ -173,7 +173,7 @@
   - Add application analytics and success metrics
   - _Requirements: 6.5, 7.2_
 
-- [ ] 5.2 Create resume builder template
+- [x] 5.2 Create resume builder template
   - Create `templates/jobseekers/resume.html` extending `layout/dashboard.html`
   - Implement resume builder with multiple templates
   - Add drag-and-drop section reordering

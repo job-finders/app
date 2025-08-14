@@ -1,0 +1,1245 @@
+{% extends "layout/dashboard.html" %}
+
+{% block title %}My Profile - {{ current_user.first_name }} {{ current_user.last_name }} | Job Finders{% endblock %}
+
+{% block dashboard_title %}My Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.1);
+        z-index: 1;
+    }
+
+    .profile-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .profile-overview {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: 700;
+        color: white;
+        border: 4px solid rgba(255,255,255,0.3);
+        flex-shrink: 0;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .profile-avatar:hover {
+        transform: scale(1.05);
+        border-color: rgba(255,255,255,0.5);
+    }
+
+    .avatar-upload {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 35px;
+        height: 35px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.9rem;
+        cursor: pointer;
+        border: 3px solid white;
+        transition: all 0.3s ease;
+    }
+
+    .avatar-upload:hover {
+        background: var(--secondary-color);
+        transform: scale(1.1);
+    }
+
+    .profile-info h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-info p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-bottom: 1rem;
+    }
+
+    .profile-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .stat-item {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .profile-completion {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .completion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .completion-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .completion-percentage {
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .completion-tips {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Profile Header -->
+<div class="profile-header">
+    <div class="profile-header-content">
+        <div class="profile-overview">
+            <div class="profile-avatar" onclick="document.getElementById('avatarUpload').click()">
+                {% if current_user.profile_picture %}
+                <img src="{{ current_user.profile_picture }}" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                {% else %}
+                {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+                {% endif %}
+                <div class="avatar-upload">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <input type="file" id="avatarUpload" accept="image/*" style="display: none;" onchange="uploadAvatar(this)">
+            </div>
+            
+            <div class="profile-info">
+                <h1>{{ current_user.first_name }} {{ current_user.last_name }}</h1>
+                <p>{{ current_user.email }}</p>
+                {% if jobseeker_profile.desired_job_title %}
+                <p><i class="fas fa-briefcase me-2"></i>{{ jobseeker_profile.desired_job_title }}</p>
+                {% endif %}
+                {% if jobseeker_profile.city and jobseeker_profile.province %}
+                <p><i class="fas fa-map-marker-alt me-2"></i>{{ jobseeker_profile.city }}, {{ jobseeker_profile.province }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="profile-stats">
+            <div class="stat-item">
+                <span class="stat-number">{{ profile_stats.applications_count|default(0) }}</span>
+                <span class="stat-label">Applications</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">{{ profile_stats.profile_views|default(0) }}</span>
+                <span class="stat-label">Profile Views</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">{{ profile_stats.saved_jobs|default(0) }}</span>
+                <span class="stat-label">Saved Jobs</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">{{ profile_stats.shortlisted|default(0) }}</span>
+                <span class="stat-label">Shortlisted</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Completion -->
+<div class="profile-completion">
+    <div class="completion-header">
+        <div class="completion-title">Profile Completion</div>
+        <div class="completion-percentage">{{ profile_completion|default(45) }}%</div>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ profile_completion|default(45) }}%"></div>
+    </div>
+    <div class="completion-tips">
+        Complete your profile to increase your chances of being found by employers.
+        {% if profile_completion < 100 %}
+        <a href="#missing-sections" class="text-white text-decoration-underline">See what's missing</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}<div 
+class="row">
+    <div class="col-lg-8">
+        <!-- Personal Information -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-user"></i>
+                    Personal Information
+                </h3>
+                <button class="btn btn-outline-primary btn-sm" onclick="editSection('personal')">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </button>
+            </div>
+            
+            <form id="personalForm" method="POST" action="{{ url_for('jobseeker_route.update_profile') }}">
+                {{ csrf_token() }}
+                <input type="hidden" name="section" value="personal">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="first_name" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" 
+                               value="{{ current_user.first_name }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="last_name" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" 
+                               value="{{ current_user.last_name }}" readonly>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ current_user.email }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" 
+                               value="{{ current_user.phone|default('') }}" readonly>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="date_of_birth" class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
+                               value="{{ jobseeker_profile.date_of_birth.strftime('%Y-%m-%d') if jobseeker_profile.date_of_birth else '' }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="gender" class="form-label">Gender</label>
+                        <select class="form-select" id="gender" name="gender" disabled>
+                            <option value="">Prefer not to say</option>
+                            <option value="male" {% if jobseeker_profile.gender == 'male' %}selected{% endif %}>Male</option>
+                            <option value="female" {% if jobseeker_profile.gender == 'female' %}selected{% endif %}>Female</option>
+                            <option value="other" {% if jobseeker_profile.gender == 'other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-actions" id="personalActions" style="display: none;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="cancelEdit('personal')">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Location Information -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    Location & Preferences
+                </h3>
+                <button class="btn btn-outline-primary btn-sm" onclick="editSection('location')">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </button>
+            </div>
+            
+            <form id="locationForm" method="POST" action="{{ url_for('jobseeker_route.update_profile') }}">
+                {{ csrf_token() }}
+                <input type="hidden" name="section" value="location">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="city" class="form-label">City</label>
+                        <input type="text" class="form-control" id="city" name="city" 
+                               value="{{ jobseeker_profile.city|default('') }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="province" class="form-label">Province</label>
+                        <select class="form-select" id="province" name="province" disabled>
+                            <option value="">Select Province</option>
+                            <option value="eastern-cape" {% if jobseeker_profile.province == 'eastern-cape' %}selected{% endif %}>Eastern Cape</option>
+                            <option value="free-state" {% if jobseeker_profile.province == 'free-state' %}selected{% endif %}>Free State</option>
+                            <option value="gauteng" {% if jobseeker_profile.province == 'gauteng' %}selected{% endif %}>Gauteng</option>
+                            <option value="kwazulu-natal" {% if jobseeker_profile.province == 'kwazulu-natal' %}selected{% endif %}>KwaZulu-Natal</option>
+                            <option value="limpopo" {% if jobseeker_profile.province == 'limpopo' %}selected{% endif %}>Limpopo</option>
+                            <option value="mpumalanga" {% if jobseeker_profile.province == 'mpumalanga' %}selected{% endif %}>Mpumalanga</option>
+                            <option value="northern-cape" {% if jobseeker_profile.province == 'northern-cape' %}selected{% endif %}>Northern Cape</option>
+                            <option value="north-west" {% if jobseeker_profile.province == 'north-west' %}selected{% endif %}>North West</option>
+                            <option value="western-cape" {% if jobseeker_profile.province == 'western-cape' %}selected{% endif %}>Western Cape</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="postal_code" class="form-label">Postal Code</label>
+                        <input type="text" class="form-control" id="postal_code" name="postal_code" 
+                               value="{{ jobseeker_profile.postal_code|default('') }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="nationality" class="form-label">Nationality</label>
+                        <input type="text" class="form-control" id="nationality" name="nationality" 
+                               value="{{ jobseeker_profile.nationality|default('South African') }}" readonly>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="willing_to_relocate" name="willing_to_relocate" 
+                               {% if jobseeker_profile.willing_to_relocate %}checked{% endif %} disabled>
+                        <label class="form-check-label" for="willing_to_relocate">
+                            Willing to relocate for the right opportunity
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-actions" id="locationActions" style="display: none;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="cancelEdit('location')">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Professional Information -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-briefcase"></i>
+                    Professional Information
+                </h3>
+                <button class="btn btn-outline-primary btn-sm" onclick="editSection('professional')">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </button>
+            </div>
+            
+            <form id="professionalForm" method="POST" action="{{ url_for('jobseeker_route.update_profile') }}">
+                {{ csrf_token() }}
+                <input type="hidden" name="section" value="professional">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="desired_job_title" class="form-label">Desired Job Title</label>
+                        <input type="text" class="form-control" id="desired_job_title" name="desired_job_title" 
+                               value="{{ jobseeker_profile.desired_job_title|default('') }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="years_experience" class="form-label">Years of Experience</label>
+                        <select class="form-select" id="years_experience" name="years_experience" disabled>
+                            <option value="">Select Experience</option>
+                            <option value="0" {% if jobseeker_profile.years_experience == 0 %}selected{% endif %}>Entry Level (0 years)</option>
+                            <option value="1" {% if jobseeker_profile.years_experience == 1 %}selected{% endif %}>1 year</option>
+                            <option value="2" {% if jobseeker_profile.years_experience == 2 %}selected{% endif %}>2 years</option>
+                            <option value="3" {% if jobseeker_profile.years_experience == 3 %}selected{% endif %}>3 years</option>
+                            <option value="5" {% if jobseeker_profile.years_experience == 5 %}selected{% endif %}>5+ years</option>
+                            <option value="10" {% if jobseeker_profile.years_experience == 10 %}selected{% endif %}>10+ years</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="education_level" class="form-label">Education Level</label>
+                        <select class="form-select" id="education_level" name="education_level" disabled>
+                            <option value="">Select Education</option>
+                            <option value="matric" {% if jobseeker_profile.education_level == 'matric' %}selected{% endif %}>Matric/Grade 12</option>
+                            <option value="certificate" {% if jobseeker_profile.education_level == 'certificate' %}selected{% endif %}>Certificate</option>
+                            <option value="diploma" {% if jobseeker_profile.education_level == 'diploma' %}selected{% endif %}>Diploma</option>
+                            <option value="degree" {% if jobseeker_profile.education_level == 'degree' %}selected{% endif %}>Bachelor's Degree</option>
+                            <option value="honours" {% if jobseeker_profile.education_level == 'honours' %}selected{% endif %}>Honours Degree</option>
+                            <option value="masters" {% if jobseeker_profile.education_level == 'masters' %}selected{% endif %}>Master's Degree</option>
+                            <option value="phd" {% if jobseeker_profile.education_level == 'phd' %}selected{% endif %}>PhD/Doctorate</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="job_type_preference" class="form-label">Job Type Preference</label>
+                        <select class="form-select" id="job_type_preference" name="job_type_preference" disabled>
+                            <option value="">No Preference</option>
+                            <option value="full_time" {% if jobseeker_profile.job_type_preference == 'full_time' %}selected{% endif %}>Full Time</option>
+                            <option value="part_time" {% if jobseeker_profile.job_type_preference == 'part_time' %}selected{% endif %}>Part Time</option>
+                            <option value="contract" {% if jobseeker_profile.job_type_preference == 'contract' %}selected{% endif %}>Contract</option>
+                            <option value="remote" {% if jobseeker_profile.job_type_preference == 'remote' %}selected{% endif %}>Remote</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="desired_salary_min" class="form-label">Minimum Salary (ZAR)</label>
+                        <input type="number" class="form-control" id="desired_salary_min" name="desired_salary_min" 
+                               value="{{ jobseeker_profile.desired_salary_min|default('') }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="desired_salary_max" class="form-label">Maximum Salary (ZAR)</label>
+                        <input type="number" class="form-control" id="desired_salary_max" name="desired_salary_max" 
+                               value="{{ jobseeker_profile.desired_salary_max|default('') }}" readonly>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="availability" class="form-label">Availability</label>
+                    <select class="form-select" id="availability" name="availability" disabled>
+                        <option value="immediate" {% if jobseeker_profile.availability == 'immediate' %}selected{% endif %}>Immediate</option>
+                        <option value="1_week" {% if jobseeker_profile.availability == '1_week' %}selected{% endif %}>1 Week</option>
+                        <option value="2_weeks" {% if jobseeker_profile.availability == '2_weeks' %}selected{% endif %}>2 Weeks</option>
+                        <option value="1_month" {% if jobseeker_profile.availability == '1_month' %}selected{% endif %}>1 Month</option>
+                        <option value="2_months" {% if jobseeker_profile.availability == '2_months' %}selected{% endif %}>2 Months</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions" id="professionalActions" style="display: none;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="cancelEdit('professional')">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Skills Section -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-cogs"></i>
+                    Skills & Expertise
+                </h3>
+                <button class="btn btn-outline-primary btn-sm" onclick="editSection('skills')">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </button>
+            </div>
+            
+            <div class="skills-display" id="skillsDisplay">
+                {% if jobseeker_profile.skills %}
+                <div class="skills-grid">
+                    {% for skill in jobseeker_profile.skills %}
+                    <span class="skill-badge">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                    <h5>No skills added yet</h5>
+                    <p class="text-muted">Add your skills to help employers find you</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <form id="skillsForm" method="POST" action="{{ url_for('jobseeker_route.update_profile') }}" style="display: none;">
+                {{ csrf_token() }}
+                <input type="hidden" name="section" value="skills">
+                
+                <div class="skills-input">
+                    <div class="skills-tags" id="skillsTags"></div>
+                    <input type="text" class="form-control" id="skills_input" 
+                           placeholder="Type a skill and press Enter">
+                    <div class="skills-suggestions" id="skillsSuggestions"></div>
+                </div>
+                <input type="hidden" name="skills" id="skills_hidden">
+                <small class="text-muted">Add relevant skills one by one. Press Enter to add each skill.</small>
+                
+                <div class="form-actions mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Skills
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="cancelEdit('skills')">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Profile Completion Checklist -->
+        <div class="dashboard-card" id="missing-sections">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-tasks"></i>
+                    Complete Your Profile
+                </h3>
+            </div>
+            
+            <div class="completion-checklist">
+                <div class="checklist-item {{ 'completed' if current_user.phone else 'incomplete' }}">
+                    <div class="checklist-icon">
+                        <i class="fas {{ 'fa-check' if current_user.phone else 'fa-times' }}"></i>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-title">Add Phone Number</div>
+                        <div class="checklist-description">Help employers contact you</div>
+                    </div>
+                </div>
+                
+                <div class="checklist-item {{ 'completed' if jobseeker_profile.city else 'incomplete' }}">
+                    <div class="checklist-icon">
+                        <i class="fas {{ 'fa-check' if jobseeker_profile.city else 'fa-times' }}"></i>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-title">Add Location</div>
+                        <div class="checklist-description">Show employers where you're based</div>
+                    </div>
+                </div>
+                
+                <div class="checklist-item {{ 'completed' if jobseeker_profile.skills else 'incomplete' }}">
+                    <div class="checklist-icon">
+                        <i class="fas {{ 'fa-check' if jobseeker_profile.skills else 'fa-times' }}"></i>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-title">Add Skills</div>
+                        <div class="checklist-description">Highlight your expertise</div>
+                    </div>
+                </div>
+                
+                <div class="checklist-item {{ 'completed' if jobseeker_profile.cv_file_path else 'incomplete' }}">
+                    <div class="checklist-icon">
+                        <i class="fas {{ 'fa-check' if jobseeker_profile.cv_file_path else 'fa-times' }}"></i>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-title">Upload CV</div>
+                        <div class="checklist-description">Essential for job applications</div>
+                    </div>
+                </div>
+                
+                <div class="checklist-item {{ 'completed' if jobseeker_profile.desired_job_title else 'incomplete' }}">
+                    <div class="checklist-icon">
+                        <i class="fas {{ 'fa-check' if jobseeker_profile.desired_job_title else 'fa-times' }}"></i>
+                    </div>
+                    <div class="checklist-content">
+                        <div class="checklist-title">Set Job Preferences</div>
+                        <div class="checklist-description">Help us match you with relevant jobs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CV Management -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-file-alt"></i>
+                    CV Management
+                </h3>
+            </div>
+            
+            {% if jobseeker_profile.cv_file_path %}
+            <div class="cv-current">
+                <div class="cv-info">
+                    <div class="cv-icon">
+                        <i class="fas fa-file-pdf text-danger"></i>
+                    </div>
+                    <div class="cv-details">
+                        <div class="cv-name">{{ jobseeker_profile.cv_file_path.split('/')[-1] }}</div>
+                        <div class="cv-date">Uploaded {{ moment(jobseeker_profile.cv_uploaded_at).fromNow() }}</div>
+                    </div>
+                </div>
+                <div class="cv-actions">
+                    <a href="{{ jobseeker_profile.cv_file_path }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>View
+                    </a>
+                    <a href="{{ jobseeker_profile.cv_file_path }}" download class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-download me-1"></i>Download
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="cv-upload">
+                <input type="file" id="cvUpload" accept=".pdf,.doc,.docx" style="display: none;" onchange="uploadCV(this)">
+                <button class="btn btn-primary w-100" onclick="document.getElementById('cvUpload').click()">
+                    <i class="fas fa-upload me-2"></i>
+                    {% if jobseeker_profile.cv_file_path %}Update CV{% else %}Upload CV{% endif %}
+                </button>
+                <small class="text-muted mt-2 d-block">Supported formats: PDF, DOC, DOCX (Max 5MB)</small>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="dashboard-card">
+            <div class="card-header-custom">
+                <h3 class="card-title">
+                    <i class="fas fa-bolt"></i>
+                    Quick Actions
+                </h3>
+            </div>
+            
+            <div class="quick-actions-list">
+                <a href="{{ url_for('jobs_route.job_list') }}" class="quick-action-item">
+                    <div class="action-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="action-content">
+                        <div class="action-title">Browse Jobs</div>
+                        <div class="action-description">Find your next opportunity</div>
+                    </div>
+                    <div class="action-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+                
+                <a href="{{ url_for('jobseeker_route.applications') }}" class="quick-action-item">
+                    <div class="action-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="action-content">
+                        <div class="action-title">My Applications</div>
+                        <div class="action-description">Track your job applications</div>
+                    </div>
+                    <div class="action-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+                
+                <a href="{{ url_for('jobseeker_route.job_alerts') }}" class="quick-action-item">
+                    <div class="action-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="action-content">
+                        <div class="action-title">Job Alerts</div>
+                        <div class="action-description">Get notified of new opportunities</div>
+                    </div>
+                    <div class="action-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+                
+                <a href="{{ url_for('jobseeker_route.saved_jobs') }}" class="quick-action-item">
+                    <div class="action-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="action-content">
+                        <div class="action-title">Saved Jobs</div>
+                        <div class="action-description">View your saved job opportunities</div>
+                    </div>
+                    <div class="action-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div> 
+   .dashboard-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border: 1px solid #f0f0f0;
+    }
+
+    .card-header-custom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f8f9fa;
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f8f9fa;
+    }
+
+    .skills-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .skill-badge {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .skills-input {
+        position: relative;
+    }
+
+    .skills-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .skill-tag {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .skill-tag .remove {
+        cursor: pointer;
+        font-weight: bold;
+        opacity: 0.8;
+    }
+
+    .skill-tag .remove:hover {
+        opacity: 1;
+    }
+
+    .skills-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+    }
+
+    .skill-suggestion {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .skill-suggestion:hover {
+        background: #f8f9fa;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+
+    .completion-checklist {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .checklist-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .checklist-item.completed {
+        background: rgba(40, 167, 69, 0.1);
+        border-left: 4px solid #28a745;
+    }
+
+    .checklist-item.incomplete {
+        background: rgba(220, 53, 69, 0.1);
+        border-left: 4px solid #dc3545;
+    }
+
+    .checklist-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .checklist-item.completed .checklist-icon {
+        background: #28a745;
+        color: white;
+    }
+
+    .checklist-item.incomplete .checklist-icon {
+        background: #dc3545;
+        color: white;
+    }
+
+    .checklist-content {
+        flex-grow: 1;
+    }
+
+    .checklist-title {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .checklist-description {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    .cv-current {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+
+    .cv-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .cv-icon {
+        font-size: 2rem;
+    }
+
+    .cv-name {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .cv-date {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    .cv-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .cv-upload {
+        text-align: center;
+    }
+
+    .quick-actions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .quick-action-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 10px;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+        border: 1px solid #f0f0f0;
+    }
+
+    .quick-action-item:hover {
+        background: #f8f9fa;
+        color: inherit;
+        text-decoration: none;
+        transform: translateX(5px);
+    }
+
+    .action-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .action-content {
+        flex-grow: 1;
+    }
+
+    .action-title {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .action-description {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    .action-arrow {
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+        .profile-header {
+            padding: 1.5rem;
+        }
+        
+        .profile-overview {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .profile-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .dashboard-card {
+            padding: 1.5rem;
+        }
+        
+        .card-header-custom {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedSkills = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize skills from profile
+    initializeSkills();
+    
+    // Initialize skills input
+    initializeSkillsInput();
+});
+
+function initializeSkills() {
+    {% if jobseeker_profile.skills %}
+    selectedSkills = {{ jobseeker_profile.skills|tojson }};
+    {% endif %}
+}
+
+function editSection(section) {
+    const form = document.getElementById(`${section}Form`);
+    const actions = document.getElementById(`${section}Actions`);
+    const editBtn = document.querySelector(`[onclick="editSection('${section}')"]`);
+    
+    if (section === 'skills') {
+        document.getElementById('skillsDisplay').style.display = 'none';
+        form.style.display = 'block';
+        updateSkillsDisplay();
+        updateSkillsHidden();
+    } else {
+        // Enable form fields
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.removeAttribute('readonly');
+            input.removeAttribute('disabled');
+        });
+        
+        // Show actions
+        actions.style.display = 'flex';
+    }
+    
+    // Hide edit button
+    editBtn.style.display = 'none';
+}
+
+function cancelEdit(section) {
+    const form = document.getElementById(`${section}Form`);
+    const actions = document.getElementById(`${section}Actions`);
+    const editBtn = document.querySelector(`[onclick="editSection('${section}')"]`);
+    
+    if (section === 'skills') {
+        document.getElementById('skillsDisplay').style.display = 'block';
+        form.style.display = 'none';
+        // Reset skills to original
+        initializeSkills();
+    } else {
+        // Disable form fields
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.setAttribute('readonly', 'readonly');
+            if (input.tagName === 'SELECT') {
+                input.setAttribute('disabled', 'disabled');
+            }
+        });
+        
+        // Hide actions
+        actions.style.display = 'none';
+    }
+    
+    // Show edit button
+    editBtn.style.display = 'inline-flex';
+}
+
+function initializeSkillsInput() {
+    const skillsInput = document.getElementById('skills_input');
+    const skillsTags = document.getElementById('skillsTags');
+    const skillsSuggestions = document.getElementById('skillsSuggestions');
+    
+    if (!skillsInput) return;
+    
+    skillsInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && this.value.trim()) {
+            e.preventDefault();
+            addSkill(this.value.trim());
+            this.value = '';
+            skillsSuggestions.style.display = 'none';
+        }
+    });
+    
+    skillsInput.addEventListener('input', function() {
+        if (this.value.length > 1) {
+            fetchSkillSuggestions(this.value);
+        } else {
+            skillsSuggestions.style.display = 'none';
+        }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!skillsInput.contains(e.target) && !skillsSuggestions.contains(e.target)) {
+            skillsSuggestions.style.display = 'none';
+        }
+    });
+}
+
+function addSkill(skill) {
+    if (selectedSkills.includes(skill)) return;
+    
+    selectedSkills.push(skill);
+    updateSkillsDisplay();
+    updateSkillsHidden();
+}
+
+function removeSkill(skill) {
+    selectedSkills = selectedSkills.filter(s => s !== skill);
+    updateSkillsDisplay();
+    updateSkillsHidden();
+}
+
+function updateSkillsDisplay() {
+    const skillsTags = document.getElementById('skillsTags');
+    if (!skillsTags) return;
+    
+    skillsTags.innerHTML = selectedSkills.map(skill => 
+        `<span class="skill-tag">
+            ${skill}
+            <span class="remove" onclick="removeSkill('${skill}')">&times;</span>
+        </span>`
+    ).join('');
+}
+
+function updateSkillsHidden() {
+    const hiddenInput = document.getElementById('skills_hidden');
+    if (hiddenInput) {
+        hiddenInput.value = JSON.stringify(selectedSkills);
+    }
+}
+
+async function fetchSkillSuggestions(query) {
+    try {
+        const response = await fetch(`/api/skills/suggestions?q=${encodeURIComponent(query)}`);
+        const suggestions = await response.json();
+        
+        const skillsSuggestions = document.getElementById('skillsSuggestions');
+        
+        if (suggestions.length > 0) {
+            skillsSuggestions.innerHTML = suggestions
+                .filter(skill => !selectedSkills.includes(skill))
+                .map(skill => 
+                    `<div class="skill-suggestion" onclick="addSkill('${skill}')">${skill}</div>`
+                ).join('');
+            skillsSuggestions.style.display = 'block';
+        } else {
+            skillsSuggestions.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error fetching skill suggestions:', error);
+    }
+}
+
+async function uploadAvatar(input) {
+    if (!input.files || !input.files[0]) return;
+    
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    try {
+        const response = await fetch('/api/profile/upload-avatar', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Profile picture updated successfully!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(result.message || 'Error uploading avatar', 'error');
+        }
+    } catch (error) {
+        console.error('Error uploading avatar:', error);
+        showToast('Error uploading avatar', 'error');
+    }
+}
+
+async function uploadCV(input) {
+    if (!input.files || !input.files[0]) return;
+    
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('cv', file);
+    
+    try {
+        const response = await fetch('/api/profile/upload-cv', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('CV uploaded successfully!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(result.message || 'Error uploading CV', 'error');
+        }
+    } catch (error) {
+        console.error('Error uploading CV:', error);
+        showToast('Error uploading CV', 'error');
+    }
+}
+
+function showToast(message, type, duration = 5000) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, duration);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,970 @@
+{% extends "layout/dashboard.html" %}
+
+{% block title %}Manage Jobs - {{ company.company_name }} | Job Finders{% endblock %}
+
+{% block dashboard_title %}Job Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .jobs-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .job-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filters-section {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .job-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .job-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+        border-color: var(--primary-color);
+    }
+
+    .job-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+
+    .job-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+        text-decoration: none;
+    }
+
+    .job-title:hover {
+        color: var(--secondary-color);
+        text-decoration: none;
+    }
+
+    .job-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge.active {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+
+    .status-badge.paused {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .status-badge.closed {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+
+    .status-badge.expired {
+        background: rgba(108, 117, 125, 0.1);
+        color: #6c757d;
+    }
+
+    .job-performance {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .performance-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+    }
+
+    .performance-item {
+        text-align: center;
+    }
+
+    .performance-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .performance-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .job-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-edit {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .btn-edit:hover {
+        background: var(--secondary-color);
+        color: white;
+    }
+
+    .btn-pause {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .btn-pause:hover {
+        background: #e69100;
+        color: white;
+    }
+
+    .btn-activate {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-activate:hover {
+        background: #218838;
+        color: white;
+    }
+
+    .btn-close {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-close:hover {
+        background: #c82333;
+        color: white;
+    }
+
+    .btn-analytics {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-analytics:hover {
+        background: #5a6268;
+        color: white;
+    }
+
+    .btn-promote {
+        background: #17a2b8;
+        color: white;
+    }
+
+    .btn-promote:hover {
+        background: #138496;
+        color: white;
+    }
+
+    .job-description {
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .no-jobs {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-muted);
+    }
+
+    .no-jobs i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+
+    .bulk-actions {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        display: none;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .bulk-actions.show {
+        display: flex;
+    }
+
+    .selected-count {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .job-checkbox {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+    }
+
+    .job-card.selected {
+        border-color: var(--primary-color);
+        background: rgba(37, 99, 235, 0.02);
+    }
+
+    .promotion-options {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .promotion-title {
+        color: #856404;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .promotion-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(133, 100, 4, 0.1);
+    }
+
+    .promotion-item:last-child {
+        border-bottom: none;
+    }
+
+    .promotion-details {
+        color: #856404;
+        font-size: 0.85rem;
+    }
+
+    .promotion-price {
+        color: #856404;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .jobs-header {
+            padding: 1.5rem;
+        }
+        
+        .header-actions {
+            flex-direction: column;
+        }
+        
+        .job-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .job-card {
+            padding: 1.5rem;
+        }
+        
+        .job-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .job-meta {
+            justify-content: center;
+        }
+        
+        .job-actions {
+            justify-content: center;
+        }
+        
+        .performance-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .bulk-actions {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Jobs Header -->
+<div class="jobs-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">Manage Your Jobs</h1>
+            <p class="lead mb-0">Track performance and manage your job postings</p>
+        </div>
+    </div>
+    
+    <div class="header-actions">
+        <a href="{{ url_for('company_route.post_job') }}" class="btn btn-light">
+            <i class="fas fa-plus me-2"></i>Post New Job
+        </a>
+        <button class="btn btn-outline-light" onclick="exportJobs()">
+            <i class="fas fa-download me-2"></i>Export Data
+        </button>
+    </div>
+</div>
+
+<!-- Job Statistics -->
+<div class="job-stats">
+    <div class="stat-card">
+        <span class="stat-number">{{ job_stats.total_jobs|default(0) }}</span>
+        <span class="stat-label">Total Jobs</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ job_stats.active_jobs|default(0) }}</span>
+        <span class="stat-label">Active Jobs</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ job_stats.total_applications|default(0) }}</span>
+        <span class="stat-label">Total Applications</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ job_stats.total_views|default(0) }}</span>
+        <span class="stat-label">Total Views</span>
+    </div>
+</div>
+
+<!-- Filters Section -->
+<div class="filters-section">
+    <form id="filtersForm" method="GET">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label for="status_filter" class="form-label">Status</label>
+                <select class="form-select" id="status_filter" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Active</option>
+                    <option value="paused" {% if request.args.get('status') == 'paused' %}selected{% endif %}>Paused</option>
+                    <option value="closed" {% if request.args.get('status') == 'closed' %}selected{% endif %}>Closed</option>
+                    <option value="expired" {% if request.args.get('status') == 'expired' %}selected{% endif %}>Expired</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <label for="category_filter" class="form-label">Category</label>
+                <select class="form-select" id="category_filter" name="category">
+                    <option value="">All Categories</option>
+                    {% for category in job_categories %}
+                    <option value="{{ category.slug }}" {% if request.args.get('category') == category.slug %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <label for="date_filter" class="form-label">Posted Date</label>
+                <select class="form-select" id="date_filter" name="date_range">
+                    <option value="">All Time</option>
+                    <option value="week" {% if request.args.get('date_range') == 'week' %}selected{% endif %}>This Week</option>
+                    <option value="month" {% if request.args.get('date_range') == 'month' %}selected{% endif %}>This Month</option>
+                    <option value="quarter" {% if request.args.get('date_range') == 'quarter' %}selected{% endif %}>This Quarter</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       placeholder="Job title..." 
+                       value="{{ request.args.get('search', '') }}">
+            </div>
+        </div>
+        
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search me-2"></i>Apply Filters
+            </button>
+            <a href="{{ url_for('company_route.manage_jobs') }}" class="btn btn-outline-secondary ms-2">
+                Clear Filters
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Bulk Actions -->
+<div class="bulk-actions" id="bulkActions">
+    <div class="selected-count">
+        <span id="selectedCount">0</span> jobs selected
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-success btn-sm" onclick="bulkAction('activate')">
+            <i class="fas fa-play me-1"></i>Activate
+        </button>
+        <button class="btn btn-warning btn-sm" onclick="bulkAction('pause')">
+            <i class="fas fa-pause me-1"></i>Pause
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="bulkAction('close')">
+            <i class="fas fa-stop me-1"></i>Close
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+            Clear Selection
+        </button>
+    </div>
+</div>
+
+<!-- Jobs List -->
+<div class="jobs-list">
+    {% if jobs %}
+        {% for job in jobs %}
+        <div class="job-card" data-job-id="{{ job.job_id }}">
+            <input type="checkbox" class="form-check-input job-checkbox" 
+                   value="{{ job.job_id }}" onchange="updateSelection()">
+            
+            <div class="job-header">
+                <div>
+                    <a href="{{ url_for('jobs_route.job_detail', job_id=job.job_id) }}" 
+                       class="job-title" target="_blank">
+                        {{ job.title }}
+                    </a>
+                    <div class="job-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ job.city }}{% if job.province %}, {{ job.province }}{% endif %}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-briefcase"></i>
+                            <span>{{ job.job_type|title }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Posted {{ moment(job.created_at).fromNow() }}</span>
+                        </div>
+                        {% if job.expires_at %}
+                        <div class="meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>Expires {{ moment(job.expires_at).fromNow() }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <span class="status-badge {{ job.status }}">{{ job.status|title }}</span>
+                </div>
+            </div>
+            
+            <div class="job-description">
+                {{ job.description[:200] }}{% if job.description|length > 200 %}...{% endif %}
+            </div>
+            
+            <div class="job-performance">
+                <div class="performance-grid">
+                    <div class="performance-item">
+                        <span class="performance-number">{{ job.views_count|default(0) }}</span>
+                        <span class="performance-label">Views</span>
+                    </div>
+                    <div class="performance-item">
+                        <span class="performance-number">{{ job.applications_count|default(0) }}</span>
+                        <span class="performance-label">Applications</span>
+                    </div>
+                    <div class="performance-item">
+                        <span class="performance-number">
+                            {% if job.views_count and job.views_count > 0 %}
+                                {{ "%.1f"|format((job.applications_count|default(0) / job.views_count) * 100) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </span>
+                        <span class="performance-label">Conversion</span>
+                    </div>
+                    <div class="performance-item">
+                        <span class="performance-number">{{ job.shortlisted_count|default(0) }}</span>
+                        <span class="performance-label">Shortlisted</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="job-actions">
+                <a href="{{ url_for('company_route.edit_job', job_id=job.job_id) }}" 
+                   class="btn-action btn-edit">
+                    <i class="fas fa-edit"></i>Edit
+                </a>
+                
+                {% if job.status == 'active' %}
+                <button class="btn-action btn-pause" onclick="updateJobStatus('{{ job.job_id }}', 'paused')">
+                    <i class="fas fa-pause"></i>Pause
+                </button>
+                {% elif job.status == 'paused' %}
+                <button class="btn-action btn-activate" onclick="updateJobStatus('{{ job.job_id }}', 'active')">
+                    <i class="fas fa-play"></i>Activate
+                </button>
+                {% endif %}
+                
+                {% if job.status != 'closed' %}
+                <button class="btn-action btn-close" onclick="updateJobStatus('{{ job.job_id }}', 'closed')">
+                    <i class="fas fa-stop"></i>Close
+                </button>
+                {% endif %}
+                
+                <a href="{{ url_for('company_route.job_analytics', job_id=job.job_id) }}" 
+                   class="btn-action btn-analytics">
+                    <i class="fas fa-chart-bar"></i>Analytics
+                </a>
+                
+                <button class="btn-action btn-promote" onclick="showPromotionOptions('{{ job.job_id }}')">
+                    <i class="fas fa-star"></i>Promote
+                </button>
+            </div>
+            
+            <!-- Promotion Options (Hidden by default) -->
+            <div class="promotion-options" id="promotion-{{ job.job_id }}" style="display: none;">
+                <div class="promotion-title">Promotion Options</div>
+                <div class="promotion-item">
+                    <div class="promotion-details">
+                        <strong>Featured Job</strong><br>
+                        <small>Appear at the top of search results for 30 days</small>
+                    </div>
+                    <div class="promotion-price">R50</div>
+                </div>
+                <div class="promotion-item">
+                    <div class="promotion-details">
+                        <strong>Urgent Job</strong><br>
+                        <small>Display "Urgent" badge and priority placement</small>
+                    </div>
+                    <div class="promotion-price">R30</div>
+                </div>
+                <div class="promotion-item">
+                    <div class="promotion-details">
+                        <strong>Social Media Boost</strong><br>
+                        <small>Share on our social media channels</small>
+                    </div>
+                    <div class="promotion-price">R25</div>
+                </div>
+                <div class="text-center mt-2">
+                    <button class="btn btn-primary btn-sm" onclick="promoteJob('{{ job.job_id }}')">
+                        Select Promotion
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm ms-2" onclick="hidePromotionOptions('{{ job.job_id }}')">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-jobs">
+            <i class="fas fa-briefcase"></i>
+            <h4>No Jobs Posted Yet</h4>
+            <p>Start attracting top talent by posting your first job.</p>
+            <a href="{{ url_for('company_route.post_job') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Post Your First Job
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Pagination -->
+{% if jobs and jobs.pages > 1 %}
+<div class="d-flex justify-content-center mt-4">
+    <nav aria-label="Jobs pagination">
+        <ul class="pagination">
+            {% if jobs.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('company_route.manage_jobs', page=jobs.prev_num, **request.args) }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in jobs.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != jobs.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('company_route.manage_jobs', page=page_num, **request.args) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if jobs.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('company_route.manage_jobs', page=jobs.next_num, **request.args) }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedJobs = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize filters
+    setupFilters();
+});
+
+function setupFilters() {
+    const form = document.getElementById('filtersForm');
+    const selects = form.querySelectorAll('select');
+    
+    selects.forEach(select => {
+        select.addEventListener('change', () => {
+            form.submit();
+        });
+    });
+    
+    // Search with debounce
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            form.submit();
+        }, 500);
+    });
+}
+
+function updateSelection() {
+    const checkboxes = document.querySelectorAll('.job-checkbox:checked');
+    selectedJobs = Array.from(checkboxes).map(cb => cb.value);
+    
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    selectedCount.textContent = selectedJobs.length;
+    
+    if (selectedJobs.length > 0) {
+        bulkActions.classList.add('show');
+    } else {
+        bulkActions.classList.remove('show');
+    }
+    
+    // Update card styling
+    document.querySelectorAll('.job-card').forEach(card => {
+        const checkbox = card.querySelector('.job-checkbox');
+        if (checkbox.checked) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    });
+}
+
+function clearSelection() {
+    document.querySelectorAll('.job-checkbox').forEach(cb => {
+        cb.checked = false;
+    });
+    updateSelection();
+}
+
+async function bulkAction(action) {
+    if (selectedJobs.length === 0) return;
+    
+    const actionText = action === 'activate' ? 'activate' : 
+                      action === 'pause' ? 'pause' : 'close';
+    
+    if (!confirm(`Are you sure you want to ${actionText} ${selectedJobs.length} job(s)?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/jobs/bulk-action', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                job_ids: selectedJobs,
+                action: action
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Successfully ${actionText}d ${selectedJobs.length} job(s)`, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(result.message || `Error performing bulk ${actionText}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error performing bulk action:', error);
+        showToast(`Error performing bulk ${actionText}`, 'error');
+    }
+}
+
+async function updateJobStatus(jobId, status) {
+    const statusText = status === 'active' ? 'activate' : 
+                      status === 'paused' ? 'pause' : 'close';
+    
+    if (!confirm(`Are you sure you want to ${statusText} this job?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            },
+            body: JSON.stringify({ status: status })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Job ${statusText}d successfully`, 'success');
+            
+            // Update status badge
+            const card = document.querySelector(`[data-job-id="${jobId}"]`);
+            const badge = card.querySelector('.status-badge');
+            badge.className = `status-badge ${status}`;
+            badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            
+            // Update action buttons
+            updateActionButtons(card, status);
+        } else {
+            showToast(result.message || 'Error updating job status', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating job status:', error);
+        showToast('Error updating job status', 'error');
+    }
+}
+
+function updateActionButtons(card, status) {
+    const actions = card.querySelector('.job-actions');
+    const pauseBtn = actions.querySelector('.btn-pause');
+    const activateBtn = actions.querySelector('.btn-activate');
+    const closeBtn = actions.querySelector('.btn-close');
+    
+    // Remove existing status buttons
+    if (pauseBtn) pauseBtn.remove();
+    if (activateBtn) activateBtn.remove();
+    
+    // Add appropriate button based on new status
+    if (status === 'active') {
+        const newPauseBtn = document.createElement('button');
+        newPauseBtn.className = 'btn-action btn-pause';
+        newPauseBtn.onclick = () => updateJobStatus(card.dataset.jobId, 'paused');
+        newPauseBtn.innerHTML = '<i class="fas fa-pause"></i>Pause';
+        actions.insertBefore(newPauseBtn, closeBtn);
+    } else if (status === 'paused') {
+        const newActivateBtn = document.createElement('button');
+        newActivateBtn.className = 'btn-action btn-activate';
+        newActivateBtn.onclick = () => updateJobStatus(card.dataset.jobId, 'active');
+        newActivateBtn.innerHTML = '<i class="fas fa-play"></i>Activate';
+        actions.insertBefore(newActivateBtn, closeBtn);
+    }
+    
+    // Hide close button if job is closed
+    if (status === 'closed' && closeBtn) {
+        closeBtn.style.display = 'none';
+    }
+}
+
+function showPromotionOptions(jobId) {
+    const promotionDiv = document.getElementById(`promotion-${jobId}`);
+    promotionDiv.style.display = 'block';
+}
+
+function hidePromotionOptions(jobId) {
+    const promotionDiv = document.getElementById(`promotion-${jobId}`);
+    promotionDiv.style.display = 'none';
+}
+
+async function promoteJob(jobId) {
+    // For now, just show a simple promotion dialog
+    // In a real implementation, this would show a detailed promotion selection modal
+    const promotion = prompt('Select promotion type:\n1. Featured Job (R50)\n2. Urgent Job (R30)\n3. Social Media Boost (R25)\n\nEnter 1, 2, or 3:');
+    
+    if (!promotion || !['1', '2', '3'].includes(promotion)) {
+        return;
+    }
+    
+    const promotionTypes = {
+        '1': { type: 'featured', price: 50 },
+        '2': { type: 'urgent', price: 30 },
+        '3': { type: 'social', price: 25 }
+    };
+    
+    const selectedPromotion = promotionTypes[promotion];
+    
+    if (!confirm(`Promote this job as ${selectedPromotion.type} for R${selectedPromotion.price}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/promote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                promotion_type: selectedPromotion.type,
+                price: selectedPromotion.price
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Job promoted successfully!', 'success');
+            hidePromotionOptions(jobId);
+        } else {
+            showToast(result.message || 'Error promoting job', 'error');
+        }
+    } catch (error) {
+        console.error('Error promoting job:', error);
+        showToast('Error promoting job', 'error');
+    }
+}
+
+async function exportJobs() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        
+        const response = await fetch(`/api/jobs/export?${params.toString()}`);
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `jobs_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showToast('Export completed', 'success');
+        } else {
+            showToast('Error exporting data', 'error');
+        }
+    } catch (error) {
+        console.error('Error exporting:', error);
+        showToast('Error exporting data', 'error');
+    }
+}
+
+function showToast(message, type, duration = 5000) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, duration);
+}
+</script>
+{% endblock %}

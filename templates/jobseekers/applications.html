@@ -1,0 +1,726 @@
+{% extends "layout/dashboard.html" %}
+
+{% block title %}My Applications - {{ current_user.first_name }} {{ current_user.last_name }} | Job Finders{% endblock %}
+
+{% block dashboard_title %}My Applications{% endblock %}
+
+{% block extra_css %}
+<style>
+    .applications-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+
+    .header-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .stat-item {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filters-section {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .filters-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .application-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .application-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+        border-color: var(--primary-color);
+    }
+
+    .application-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+
+    .job-info {
+        flex-grow: 1;
+    }
+
+    .job-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        text-decoration: none;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .job-title:hover {
+        color: var(--secondary-color);
+        text-decoration: none;
+    }
+
+    .company-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .company-logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid #e9ecef;
+    }
+
+    .company-name {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin: 0;
+    }
+
+    .company-location {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .application-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge.pending {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .status-badge.reviewed {
+        background: rgba(37, 99, 235, 0.1);
+        color: var(--primary-color);
+    }
+
+    .status-badge.shortlisted {
+        background: rgba(5, 150, 105, 0.1);
+        color: #059669;
+    }
+
+    .status-badge.rejected {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+
+    .status-badge.hired {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+
+    .application-timeline {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .timeline-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .timeline-item:last-child {
+        border-bottom: none;
+    }
+
+    .timeline-icon {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        flex-shrink: 0;
+    }
+
+    .timeline-icon.applied {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .timeline-icon.viewed {
+        background: #17a2b8;
+        color: white;
+    }
+
+    .timeline-icon.shortlisted {
+        background: #28a745;
+        color: white;
+    }
+
+    .timeline-icon.rejected {
+        background: #dc3545;
+        color: white;
+    }
+
+    .timeline-content {
+        flex-grow: 1;
+    }
+
+    .timeline-title {
+        font-weight: 600;
+        color: var(--text-dark);
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .timeline-date {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .application-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-view {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .btn-view:hover {
+        background: var(--secondary-color);
+        color: white;
+    }
+
+    .btn-withdraw {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-withdraw:hover {
+        background: #c82333;
+        color: white;
+    }
+
+    .btn-follow-up {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-follow-up:hover {
+        background: #5a6268;
+        color: white;
+    }
+
+    .no-applications {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-muted);
+    }
+
+    .no-applications i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+
+    .application-notes {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .notes-title {
+        color: #856404;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .notes-content {
+        color: #856404;
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+        .applications-header {
+            padding: 1.5rem;
+        }
+        
+        .header-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .filters-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .application-card {
+            padding: 1.5rem;
+        }
+        
+        .application-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .application-meta {
+            justify-content: center;
+        }
+        
+        .application-actions {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Applications Header -->
+<div class="applications-header">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">My Applications</h1>
+            <p class="lead mb-0">Track your job applications and their progress</p>
+        </div>
+    </div>
+    
+    <div class="header-stats">
+        <div class="stat-item">
+            <span class="stat-number">{{ stats.total_applications|default(0) }}</span>
+            <span class="stat-label">Total Applications</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ stats.pending_applications|default(0) }}</span>
+            <span class="stat-label">Pending</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ stats.shortlisted|default(0) }}</span>
+            <span class="stat-label">Shortlisted</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ stats.response_rate|default(0) }}%</span>
+            <span class="stat-label">Response Rate</span>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Section -->
+<div class="filters-section">
+    <form id="filtersForm" method="GET">
+        <div class="filters-row">
+            <div>
+                <label for="status_filter" class="form-label">Status</label>
+                <select class="form-select" id="status_filter" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="reviewed" {% if request.args.get('status') == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                    <option value="shortlisted" {% if request.args.get('status') == 'shortlisted' %}selected{% endif %}>Shortlisted</option>
+                    <option value="rejected" {% if request.args.get('status') == 'rejected' %}selected{% endif %}>Rejected</option>
+                    <option value="hired" {% if request.args.get('status') == 'hired' %}selected{% endif %}>Hired</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="date_filter" class="form-label">Applied Date</label>
+                <select class="form-select" id="date_filter" name="date_range">
+                    <option value="">All Time</option>
+                    <option value="week" {% if request.args.get('date_range') == 'week' %}selected{% endif %}>This Week</option>
+                    <option value="month" {% if request.args.get('date_range') == 'month' %}selected{% endif %}>This Month</option>
+                    <option value="quarter" {% if request.args.get('date_range') == 'quarter' %}selected{% endif %}>This Quarter</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       placeholder="Job title, company..." 
+                       value="{{ request.args.get('search', '') }}">
+            </div>
+            
+            <div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search me-2"></i>Filter
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Applications List -->
+<div class="applications-list">
+    {% if applications %}
+        {% for application in applications %}
+        <div class="application-card" data-application-id="{{ application.application_id }}">
+            <div class="application-header">
+                <div class="job-info">
+                    <a href="{{ url_for('jobs_route.job_detail', job_id=application.job.job_id) }}" 
+                       class="job-title" target="_blank">
+                        {{ application.job.title }}
+                    </a>
+                    
+                    <div class="company-info">
+                        {% if application.job.company.logo_path %}
+                        <img src="{{ application.job.company.logo_path }}" alt="{{ application.job.company.company_name }}" class="company-logo">
+                        {% else %}
+                        <div class="company-logo d-flex align-items-center justify-content-center bg-light">
+                            <i class="fas fa-building text-muted"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <p class="company-name">{{ application.job.company.company_name }}</p>
+                            <p class="company-location">{{ application.job.city }}, {{ application.job.province }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <span class="status-badge {{ application.status }}">{{ application.status|title }}</span>
+                </div>
+            </div>
+            
+            <div class="application-meta">
+                <div class="meta-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Applied {{ moment(application.created_at).fromNow() }}</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-briefcase"></i>
+                    <span>{{ application.job.job_type|title }}</span>
+                </div>
+                {% if application.job.salary_min or application.job.salary_max %}
+                <div class="meta-item">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>
+                        {% if application.job.salary_min and application.job.salary_max %}
+                            R{{ "{:,}".format(application.job.salary_min) }} - R{{ "{:,}".format(application.job.salary_max) }}
+                        {% elif application.job.salary_min %}
+                            R{{ "{:,}".format(application.job.salary_min) }}+
+                        {% else %}
+                            R{{ "{:,}".format(application.job.salary_max) }}
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+                {% if application.viewed_at %}
+                <div class="meta-item">
+                    <i class="fas fa-eye"></i>
+                    <span>Viewed by employer</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Application Timeline -->
+            <div class="application-timeline">
+                <div class="timeline-item">
+                    <div class="timeline-icon applied">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Application Submitted</div>
+                        <div class="timeline-date">{{ moment(application.created_at).format('MMMM D, YYYY [at] h:mm A') }}</div>
+                    </div>
+                </div>
+                
+                {% if application.viewed_at %}
+                <div class="timeline-item">
+                    <div class="timeline-icon viewed">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Viewed by Employer</div>
+                        <div class="timeline-date">{{ moment(application.viewed_at).format('MMMM D, YYYY [at] h:mm A') }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if application.status == 'shortlisted' %}
+                <div class="timeline-item">
+                    <div class="timeline-icon shortlisted">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Shortlisted</div>
+                        <div class="timeline-date">{{ moment(application.status_updated_at).format('MMMM D, YYYY [at] h:mm A') }}</div>
+                    </div>
+                </div>
+                {% elif application.status == 'rejected' %}
+                <div class="timeline-item">
+                    <div class="timeline-icon rejected">
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Application Declined</div>
+                        <div class="timeline-date">{{ moment(application.status_updated_at).format('MMMM D, YYYY [at] h:mm A') }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Employer Notes -->
+            {% if application.employer_notes %}
+            <div class="application-notes">
+                <div class="notes-title">Employer Feedback</div>
+                <div class="notes-content">{{ application.employer_notes }}</div>
+            </div>
+            {% endif %}
+            
+            <div class="application-actions">
+                <a href="{{ url_for('jobs_route.job_detail', job_id=application.job.job_id) }}" 
+                   class="btn-action btn-view" target="_blank">
+                    <i class="fas fa-eye"></i>View Job
+                </a>
+                
+                {% if application.status in ['pending', 'reviewed'] %}
+                <button class="btn-action btn-withdraw" onclick="withdrawApplication('{{ application.application_id }}')">
+                    <i class="fas fa-times"></i>Withdraw
+                </button>
+                {% endif %}
+                
+                {% if application.status == 'pending' and (moment().diff(moment(application.created_at), 'days') > 7) %}
+                <button class="btn-action btn-follow-up" onclick="followUpApplication('{{ application.application_id }}')">
+                    <i class="fas fa-envelope"></i>Follow Up
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-applications">
+            <i class="fas fa-clipboard-list"></i>
+            <h4>No Applications Yet</h4>
+            <p>Start applying to jobs to see your applications here.</p>
+            <a href="{{ url_for('jobs_route.job_list') }}" class="btn btn-primary">
+                <i class="fas fa-search me-2"></i>Browse Jobs
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Pagination -->
+{% if applications and applications.pages > 1 %}
+<div class="d-flex justify-content-center mt-4">
+    <nav aria-label="Applications pagination">
+        <ul class="pagination">
+            {% if applications.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('jobseeker_route.applications', page=applications.prev_num, **request.args) }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in applications.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != applications.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('jobseeker_route.applications', page=page_num, **request.args) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if applications.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('jobseeker_route.applications', page=applications.next_num, **request.args) }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize filters
+    setupFilters();
+});
+
+function setupFilters() {
+    const form = document.getElementById('filtersForm');
+    const selects = form.querySelectorAll('select');
+    
+    selects.forEach(select => {
+        select.addEventListener('change', () => {
+            form.submit();
+        });
+    });
+    
+    // Search with debounce
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            form.submit();
+        }, 500);
+    });
+}
+
+async function withdrawApplication(applicationId) {
+    if (!confirm('Are you sure you want to withdraw this application? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/applications/${applicationId}/withdraw`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Application withdrawn successfully', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(result.message || 'Error withdrawing application', 'error');
+        }
+    } catch (error) {
+        console.error('Error withdrawing application:', error);
+        showToast('Error withdrawing application', 'error');
+    }
+}
+
+async function followUpApplication(applicationId) {
+    try {
+        const response = await fetch(`/api/applications/${applicationId}/follow-up`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Follow-up message sent to employer', 'success');
+        } else {
+            showToast(result.message || 'Error sending follow-up', 'error');
+        }
+    } catch (error) {
+        console.error('Error sending follow-up:', error);
+        showToast('Error sending follow-up', 'error');
+    }
+}
+
+function showToast(message, type, duration = 5000) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, duration);
+}
+</script>
+{% endblock %}
