@@ -1164,3 +1164,253 @@ form .form-select:focus {
       animation: none;
   }
 }
+
+/* ==
+=================================
+   Candidate Analysis Specific Styles
+   =================================== */
+
+/* Loading States */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.btn-loading .fas {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Analysis Results Container */
+#match-results {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Loading Spinner in Results */
+.spinner-border {
+    width: 2rem;
+    height: 2rem;
+    border-width: 0.25em;
+}
+
+.spinner-border.text-primary {
+    border-color: var(--primary-color);
+    border-right-color: transparent;
+}
+
+/* Analysis Content Sections */
+.analysis-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+}
+
+.analysis-section h6 {
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.analysis-section h6 i {
+    margin-right: 0.5rem;
+    width: 1.25rem;
+    text-align: center;
+}
+
+.analysis-section ul {
+    margin-bottom: 0;
+    padding-left: 1.25rem;
+}
+
+.analysis-section li {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+/* Percentile Score Display */
+.percentile-score {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+    border: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.percentile-score .score-label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.percentile-score .score-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* Success Feedback Animation */
+.btn-success {
+    animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+/* Form Validation States */
+.form-select.is-invalid {
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 0.25rem rgba(220, 38, 38, 0.25);
+}
+
+.form-select.is-invalid:focus {
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 0.25rem rgba(220, 38, 38, 0.25);
+}
+
+/* Alert Enhancements */
+.alert {
+    border-radius: var(--radius-md);
+    border: 1px solid;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.alert i {
+    margin-right: 0.5rem;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #d1edff, #a7d8f0);
+    border-color: #b3e5fc;
+    color: var(--success-color);
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    border-color: #fde68a;
+    color: var(--warning-color);
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    border-color: #fecaca;
+    color: var(--danger-color);
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+    border-color: #b3e5fc;
+    color: var(--info-color);
+}
+
+/* Responsive Adjustments for Analysis */
+@media (max-width: 768px) {
+    .analysis-section {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .percentile-score {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+
+    .analysis-section h6 {
+        font-size: 0.9rem;
+    }
+
+    .analysis-section li {
+        font-size: 0.875rem;
+    }
+}
+
+/* Loading State Improvements */
+.loading-content {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.loading-content .spinner-border {
+    margin-bottom: 1rem;
+}
+
+.loading-content .fw-semibold {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.loading-content .small {
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* Hover Effects for Interactive Elements */
+.analysis-section:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+/* Focus States for Accessibility */
+.btn:focus,
+.form-select:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Print Styles for Analysis Results */
+@media print {
+    #match-results {
+        animation: none;
+        transform: none;
+    }
+
+    .analysis-section {
+        background: white;
+        border: 1px solid #000;
+        break-inside: avoid;
+    }
+
+    .btn-loading,
+    .spinner-border {
+        display: none;
+    }
+}

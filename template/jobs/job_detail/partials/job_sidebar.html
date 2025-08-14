@@ -116,10 +116,14 @@
         <form id="analysis-form">
             <div class="mb-3">
                 <select class="form-select" id="cv_select" name="cv_id" required>
-                    <option value="">-- Choose CV --</option>
-                    {% for resume in list_resumes %}
-                        <option value="{{ resume.cv_id }}">{{ resume.professional_title|title }}</option>
-                    {% endfor %}
+                    {% if list_resumes and list_resumes|length > 0 %}
+                        <option value="">-- Choose CV --</option>
+                        {% for resume in list_resumes %}
+                            <option value="{{ resume.cv_id }}">{{ resume.professional_title|title }}</option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="">No CVs available - Upload one first</option>
+                    {% endif %}
                 </select>
             </div>
 

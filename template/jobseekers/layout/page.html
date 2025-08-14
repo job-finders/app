@@ -10,6 +10,15 @@
     gtag('js', new Date());
     gtag('config', 'G-TD3XXFCQ46');
   </script>
+    {% block head %}
+
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="ir-site-verification-token" content="503288039">
+        <meta name="theme-name" content="focus">
+
+    {% endblock %}
 
   {% block css %}
   <link rel="preload" href="{{ url_for('static', filename='css/lib/font-awesome.min.css') }}" as="style"
@@ -56,12 +65,6 @@
   <link rel="canonical" href="{{ seo.url | default(request.url) }}">
   <title>JobFinders - {% if seo %}{{ seo.title | default('JobFinders') }}{% else %}Page Not Found{% endif %}</title>
   {% endif %}
-
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="ir-site-verification-token" content="503288039">
-  <meta name="theme-name" content="focus">
 
   {% if seo %}
   <meta name="description" content="{{ seo.description | default('Find jobs across South Africa with JobFinders') }}">

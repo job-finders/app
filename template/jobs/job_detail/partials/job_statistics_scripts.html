@@ -107,25 +107,8 @@
 </script>
 
 {#job Actions scripts #}
-<script>
-    function likeJob(jobId) {
-        // Implement like job functionality
-        console.log('Liking job with ID:', jobId);
-        // Example: fetch('/api/like-job', { method: 'POST', body: JSON.stringify({ jobId: jobId }) });
-    }
-
-    function saveJob(jobId) {
-        // Implement save job functionality
-        console.log('Saving job with ID:', jobId);
-        // Example: fetch('/api/save-job', { method: 'POST', body: JSON.stringify({ jobId: jobId }) });
-    }
-    function shareJob(jobId) {
-        // Implement share job functionality
-        console.log('Sharing job with ID:', jobId);
-        // Example: fetch('/api/share-job', { method: 'POST', body: JSON.stringify({ jobId: jobId }) });
-    }
-</script>
 
 <!-- Application Workflow Scripts -->
 <script src="{{ url_for('static', filename='js/jobs/application_workflow.js') }}"></script>
 <script src="{{ url_for('static', filename='js/jobs/cover_letter_modal.js') }}"></script>
+<script src="{{ url_for('static', filename='js/jobs/candidate_analysis.js') }}"></script>

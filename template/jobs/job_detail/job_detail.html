@@ -1,6 +1,13 @@
 {# Main template: job_statistics.html #}
 {% extends "jobseekers/layout/page.html" %}
+
 {% block title %}{{ meta_title }}{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <meta name="job_id" content="{{ job.job_id }}">
+    <meta name="user_id" content="{{ current_user.uid }}">
+{% endblock %}
 
 {% block styles %}
     {{ super() }}
@@ -19,15 +26,11 @@
                 <!-- Application Statistics -->
                 {% include 'jobs/job_detail/partials/application_statistics.html' %}
                 <!-- Job Competitiveness -->
-
                 {% include 'jobs/job_detail/partials/competitiveness_metrics.html' %}
                 <!-- Application Trends -->
                 {% include 'jobs/job_detail/partials/trend_analysis.html' %}
-
                 <!-- Company Statistics -->
                 {% include 'jobs/job_detail/partials/company_statistics.html' %}
-
-
                 {% include 'jobs/job_detail/partials/statistics_disclaimer.html' %}
 
                 <!-- Related Jobs -->
@@ -50,7 +53,3 @@
 {% block scripts %}
     {% include 'jobs/job_detail/partials/job_statistics_scripts.html' %}
 {% endblock %}
-
-
-
-
