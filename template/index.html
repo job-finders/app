@@ -1,160 +1,469 @@
-{% extends "layouts/page.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Jobs in South Africa - JobFinders.site</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #059669;
+            --accent-color: #f59e0b;
+            --dark-color: #1f2937;
+            --light-bg: #f8fafc;
+        }
 
-{% block meta %}
-    <meta property="og:url" content="{{ url_for('home.get_home', _external=True) }}" />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Find Jobs in South Africa - JobFinders.site" />
-    <meta property="og:description" content="Browse thousands of South African job listings by category and location. Start your job hunt today!" />
-    <meta property="og:image" content="https://jobfinders.site/static/images/jobfinder.jpg" />
-{% endblock %}
+        .hero-gradient {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
 
-{% block custom_css %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<style>
-    .hover-shadow:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-    }
-    .transition {
-        transition: all 0.3s ease;
-    }
-</style>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "JobFinders.site",
-  "url": "https://jobfinders.site",
-  "logo": "https://jobfinders.site/static/logo.png",
-  "email": "info@jobfinders.site",
-  "address": {
-    "@type": "PostalAddress",
-    "addressCountry": "ZA"
-  }
-}
-</script>
+        .feature-card {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
 
-{% endblock %}
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
 
-{% block content %}
-<div class="row">
-<div class="col-lg-12 col-md-12 col-sm-12" id="top_header">
-    <!-- Main Hero Section -->
-    <div class="card mb-4">
-        <div class="card-body text-center">
-            <h1 class="display-4 font-weight-bold">JobFinders</h1>
-            <p class="lead">JobFinders.site connects you with opportunities across all industries and provinces across South Africa.</p>
-            {# {% include 'job/cards/search_bar.html' %} #}
+        .icon-bg {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+
+        .stats-counter {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .btn-primary-custom {
+            background: var(--primary-color);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-custom:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+        }
+
+        .category-card {
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .category-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
+
+        .testimonial-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="/">JobFinders.site</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    
+                    <!-- Job Seekers Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="jobSeekersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Job Seekers
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="jobSeekersDropdown">
+                            <li><a class="dropdown-item" href="/jobs">Browse Jobs</a></li>
+                            <li><a class="dropdown-item" href="/job-alerts">Job Alerts</a></li>
+                            <li><a class="dropdown-item" href="/profile">My Profile</a></li>
+                            <li><a class="dropdown-item" href="/resumes">My CV / Resume</a></li>
+                            <li><a class="dropdown-item" href="/applications">My Applications</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Employers Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="employersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Employers
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="employersDropdown">
+                            <li><a class="dropdown-item" href="/employer/dashboard">Dashboard</a></li>
+                            <li><a class="dropdown-item" href="/employer/post-job">Post a Job</a></li>
+                            <li><a class="dropdown-item" href="/employer/manage-jobs">Manage Jobs</a></li>
+                            <li><a class="dropdown-item" href="/employer/search-candidates">Search Candidates</a></li>
+                            <li><a class="dropdown-item" href="/employer/applicants">View Applicants</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Blog Link -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://blog.jobfinders.site">Blog</a>
+                    </li>
+                </ul>
+
+                <!-- Right Side Links -->
+                <ul class="navbar-nav mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/register">Create Account</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/profile">My Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                </ul>
+            </div>
         </div>
-    </div>
-
-<div class="text-center mb-4">
-
-    <img src="{{ url_for('static', filename='images/banner.png') }}"
-         class="img-fluid rounded shadow-sm"
-         alt="JobFinders – Connecting South Africans to Jobs">
-</div>
-
-{% include 'job/cards/search_bar.html' %}
-
-<!-- 🔥 Trending Searches -->
-<div class="card my-4 border-dark">
-    <h4 class="mt-3">Trending Searches</h4>
-    <ul class="list-inline">
-        <li class="list-inline-item"><a href="{{ url_for('jobs.category_jobs', category='python+programming') }}" class="badge badge-secondary">Python Programming</a></li>
-        <li class="list-inline-item"><a href="{{ url_for('jobs.category_jobs', category='networking') }}">Networking</a></li>
-        <li class="list-inline-item"><a href="{{ url_for('jobs.category_jobs', category='education') }}">Education</a></li>
-    </ul>
-    {% include 'adverts/horizontal.html' %}
-</div>
-<div class="card my-4 border-dark">
-<section class="py-5 bg-light text-center">
-  <div class="container">
-    <h2 class="fw-bold">
-      {% if current_user and current_user.is_authenticated %}
-        Welcome back, {{ current_user.name }}!
-      {% else %}
-        Create or Login to your Account!
-      {% endif %}
-    </h2>
-    <p class="lead text-muted mb-4">
-      Join thousands of South Africans finding their dream jobs today.
-    </p>
-
-    {% if current_user and current_user.is_authenticated %}
-      <a href="{{ url_for('auth.logout') }}" class="btn btn-danger btn-lg me-2">Logout</a>
-        {% if current_user.role == 'seeker' %}
-            <a href="{{ url_for('jobseekers.dashboard') }}" class="btn btn-sm btn-outline-primary font-weight-bold mx-1">My Profile</a>
-        {% endif %}
-        {% if current_user.role == 'employer' %}
-            <a href="#" class="btn btn-primary btn-lg me-2 font-weight-bold mx-1">My Profile</a>
-        {% endif %}
-    {% else %}
-      <a href="{{ url_for('auth.subscribe') }}" class="btn btn-primary btn-lg me-2">Create Account</a>
-      <a href="{{ url_for('auth.login') }}" class="btn btn-outline-success btn-lg me-2">Login</a>
-    {% endif %}
-  </div>
-</section>
-</div>
-<div class="card my-4 border-dark">
-    <section class="py-5 bg-light text-center">
-      <div class="container">
-        <h2 class="fw-bold">Ready to Take the Next Step?</h2>
-        <p class="lead text-muted mb-4">Join thousands of South Africans finding their dream jobs today.</p>
-        <a href="{{ url_for('jobs.jobs_by_location', location='gauteng') }}" class="btn btn-success m-2 btn-lg me-2">Browse Jobs in Gauteng</a>
-        <a href="{{ url_for('jobs.jobs_by_location', location='cape town') }}" class="btn btn-success m-2 btn-lg me-2">Browse Jobs in Cape Town</a>
-    {#    <a href="/post-job" class="btn btn-outline-success btn-lg">Post a Job</a>#}
-      </div>
-    </section>
-</div>
-<section class="py-5 text-center bg-white">
-  <div class="container">
-    <h2 class="fw-bold text-dark">Smarter Hiring Starts Here</h2>
-    <p class="lead text-muted mb-4">Use our free <strong>AI-powered ATS tool</strong> to streamline applications, shortlist top talent, and hire faster.</p>
-    <a href="{{ url_for('ats.ats_tools') }}" class="btn btn-outline-success btn-lg font-weight-bold">Try the ATS Tool</a>
-  </div>
-</section>
- <!-- Categories Section -->
-<div class="card mb-5 border-0">
-    <div class="card-header bg-white text-center">
-        <h2 class="h3 font-weight-bold mb-3">Jobs by Categories</h2>
-        <p class="text-muted">Explore opportunities by career fields across South Africa</p>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            {% for category in categories %}
-            <div class="col-md-6 col-lg-4 mb-4">
-                <a href="{{ url_for('jobs.category_jobs', category=category.slug) }}" class="text-decoration-none">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow transition">
-                        <div class="card-body d-flex flex-column">
-                            <div class="mb-3 text-primary">
-                                <i class="fa fa-briefcase fa-2x"></i> {# Optionally use dynamic icons here #}
+    </nav>
+        
+    <!-- Hero Section -->
+    <section class="hero-gradient text-white py-5">
+        <div class="container">
+            <div class="row align-items-center min-vh-75">
+                <div class="col-lg-6">
+                    <h1 class="display-3 fw-bold mb-4">Find Your Dream Job in South Africa</h1>
+                    <p class="lead mb-4">Connect with top employers and discover opportunities across all industries and provinces. Your career journey starts here.</p>
+                    
+                    <!-- Search Bar -->
+                    <div class="card shadow-lg border-0 p-4 mb-4">
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <input type="text" class="form-control form-control-lg" placeholder="Job title or keyword">
                             </div>
-                            <h5 class="card-title text-dark font-weight-bold">{{ category.name }}</h5>
-                            {% if category.description %}
-                            <p class="card-text text-muted">
-                                {{ category.description[:100] }}{% if category.description|length > 100 %}...{% endif %}
-                            </p>
-                            {% endif %}
-                            <div class="mt-auto text-info small">
-                                {{ category.job_count or 0 }} job{{ 's' if category.job_count != 1 else '' }} available
+                            <div class="col-md-4">
+                                <select class="form-select form-select-lg">
+                                    <option>All Locations</option>
+                                    <option>Gauteng</option>
+                                    <option>Cape Town</option>
+                                    <option>Durban</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-primary-custom btn-lg w-100">
+                                    <i class="fas fa-search me-2"></i>Search
+                                </button>
                             </div>
                         </div>
                     </div>
-                </a>
+
+                    <!-- Quick Stats -->
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="stats-counter text-warning">15K+</div>
+                            <small>Active Jobs</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="stats-counter text-warning">50K+</div>
+                            <small>Job Seekers</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="stats-counter text-warning">2K+</div>
+                            <small>Companies</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <img src="/static/images/hero-illustration.svg" alt="Job Search" class="img-fluid" style="max-height: 400px;">
+                </div>
             </div>
-            {% endfor %}
         </div>
-    </div>
+    </section>
 
-</div>
+    <!-- Features Section -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3">Why Choose JobFinders?</h2>
+                <p class="lead text-muted">Everything you need to find the perfect job or hire the right talent</p>
+            </div>
 
-<div class="flex items-center justify-center text-green-600 mt-6 space-x-2">
-  <i class="fa fa-shield text-success"></i>
-  <span class="text-sm font-weight-bold text-gray-700">
-    Trusted by thousands of job seekers across South Africa
-  </span>
-</div>
-</div>
-</div>
-{% endblock %}
+            <div class="row">
+                <!-- For Job Seekers -->
+                <div class="col-lg-6 mb-5">
+                    <h3 class="h4 fw-bold mb-4 text-primary">
+                        <i class="fas fa-user-tie me-2"></i>For Job Seekers
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="feature-card card h-100 p-4 text-center">
+                                <div class="icon-bg bg-primary bg-opacity-10">
+                                    <i class="fas fa-search text-primary fa-lg"></i>
+                                </div>
+                                <h5 class="fw-bold">Smart Job Matching</h5>
+                                <p class="text-muted small">AI-powered matching connects you with jobs that fit your skills and experience</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="feature-card card h-100 p-4 text-center">
+                                <div class="icon-bg bg-success bg-opacity-10">
+                                    <i class="fas fa-bell text-success fa-lg"></i>
+                                </div>
+                                <h5 class="fw-bold">Job Alerts</h5>
+                                <p class="text-muted small">Get notified instantly when new jobs matching your criteria are posted</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="feature-card card h-100 p-4 text-center">
+                                <div class="icon-bg bg-warning bg-opacity-10">
+                                    <i class="fas fa-file-alt text-warning fa-lg"></i>
+                                </div>
+                                <h5 class="fw-bold">Resume Builder</h5>
+                                <p class="text-muted small">Create professional resumes with our easy-to-use builder and templates</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="feature-card card h-100 p-4 text-center">
+                                <div class="icon-bg bg-info bg-opacity-10">
+                                    <i class="fas fa-chart-line text-info fa-lg"></i>
+                                </div>
+                                <h5 class="fw-bold">Career Insights</h5>
+                                <p class="text-muted small">Get salary insights, market trends, and career guidance for your industry</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <a href="#" class="btn btn-primary-custom btn-lg">Start Job Search</a>
+                    </div>
+                </div>
+
+                <!-- For Employers -->
+                <div class="col-lg-6 mb-5">
+                    <h3 class="h4 fw-bold mb-4 text-success">
+                        <i class="fas fa-building me-2"></i>For Employers
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="feature-card card h-100 p-4 text-center">
+                                <div class="icon-bg bg-success bg-opacity-10">
+                                    <i class="fas fa-users text-success fa-lg"></i>
+                                </div>
+                                <h5 class="fw-bold">AI-Powered ATS</h5>
+                                <p class="text-muted small">Streamline hiring with our intelligent applicant tracking system</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="feature-card card h-100 p-4 text-center">
+                                <div class="icon-bg bg-primary bg-opacity-10">
+                                    <i class="fas fa-filter text-primary fa-lg"></i>
+                                </div>
+                                <h5 class="fw-bold">Smart Screening</h5>
+                                <p class="text-muted small">Automatically filter and rank candidates based on your requirements</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="feature-card card h-100 p-4 text-center">
+                                <div class="icon-bg bg-warning bg-opacity-10">
+                                    <i class="fas fa-bullseye text-warning fa-lg"></i>
+                                </div>
+                                <h5 class="fw-bold">Targeted Posting</h5>
+                                <p class="text-muted small">Reach the right candidates with targeted job postings and promotion</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="feature-card card h-100 p-4 text-center">
+                                <div class="icon-bg bg-info bg-opacity-10">
+                                    <i class="fas fa-analytics text-info fa-lg"></i>
+                                </div>
+                                <h5 class="fw-bold">Hiring Analytics</h5>
+                                <p class="text-muted small">Get detailed insights on your hiring process and candidate quality</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <a href="#" class="btn btn-success btn-lg">Post a Job</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3">Browse Jobs by Category</h2>
+                <p class="lead text-muted">Explore opportunities across all industries</p>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 col-lg-3 mb-4">
+                    <div class="category-card card h-100 p-4 text-center">
+                        <i class="fas fa-code text-primary fa-2x mb-3"></i>
+                        <h6 class="fw-bold">Technology</h6>
+                        <small class="text-muted">1,250+ jobs</small>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-3 mb-4">
+                    <div class="category-card card h-100 p-4 text-center">
+                        <i class="fas fa-stethoscope text-success fa-2x mb-3"></i>
+                        <h6 class="fw-bold">Healthcare</h6>
+                        <small class="text-muted">890+ jobs</small>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-3 mb-4">
+                    <div class="category-card card h-100 p-4 text-center">
+                        <i class="fas fa-chart-bar text-warning fa-2x mb-3"></i>
+                        <h6 class="fw-bold">Finance</h6>
+                        <small class="text-muted">756+ jobs</small>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-3 mb-4">
+                    <div class="category-card card h-100 p-4 text-center">
+                        <i class="fas fa-graduation-cap text-info fa-2x mb-3"></i>
+                        <h6 class="fw-bold">Education</h6>
+                        <small class="text-muted">642+ jobs</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="#" class="btn btn-outline-primary btn-lg">View All Categories</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3">Success Stories</h2>
+                <p class="lead text-muted">Hear from job seekers and employers who found success with JobFinders</p>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="testimonial-card">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="mb-3">"Found my dream job in tech within 2 weeks! The AI matching was spot on."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-center me-3" style="width: 40px; height: 40px;">
+                                <small>TM</small>
+                            </div>
+                            <div>
+                                <strong>Thabo M.</strong>
+                                <br><small class="text-muted">Software Developer</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div class="testimonial-card">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="mb-3">"The ATS tool helped us hire 3 quality candidates in a month. Game changer!"</p>
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-center me-3" style="width: 40px; height: 40px;">
+                                <small>SN</small>
+                            </div>
+                            <div>
+                                <strong>Sarah N.</strong>
+                                <br><small class="text-muted">HR Manager</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div class="testimonial-card">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="mb-3">"Easy job alerts kept me updated. Landed my first job after university!"</p>
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-info text-white d-flex align-items-center justify-center me-3" style="width: 40px; height: 40px;">
+                                <small>LK</small>
+                            </div>
+                            <div>
+                                <strong>Lerato K.</strong>
+                                <br><small class="text-muted">Graduate</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-5 hero-gradient text-white">
+        <div class="container text-center">
+            <h2 class="display-5 fw-bold mb-3">Ready to Take the Next Step?</h2>
+            <p class="lead mb-4">Join thousands of South Africans finding their dream jobs and top talent today</p>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="#" class="btn btn-light btn-lg w-100 fw-bold">
+                                <i class="fas fa-user-tie me-2"></i>I'm Looking for a Job
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="#" class="btn btn-warning btn-lg w-100 fw-bold">
+                                <i class="fas fa-building me-2"></i>I'm Hiring Talent
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <small class="text-white-50">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Trusted by 50,000+ job seekers and 2,000+ companies across South Africa
+                </small>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
