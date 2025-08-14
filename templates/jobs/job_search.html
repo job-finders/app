@@ -1,0 +1,1032 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Advanced Job Search - Job Finders{% endblock %}
+
+{% block meta_description %}Find your perfect job in South Africa with our advanced search filters. Search by location, salary, industry, and more.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-hero {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .search-form-container {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-top: -1rem;
+    }
+
+    .search-filters {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .filter-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-section h6 {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .filter-chip {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-chip .remove {
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .search-results-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .results-count {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .sort-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .job-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .job-card:hover {
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+        border-color: var(--primary-color);
+    }
+
+    .job-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .job-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        text-decoration: none;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .job-title:hover {
+        color: var(--secondary-color);
+        text-decoration: none;
+    }
+
+    .company-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .company-logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid #e9ecef;
+    }
+
+    .company-details h6 {
+        margin: 0;
+        font-size: 1rem;
+        color: var(--text-dark);
+    }
+
+    .company-details p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .job-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .job-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .job-description {
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .job-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .job-tag {
+        background: #f8f9fa;
+        color: var(--text-muted);
+        padding: 0.25rem 0.5rem;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .job-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .job-actions-left {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .job-posted {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .saved-searches {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .saved-search-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .saved-search-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-suggestions {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        max-height: 300px;
+        overflow-y: auto;
+        display: none;
+    }
+
+    .search-suggestion {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f8f9fa;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .search-suggestion:hover {
+        background: #f8f9fa;
+    }
+
+    .search-suggestion:last-child {
+        border-bottom: none;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-muted);
+    }
+
+    .no-results i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+
+    @media (max-width: 768px) {
+        .search-hero {
+            padding: 2rem 0;
+        }
+        
+        .search-form-container {
+            padding: 1.5rem;
+            margin: 0 1rem;
+            margin-top: -1rem;
+        }
+        
+        .search-results-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .sort-controls {
+            justify-content: space-between;
+        }
+        
+        .job-card-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .job-actions {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+        }
+        
+        .job-actions-left {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Search Hero Section -->
+<section class="search-hero">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-5 fw-bold mb-3">Find Your Dream Job</h1>
+                <p class="lead mb-0">Search thousands of jobs across South Africa with our advanced filters</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Advanced Search Form -->
+    <div class="search-form-container">
+        <form id="advancedSearchForm" method="GET" action="{{ url_for('jobs_search_route.advanced_search') }}">
+            <div class="row">
+                <div class="col-lg-4 mb-3">
+                    <label for="keywords" class="form-label">Keywords</label>
+                    <div class="position-relative">
+                        <input type="text" class="form-control" id="keywords" name="keywords" 
+                               placeholder="Job title, skills, company..." 
+                               value="{{ request.args.get('keywords', '') }}"
+                               autocomplete="off">
+                        <div class="search-suggestions" id="keywordSuggestions"></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 mb-3">
+                    <label for="location" class="form-label">Location</label>
+                    <div class="position-relative">
+                        <input type="text" class="form-control" id="location" name="location" 
+                               placeholder="City, province..." 
+                               value="{{ request.args.get('location', '') }}"
+                               autocomplete="off">
+                        <div class="search-suggestions" id="locationSuggestions"></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">All Categories</option>
+                        {% for category in job_categories %}
+                        <option value="{{ category.slug }}" 
+                                {% if request.args.get('category') == category.slug %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2 mb-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Advanced Filters Toggle -->
+            <div class="text-center mt-3">
+                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                        data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+                    <i class="fas fa-sliders-h me-2"></i>Advanced Filters
+                </button>
+            </div>
+            
+            <!-- Advanced Filters -->
+            <div class="collapse mt-3" id="advancedFilters">
+                <div class="search-filters">
+                    <div class="row">
+                        <div class="col-lg-3 mb-3">
+                            <label for="job_type" class="form-label">Job Type</label>
+                            <select class="form-select" id="job_type" name="job_type">
+                                <option value="">Any Type</option>
+                                <option value="full_time" {% if request.args.get('job_type') == 'full_time' %}selected{% endif %}>Full Time</option>
+                                <option value="part_time" {% if request.args.get('job_type') == 'part_time' %}selected{% endif %}>Part Time</option>
+                                <option value="contract" {% if request.args.get('job_type') == 'contract' %}selected{% endif %}>Contract</option>
+                                <option value="internship" {% if request.args.get('job_type') == 'internship' %}selected{% endif %}>Internship</option>
+                                <option value="remote" {% if request.args.get('job_type') == 'remote' %}selected{% endif %}>Remote</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3 mb-3">
+                            <label for="experience_level" class="form-label">Experience Level</label>
+                            <select class="form-select" id="experience_level" name="experience_level">
+                                <option value="">Any Level</option>
+                                <option value="entry" {% if request.args.get('experience_level') == 'entry' %}selected{% endif %}>Entry Level</option>
+                                <option value="mid" {% if request.args.get('experience_level') == 'mid' %}selected{% endif %}>Mid Level</option>
+                                <option value="senior" {% if request.args.get('experience_level') == 'senior' %}selected{% endif %}>Senior Level</option>
+                                <option value="executive" {% if request.args.get('experience_level') == 'executive' %}selected{% endif %}>Executive</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3 mb-3">
+                            <label for="salary_min" class="form-label">Min Salary (ZAR)</label>
+                            <select class="form-select" id="salary_min" name="salary_min">
+                                <option value="">No Minimum</option>
+                                <option value="10000" {% if request.args.get('salary_min') == '10000' %}selected{% endif %}>R10,000+</option>
+                                <option value="20000" {% if request.args.get('salary_min') == '20000' %}selected{% endif %}>R20,000+</option>
+                                <option value="30000" {% if request.args.get('salary_min') == '30000' %}selected{% endif %}>R30,000+</option>
+                                <option value="50000" {% if request.args.get('salary_min') == '50000' %}selected{% endif %}>R50,000+</option>
+                                <option value="75000" {% if request.args.get('salary_min') == '75000' %}selected{% endif %}>R75,000+</option>
+                                <option value="100000" {% if request.args.get('salary_min') == '100000' %}selected{% endif %}>R100,000+</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3 mb-3">
+                            <label for="posted_date" class="form-label">Posted Date</label>
+                            <select class="form-select" id="posted_date" name="posted_date">
+                                <option value="">Any Time</option>
+                                <option value="1" {% if request.args.get('posted_date') == '1' %}selected{% endif %}>Last 24 hours</option>
+                                <option value="7" {% if request.args.get('posted_date') == '7' %}selected{% endif %}>Last 7 days</option>
+                                <option value="30" {% if request.args.get('posted_date') == '30' %}selected{% endif %}>Last 30 days</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-lg-6 mb-3">
+                            <label class="form-label">Work Location</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remote_work" name="remote_work" value="1"
+                                       {% if request.args.get('remote_work') %}checked{% endif %}>
+                                <label class="form-check-label" for="remote_work">
+                                    Include Remote Work
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="hybrid_work" name="hybrid_work" value="1"
+                                       {% if request.args.get('hybrid_work') %}checked{% endif %}>
+                                <label class="form-check-label" for="hybrid_work">
+                                    Include Hybrid Work
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <label class="form-label">Company Size</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="startup" name="company_size" value="startup"
+                                       {% if 'startup' in request.args.getlist('company_size') %}checked{% endif %}>
+                                <label class="form-check-label" for="startup">
+                                    Startup (1-50 employees)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="medium" name="company_size" value="medium"
+                                       {% if 'medium' in request.args.getlist('company_size') %}checked{% endif %}>
+                                <label class="form-check-label" for="medium">
+                                    Medium (51-500 employees)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="large" name="company_size" value="large"
+                                       {% if 'large' in request.args.getlist('company_size') %}checked{% endif %}>
+                                <label class="form-check-label" for="large">
+                                    Large (500+ employees)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Active Filters -->
+    {% if active_filters %}
+    <div class="filter-chips mb-3">
+        {% for filter_name, filter_value in active_filters.items() %}
+        <span class="filter-chip">
+            {{ filter_name }}: {{ filter_value }}
+            <span class="remove" onclick="removeFilter('{{ filter_name }}')">&times;</span>
+        </span>
+        {% endfor %}
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAllFilters()">
+            Clear All
+        </button>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Search Results Header -->
+            <div class="search-results-header">
+                <div class="results-count">
+                    {% if jobs %}
+                        Showing {{ jobs.offset + 1 }}-{{ jobs.offset + jobs.items|length }} of {{ jobs.total }} jobs
+                        {% if search_query %}for "{{ search_query }}"{% endif %}
+                    {% else %}
+                        No jobs found
+                        {% if search_query %}for "{{ search_query }}"{% endif %}
+                    {% endif %}
+                </div>
+                <div class="sort-controls">
+                    <label for="sort_by" class="form-label mb-0 me-2">Sort by:</label>
+                    <select class="form-select form-select-sm" id="sort_by" name="sort_by" onchange="updateSort()">
+                        <option value="relevance" {% if request.args.get('sort_by', 'relevance') == 'relevance' %}selected{% endif %}>Relevance</option>
+                        <option value="date" {% if request.args.get('sort_by') == 'date' %}selected{% endif %}>Date Posted</option>
+                        <option value="salary_high" {% if request.args.get('sort_by') == 'salary_high' %}selected{% endif %}>Salary (High to Low)</option>
+                        <option value="salary_low" {% if request.args.get('sort_by') == 'salary_low' %}selected{% endif %}>Salary (Low to High)</option>
+                        <option value="company" {% if request.args.get('sort_by') == 'company' %}selected{% endif %}>Company Name</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Job Results -->
+            {% if jobs and jobs.items %}
+                {% for job in jobs.items %}
+                <div class="job-card" data-job-id="{{ job.job_id }}">
+                    <div class="job-card-header">
+                        <div class="flex-grow-1">
+                            <a href="{{ url_for('jobs_route.job_detail', job_id=job.job_id) }}" class="job-title">
+                                {{ job.title }}
+                            </a>
+                            <div class="company-info">
+                                {% if job.company.logo_path %}
+                                <img src="{{ job.company.logo_path }}" alt="{{ job.company.company_name }}" class="company-logo">
+                                {% else %}
+                                <div class="company-logo d-flex align-items-center justify-content-center bg-light">
+                                    <i class="fas fa-building text-muted"></i>
+                                </div>
+                                {% endif %}
+                                <div class="company-details">
+                                    <h6>{{ job.company.company_name }}</h6>
+                                    <p>
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        {{ job.city }}{% if job.province %}, {{ job.province }}{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="job-actions-right">
+                            <button class="btn btn-outline-primary btn-sm save-job" data-job-id="{{ job.job_id }}">
+                                <i class="far fa-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="job-meta">
+                        <div class="job-meta-item">
+                            <i class="fas fa-briefcase"></i>
+                            <span>{{ job.job_type|title }}</span>
+                        </div>
+                        {% if job.experience_level %}
+                        <div class="job-meta-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>{{ job.experience_level|title }} Level</span>
+                        </div>
+                        {% endif %}
+                        {% if job.salary_min or job.salary_max %}
+                        <div class="job-meta-item">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>
+                                {% if job.salary_min and job.salary_max %}
+                                    R{{ "{:,}".format(job.salary_min) }} - R{{ "{:,}".format(job.salary_max) }}
+                                {% elif job.salary_min %}
+                                    R{{ "{:,}".format(job.salary_min) }}+
+                                {% else %}
+                                    R{{ "{:,}".format(job.salary_max) }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="job-description">
+                        {{ job.description[:200] }}{% if job.description|length > 200 %}...{% endif %}
+                    </div>
+
+                    {% if job.skills %}
+                    <div class="job-tags">
+                        {% for skill in job.skills[:5] %}
+                        <span class="job-tag">{{ skill }}</span>
+                        {% endfor %}
+                        {% if job.skills|length > 5 %}
+                        <span class="job-tag">+{{ job.skills|length - 5 }} more</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="job-actions">
+                        <div class="job-actions-left">
+                            <a href="{{ url_for('jobs_route.job_detail', job_id=job.job_id) }}" 
+                               class="btn btn-primary btn-sm">
+                                View Details
+                            </a>
+                            <button class="btn btn-outline-secondary btn-sm share-job" data-job-id="{{ job.job_id }}">
+                                <i class="fas fa-share-alt me-1"></i>Share
+                            </button>
+                        </div>
+                        <div class="job-posted">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ moment(job.created_at).fromNow() }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if jobs.pages > 1 %}
+                <nav aria-label="Job search pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if jobs.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('jobs_search_route.advanced_search', page=jobs.prev_num, **request.args) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in jobs.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != jobs.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('jobs_search_route.advanced_search', page=page_num, **request.args) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if jobs.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('jobs_search_route.advanced_search', page=jobs.next_num, **request.args) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <!-- No Results -->
+                <div class="no-results">
+                    <i class="fas fa-search"></i>
+                    <h4>No jobs found</h4>
+                    <p>Try adjusting your search criteria or browse our job categories.</p>
+                    <div class="mt-3">
+                        <a href="{{ url_for('jobs_route.job_categories') }}" class="btn btn-primary me-2">
+                            Browse Categories
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearAllFilters()">
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Saved Searches -->
+            {% if current_user.is_authenticated %}
+            <div class="saved-searches">
+                <h5 class="mb-3">
+                    <i class="fas fa-bookmark me-2"></i>Saved Searches
+                </h5>
+                {% if saved_searches %}
+                    {% for search in saved_searches %}
+                    <div class="saved-search-item">
+                        <div>
+                            <strong>{{ search.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ search.criteria_summary }}</small>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                    onclick="loadSavedSearch('{{ search.search_id }}')">
+                                Load
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteSavedSearch('{{ search.search_id }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No saved searches yet.</p>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <button class="btn btn-sm btn-primary w-100" onclick="saveCurrentSearch()">
+                        <i class="fas fa-plus me-2"></i>Save Current Search
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Popular Categories -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-fire me-2"></i>Popular Categories
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for category in popular_categories %}
+                    <a href="{{ url_for('jobs_search_route.advanced_search', category=category.slug) }}" 
+                       class="d-flex justify-content-between align-items-center text-decoration-none mb-2">
+                        <span>{{ category.name }}</span>
+                        <span class="badge bg-secondary">{{ category.job_count }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recent Searches -->
+            {% if recent_searches %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Searches
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for search in recent_searches %}
+                    <a href="{{ search.url }}" class="d-block text-decoration-none mb-2">
+                        <small>{{ search.query }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search suggestions
+    const keywordsInput = document.getElementById('keywords');
+    const locationInput = document.getElementById('location');
+    const keywordSuggestions = document.getElementById('keywordSuggestions');
+    const locationSuggestions = document.getElementById('locationSuggestions');
+
+    // Debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Keyword suggestions
+    const fetchKeywordSuggestions = debounce(async (query) => {
+        if (query.length < 2) {
+            keywordSuggestions.style.display = 'none';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/search/suggestions/keywords?q=${encodeURIComponent(query)}`);
+            const suggestions = await response.json();
+            
+            if (suggestions.length > 0) {
+                keywordSuggestions.innerHTML = suggestions.map(suggestion => 
+                    `<div class="search-suggestion" onclick="selectSuggestion('keywords', '${suggestion.text}')">
+                        <i class="fas fa-search text-muted"></i>
+                        <span>${suggestion.text}</span>
+                        ${suggestion.count ? `<small class="ms-auto text-muted">${suggestion.count} jobs</small>` : ''}
+                    </div>`
+                ).join('');
+                keywordSuggestions.style.display = 'block';
+            } else {
+                keywordSuggestions.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error fetching keyword suggestions:', error);
+            keywordSuggestions.style.display = 'none';
+        }
+    }, 300);
+
+    // Location suggestions
+    const fetchLocationSuggestions = debounce(async (query) => {
+        if (query.length < 2) {
+            locationSuggestions.style.display = 'none';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/search/suggestions/locations?q=${encodeURIComponent(query)}`);
+            const suggestions = await response.json();
+            
+            if (suggestions.length > 0) {
+                locationSuggestions.innerHTML = suggestions.map(suggestion => 
+                    `<div class="search-suggestion" onclick="selectSuggestion('location', '${suggestion.text}')">
+                        <i class="fas fa-map-marker-alt text-muted"></i>
+                        <span>${suggestion.text}</span>
+                        ${suggestion.count ? `<small class="ms-auto text-muted">${suggestion.count} jobs</small>` : ''}
+                    </div>`
+                ).join('');
+                locationSuggestions.style.display = 'block';
+            } else {
+                locationSuggestions.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error fetching location suggestions:', error);
+            locationSuggestions.style.display = 'none';
+        }
+    }, 300);
+
+    // Event listeners
+    keywordsInput.addEventListener('input', (e) => {
+        fetchKeywordSuggestions(e.target.value);
+    });
+
+    locationInput.addEventListener('input', (e) => {
+        fetchLocationSuggestions(e.target.value);
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!keywordsInput.contains(e.target) && !keywordSuggestions.contains(e.target)) {
+            keywordSuggestions.style.display = 'none';
+        }
+        if (!locationInput.contains(e.target) && !locationSuggestions.contains(e.target)) {
+            locationSuggestions.style.display = 'none';
+        }
+    });
+
+    // Job actions
+    document.querySelectorAll('.save-job').forEach(button => {
+        button.addEventListener('click', function() {
+            const jobId = this.dataset.jobId;
+            saveJob(jobId, this);
+        });
+    });
+
+    document.querySelectorAll('.share-job').forEach(button => {
+        button.addEventListener('click', function() {
+            const jobId = this.dataset.jobId;
+            shareJob(jobId);
+        });
+    });
+});
+
+// Utility functions
+function selectSuggestion(field, value) {
+    document.getElementById(field).value = value;
+    document.getElementById(field + 'Suggestions').style.display = 'none';
+}
+
+function updateSort() {
+    const form = document.getElementById('advancedSearchForm');
+    form.submit();
+}
+
+function removeFilter(filterName) {
+    const url = new URL(window.location);
+    url.searchParams.delete(filterName);
+    window.location.href = url.toString();
+}
+
+function clearAllFilters() {
+    const url = new URL(window.location);
+    // Keep only the basic search parameters
+    const keepParams = ['keywords', 'location', 'category'];
+    const newParams = new URLSearchParams();
+    
+    keepParams.forEach(param => {
+        if (url.searchParams.has(param)) {
+            newParams.set(param, url.searchParams.get(param));
+        }
+    });
+    
+    url.search = newParams.toString();
+    window.location.href = url.toString();
+}
+
+async function saveJob(jobId, button) {
+    if (!{{ 'true' if current_user.is_authenticated else 'false' }}) {
+        window.location.href = '/auth/login?next=' + encodeURIComponent(window.location.pathname);
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/jobs/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            },
+            body: JSON.stringify({ job_id: jobId })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            button.innerHTML = result.saved ? 
+                '<i class="fas fa-heart"></i>' : 
+                '<i class="far fa-heart"></i>';
+            button.classList.toggle('btn-primary', result.saved);
+            button.classList.toggle('btn-outline-primary', !result.saved);
+            
+            showToast(result.saved ? 'Job saved!' : 'Job unsaved!', 'success');
+        } else {
+            showToast('Error saving job', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving job:', error);
+        showToast('Error saving job', 'error');
+    }
+}
+
+function shareJob(jobId) {
+    const jobUrl = `${window.location.origin}/jobs/${jobId}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'Check out this job',
+            url: jobUrl
+        });
+    } else {
+        // Fallback to copying to clipboard
+        navigator.clipboard.writeText(jobUrl).then(() => {
+            showToast('Job link copied to clipboard!', 'success');
+        });
+    }
+}
+
+async function saveCurrentSearch() {
+    const searchName = prompt('Enter a name for this search:');
+    if (!searchName) return;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    try {
+        const response = await fetch('/api/search/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                name: searchName,
+                criteria: Object.fromEntries(searchParams)
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Search saved!', 'success');
+            location.reload();
+        } else {
+            showToast('Error saving search', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving search:', error);
+        showToast('Error saving search', 'error');
+    }
+}
+
+async function loadSavedSearch(searchId) {
+    try {
+        const response = await fetch(`/api/search/load/${searchId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            window.location.href = result.url;
+        } else {
+            showToast('Error loading search', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading search:', error);
+        showToast('Error loading search', 'error');
+    }
+}
+
+async function deleteSavedSearch(searchId) {
+    if (!confirm('Are you sure you want to delete this saved search?')) return;
+
+    try {
+        const response = await fetch(`/api/search/delete/${searchId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Search deleted!', 'success');
+            location.reload();
+        } else {
+            showToast('Error deleting search', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting search:', error);
+        showToast('Error deleting search', 'error');
+    }
+}
+
+function showToast(message, type) {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

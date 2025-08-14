@@ -89,7 +89,7 @@
   - Add social sharing buttons and job saving functionality
   - _Requirements: 6.1, 6.4, 7.2_
 
-- [ ] 3.2 Create job search template
+- [x] 3.2 Create job search template
   - Create `templates/jobs/job_search.html` extending `layout/base.html`
   - Implement advanced search form with multiple filter options
   - Add search results display with sorting capabilities
@@ -97,15 +97,15 @@
   - Add saved search functionality for registered users
   - _Requirements: 6.4, 7.2_
 
-- [ ] 3.3 Update job categories template
-  - Enhance existing `templates/job_category_list.html`
+- [x] 3.3 Update job categories template
+  - Create new `templates/jobs/job_categories.html` extending `layout/base.html`
   - Ensure consistency with new design system
   - Add proper navigation integration and breadcrumbs
   - Include category statistics and job count displays
   - Add responsive grid layout with proper hover effects
   - _Requirements: 6.2, 6.4_
 
-- [ ] 3.4 Create job application template
+- [x] 3.4 Create job application template
   - Create `templates/jobs/job_application.html` extending `layout/base.html`
   - Implement job application form with CV upload
   - Add cover letter text area with character counting

@@ -15,6 +15,7 @@ from flask import (
 # Authentication
 from src.authentication import login_required, user_details
 from src.authentication.jwt_helper import create_jwt
+from src.authentication.csrf import generate_csrf , validate_csrf
 # Constants
 from src.database.constants import utc_time
 # Domain Models
@@ -36,6 +37,7 @@ async def create_response(redirect_url, message=None, category=None) -> Response
     return response
 
 
+
 @auth_route.route("/login", methods=["GET", "POST"])
 @flask_error_handler
 @user_details
@@ -45,6 +47,8 @@ async def login(user: User):
         auth_logger.info("Fetching login page")
         flash("you are already logged in", "success")
         return redirect(url_for("home.get_home"))
+
+    csrf_token = generate_csrf()
 
     if request.method == "POST":
         email = request.form.get("email")
@@ -79,8 +83,8 @@ async def login(user: User):
 
         flash("Login successful", "success")
         return response
-
-    return render_template("login.html")
+    context = dict(csrf_token=csrf_token)
+    return render_template("auth/login.html", **context)
 
 
 @auth_route.route("/logout")
@@ -99,13 +103,15 @@ async def logout(user: User):
 @flask_error_handler
 @user_details
 async def subscribe(user: User):
+    csrf_token = generate_csrf()
+    context = dict(csrf_token=csrf_token)
 
     if user:
         flash(message="You have been logged out", category="danger")
         return redirect(url_for("auth.logout"))
 
     if request.method.casefold() == "get":
-        return render_template('register.html')
+        return render_template('auth/register.html', **context)
 
     email = request.form.get("email")
     password = request.form.get('password')
@@ -151,8 +157,11 @@ async def subscribe(user: User):
 @auth_route.route("/password-reset", methods=["GET", "POST"])
 @flask_error_handler
 async def password_reset():
+    csrf_token = generate_csrf()
+    context = dict(csrf_token=csrf_token)
     if request.method == "GET":
-        return render_template("password_reset.html")
+        
+        return render_template("auth/password_reset.html", **context)
 
     email = request.form.get("email")
 

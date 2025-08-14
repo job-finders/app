@@ -1,0 +1,859 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Job Categories - Find Jobs by Industry | Job Finders{% endblock %}
+
+{% block meta_description %}Explore job opportunities across 30+ industries in South Africa. Browse programming, healthcare, finance, marketing, and more career categories.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .categories-hero {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 4rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .category-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+        border-radius: 15px;
+        cursor: pointer;
+        height: 100%;
+        overflow: hidden;
+        background: white;
+    }
+
+    .category-card:hover {
+        transform: translateY(-8px);
+        border-color: var(--primary-color);
+        box-shadow: 0 15px 35px rgba(37, 99, 235, 0.15);
+    }
+
+    .category-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 2rem 1rem;
+        text-align: center;
+        border-bottom: none;
+    }
+
+    .category-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .category-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .category-stats {
+        padding: 1.5rem;
+    }
+
+    .stat-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-number {
+        display: block;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-number.primary { color: var(--primary-color); }
+    .stat-number.success { color: var(--success-color); }
+    .stat-number.warning { color: var(--warning-color); }
+    .stat-number.info { color: var(--info-color); }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .category-skills {
+        margin-bottom: 1rem;
+    }
+
+    .skills-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+
+    .skills-tags {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+
+    .skill-tag {
+        background: #f8f9fa;
+        color: var(--text-dark);
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .category-footer {
+        background: transparent;
+        border-top: 1px solid #f8f9fa;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .view-jobs-btn {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .view-jobs-btn:hover {
+        background: var(--secondary-color);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3);
+    }
+
+    .categories-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .search-categories {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 3rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .search-input {
+        position: relative;
+    }
+
+    .search-input input {
+        padding-left: 3rem;
+        border-radius: 25px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .search-input input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+    }
+
+    .search-input i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        z-index: 5;
+    }
+
+    .popular-searches {
+        margin-top: 1rem;
+    }
+
+    .popular-tag {
+        display: inline-block;
+        background: #f8f9fa;
+        color: var(--text-dark);
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        text-decoration: none;
+        margin: 0.25rem;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .popular-tag:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .category-insights {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .insights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .insight-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .insight-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .insight-label {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .breadcrumb-nav {
+        background: transparent;
+        padding: 1rem 0;
+        margin-bottom: 1rem;
+    }
+
+    .breadcrumb {
+        background: transparent;
+        padding: 0;
+        margin: 0;
+    }
+
+    .breadcrumb-item a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .breadcrumb-item.active {
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+        .categories-hero {
+            padding: 2rem 0;
+        }
+        
+        .categories-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        
+        .category-header {
+            padding: 1.5rem 1rem;
+        }
+        
+        .category-icon {
+            font-size: 2.5rem;
+        }
+        
+        .search-categories {
+            padding: 1.5rem;
+        }
+        
+        .insights-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 576px) {
+        .stat-row {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+        
+        .insights-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb Navigation -->
+<div class="container">
+    <nav class="breadcrumb-nav" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('jobs_route.job_list') }}">Jobs</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Categories</li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Hero Section -->
+<section class="categories-hero">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-4 fw-bold mb-3">Explore Job Categories</h1>
+                <p class="lead mb-0">Choose from 30+ industries and discover thousands of opportunities across South Africa</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Search Categories -->
+    <div class="search-categories">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <h3 class="text-center mb-3">Find Your Industry</h3>
+                <div class="search-input">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-control form-control-lg" 
+                           placeholder="Search categories (e.g., programming, healthcare, finance...)"
+                           id="categorySearch">
+                </div>
+                <div class="popular-searches text-center">
+                    <small class="text-muted">Popular searches:</small>
+                    <a href="#programming" class="popular-tag">Programming</a>
+                    <a href="#healthcare" class="popular-tag">Healthcare</a>
+                    <a href="#finance" class="popular-tag">Finance</a>
+                    <a href="#marketing" class="popular-tag">Marketing</a>
+                    <a href="#education" class="popular-tag">Education</a>
+                    <a href="#engineering" class="popular-tag">Engineering</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Insights -->
+    <div class="category-insights">
+        <div class="text-center">
+            <h3 class="mb-2">Job Market Overview</h3>
+            <p class="text-muted">Current statistics across all categories</p>
+        </div>
+        <div class="insights-grid">
+            <div class="insight-card">
+                <span class="insight-number">{{ total_jobs|default('15,420') }}</span>
+                <span class="insight-label">Total Active Jobs</span>
+            </div>
+            <div class="insight-card">
+                <span class="insight-number">{{ total_categories|default('32') }}</span>
+                <span class="insight-label">Job Categories</span>
+            </div>
+            <div class="insight-card">
+                <span class="insight-number">{{ total_companies|default('2,840') }}</span>
+                <span class="insight-label">Hiring Companies</span>
+            </div>
+            <div class="insight-card">
+                <span class="insight-number">R{{ avg_salary|default('45,000') }}</span>
+                <span class="insight-label">Average Salary</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Grid -->
+    <div class="categories-grid" id="categoriesGrid">
+        {% for category in job_categories %}
+        <div class="category-card" data-category="{{ category.name.lower() }}" id="{{ category.slug }}">
+            <div class="category-header">
+                <i class="{{ category.icon|default('fas fa-briefcase') }} category-icon"></i>
+                <h5 class="category-title">{{ category.name }}</h5>
+            </div>
+            
+            <div class="category-stats">
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number primary">{{ category.total_jobs|default(0)|number_format }}</span>
+                        <span class="stat-label">Total Jobs</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number success">{{ category.active_jobs|default(0)|number_format }}</span>
+                        <span class="stat-label">Active Now</span>
+                    </div>
+                </div>
+                
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number warning">{{ category.featured_jobs|default(0) }}</span>
+                        <span class="stat-label">Featured</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number info">
+                            {% if category.avg_salary %}
+                                R{{ category.avg_salary|number_format }}
+                            {% else %}
+                                Competitive
+                            {% endif %}
+                        </span>
+                        <span class="stat-label">Avg Salary</span>
+                    </div>
+                </div>
+                
+                {% if category.top_skills %}
+                <div class="category-skills">
+                    <div class="skills-label">Top skills:</div>
+                    <div class="skills-tags">
+                        {% for skill in category.top_skills[:3] %}
+                        <span class="skill-tag">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="category-footer">
+                <a href="{{ url_for('jobs_search_route.advanced_search', category=category.slug) }}" 
+                   class="view-jobs-btn">
+                    View Jobs
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Default categories if none provided -->
+        {% if not job_categories %}
+        <!-- Programming -->
+        <div class="category-card" data-category="programming" id="programming">
+            <div class="category-header">
+                <i class="fas fa-laptop-code category-icon"></i>
+                <h5 class="category-title">Programming & Development</h5>
+            </div>
+            <div class="category-stats">
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number primary">3,420</span>
+                        <span class="stat-label">Total Jobs</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number success">2,980</span>
+                        <span class="stat-label">Active Now</span>
+                    </div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number warning">120</span>
+                        <span class="stat-label">Featured</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number info">R85,000</span>
+                        <span class="stat-label">Avg Salary</span>
+                    </div>
+                </div>
+                <div class="category-skills">
+                    <div class="skills-label">Top skills:</div>
+                    <div class="skills-tags">
+                        <span class="skill-tag">Python</span>
+                        <span class="skill-tag">JavaScript</span>
+                        <span class="skill-tag">React</span>
+                    </div>
+                </div>
+            </div>
+            <div class="category-footer">
+                <a href="/jobs?category=programming" class="view-jobs-btn">
+                    View Jobs
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Healthcare -->
+        <div class="category-card" data-category="healthcare" id="healthcare">
+            <div class="category-header">
+                <i class="fas fa-heartbeat category-icon"></i>
+                <h5 class="category-title">Healthcare & Medical</h5>
+            </div>
+            <div class="category-stats">
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number primary">2,150</span>
+                        <span class="stat-label">Total Jobs</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number success">1,890</span>
+                        <span class="stat-label">Active Now</span>
+                    </div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number warning">85</span>
+                        <span class="stat-label">Featured</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number info">R65,000</span>
+                        <span class="stat-label">Avg Salary</span>
+                    </div>
+                </div>
+                <div class="category-skills">
+                    <div class="skills-label">Top skills:</div>
+                    <div class="skills-tags">
+                        <span class="skill-tag">Nursing</span>
+                        <span class="skill-tag">Patient Care</span>
+                        <span class="skill-tag">Medical</span>
+                    </div>
+                </div>
+            </div>
+            <div class="category-footer">
+                <a href="/jobs?category=healthcare" class="view-jobs-btn">
+                    View Jobs
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Finance -->
+        <div class="category-card" data-category="finance" id="finance">
+            <div class="category-header">
+                <i class="fas fa-chart-line category-icon"></i>
+                <h5 class="category-title">Finance & Banking</h5>
+            </div>
+            <div class="category-stats">
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number primary">1,890</span>
+                        <span class="stat-label">Total Jobs</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number success">1,650</span>
+                        <span class="stat-label">Active Now</span>
+                    </div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number warning">95</span>
+                        <span class="stat-label">Featured</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number info">R72,000</span>
+                        <span class="stat-label">Avg Salary</span>
+                    </div>
+                </div>
+                <div class="category-skills">
+                    <div class="skills-label">Top skills:</div>
+                    <div class="skills-tags">
+                        <span class="skill-tag">Excel</span>
+                        <span class="skill-tag">Analysis</span>
+                        <span class="skill-tag">Accounting</span>
+                    </div>
+                </div>
+            </div>
+            <div class="category-footer">
+                <a href="/jobs?category=finance" class="view-jobs-btn">
+                    View Jobs
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Marketing -->
+        <div class="category-card" data-category="marketing" id="marketing">
+            <div class="category-header">
+                <i class="fas fa-bullhorn category-icon"></i>
+                <h5 class="category-title">Marketing & Sales</h5>
+            </div>
+            <div class="category-stats">
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number primary">1,560</span>
+                        <span class="stat-label">Total Jobs</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number success">1,320</span>
+                        <span class="stat-label">Active Now</span>
+                    </div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number warning">70</span>
+                        <span class="stat-label">Featured</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number info">R48,000</span>
+                        <span class="stat-label">Avg Salary</span>
+                    </div>
+                </div>
+                <div class="category-skills">
+                    <div class="skills-label">Top skills:</div>
+                    <div class="skills-tags">
+                        <span class="skill-tag">Digital Marketing</span>
+                        <span class="skill-tag">SEO</span>
+                        <span class="skill-tag">Social Media</span>
+                    </div>
+                </div>
+            </div>
+            <div class="category-footer">
+                <a href="/jobs?category=marketing" class="view-jobs-btn">
+                    View Jobs
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Education -->
+        <div class="category-card" data-category="education" id="education">
+            <div class="category-header">
+                <i class="fas fa-graduation-cap category-icon"></i>
+                <h5 class="category-title">Education & Training</h5>
+            </div>
+            <div class="category-stats">
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number primary">1,240</span>
+                        <span class="stat-label">Total Jobs</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number success">1,100</span>
+                        <span class="stat-label">Active Now</span>
+                    </div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number warning">45</span>
+                        <span class="stat-label">Featured</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number info">R42,000</span>
+                        <span class="stat-label">Avg Salary</span>
+                    </div>
+                </div>
+                <div class="category-skills">
+                    <div class="skills-label">Top skills:</div>
+                    <div class="skills-tags">
+                        <span class="skill-tag">Teaching</span>
+                        <span class="skill-tag">Curriculum</span>
+                        <span class="skill-tag">Training</span>
+                    </div>
+                </div>
+            </div>
+            <div class="category-footer">
+                <a href="/jobs?category=education" class="view-jobs-btn">
+                    View Jobs
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Engineering -->
+        <div class="category-card" data-category="engineering" id="engineering">
+            <div class="category-header">
+                <i class="fas fa-cogs category-icon"></i>
+                <h5 class="category-title">Engineering</h5>
+            </div>
+            <div class="category-stats">
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number primary">980</span>
+                        <span class="stat-label">Total Jobs</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number success">850</span>
+                        <span class="stat-label">Active Now</span>
+                    </div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <span class="stat-number warning">55</span>
+                        <span class="stat-label">Featured</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number info">R78,000</span>
+                        <span class="stat-label">Avg Salary</span>
+                    </div>
+                </div>
+                <div class="category-skills">
+                    <div class="skills-label">Top skills:</div>
+                    <div class="skills-tags">
+                        <span class="skill-tag">CAD</span>
+                        <span class="skill-tag">Project Management</span>
+                        <span class="skill-tag">Technical</span>
+                    </div>
+                </div>
+            </div>
+            <div class="category-footer">
+                <a href="/jobs?category=engineering" class="view-jobs-btn">
+                    View Jobs
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Call to Action -->
+    <div class="text-center mb-5">
+        <h3 class="mb-3">Can't find your industry?</h3>
+        <p class="text-muted mb-4">Browse all jobs or create a job alert to get notified when new opportunities in your field become available.</p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{{ url_for('jobs_route.job_list') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-search me-2"></i>Browse All Jobs
+            </a>
+            <a href="{{ url_for('jobseeker_route.job_alerts') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-bell me-2"></i>Create Job Alert
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('categorySearch');
+    const categoriesGrid = document.getElementById('categoriesGrid');
+    const categoryCards = categoriesGrid.querySelectorAll('.category-card');
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        categoryCards.forEach(card => {
+            const categoryName = card.dataset.category;
+            const categoryTitle = card.querySelector('.category-title').textContent.toLowerCase();
+            const skills = Array.from(card.querySelectorAll('.skill-tag')).map(tag => tag.textContent.toLowerCase());
+            
+            const matches = categoryName.includes(searchTerm) || 
+                          categoryTitle.includes(searchTerm) ||
+                          skills.some(skill => skill.includes(searchTerm));
+            
+            if (matches || searchTerm === '') {
+                card.style.display = 'block';
+                card.style.animation = 'fadeIn 0.3s ease';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Show "no results" message if needed
+        const visibleCards = Array.from(categoryCards).filter(card => card.style.display !== 'none');
+        if (visibleCards.length === 0 && searchTerm !== '') {
+            showNoResults();
+        } else {
+            hideNoResults();
+        }
+    });
+
+    // Popular search tags
+    document.querySelectorAll('.popular-tag').forEach(tag => {
+        tag.addEventListener('click', function(e) {
+            e.preventDefault();
+            const category = this.textContent.toLowerCase();
+            searchInput.value = category;
+            searchInput.dispatchEvent(new Event('input'));
+            
+            // Scroll to results
+            categoriesGrid.scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+
+    // Category card click tracking
+    categoryCards.forEach(card => {
+        card.addEventListener('click', function(e) {
+            if (!e.target.closest('.view-jobs-btn')) {
+                // Track category view
+                const categoryName = this.dataset.category;
+                trackCategoryView(categoryName);
+            }
+        });
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.style.animation = 'pulse 1s ease';
+            }
+        });
+    });
+});
+
+function showNoResults() {
+    const existingMessage = document.getElementById('noResultsMessage');
+    if (existingMessage) return;
+    
+    const message = document.createElement('div');
+    message.id = 'noResultsMessage';
+    message.className = 'text-center py-5';
+    message.innerHTML = `
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h4>No categories found</h4>
+        <p class="text-muted">Try a different search term or browse all jobs.</p>
+        <a href="/jobs" class="btn btn-primary">Browse All Jobs</a>
+    `;
+    
+    document.getElementById('categoriesGrid').appendChild(message);
+}
+
+function hideNoResults() {
+    const message = document.getElementById('noResultsMessage');
+    if (message) {
+        message.remove();
+    }
+}
+
+function trackCategoryView(categoryName) {
+    // Analytics tracking
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'category_view', {
+            'category_name': categoryName,
+            'page_location': window.location.href
+        });
+    }
+    
+    // Internal tracking
+    fetch('/api/analytics/category-view', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content')
+        },
+        body: JSON.stringify({
+            category: categoryName,
+            timestamp: new Date().toISOString()
+        })
+    }).catch(error => {
+        console.log('Analytics tracking failed:', error);
+    });
+}
+
+// Add CSS animation keyframes
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
