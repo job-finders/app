@@ -76,15 +76,11 @@ async def enhance_job_post(user: User, job_id: str):
         user_prompt=user_prompt,
         input_data=payload,
     )
-    if not agent_output:
-        return jsonify({"error": "Failed to enhance job post"}), 500
     # 5. re-apply original dates
     updated_job = await employer_agents_controller.update_enhance_existing_job(
         agent_output=agent_output,
         job=original_job,
     )
-    if not updated_job:
-        return jsonify({"error": "Failed to update job post with enhanced data"}), 500
 
     return Response(
         updated_job.model_dump_json(exclude_unset=True),
@@ -111,9 +107,6 @@ async def analyze_job_post(user: User, job_id: str):
             user_id=user.uid,
             job_id=job_id
         )
-        if not result:
-            return jsonify({"error": "Job post analysis failed", "details": "No insights generated"}), 500
-
         return jsonify(result.model_dump()), 200
     except Exception as e:
         agents_logger.exception("Job post analysis failed")
