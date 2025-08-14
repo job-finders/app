@@ -18,7 +18,7 @@
 
 <form action="{{ url_for('auth.subscribe') }}" method="POST" enctype="multipart/form-data" data-validate="true" novalidate>
     <!-- CSRF Token -->
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
     
     <!-- Email Field -->
     <div class="form-group">
