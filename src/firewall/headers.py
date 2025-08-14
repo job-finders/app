@@ -12,16 +12,15 @@ def configure_security_headers(app: Flask):
         # Content Security Policy
         csp = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;"
             "img-src 'self' data:; "
-            "font-src 'self' https://fonts.gstatic.com; "
-            "connect-src 'self' https://jobfinders.site; "
+            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+            "connect-src 'self' https://jobfinders.site https://cdnjs.cloudflare.com; "
             "frame-ancestors 'none'; "
             "form-action 'self'; "
             "base-uri 'self';"
         )
-
         response.headers['Content-Security-Policy'] = csp
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'
