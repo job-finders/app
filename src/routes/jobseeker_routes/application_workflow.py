@@ -284,18 +284,18 @@ async def questionnaire_page(user: User, application_id: str):
         )
         
         if not application_result.get("success", False):
-            return render_template('errors/404.html'), 404
+            return render_template('error/404.html'), 404
         
         application = application_result.get("application")
         if not application:
-            return render_template('errors/404.html'), 404
+            return render_template('error/404.html'), 404
         
         # Get job details
         job_controller = get_controller('jobs_search')
         job = await job_controller.get_job_by_id(job_id=application.job_id)
         
         if not job:
-            return render_template('errors/404.html'), 404
+            return render_template('error/404.html'), 404
         
         # Get questionnaire details
         questionnaire_result = await controller.get_job_questionnaires(job_id=application.job_id)
@@ -306,15 +306,15 @@ async def questionnaire_page(user: User, application_id: str):
             return redirect(url_for('application_workflow.review_application', application_id=application_id))
         
         questionnaire = questionnaire_result.get("questionnaires")[0]  # Get first questionnaire
-        
-        return render_template('applications/questionnaire.html', 
+
+        return render_template('jobs/applications/questionnaire.html',
                              application=application,
                              job=job,
                              questionnaire=questionnaire)
         
     except Exception as e:
         controller.logger.exception("Failed to load questionnaire page")
-        return render_template('errors/500.html'), 500
+        return render_template('error/500.html'), 500
 
 
 @application_workflow_bp.route('/questionnaires/save-progress', methods=['POST'])
@@ -415,24 +415,25 @@ async def review_application(user: User, application_id: str):
     
     try:
         # Get application details
+        # noinspection DuplicatedCode
         application_result = await controller.get_application_status(
             application_id=application_id,
             user_id=user.id
         )
         
         if not application_result.get("success", False):
-            return render_template('errors/404.html'), 404
+            return render_template('error/404.html'), 404
         
         application = application_result.get("application")
         if not application:
-            return render_template('errors/404.html'), 404
+            return render_template('error/404.html'), 404
         
         # Get job details
         job_controller = get_controller('jobs_search')
         job = await job_controller.get_job_by_id(job_id=application.job_id)
         
         if not job:
-            return render_template('errors/404.html'), 404
+            return render_template('error/404.html'), 404
         
         # Get questionnaire submission if exists
         questionnaire_submission = None
@@ -461,8 +462,8 @@ async def review_application(user: User, application_id: str):
         )
         
         validation_issues = validation_result.get("issues", []) if validation_result.get("success") else []
-        
-        return render_template('applications/review.html',
+
+        return render_template('jobs/applications/review.html',
                              application=application,
                              job=job,
                              questionnaire_submission=questionnaire_submission,
@@ -471,7 +472,7 @@ async def review_application(user: User, application_id: str):
         
     except Exception as e:
         controller.logger.exception("Failed to load review page")
-        return render_template('errors/500.html'), 500
+        return render_template('error/500.html'), 500
 
 
 
@@ -535,11 +536,11 @@ async def application_confirmation(user: User, application_id: str):
         )
         
         if not application_result.get("success", False):
-            return render_template('errors/404.html'), 404
+            return render_template('error/404.html'), 404
         
         application = application_result.get("application")
         if not application:
-            return render_template('errors/404.html'), 404
+            return render_template('error/404.html'), 404
         
         # Ensure application is submitted
         if application.workflow_step != 'submitted':
@@ -551,15 +552,15 @@ async def application_confirmation(user: User, application_id: str):
         job = await job_controller.get_job_by_id(job_id=application.job_id)
         
         if not job:
-            return render_template('errors/404.html'), 404
-        
-        return render_template('applications/confirmation.html',
+            return render_template('error/404.html'), 404
+
+        return render_template('jobs/applications/confirmation.html',
                              application=application,
                              job=job)
         
     except Exception as e:
         controller.logger.exception("Failed to load confirmation page")
-        return render_template('errors/500.html'), 500
+        return render_template('error/500.html'), 500
 
 
 @application_workflow_bp.route('/applications/<string:application_id>/questionnaires/timer/start', methods=['POST'])

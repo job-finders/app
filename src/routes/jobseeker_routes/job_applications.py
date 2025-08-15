@@ -3,8 +3,10 @@ Job Application Routes with Referral Tracking Support
 """
 
 from flask import Blueprint, request, jsonify
+
+from src.database.models import User
 from src.controllers.job_applications import JobApplicationsController
-from src.authentication.auth import require_jobseeker_auth
+from src.authentication import jobseeker_login
 
 # Create blueprint
 job_applications_bp = Blueprint(
@@ -15,12 +17,12 @@ job_applications_bp = Blueprint(
 
 
 @job_applications_bp.route('', methods=['POST'])
-@require_jobseeker_auth
-def create_application():
+@jobseeker_login
+async def create_application(user: User):
     """Create new job application with referral tracking"""
     try:
         data = request.get_json()
-        user_id = request.user['uid']
+        user_id = user.uid
 
         if not data or not data.get('job_id'):
             return jsonify({
@@ -50,8 +52,8 @@ def create_application():
 
 
 @job_applications_bp.route('/<application_id>', methods=['PATCH'])
-@require_jobseeker_auth
-def update_application(application_id):
+@jobseeker_login
+async def update_application(user: User, application_id: str):
     """Update application status"""
     try:
         data = request.get_json()
@@ -78,8 +80,8 @@ def update_application(application_id):
 
 
 @job_applications_bp.route('/referral-stats', methods=['GET'])
-@require_jobseeker_auth
-def get_referral_stats():
+@jobseeker_login
+async def get_referral_stats(user: User):
     """Get referral statistics for current user"""
     try:
         user_id = request.user['uid']
