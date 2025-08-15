@@ -62,7 +62,7 @@ async def update_application(user: User, application_id: str):
                 'success': False,
                 'message': 'Missing status'
             }), 400
-
+        # TODO - fix this they may be a big error here
         controller = JobApplicationsController()
         result = controller.update_application_status(
             application_id=application_id,
@@ -84,7 +84,7 @@ async def update_application(user: User, application_id: str):
 async def get_referral_stats(user: User):
     """Get referral statistics for current user"""
     try:
-        user_id = request.user['uid']
+        user_id = user.uid
         controller = JobApplicationsController()
         stats = controller.referral_service.get_referral_stats(user_id)
 

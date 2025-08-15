@@ -143,11 +143,13 @@ def lenient_cv_parse(user_uid: str, data: dict) -> JobSeekerCV:
                        certifications=[Certification(**c) for c in data.get('certifications', [])], )
 
 # Add to your routes
-def _parse_ats_form_data(form, files):
+def _parse_ats_form_data(form, files) -> dict:
+    logger = get_service('logger')()("_parse_ats_form_data")
+    logger.info("The parser not parsing resume on resumes route")
     pass
 
 
-
+# noinspection PyNoneFunctionAssignment
 @resume_routes.route("/api/ats-check", methods=["POST"])
 @flask_error_handler
 @jobseeker_login
@@ -261,7 +263,7 @@ async def upload_cv(user: User):
             flash(f"Error creating CV: {str(e)}", "danger")
 
     context = dict(current_user=user)
-    return render_template("jobseekers/upload_cv.html", **context)
+    return render_template("jobseekers/resume/upload_cv.html", **context)
 
 
 @resume_routes.route("/view/<string:cv_id>")
@@ -279,7 +281,7 @@ async def view_cv(user: User, cv_id: str):
         cv=cv,  # Keep original for complex operations
         ats_report=ats_report
     )
-    return render_template("jobseekers/cv/view_cv.html", **context)
+    return render_template("jobseekers/resume/view_cv.html", **context)
 
 @resume_routes.route("/delete/<string:cv_id>", methods=["POST"])
 @flask_error_handler
@@ -303,7 +305,7 @@ async def list_cvs(user: User):
     resume_controller = get_controller("resume")
     cvs = await resume_controller.list_cvs_for_user(user_uid=user.uid)
     context = dict(current_user=user, cvs=cvs)
-    return render_template("jobseekers/cv/cv_list.html", **context)
+    return render_template("jobseekers/resume/resume_list.html", **context)
 
 
 # --------------------------------------------------------------------------------------------------
@@ -338,7 +340,7 @@ async def edit_cv(user: User, cv_id: str):
             # Get partial CV data for error recovery
             cv = await resume_controller.get_cv_by_id(cv_id)
             context = await _handle_validation_error(e, cv)
-            return render_template("jobseekers/cv/edit_cv.html", **context)
+            return render_template("jobseekers/resume/edit_cv.html", **context)
 
         except Exception as e:
             flash(f"Error updating CV: {str(e)}", "danger")
@@ -355,7 +357,7 @@ async def edit_cv(user: User, cv_id: str):
             "ats_report": ats_report,
             "section_completeness": ats_report.get('section_completeness', {})
         }
-        return render_template("jobseekers/cv/edit_cv.html", **context)
+        return render_template("jobseekers/resume/edit_cv.html", **context)
 
     except Exception as e:
         flash(f"Error loading CV: {str(e)}", "danger")

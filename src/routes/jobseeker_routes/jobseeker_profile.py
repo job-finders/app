@@ -127,11 +127,6 @@ def is_valid_number(value):
         return False
 
 
-def save_profile_image(image_file):
-    # Implement your image saving logic here
-    # For example, using Flask-Uploads or saving to a cloud storage service
-    # Return the URL of the saved image
-    pass
 
 @jobseeker_profiles_bp.route("/create", methods=["GET", "POST"])
 @flask_error_handler
