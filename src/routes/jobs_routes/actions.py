@@ -8,6 +8,7 @@ from flask import Blueprint, request, jsonify
 from pydantic import ValidationError
 from datetime import datetime
 
+from src.database.constants import utc_time
 from src.authentication import user_details
 from src.database.models import User, JobSeekerProfile, JobLikeRequest, JobSaveRequest, JobShareRequest
 from src.database.models.job_actions_input import (
@@ -234,7 +235,7 @@ async def like_job(user: User, job_id: str):
                 "success": False,
                 "message": f"Invalid input parameters: {str(e)}",
                 "error_code": "VALIDATION_ERROR",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": utc_time().isoformat()
             }), 400
 
         # Step 2: Get job actions controller using factory pattern
@@ -249,7 +250,7 @@ async def like_job(user: User, job_id: str):
                 "success": False,
                 "message": "JobSeeker profile not found - please complete your profile first",
                 "error_code": "USER_NOT_FOUND",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": utc_time().isoformat()
             }), 404
 
         # Step 4: Execute like operation with validated data
@@ -268,6 +269,7 @@ async def like_job(user: User, job_id: str):
         }), 500
 
 
+# noinspection DuplicatedCode
 @jobs_actions_bp.route('/<job_id>/like', methods=['DELETE'])
 @user_details
 @flask_error_handler
@@ -312,6 +314,7 @@ async def unlike_job(user: User, job_id: str):
         }), 500
 
 
+# noinspection DuplicatedCode
 @jobs_actions_bp.route('/<job_id>/save', methods=['POST'])
 @user_details
 @flask_error_handler
@@ -356,6 +359,7 @@ async def save_job(user: User, job_id: str):
         }), 500
 
 
+# noinspection DuplicatedCode
 @jobs_actions_bp.route('/<job_id>/save', methods=['DELETE'])
 @user_details
 @flask_error_handler

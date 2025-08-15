@@ -958,7 +958,7 @@ async def job_by_reference(user: User, reference: str):
     job = await job_search_controller.get_job_by_reference(reference=reference)
 
     if not job:
-        return render_template('jobs/error_404.html'), 404
+        return render_template('error/404.html'), 404
     context = {'current_user': user,'job': job}
     return render_template('jobs/reference.html', **context)
 

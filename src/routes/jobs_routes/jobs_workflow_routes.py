@@ -73,7 +73,7 @@ async def show_create_form(user: User):
         Render form to create a new job.
     """
     context = dict(current_user=user, form_data={})
-    return render_template("jobs_workflow/create.html", **context)
+    return render_template("jobs/workflow/create.html", **context)
 
 
 @jobs_workflow_route.post("/save-job-draft")
@@ -146,7 +146,7 @@ async def create_job(user: User):
 
     except ValueError as e:
         flash(str(e), "danger")
-        return render_template("jobs_workflow/create.html", current_user=user, form_data=data)
+        return render_template("jobs/workflow/create.html", current_user=user, form_data=data)
     flash("Job created successfully!", "success")
     return redirect(url_for("jobs.job_details", job_id=job_data.job_id))
 
@@ -177,7 +177,7 @@ async def show_edit_form(user: User, job_id: str):
         workflow_logger.info(f"PRE Compiled ATS Report : {ats_report}")
 
     context = dict(current_user=user, job=job, report=ats_report)
-    return render_template("jobs_workflow/job_editor/edit.html", **context)
+    return render_template("jobs/workflow/edit.html", **context)
 
 
 @jobs_workflow_route.post("/<string:job_id>/edit")
@@ -288,10 +288,10 @@ async def approve_job(user: User, approval_token: str):
     result = await jobs_workflow_controller.approve_jobs(approval_token, )
     if result.success:
         flash("Job approved!", "success")
-        return render_template("jobs_workflow/approval_success.html", job=result.data)
+        return render_template("jobs/workflow/approval_success.html", job=result.data)
     else:
         flash(result.message, "danger")
-        return render_template("jobs_workflow/approval_error.html", message=result.message), 400
+        return render_template("jobs/workflow/approval_error.html", message=result.message), 400
 
 
 @jobs_workflow_route.get("/reject/<string:approval_token>")
@@ -307,10 +307,10 @@ async def reject_job(user: User, approval_token: str):
     result = await jobs_workflow_controller.reject_job(approval_token, rejector=user)
     if result.success:
         flash("Job rejected.", "warning")
-        return render_template("jobs_workflow/rejection_success.html", job=result.data)
+        return render_template("jobs/workflow/rejection_success.html", job=result.data)
     else:
         flash(result.message, "danger")
-        return render_template("jobs_workflow/approval_error.html", message=result.message), 400
+        return render_template("jobs/workflow/approval_error.html", message=result.message), 400
 
 
 @jobs_workflow_route.post("/<string:job_id>/apply")
@@ -356,7 +356,7 @@ async def job_insights(user: User, job_id: str):
         job_id=job_id)
     context = dict(current_user=user, job=job_details, application_funnel_stats=application_funnel_stats)
 
-    return render_template('jobs_workflow/job_metrics.html', **context)
+    return render_template('jobs/workflow/job_metrics.html', **context)
 
 
 @jobs_workflow_route.get("/<string:job_id>/view-applications")
@@ -408,7 +408,7 @@ async def view_job_applications(user: User, job_id: str):
         job_applications=job_applications_list,
         current_user=user
     )
-    return render_template("jobs_workflow/job_applications/job_applications.html", **context)
+    return render_template("jobs/applications/job_applications.html", **context)
 
 
 @jobs_workflow_route.get("/<string:job_id>/application/<string:application_id>/get-application")
@@ -444,7 +444,7 @@ async def get_application(user: User, job_id: str, application_id: str):
 
     context = dict(current_user=user, job_application=application_data, resume=resume)
 
-    return render_template("jobs_workflow/job_applications/view_job_application.html", **context)
+    return render_template("jobs/applications/view_job_application.html", **context)
 
 
 @jobs_workflow_route.route("/<string:job_id>/update-status", methods=["POST"])
