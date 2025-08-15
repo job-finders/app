@@ -1,0 +1,432 @@
+{
+  "metadata": {
+    "validation_date": "2025-01-14T12:45:00Z",
+    "validation_method": "static_parameter_analysis",
+    "routes_with_parameters": 25,
+    "template_parameter_usage": 17
+  },
+  "parameter_validation_results": {
+    "valid_parameter_usage": {
+      "description": "Template parameter usage that matches route requirements",
+      "count": 13,
+      "examples": [
+        {
+          "route": "jobs.job_details",
+          "route_pattern": "/jobs/<job_id>",
+          "template_usage": "{{ url_for('jobs.job_details', job_id=job.job_id) }}",
+          "required_parameters": [
+            "job_id"
+          ],
+          "provided_parameters": [
+            "job_id"
+          ],
+          "parameter_types": {
+            "job_id": "string (UUID format)"
+          },
+          "validation_status": "VALID",
+          "template_context_required": "job object with job_id attribute"
+        },
+        {
+          "route": "jobs.category_jobs",
+          "route_pattern": "/jobs/category/<category>",
+          "template_usage": "{{ url_for('jobs.category_jobs', category=category.slug) }}",
+          "required_parameters": [
+            "category"
+          ],
+          "provided_parameters": [
+            "category"
+          ],
+          "parameter_types": {
+            "category": "string (slug format)"
+          },
+          "validation_status": "VALID",
+          "template_context_required": "category object with slug attribute"
+        },
+        {
+          "route": "jobs.jobs_by_location",
+          "route_pattern": "/jobs/location/<location>",
+          "template_usage": "{{ url_for('jobs.jobs_by_location', location=location.slug) }}",
+          "required_parameters": [
+            "location"
+          ],
+          "provided_parameters": [
+            "location"
+          ],
+          "parameter_types": {
+            "location": "string (location name or slug)"
+          },
+          "validation_status": "VALID",
+          "template_context_required": "location string or object"
+        },
+        {
+          "route": "company.candidate_details",
+          "route_pattern": "/dashboard/company/candidate/<cv_id>",
+          "template_usage": "{{ url_for('company.candidate_details', cv_id=cv.cv_id) }}",
+          "required_parameters": [
+            "cv_id"
+          ],
+          "provided_parameters": [
+            "cv_id"
+          ],
+          "parameter_types": {
+            "cv_id": "string (UUID format)"
+          },
+          "validation_status": "VALID",
+          "template_context_required": "cv object with cv_id attribute"
+        },
+        {
+          "route": "jobs_workflow.show_edit_form",
+          "route_pattern": "/dashboard/jobs/<job_id>/edit",
+          "template_usage": "{{ url_for('jobs_workflow.show_edit_form', job_id=job.job_id) }}",
+          "required_parameters": [
+            "job_id"
+          ],
+          "provided_parameters": [
+            "job_id"
+          ],
+          "parameter_types": {
+            "job_id": "string (UUID format)"
+          },
+          "validation_status": "VALID",
+          "template_context_required": "job object with job_id attribute",
+          "auth_requirements": {
+            "auth_required": true,
+            "roles": [
+              "employer"
+            ],
+            "additional_checks": [
+              "employer_job_access_required"
+            ]
+          }
+        }
+      ]
+    },
+    "parameter_mismatches": {
+      "description": "Template parameter usage that doesn't match route requirements",
+      "count": 3,
+      "examples": [
+        {
+          "route": "jobs.search_jobs",
+          "route_pattern": "/jobs/search",
+          "template_usage": "{{ url_for('jobs.search_jobs', search_term=filters.search_keyword, page=page-1) }}",
+          "issue": "Parameter name mismatch",
+          "expected_parameters": [
+            "keyword",
+            "page"
+          ],
+          "provided_parameters": [
+            "search_term",
+            "page"
+          ],
+          "correction_needed": {
+            "current": "search_term=filters.search_keyword",
+            "should_be": "keyword=filters.search_keyword"
+          },
+          "validation_status": "INVALID"
+        },
+        {
+          "route": "jobs.jobs_by_salary_range",
+          "route_pattern": "/jobs/salary",
+          "template_usage": "Missing in templates but route exists",
+          "expected_parameters": [
+            "min",
+            "max",
+            "unit"
+          ],
+          "query_parameters": {
+            "min": "integer (minimum salary)",
+            "max": "integer (maximum salary)",
+            "unit": "string (monthly|yearly, default: yearly)"
+          },
+          "issue": "Route exists but not used in templates",
+          "recommendation": "Add salary filter functionality to job search templates"
+        },
+        {
+          "route": "home.verify_email",
+          "route_pattern": "/email-verification/<verification_id>",
+          "template_usage": "{{ url_for('home.verify_email', verification_id=verification_id) }}",
+          "required_parameters": [
+            "verification_id"
+          ],
+          "provided_parameters": [
+            "verification_id"
+          ],
+          "query_parameters_expected": [
+            "email"
+          ],
+          "issue": "Missing required query parameter",
+          "correction_needed": {
+            "current": "{{ url_for('home.verify_email', verification_id=verification_id) }}",
+            "should_be": "{{ url_for('home.verify_email', verification_id=verification_id, email=user_email) }}"
+          },
+          "validation_status": "INCOMPLETE"
+        }
+      ]
+    },
+    "missing_parameters": {
+      "description": "Routes that require parameters but templates don't provide them",
+      "count": 2,
+      "examples": [
+        {
+          "route": "jobs_workflow.get_application",
+          "route_pattern": "/dashboard/jobs/<job_id>/application/<application_id>/get-application",
+          "required_parameters": [
+            "job_id",
+            "application_id"
+          ],
+          "template_usage": "Not found in analyzed templates",
+          "issue": "Complex route not used in templates",
+          "recommendation": "Implement application detail view functionality"
+        },
+        {
+          "route": "jobs_workflow.approve_job",
+          "route_pattern": "/dashboard/jobs/approve/<approval_token>",
+          "required_parameters": [
+            "approval_token"
+          ],
+          "template_usage": "Not found in analyzed templates",
+          "issue": "Admin-only route, likely used in email templates",
+          "recommendation": "Verify usage in email templates"
+        }
+      ]
+    },
+    "optional_parameters": {
+      "description": "Routes with optional query parameters",
+      "count": 8,
+      "examples": [
+        {
+          "route": "jobs.list_jobs",
+          "route_pattern": "/jobs/browse-jobs",
+          "optional_query_params": {
+            "page": "integer (default: 1)",
+            "page_size": "integer (default: 25)"
+          },
+          "template_usage": "Pagination handled in _jobs_list.html",
+          "current_implementation": "?page={{ page-1 }}",
+          "recommended_implementation": "{{ url_for('jobs.list_jobs', page=page-1) }}"
+        },
+        {
+          "route": "jobs.search_jobs",
+          "route_pattern": "/jobs/search",
+          "optional_query_params": {
+            "keyword": "string (search term)",
+            "page": "integer (default: 1)",
+            "page_size": "integer (default: 25)"
+          },
+          "template_usage": "Used in search.html",
+          "parameter_handling": "Needs improvement for consistency"
+        }
+      ]
+    }
+  },
+  "authentication_parameter_validation": {
+    "protected_routes_with_parameters": {
+      "description": "Parameterized routes that require authentication",
+      "count": 12,
+      "examples": [
+        {
+          "route": "jobs_workflow.show_edit_form",
+          "parameters": [
+            "job_id"
+          ],
+          "auth_requirements": {
+            "login_required": true,
+            "role_required": "employer",
+            "additional_check": "employer_job_access_required",
+            "billing_required": true
+          },
+          "template_validation": {
+            "auth_check_present": true,
+            "role_check_present": true,
+            "parameter_validation": "job_id must belong to current employer"
+          }
+        },
+        {
+          "route": "company.candidate_details",
+          "parameters": [
+            "cv_id"
+          ],
+          "auth_requirements": {
+            "login_required": true,
+            "role_required": "employer",
+            "billing_tier": "Starter"
+          },
+          "template_validation": {
+            "auth_check_present": true,
+            "billing_check_needed": true,
+            "parameter_validation": "cv_id must be accessible to employer"
+          }
+        }
+      ]
+    },
+    "role_based_parameter_access": {
+      "employer_only_parameters": [
+        {
+          "route": "jobs_workflow.view_job_applications",
+          "parameters": [
+            "job_id"
+          ],
+          "access_control": "job_id must belong to employer's company"
+        },
+        {
+          "route": "company.application_analytics",
+          "parameters": [],
+          "access_control": "employer must have verified company profile"
+        }
+      ],
+      "jobseeker_only_parameters": [
+        {
+          "route": "jobs_workflow.submit_application",
+          "parameters": [
+            "job_id"
+          ],
+          "access_control": "jobseeker cannot apply to own company's jobs"
+        }
+      ],
+      "admin_only_parameters": [
+        {
+          "route": "jobs_workflow.approve_job",
+          "parameters": [
+            "approval_token"
+          ],
+          "access_control": "token must be valid and not expired"
+        }
+      ]
+    }
+  },
+  "parameter_type_validation": {
+    "uuid_parameters": {
+      "description": "Parameters that must be valid UUIDs",
+      "routes": [
+        "jobs.job_details",
+        "jobs.full_job_details",
+        "company.candidate_details",
+        "jobs_workflow.show_edit_form",
+        "jobs_workflow.edit_job",
+        "jobs_workflow.view_job_applications"
+      ],
+      "validation_pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "error_handling": "Return 404 if invalid UUID format",
+      "template_requirements": "Ensure job.job_id, cv.cv_id, etc. are valid UUIDs"
+    },
+    "slug_parameters": {
+      "description": "Parameters that must be valid slugs",
+      "routes": [
+        "jobs.category_jobs",
+        "jobs.jobs_by_location",
+        "jobs.jobs_by_type"
+      ],
+      "validation_pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "error_handling": "Return 404 if slug not found",
+      "template_requirements": "Ensure category.slug, location.slug are properly formatted"
+    },
+    "token_parameters": {
+      "description": "Parameters that are security tokens",
+      "routes": [
+        "jobs_workflow.approve_job",
+        "jobs_workflow.reject_job",
+        "home.verify_email",
+        "company.verify_employer_profile"
+      ],
+      "validation_requirements": "Must be valid and not expired",
+      "error_handling": "Return 403 if token invalid or expired",
+      "security_considerations": "Tokens should be single-use and time-limited"
+    }
+  },
+  "template_context_requirements": {
+    "required_context_variables": {
+      "job_related_templates": {
+        "required_variables": [
+          "job.job_id",
+          "job.title",
+          "job.company_name",
+          "job.category",
+          "job.location"
+        ],
+        "optional_variables": [
+          "job.slug",
+          "job.match_score",
+          "job.is_featured"
+        ]
+      },
+      "company_related_templates": {
+        "required_variables": [
+          "company.company_id",
+          "company.name",
+          "employer.employer_id"
+        ],
+        "optional_variables": [
+          "company.verification_status",
+          "company.logo_url"
+        ]
+      },
+      "pagination_templates": {
+        "required_variables": [
+          "page",
+          "total_pages",
+          "total_jobs"
+        ],
+        "optional_variables": [
+          "per_page",
+          "search_keyword"
+        ]
+      }
+    },
+    "context_validation_issues": {
+      "missing_context_checks": [
+        {
+          "template": "template/jobs/_jobs_list.html",
+          "issue": "No null check for job.job_id before url_for",
+          "recommendation": "Add {% if job.job_id %} check"
+        },
+        {
+          "template": "template/company/view_company_profile.html",
+          "issue": "Assumes company object always exists",
+          "recommendation": "Add {% if company %} check"
+        }
+      ]
+    }
+  },
+  "recommendations": {
+    "immediate_fixes": [
+      {
+        "priority": "HIGH",
+        "issue": "Parameter name mismatch in job search",
+        "fix": "Change search_term to keyword in jobs.search_jobs calls",
+        "impact": "Fixes job search functionality"
+      },
+      {
+        "priority": "MEDIUM",
+        "issue": "Missing email parameter in email verification",
+        "fix": "Add email query parameter to home.verify_email calls",
+        "impact": "Fixes email verification flow"
+      }
+    ],
+    "validation_improvements": [
+      {
+        "area": "Template context validation",
+        "recommendation": "Add null checks for required objects before url_for calls",
+        "benefit": "Prevents template errors with missing context"
+      },
+      {
+        "area": "Parameter type validation",
+        "recommendation": "Add client-side UUID format validation",
+        "benefit": "Better user experience and error handling"
+      }
+    ],
+    "missing_functionality": [
+      {
+        "feature": "Salary range filtering",
+        "route_exists": "jobs.jobs_by_salary_range",
+        "template_missing": "No template implementation found",
+        "recommendation": "Add salary filter UI to job search"
+      },
+      {
+        "feature": "Application detail view",
+        "route_exists": "jobs_workflow.get_application",
+        "template_missing": "Complex route not used",
+        "recommendation": "Implement application detail functionality"
+      }
+    ]
+  }
+}

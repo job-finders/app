@@ -1,0 +1,875 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Contact Us - JobFinders{% endblock %}
+
+{% block meta_description %}Get in touch with JobFinders. Contact our support team for assistance with your job search,
+    employer services, or general inquiries.{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .contact-section {
+            padding: 2rem 0;
+        }
+
+        .contact-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 2rem;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .contact-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .contact-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .contact-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .contact-info {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .contact-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .contact-link:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 2.5rem;
+            margin-top: 2rem;
+        }
+
+        .form-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .form-subtitle {
+            color: #6c757d;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.25);
+            outline: none;
+        }
+
+        .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+
+        .form-control.is-valid {
+            border-color: #28a745;
+        }
+
+        .invalid-feedback {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .valid-feedback {
+            color: #28a745;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .inquiry-type {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .inquiry-option {
+            position: relative;
+        }
+
+        .inquiry-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .inquiry-label {
+            display: block;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .inquiry-option input[type="radio"]:checked + .inquiry-label {
+            border-color: var(--primary-color);
+            background: rgba(var(--primary-color-rgb), 0.1);
+            color: var(--primary-color);
+        }
+
+        .inquiry-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .inquiry-text {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .faq-section {
+            background: #f8f9fa;
+            padding: 3rem 0;
+            margin-top: 3rem;
+        }
+
+        .faq-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .faq-item {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .faq-question {
+            padding: 1.5rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: color 0.3s ease;
+        }
+
+        .faq-question:hover {
+            color: var(--primary-color);
+        }
+
+        .faq-answer {
+            padding: 0 1.5rem 1.5rem;
+            color: #6c757d;
+            line-height: 1.6;
+            display: none;
+        }
+
+        .faq-answer.show {
+            display: block;
+        }
+
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .faq-icon.rotate {
+            transform: rotate(180deg);
+        }
+
+        .office-hours {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .hours-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .hours-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .hours-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+            color: #6c757d;
+        }
+
+        .hours-day {
+            font-weight: 500;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .contact-card {
+                margin-bottom: 2rem;
+            }
+
+            .inquiry-type {
+                grid-template-columns: 1fr;
+            }
+
+            .form-section {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Get in Touch</h1>
+                <p class="hero-subtitle">
+                    We value your feedback, inquiries, and suggestions. Our team is here to help
+                    you succeed in your job search or recruitment needs.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Information -->
+    <section class="contact-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="contact-card">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <h3 class="contact-title">Email Support</h3>
+                        <p class="contact-info">
+                            Get in touch with our support team for assistance with your account,
+                            job applications, or general inquiries.
+                        </p>
+                        <a href="mailto:support@jobfinders.co.za" class="contact-link">
+                            support@jobfinders.co.za
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="contact-card">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <h3 class="contact-title">Phone Support</h3>
+                        <p class="contact-info">
+                            Speak directly with our customer service representatives during
+                            business hours for immediate assistance.
+                        </p>
+                        <a href="tel:+27123456789" class="contact-link">
+                            +27 12 345 6789
+                        </a>
+                        <div class="office-hours">
+                            <div class="hours-title">Business Hours</div>
+                            <ul class="hours-list">
+                                <li class="hours-item">
+                                    <span class="hours-day">Monday - Friday</span>
+                                    <span>8:00 AM - 6:00 PM</span>
+                                </li>
+                                <li class="hours-item">
+                                    <span class="hours-day">Saturday</span>
+                                    <span>9:00 AM - 2:00 PM</span>
+                                </li>
+                                <li class="hours-item">
+                                    <span class="hours-day">Sunday</span>
+                                    <span>Closed</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-12 mb-4">
+                    <div class="contact-card">
+                        <div class="contact-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <h3 class="contact-title">Office Location</h3>
+                        <p class="contact-info">
+                            Visit our headquarters in the heart of South Africa's business district.
+                        </p>
+                        <address class="contact-info">
+                            123 Business Street<br>
+                            Sandton, Johannesburg<br>
+                            Gauteng, 2196<br>
+                            South Africa
+                        </address>
+                        <a href="https://maps.google.com" target="_blank" class="contact-link">
+                            <i class="fas fa-external-link-alt me-1"></i>View on Map
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Form -->
+    <section class="contact-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="form-section">
+                        <h2 class="form-title">Send Us a Message</h2>
+                        <p class="form-subtitle">
+                            Fill out the form below and we'll get back to you as soon as possible.
+                        </p>
+
+                        <form id="contactForm" method="post" action="/contact" novalidate>
+                            <!-- CSRF Token -->
+                            {% if csrf_token %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            {% endif %}
+
+                            <!-- Inquiry Type -->
+                            <div class="form-group">
+                                <label class="form-label">What can we help you with? *</label>
+                                <div class="inquiry-type">
+                                    <div class="inquiry-option">
+                                        <input type="radio" id="general" name="inquiry_type" value="general" required>
+                                        <label for="general" class="inquiry-label">
+                                            <i class="fas fa-question-circle inquiry-icon"></i>
+                                            <span class="inquiry-text">General Inquiry</span>
+                                        </label>
+                                    </div>
+                                    <div class="inquiry-option">
+                                        <input type="radio" id="job_seeker" name="inquiry_type" value="job_seeker"
+                                               required>
+                                        <label for="job_seeker" class="inquiry-label">
+                                            <i class="fas fa-user inquiry-icon"></i>
+                                            <span class="inquiry-text">Job Seeker Support</span>
+                                        </label>
+                                    </div>
+                                    <div class="inquiry-option">
+                                        <input type="radio" id="employer" name="inquiry_type" value="employer" required>
+                                        <label for="employer" class="inquiry-label">
+                                            <i class="fas fa-building inquiry-icon"></i>
+                                            <span class="inquiry-text">Employer Services</span>
+                                        </label>
+                                    </div>
+                                    <div class="inquiry-option">
+                                        <input type="radio" id="technical" name="inquiry_type" value="technical"
+                                               required>
+                                        <label for="technical" class="inquiry-label">
+                                            <i class="fas fa-cog inquiry-icon"></i>
+                                            <span class="inquiry-text">Technical Support</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="invalid-feedback" id="inquiry-type-error"></div>
+                            </div>
+
+                            <!-- Personal Information -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="name" class="form-label">Full Name *</label>
+                                        <input type="text" class="form-control" id="name" name="name"
+                                               placeholder="Your full name" required>
+                                        <div class="invalid-feedback" id="name-error"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="email" class="form-label">Email Address *</label>
+                                        <input type="email" class="form-control" id="email" name="email"
+                                               placeholder="you@example.com" required>
+                                        <div class="invalid-feedback" id="email-error"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="phone" class="form-label">Phone Number</label>
+                                        <input type="tel" class="form-control" id="phone" name="phone"
+                                               placeholder="+27 12 345 6789">
+                                        <div class="invalid-feedback" id="phone-error"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="company" class="form-label">Company (Optional)</label>
+                                        <input type="text" class="form-control" id="company" name="company"
+                                               placeholder="Your company name">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Subject and Message -->
+                            <div class="form-group">
+                                <label for="subject" class="form-label">Subject *</label>
+                                <input type="text" class="form-control" id="subject" name="subject"
+                                       placeholder="Brief description of your inquiry" required>
+                                <div class="invalid-feedback" id="subject-error"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="message" class="form-label">Message *</label>
+                                <textarea class="form-control" id="message" name="message" rows="6"
+                                          placeholder="Please provide details about your inquiry..."
+                                          required></textarea>
+                                <div class="invalid-feedback" id="message-error"></div>
+                                <small class="form-text text-muted">
+                                    <span id="message-count">0</span>/1000 characters
+                                </small>
+                            </div>
+
+                            <!-- Priority Level -->
+                            <div class="form-group">
+                                <label for="priority" class="form-label">Priority Level</label>
+                                <select class="form-control" id="priority" name="priority">
+                                    <option value="low">Low - General inquiry</option>
+                                    <option value="medium" selected>Medium - Standard support</option>
+                                    <option value="high">High - Urgent assistance needed</option>
+                                </select>
+                            </div>
+
+                            <!-- Consent -->
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="consent" name="consent"
+                                           required>
+                                    <label class="form-check-label" for="consent">
+                                        I agree to the <a href="/privacy" target="_blank">Privacy Policy</a>
+                                        and consent to being contacted regarding my inquiry. *
+                                    </label>
+                                    <div class="invalid-feedback" id="consent-error"></div>
+                                </div>
+                            </div>
+
+                            <!-- Newsletter Subscription -->
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="newsletter" name="newsletter"
+                                           value="1">
+                                    <label class="form-check-label" for="newsletter">
+                                        Subscribe to our newsletter for job market insights and platform updates
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="form-group text-center">
+                                <button type="submit" class="btn-submit" id="submitBtn">
+                                    <span class="loading-spinner" id="loadingSpinner"></span>
+                                    <i class="fas fa-paper-plane me-2"></i>Send Message
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+        <div class="container">
+            <h2 class="faq-title">Frequently Asked Questions</h2>
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            How quickly will I receive a response?
+                            <i class="fas fa-chevron-down faq-icon"></i>
+                        </button>
+                        <div class="faq-answer">
+                            We aim to respond to all inquiries within 24 hours during business days.
+                            High-priority issues are typically addressed within 4-6 hours.
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            Can I schedule a phone consultation?
+                            <i class="fas fa-chevron-down faq-icon"></i>
+                        </button>
+                        <div class="faq-answer">
+                            Yes! For complex inquiries or employer services, we offer scheduled phone
+                            consultations. Please mention this in your message and we'll coordinate a time.
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            Do you offer support in languages other than English?
+                            <i class="fas fa-chevron-down faq-icon"></i>
+                        </button>
+                        <div class="faq-answer">
+                            We provide support in English and Afrikaans. For other South African languages,
+                            we can arrange translation services for important communications.
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            What information should I include for technical issues?
+                            <i class="fas fa-chevron-down faq-icon"></i>
+                        </button>
+                        <div class="faq-answer">
+                            Please include your browser type and version, operating system, a description
+                            of the issue, and any error messages you've encountered. Screenshots are also helpful.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('contactForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const messageTextarea = document.getElementById('message');
+            const messageCount = document.getElementById('message-count');
+
+            // Character counter for message
+            messageTextarea.addEventListener('input', function () {
+                const count = this.value.length;
+                messageCount.textContent = count;
+
+                if (count > 1000) {
+                    this.value = this.value.substring(0, 1000);
+                    messageCount.textContent = 1000;
+                }
+
+                // Update color based on character count
+                if (count > 900) {
+                    messageCount.style.color = '#dc3545';
+                } else if (count > 800) {
+                    messageCount.style.color = '#ffc107';
+                } else {
+                    messageCount.style.color = '#6c757d';
+                }
+            });
+
+            // Form validation
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                if (validateForm()) {
+                    submitForm();
+                }
+            });
+
+            function validateForm() {
+                let isValid = true;
+                const requiredFields = ['inquiry_type', 'name', 'email', 'subject', 'message', 'consent'];
+
+                // Clear previous errors
+                document.querySelectorAll('.form-control').forEach(field => {
+                    field.classList.remove('is-invalid', 'is-valid');
+                });
+
+                // Validate inquiry type
+                const inquiryType = document.querySelector('input[name="inquiry_type"]:checked');
+                if (!inquiryType) {
+                    document.getElementById('inquiry-type-error').textContent = 'Please select an inquiry type.';
+                    isValid = false;
+                }
+
+                // Validate required text fields
+                requiredFields.forEach(fieldName => {
+                    if (fieldName === 'inquiry_type' || fieldName === 'consent') return;
+
+                    const field = document.getElementById(fieldName);
+                    const errorElement = document.getElementById(fieldName + '-error');
+
+                    if (!field.value.trim()) {
+                        field.classList.add('is-invalid');
+                        errorElement.textContent = 'This field is required.';
+                        isValid = false;
+                    } else {
+                        field.classList.add('is-valid');
+                        errorElement.textContent = '';
+                    }
+                });
+
+                // Validate email format
+                const email = document.getElementById('email');
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (email.value && !emailRegex.test(email.value)) {
+                    email.classList.remove('is-valid');
+                    email.classList.add('is-invalid');
+                    document.getElementById('email-error').textContent = 'Please enter a valid email address.';
+                    isValid = false;
+                }
+
+                // Validate phone format (optional)
+                const phone = document.getElementById('phone');
+                const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
+                if (phone.value && !phoneRegex.test(phone.value)) {
+                    phone.classList.add('is-invalid');
+                    document.getElementById('phone-error').textContent = 'Please enter a valid phone number.';
+                    isValid = false;
+                } else if (phone.value) {
+                    phone.classList.add('is-valid');
+                }
+
+                // Validate consent
+                const consent = document.getElementById('consent');
+                if (!consent.checked) {
+                    document.getElementById('consent-error').textContent = 'You must agree to the privacy policy.';
+                    isValid = false;
+                }
+
+                return isValid;
+            }
+
+            function submitForm() {
+                // Show loading state
+                submitBtn.disabled = true;
+                loadingSpinner.style.display = 'inline-block';
+                submitBtn.innerHTML = '<span class="loading-spinner"></span>Sending...';
+
+                // Prepare form data
+                const formData = new FormData(form);
+
+                // Submit form
+                fetch('/contact', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Message sent successfully! We\'ll get back to you soon.', 'success');
+                            form.reset();
+                            document.getElementById('message-count').textContent = '0';
+
+                            // Clear validation classes
+                            document.querySelectorAll('.form-control').forEach(field => {
+                                field.classList.remove('is-invalid', 'is-valid');
+                            });
+                        } else {
+                            showNotification('Error sending message. Please try again.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Error sending message. Please try again.', 'error');
+                    })
+                    .finally(() => {
+                        // Reset button state
+                        submitBtn.disabled = false;
+                        loadingSpinner.style.display = 'none';
+                        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Send Message';
+                    });
+            }
+
+            // Auto-populate subject based on inquiry type
+            document.querySelectorAll('input[name="inquiry_type"]').forEach(radio => {
+                radio.addEventListener('change', function () {
+                    const subjectField = document.getElementById('subject');
+                    const subjects = {
+                        'general': 'General Inquiry',
+                        'job_seeker': 'Job Seeker Support Request',
+                        'employer': 'Employer Services Inquiry',
+                        'technical': 'Technical Support Request'
+                    };
+
+                    if (!subjectField.value || Object.values(subjects).includes(subjectField.value)) {
+                        subjectField.value = subjects[this.value] || '';
+                    }
+                });
+            });
+        });
+
+        function toggleFaq(button) {
+            const answer = button.nextElementSibling;
+            const icon = button.querySelector('.faq-icon');
+
+            // Close all other FAQ items
+            document.querySelectorAll('.faq-answer').forEach(item => {
+                if (item !== answer) {
+                    item.classList.remove('show');
+                }
+            });
+
+            document.querySelectorAll('.faq-icon').forEach(item => {
+                if (item !== icon) {
+                    item.classList.remove('rotate');
+                }
+            });
+
+            // Toggle current item
+            answer.classList.toggle('show');
+            icon.classList.toggle('rotate');
+        }
+
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+            document.body.appendChild(notification);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+    </script>
+{% endblock %}

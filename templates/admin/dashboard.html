@@ -1,0 +1,957 @@
+{% extends "layout/admin.html" %}
+
+{% block title %}Admin Dashboard - JobFinders{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+        }
+
+        .dashboard-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-subtitle {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-icon.users {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .stat-icon.jobs {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .stat-icon.companies {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        .stat-icon.applications {
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+        }
+
+        .stat-icon.revenue {
+            background: linear-gradient(135deg, #fa709a, #fee140);
+        }
+
+        .stat-icon.growth {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+        }
+
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .stat-trend.positive {
+            color: #28a745;
+        }
+
+        .stat-trend.negative {
+            color: #dc3545;
+        }
+
+        .stat-trend.neutral {
+            color: #6c757d;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-description {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 1.5rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .chart-period {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .period-btn {
+            padding: 0.25rem 0.75rem;
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #6c757d;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .period-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .period-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .chart-container {
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 8px;
+            color: #6c757d;
+        }
+
+        .activity-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .activity-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 1.5rem;
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .activity-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .activity-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .activity-icon.user {
+            background: #667eea;
+        }
+
+        .activity-icon.job {
+            background: #f093fb;
+        }
+
+        .activity-icon.company {
+            background: #4facfe;
+        }
+
+        .activity-icon.system {
+            background: #43e97b;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            color: #495057;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-time {
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+
+        .quick-actions {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .quick-actions-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #495057;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            text-decoration: none;
+            box-shadow: 0 4px 8px rgba(var(--primary-color-rgb), 0.3);
+        }
+
+        .action-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .action-btn:hover .action-icon {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .system-health {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 1.5rem;
+        }
+
+        .health-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .health-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .health-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .health-status.healthy {
+            background: #28a745;
+        }
+
+        .health-status.warning {
+            background: #ffc107;
+        }
+
+        .health-status.error {
+            background: #dc3545;
+        }
+
+        .health-label {
+            font-weight: 500;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+
+        .health-value {
+            margin-left: auto;
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+
+            .activity-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                padding: 1.5rem;
+            }
+
+            .dashboard-title {
+                font-size: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .health-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block dashboard_content %}
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="dashboard-title">Admin Dashboard</h1>
+                    <p class="dashboard-subtitle">
+                        Welcome back, {{ current_user.first_name }}. Here's what's happening on JobFinders today.
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="text-white-50">
+                        <i class="fas fa-calendar me-2"></i>
+                        {{ moment().format('MMMM DD, YYYY') }}
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-clock me-2"></i>
+                        <span id="currentTime">{{ moment().format('HH:mm:ss') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon users">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +12.5%
+                </div>
+            </div>
+            <div class="stat-number" data-target="{{ total_users or 15420 }}">0</div>
+            <div class="stat-label">Total Users</div>
+            <div class="stat-description">{{ new_users_today or 45 }} new users today</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon jobs">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <div class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +8.3%
+                </div>
+            </div>
+            <div class="stat-number" data-target="{{ total_jobs or 8750 }}">0</div>
+            <div class="stat-label">Active Jobs</div>
+            <div class="stat-description">{{ new_jobs_today or 23 }} posted today</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon companies">
+                    <i class="fas fa-building"></i>
+                </div>
+                <div class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +15.7%
+                </div>
+            </div>
+            <div class="stat-number" data-target="{{ total_companies or 2340 }}">0</div>
+            <div class="stat-label">Companies</div>
+            <div class="stat-description">{{ new_companies_today or 8 }} joined today</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon applications">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +22.1%
+                </div>
+            </div>
+            <div class="stat-number" data-target="{{ total_applications or 45680 }}">0</div>
+            <div class="stat-label">Applications</div>
+            <div class="stat-description">{{ applications_today or 156 }} submitted today</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon revenue">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +18.9%
+                </div>
+            </div>
+            <div class="stat-number">R<span data-target="{{ monthly_revenue or 125000 }}">0</span></div>
+            <div class="stat-label">Monthly Revenue</div>
+            <div class="stat-description">R{{ daily_revenue or 4200 }} earned today</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon growth">
+                    <i class="fas fa-trending-up"></i>
+                </div>
+                <div class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +5.2%
+                </div>
+            </div>
+            <div class="stat-number" data-target="{{ growth_rate or 95 }}">0</div>
+            <div class="stat-label">Growth Rate %</div>
+            <div class="stat-description">Month over month</div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">User Activity</h3>
+                <div class="chart-period">
+                    <button class="period-btn active" data-period="7d">7D</button>
+                    <button class="period-btn" data-period="30d">30D</button>
+                    <button class="period-btn" data-period="90d">90D</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">User Distribution</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="distributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Section -->
+    <div class="activity-section">
+        <div class="activity-card">
+            <div class="activity-header">
+                <h3 class="activity-title">Recent Activity</h3>
+                <a href="/admin/activity" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <ul class="activity-list">
+                <li class="activity-item">
+                    <div class="activity-icon user">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">New user registration: john.doe@example.com</div>
+                        <div class="activity-time">2 minutes ago</div>
+                    </div>
+                </li>
+                <li class="activity-item">
+                    <div class="activity-icon job">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">New job posted: Senior Developer at TechCorp</div>
+                        <div class="activity-time">15 minutes ago</div>
+                    </div>
+                </li>
+                <li class="activity-item">
+                    <div class="activity-icon company">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">Company verified: Digital Solutions Ltd</div>
+                        <div class="activity-time">1 hour ago</div>
+                    </div>
+                </li>
+                <li class="activity-item">
+                    <div class="activity-icon system">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">System backup completed successfully</div>
+                        <div class="activity-time">2 hours ago</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="activity-card">
+            <div class="activity-header">
+                <h3 class="activity-title">System Alerts</h3>
+                <a href="/admin/alerts" class="btn btn-sm btn-outline-warning">View All</a>
+            </div>
+            <ul class="activity-list">
+                <li class="activity-item">
+                    <div class="activity-icon system" style="background: #ffc107;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">High memory usage detected on server-02</div>
+                        <div class="activity-time">30 minutes ago</div>
+                    </div>
+                </li>
+                <li class="activity-item">
+                    <div class="activity-icon system" style="background: #28a745;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">Database optimization completed</div>
+                        <div class="activity-time">1 hour ago</div>
+                    </div>
+                </li>
+                <li class="activity-item">
+                    <div class="activity-icon system" style="background: #17a2b8;">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">Scheduled maintenance in 24 hours</div>
+                        <div class="activity-time">3 hours ago</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h3 class="quick-actions-title">Quick Actions</h3>
+        <div class="actions-grid">
+            <a href="/admin/users" class="action-btn">
+                <div class="action-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <span>Manage Users</span>
+            </a>
+            <a href="/admin/jobs" class="action-btn">
+                <div class="action-icon">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <span>Manage Jobs</span>
+            </a>
+            <a href="/admin/companies" class="action-btn">
+                <div class="action-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <span>Manage Companies</span>
+            </a>
+            <a href="/admin/reports" class="action-btn">
+                <div class="action-icon">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <span>View Reports</span>
+            </a>
+            <a href="/admin/settings" class="action-btn">
+                <div class="action-icon">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <span>System Settings</span>
+            </a>
+            <a href="/admin/backup" class="action-btn">
+                <div class="action-icon">
+                    <i class="fas fa-database"></i>
+                </div>
+                <span>Backup System</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- System Health -->
+    <div class="system-health">
+        <h3 class="health-title">System Health</h3>
+        <div class="health-grid">
+            <div class="health-item">
+                <div class="health-status healthy"></div>
+                <div class="health-label">Database</div>
+                <div class="health-value">Healthy</div>
+            </div>
+            <div class="health-item">
+                <div class="health-status healthy"></div>
+                <div class="health-label">Web Server</div>
+                <div class="health-value">Online</div>
+            </div>
+            <div class="health-item">
+                <div class="health-status warning"></div>
+                <div class="health-label">Memory Usage</div>
+                <div class="health-value">78%</div>
+            </div>
+            <div class="health-item">
+                <div class="health-status healthy"></div>
+                <div class="health-label">Disk Space</div>
+                <div class="health-value">45%</div>
+            </div>
+            <div class="health-item">
+                <div class="health-status healthy"></div>
+                <div class="health-label">Email Service</div>
+                <div class="health-value">Active</div>
+            </div>
+            <div class="health-item">
+                <div class="health-status healthy"></div>
+                <div class="health-label">Cache</div>
+                <div class="health-value">Redis OK</div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Update current time
+            function updateTime() {
+                const now = new Date();
+                document.getElementById('currentTime').textContent = now.toLocaleTimeString();
+            }
+
+            setInterval(updateTime, 1000);
+
+            // Animate statistics
+            function animateNumbers() {
+                const statNumbers = document.querySelectorAll('[data-target]');
+
+                statNumbers.forEach(stat => {
+                    const target = parseInt(stat.dataset.target);
+                    const duration = 2000;
+                    const increment = target / (duration / 16);
+                    let current = 0;
+
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) {
+                            current = target;
+                            clearInterval(timer);
+                        }
+                        stat.textContent = Math.floor(current).toLocaleString();
+                    }, 16);
+                });
+            }
+
+            // Trigger animation when page loads
+            setTimeout(animateNumbers, 500);
+
+            // Chart configurations
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f8f9fa'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            };
+
+            // Activity Chart
+            const activityCtx = document.getElementById('activityChart');
+            if (activityCtx) {
+                new Chart(activityCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Users',
+                            data: [120, 190, 300, 500, 200, 300, 450],
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }, {
+                            label: 'Jobs',
+                            data: [80, 150, 200, 300, 150, 250, 350],
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        ...chartOptions,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Distribution Chart
+            const distributionCtx = document.getElementById('distributionChart');
+            if (distributionCtx) {
+                new Chart(distributionCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Job Seekers', 'Employers', 'Admins'],
+                        datasets: [{
+                            data: [75, 20, 5],
+                            backgroundColor: [
+                                '#667eea',
+                                '#f093fb',
+                                '#4facfe'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Period buttons
+            const periodButtons = document.querySelectorAll('.period-btn');
+            periodButtons.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    periodButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // Here you would typically fetch new data based on the period
+                    console.log('Period changed to:', this.dataset.period);
+                });
+            });
+
+            // Auto-refresh data every 5 minutes
+            setInterval(() => {
+                // Fetch updated statistics
+                fetch('/admin/api/dashboard-stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update statistics without page reload
+                        console.log('Dashboard data refreshed');
+                    })
+                    .catch(error => {
+                        console.error('Error refreshing dashboard data:', error);
+                    });
+            }, 300000); // 5 minutes
+
+            // Real-time notifications
+            function checkForAlerts() {
+                fetch('/admin/api/alerts')
+                    .then(response => response.json())
+                    .then(alerts => {
+                        if (alerts.length > 0) {
+                            showNotification(alerts[0]);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking alerts:', error);
+                    });
+            }
+
+            function showNotification(alert) {
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+                notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                notification.innerHTML = `
+            <strong>${alert.title}</strong><br>
+            ${alert.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 10000);
+            }
+
+            // Check for alerts every 2 minutes
+            setInterval(checkForAlerts, 120000);
+        });
+    </script>
+{% endblock %}

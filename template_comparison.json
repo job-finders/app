@@ -1,0 +1,242 @@
+{
+  "metadata": {
+    "comparison_date": "2025-01-14T12:15:00Z",
+    "comparison_method": "static_analysis_based_on_current_templates",
+    "note": "Since only new templates are available, comparison is based on identifying legacy patterns vs modern patterns within current templates"
+  },
+  "comparison_analysis": {
+    "modern_patterns_found": {
+      "description": "Patterns that follow Flask best practices",
+      "count": 45,
+      "examples": [
+        {
+          "pattern_type": "proper_url_for_usage",
+          "template": "template/login.html",
+          "code": "<form action=\"{{ url_for('auth.login') }}\" method=\"POST\">",
+          "assessment": "Follows Flask best practices"
+        },
+        {
+          "pattern_type": "parameterized_routes",
+          "template": "template/jobs/_jobs_list.html",
+          "code": "<a href=\"{{ url_for('jobs.job_details', job_id=job.job_id) }}\">",
+          "assessment": "Proper parameter passing"
+        },
+        {
+          "pattern_type": "conditional_navigation",
+          "template": "template/layouts/header.html",
+          "code": "{% if current_user.is_authenticated %}",
+          "assessment": "Good authentication-based navigation"
+        },
+        {
+          "pattern_type": "static_asset_handling",
+          "template": "template/jobs/list.html",
+          "code": "{{ url_for('static', filename='css/jobs/job-listings.css') }}",
+          "assessment": "Proper static file handling"
+        }
+      ]
+    },
+    "legacy_patterns_found": {
+      "description": "Patterns that suggest older implementation or migration artifacts",
+      "count": 22,
+      "examples": [
+        {
+          "pattern_type": "hardcoded_paths",
+          "template": "template/index.html",
+          "code": "<a href=\"/jobs\">Browse Jobs</a>",
+          "assessment": "Legacy hardcoded URL pattern",
+          "migration_needed": true
+        },
+        {
+          "pattern_type": "inconsistent_naming",
+          "template": "template/layouts/header.html",
+          "code": "{{ url_for('jobseekers.dashboard') }}",
+          "assessment": "Inconsistent blueprint naming",
+          "migration_needed": true
+        },
+        {
+          "pattern_type": "query_parameter_pagination",
+          "template": "template/jobs/_jobs_list.html",
+          "code": "<a href=\"?page={{ page-1 }}\">",
+          "assessment": "Old-style pagination",
+          "migration_needed": true
+        },
+        {
+          "pattern_type": "mixed_static_paths",
+          "template": "template/index.html",
+          "code": "<img src=\"/static/images/hero-illustration.svg\">",
+          "assessment": "Mixed static file handling",
+          "migration_needed": true
+        }
+      ]
+    },
+    "migration_indicators": {
+      "template_structure_analysis": {
+        "modern_templates": [
+          "template/login.html",
+          "template/company/dashboard.html",
+          "template/company/view_company_profile.html"
+        ],
+        "templates_needing_migration": [
+          "template/index.html",
+          "template/layouts/header.html",
+          "template/jobs/search.html"
+        ],
+        "assessment": "Mixed implementation suggests partial migration or inconsistent development"
+      },
+      "url_pattern_evolution": {
+        "old_style_patterns": [
+          "/jobs",
+          "/employer/post-job",
+          "/employer/manage-jobs",
+          "/login",
+          "/logout",
+          "/register"
+        ],
+        "new_style_patterns": [
+          "{{ url_for('jobs.list_jobs') }}",
+          "{{ url_for('jobs_workflow.show_create_form') }}",
+          "{{ url_for('company.manage_jobs') }}",
+          "{{ url_for('auth.login') }}",
+          "{{ url_for('auth.logout') }}",
+          "{{ url_for('auth.subscribe') }}"
+        ],
+        "migration_mapping": {
+          "/jobs": "jobs.list_jobs",
+          "/employer/post-job": "jobs_workflow.show_create_form",
+          "/employer/manage-jobs": "company.manage_jobs",
+          "/employer/search-candidates": "company.candidate_management",
+          "/login": "auth.login",
+          "/logout": "auth.logout",
+          "/register": "auth.subscribe",
+          "/applications": "jobseeker_applications.my_applications",
+          "/resumes": "resumes.manage_resumes"
+        }
+      }
+    }
+  },
+  "functional_differences": {
+    "navigation_evolution": {
+      "old_approach": {
+        "description": "Hardcoded navigation paths in dropdown menus",
+        "example": "<a href=\"/employer/post-job\">Post a Job</a>",
+        "issues": [
+          "Breaks when routes change",
+          "No parameter validation",
+          "Difficult to maintain"
+        ]
+      },
+      "new_approach": {
+        "description": "Dynamic URL generation with Flask url_for",
+        "example": "<a href=\"{{ url_for('jobs_workflow.show_create_form') }}\">Post a Job</a>",
+        "benefits": [
+          "Route changes automatically handled",
+          "Parameter validation",
+          "Easier maintenance"
+        ]
+      }
+    },
+    "authentication_flow_changes": {
+      "role_based_navigation": {
+        "current_implementation": "{% if current_user.role == 'seeker' %}",
+        "potential_issue": "Role value inconsistency (seeker vs jobseeker)",
+        "recommended_fix": "{% if current_user.role == 'jobseeker' %}"
+      },
+      "dashboard_routing": {
+        "employer_dashboard": {
+          "current": "{{ url_for('company.get_dashboard') }}",
+          "should_be": "{{ url_for('company.view_company') }}",
+          "issue": "Non-existent endpoint reference"
+        },
+        "jobseeker_dashboard": {
+          "current": "{{ url_for('jobseekers.dashboard') }}",
+          "should_be": "{{ url_for('jobseeker.dashboard') }}",
+          "issue": "Blueprint name inconsistency"
+        }
+      }
+    },
+    "job_workflow_evolution": {
+      "job_posting_flow": {
+        "old_pattern": "/employer/post-job",
+        "new_pattern": "{{ url_for('jobs_workflow.show_create_form') }}",
+        "improvement": "More descriptive and follows workflow pattern"
+      },
+      "job_management": {
+        "old_pattern": "/employer/manage-jobs",
+        "new_pattern": "{{ url_for('company.manage_jobs') }}",
+        "improvement": "Better organization under company blueprint"
+      }
+    }
+  },
+  "template_inheritance_analysis": {
+    "base_template_usage": {
+      "layouts/page.html": {
+        "used_by": [
+          "jobs/list.html",
+          "jobs/search.html"
+        ],
+        "url_for_compliance": "Good"
+      },
+      "layouts/auth.html": {
+        "used_by": [
+          "login.html"
+        ],
+        "url_for_compliance": "Excellent"
+      },
+      "company/layout/page.html": {
+        "used_by": [
+          "company/view_company_profile.html",
+          "company/dashboard.html"
+        ],
+        "url_for_compliance": "Good"
+      }
+    },
+    "shared_components": {
+      "jobs/_jobs_list.html": {
+        "url_for_compliance": "Excellent",
+        "issues": "Minor pagination improvements needed"
+      },
+      "layouts/header.html": {
+        "url_for_compliance": "Good",
+        "issues": "2 incorrect endpoint references"
+      },
+      "layouts/footer.html": {
+        "url_for_compliance": "Good",
+        "issues": "1 hardcoded URL"
+      }
+    }
+  },
+  "migration_recommendations": {
+    "immediate_actions": [
+      {
+        "priority": "HIGH",
+        "action": "Fix main navigation in template/index.html",
+        "impact": "Fixes 10 hardcoded URLs affecting primary navigation",
+        "effort": "Medium"
+      },
+      {
+        "priority": "HIGH",
+        "action": "Correct endpoint references in template/layouts/header.html",
+        "impact": "Fixes navigation on all pages",
+        "effort": "Low"
+      },
+      {
+        "priority": "MEDIUM",
+        "action": "Update pagination patterns across job templates",
+        "impact": "Improves URL consistency and parameter handling",
+        "effort": "Medium"
+      }
+    ],
+    "validation_steps": [
+      "Cross-reference all endpoint names with route discovery results",
+      "Test role-based navigation with actual user roles",
+      "Verify parameter passing for all parameterized routes",
+      "Test pagination functionality after corrections"
+    ],
+    "long_term_improvements": [
+      "Establish template linting rules for url_for usage",
+      "Create template macros for common navigation patterns",
+      "Implement automated testing for template links",
+      "Document URL patterns and endpoint naming conventions"
+    ]
+  }
+}

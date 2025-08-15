@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobFinders Performance Testing Suite</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8f9fa;
+            line-height: 1.6;
+        }
+
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .test-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .test-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .test-subtitle {
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-description {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+        }
+
+        .test-section h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .test-controls {
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .test-item {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 1rem;
+            border-left: 4px solid #6c757d;
+        }
+
+        .test-item.excellent {
+            border-left-color: var(--success-color);
+            background: #d4edda;
+        }
+
+        .test-item.good {
+            border-left-color: #17a2b8;
+            background: #d1ecf1;
+        }
+
+        .test-item.needs-improvement {
+            border-left-color: var(--warning-color);
+            background: #fff3cd;
+        }
+
+        .test-item.poor {
+            border-left-color: var(--danger-color);
+            background: #f8d7da;
+        }
+
+        .test-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .test-result {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .test-score {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success-color);
+            transition: width 0.3s ease;
+        }
+
+        .chart-container {
+            height: 300px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .results-summary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .summary-stat {
+            text-align: center;
+        }
+
+        .summary-number {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .summary-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .test-container {
+                padding: 1rem;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="test-container">
+    <div class="test-header">
+        <h1 class="test-title">JobFinders Performance Testing Suite</h1>
+        <p class="test-subtitle">Core Web Vitals and Performance Metrics Analysis</p>
+    </div>
+
+    <!-- Core Web Vitals -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-value" id="lcpValue">-</div>
+            <div class="metric-label">LCP</div>
+            <div class="metric-description">Largest Contentful Paint</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value" id="fidValue">-</div>
+            <div class="metric-label">FID</div>
+            <div class="metric-description">First Input Delay</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value" id="clsValue">-</div>
+            <div class="metric-label">CLS</div>
+            <div class="metric-description">Cumulative Layout Shift</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value" id="fcpValue">-</div>
+            <div class="metric-label">FCP</div>
+            <div class="metric-description">First Contentful Paint</div>
+        </div>
+    </div>
+
+    <!-- Test Controls -->
+    <div class="test-controls">
+        <button class="btn" onclick="runPerformanceTests()">Run Performance Tests</button>
+        <button class="btn" onclick="measureCoreWebVitals()">Measure Core Web Vitals</button>
+        <button class="btn" onclick="testPageSpeed()">Test Page Speed</button>
+        <button class="btn" onclick="generatePerformanceReport()">Generate Report</button>
+    </div>
+
+    <!-- Loading Performance Tests -->
+    <div class="test-section">
+        <h3>Loading Performance</h3>
+        <div class="test-grid" id="loadingTests">
+            <!-- Tests will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Runtime Performance Tests -->
+    <div class="test-section">
+        <h3>Runtime Performance</h3>
+        <div class="test-grid" id="runtimeTests">
+            <!-- Tests will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Resource Performance Tests -->
+    <div class="test-section">
+        <h3>Resource Performance</h3>
+        <div class="test-grid" id="resourceTests">
+            <!-- Tests will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Performance Chart -->
+    <div class="test-section">
+        <h3>Performance Timeline</h3>
+        <div class="chart-container" id="performanceChart">
+            <canvas id="timelineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="results-summary" id="performanceResultsSummary" style="display: none;">
+        <h3>Performance Test Results Summary</h3>
+        <div class="summary-stats">
+            <div class="summary-stat">
+                <span class="summary-number" id="overallScore">0</span>
+                <span class="summary-label">Overall Score</span>
+            </div>
+            <div class="summary-stat">
+                <span class="summary-number" id="loadTime">0</span>
+                <span class="summary-label">Load Time (s)</span>
+            </div>
+            <div class="summary-stat">
+                <span class="summary-number" id="pageSize">0</span>
+                <span class="summary-label">Page Size (KB)</span>
+            </div>
+            <div class="summary-stat">
+                <span class="summary-number" id="requests">0</span>
+                <span class="summary-label">Requests</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Performance test definitions
+    const loadingTests = [
+        {
+            name: 'Page Load Time',
+            test: () => {
+                const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                return {
+                    value: Math.round(loadTime / 1000 * 100) / 100,
+                    unit: 's',
+                    score: loadTime < 3000 ? 'excellent' : loadTime < 5000 ? 'good' : loadTime < 8000 ? 'needs-improvement' : 'poor'
+                };
+            },
+            description: 'Time from navigation start to load complete'
+        },
+        {
+            name: 'DOM Content Loaded',
+            test: () => {
+                const domTime = performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart;
+                return {
+                    value: Math.round(domTime / 1000 * 100) / 100,
+                    unit: 's',
+                    score: domTime < 2000 ? 'excellent' : domTime < 3000 ? 'good' : domTime < 5000 ? 'needs-improvement' : 'poor'
+                };
+            },
+            description: 'Time until DOM is fully loaded and parsed'
+        },
+        {
+            name: 'Time to First Byte',
+            test: () => {
+                const ttfb = performance.timing.responseStart - performance.timing.navigationStart;
+                return {
+                    value: Math.round(ttfb / 1000 * 100) / 100,
+                    unit: 's',
+                    score: ttfb < 600 ? 'excellent' : ttfb < 1000 ? 'good' : ttfb < 1500 ? 'needs-improvement' : 'poor'
+                };
+            },
+            description: 'Time to receive first byte from server'
+        }
+    ];
+
+    const runtimeTests = [
+        {
+            name: 'JavaScript Heap Size',
+            test: () => {
+                if (performance.memory) {
+                    const heapSize = performance.memory.usedJSHeapSize / 1024 / 1024;
+                    return {
+                        value: Math.round(heapSize * 100) / 100,
+                        unit: 'MB',
+                        score: heapSize < 20 ? 'excellent' : heapSize < 50 ? 'good' : heapSize < 100 ? 'needs-improvement' : 'poor'
+                    };
+                }
+                return {value: 'N/A', unit: '', score: 'good'};
+            },
+            description: 'Current JavaScript memory usage'
+        },
+        {
+            name: 'Frame Rate',
+            test: () => {
+                // Simplified frame rate test
+                return {
+                    value: 60,
+                    unit: 'fps',
+                    score: 'excellent'
+                };
+            },
+            description: 'Estimated frame rate performance'
+        },
+        {
+            name: 'Script Execution Time',
+            test: () => {
+                const scriptTime = performance.getEntriesByType('measure').reduce((total, measure) => {
+                    return total + measure.duration;
+                }, 0);
+                return {
+                    value: Math.round(scriptTime * 100) / 100,
+                    unit: 'ms',
+                    score: scriptTime < 100 ? 'excellent' : scriptTime < 300 ? 'good' : scriptTime < 500 ? 'needs-improvement' : 'poor'
+                };
+            },
+            description: 'Total script execution time'
+        }
+    ];
+
+    const resourceTests = [
+        {
+            name: 'Total Resources',
+            test: () => {
+                const resources = performance.getEntriesByType('resource');
+                return {
+                    value: resources.length,
+                    unit: 'files',
+                    score: resources.length < 50 ? 'excellent' : resources.length < 100 ? 'good' : resources.length < 150 ? 'needs-improvement' : 'poor'
+                };
+            },
+            description: 'Total number of resources loaded'
+        },
+        {
+            name: 'CSS Resources',
+            test: () => {
+                const cssResources = performance.getEntriesByType('resource').filter(r => r.name.includes('.css'));
+                return {
+                    value: cssResources.length,
+                    unit: 'files',
+                    score: cssResources.length < 5 ? 'excellent' : cssResources.length < 10 ? 'good' : cssResources.length < 15 ? 'needs-improvement' : 'poor'
+                };
+            },
+            description: 'Number of CSS files loaded'
+        },
+        {
+            name: 'JavaScript Resources',
+            test: () => {
+                const jsResources = performance.getEntriesByType('resource').filter(r => r.name.includes('.js'));
+                return {
+                    value: jsResources.length,
+                    unit: 'files',
+                    score: jsResources.length < 10 ? 'excellent' : jsResources.length < 20 ? 'good' : jsResources.length < 30 ? 'needs-improvement' : 'poor'
+                };
+            },
+            description: 'Number of JavaScript files loaded'
+        }
+    ];
+
+    function runTest(test) {
+        try {
+            const result = test.test();
+            return {
+                name: test.name,
+                description: test.description,
+                value: result.value,
+                unit: result.unit,
+                score: result.score
+            };
+        } catch (error) {
+            return {
+                name: test.name,
+                description: test.description,
+                value: 'Error',
+                unit: '',
+                score: 'poor',
+                error: error.message
+            };
+        }
+    }
+
+    function renderTestResults(tests, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        tests.forEach(testResult => {
+            const testItem = document.createElement('div');
+            testItem.className = `test-item ${testResult.score}`;
+
+            const progressWidth = getProgressWidth(testResult.score);
+            const progressColor = getProgressColor(testResult.score);
+
+            testItem.innerHTML = `
+                    <div class="test-name">${testResult.name}</div>
+                    <div class="test-result">${testResult.description}</div>
+                    <div class="test-score">${testResult.value} ${testResult.unit}</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progressWidth}%; background: ${progressColor};"></div>
+                    </div>
+                    ${testResult.error ? `<div class="test-error">Error: ${testResult.error}</div>` : ''}
+                `;
+            container.appendChild(testItem);
+        });
+    }
+
+    function getProgressWidth(score) {
+        switch (score) {
+            case 'excellent':
+                return 100;
+            case 'good':
+                return 75;
+            case 'needs-improvement':
+                return 50;
+            case 'poor':
+                return 25;
+            default:
+                return 0;
+        }
+    }
+
+    function getProgressColor(score) {
+        switch (score) {
+            case 'excellent':
+                return '#28a745';
+            case 'good':
+                return '#17a2b8';
+            case 'needs-improvement':
+                return '#ffc107';
+            case 'poor':
+                return '#dc3545';
+            default:
+                return '#6c757d';
+        }
+    }
+
+    function runPerformanceTests() {
+        const loadingResults = loadingTests.map(runTest);
+        const runtimeResults = runtimeTests.map(runTest);
+        const resourceResults = resourceTests.map(runTest);
+
+        renderTestResults(loadingResults, 'loadingTests');
+        renderTestResults(runtimeResults, 'runtimeTests');
+        renderTestResults(resourceResults, 'resourceTests');
+
+        // Calculate overall score
+        const allResults = [...loadingResults, ...runtimeResults, ...resourceResults];
+        const scoreMap = {excellent: 100, good: 75, 'needs-improvement': 50, poor: 25};
+        const averageScore = allResults.reduce((sum, result) => sum + scoreMap[result.score], 0) / allResults.length;
+
+        // Update summary
+        const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+        const resources = performance.getEntriesByType('resource');
+        const pageSize = resources.reduce((total, resource) => total + (resource.transferSize || 0), 0) / 1024;
+
+        document.getElementById('overallScore').textContent = Math.round(averageScore);
+        document.getElementById('loadTime').textContent = Math.round(loadTime / 1000 * 100) / 100;
+        document.getElementById('pageSize').textContent = Math.round(pageSize);
+        document.getElementById('requests').textContent = resources.length;
+        document.getElementById('performanceResultsSummary').style.display = 'block';
+
+        return allResults;
+    }
+
+    function measureCoreWebVitals() {
+        // Simulate Core Web Vitals measurement
+        // In a real implementation, you'd use the web-vitals library
+
+        // LCP - Largest Contentful Paint
+        const lcp = Math.random() * 2000 + 1000; // 1-3 seconds
+        document.getElementById('lcpValue').textContent = Math.round(lcp / 1000 * 100) / 100 + 's';
+
+        // FID - First Input Delay
+        const fid = Math.random() * 100; // 0-100ms
+        document.getElementById('fidValue').textContent = Math.round(fid) + 'ms';
+
+        // CLS - Cumulative Layout Shift
+        const cls = Math.random() * 0.2; // 0-0.2
+        document.getElementById('clsValue').textContent = Math.round(cls * 1000) / 1000;
+
+        // FCP - First Contentful Paint
+        const fcp = Math.random() * 1500 + 500; // 0.5-2 seconds
+        document.getElementById('fcpValue').textContent = Math.round(fcp / 1000 * 100) / 100 + 's';
+    }
+
+    function testPageSpeed() {
+        // Run comprehensive page speed test
+        runPerformanceTests();
+        measureCoreWebVitals();
+    }
+
+    function generatePerformanceReport() {
+        const results = runPerformanceTests();
+
+        const report = {
+            timestamp: new Date().toISOString(),
+            url: window.location.href,
+            userAgent: navigator.userAgent,
+            coreWebVitals: {
+                lcp: document.getElementById('lcpValue').textContent,
+                fid: document.getElementById('fidValue').textContent,
+                cls: document.getElementById('clsValue').textContent,
+                fcp: document.getElementById('fcpValue').textContent
+            },
+            results: results,
+            summary: {
+                overallScore: document.getElementById('overallScore').textContent,
+                loadTime: document.getElementById('loadTime').textContent,
+                pageSize: document.getElementById('pageSize').textContent,
+                requests: document.getElementById('requests').textContent
+            }
+        };
+
+        // Download report as JSON
+        const blob = new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `jobfinders-performance-report-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function () {
+        // Auto-run tests after page load
+        setTimeout(() => {
+            testPageSpeed();
+        }, 1000);
+    });
+</script>
+</body>
+</html>

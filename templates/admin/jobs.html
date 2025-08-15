@@ -1,0 +1,1304 @@
+{% extends "layout/admin.html" %}
+
+{% block title %}Job Management - Admin - JobFinders{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: #6c757d;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-icon.total {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .stat-icon.active {
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+        }
+
+        .stat-icon.pending {
+            background: linear-gradient(135deg, #fa709a, #fee140);
+        }
+
+        .stat-icon.expired {
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filters-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .filters-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-weight: 500;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+
+        .filter-input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.25);
+            outline: none;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .jobs-table-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .table-meta {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .jobs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        .jobs-table th {
+            background: #f8f9fa;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .jobs-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f8f9fa;
+            vertical-align: middle;
+        }
+
+        .jobs-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .job-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .job-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .job-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .job-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.25rem;
+            text-decoration: none;
+            display: block;
+        }
+
+        .job-title:hover {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .job-company {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .job-location {
+            color: #6c757d;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-expired {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-paused {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .priority-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .priority-high {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .priority-medium {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .priority-low {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .job-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .action-btn.view {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .action-btn.edit {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .action-btn.approve {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .action-btn.reject {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .action-btn.delete {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .bulk-actions {
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            padding: 1rem 1.5rem;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .bulk-actions.show {
+            display: flex;
+        }
+
+        .bulk-actions-text {
+            color: #495057;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .bulk-actions-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+
+        .pagination-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .pagination-info {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .pagination {
+            margin: 0;
+        }
+
+        .page-link {
+            color: var(--primary-color);
+            border-color: #dee2e6;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .page-link:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .page-item.active .page-link {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .job-modal .modal-dialog {
+            max-width: 800px;
+        }
+
+        .job-modal .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-bottom: none;
+        }
+
+        .job-modal .btn-close {
+            filter: invert(1);
+        }
+
+        .job-detail-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .job-detail-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .job-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .job-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .job-meta-label {
+            font-weight: 500;
+            color: #6c757d;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .job-meta-value {
+            color: #495057;
+            font-size: 0.95rem;
+        }
+
+        .moderation-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .moderation-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .moderation-actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .moderation-notes {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.75rem;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            resize: vertical;
+        }
+
+        @media (max-width: 768px) {
+            .page-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .jobs-table {
+                font-size: 0.85rem;
+            }
+
+            .jobs-table th,
+            .jobs-table td {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .job-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .job-actions {
+                flex-direction: column;
+            }
+
+            .pagination-section {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block dashboard_content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="page-title">Job Management</h1>
+                <p class="page-subtitle">
+                    Moderate job postings, manage categories, and monitor job performance
+                </p>
+            </div>
+            <div class="col-md-4">
+                <div class="page-actions">
+                    <button class="btn btn-primary" onclick="exportJobs()">
+                        <i class="fas fa-download me-2"></i>Export Jobs
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="bulkModeration()">
+                        <i class="fas fa-tasks me-2"></i>Bulk Actions
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Row -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon total">
+                <i class="fas fa-briefcase"></i>
+            </div>
+            <div class="stat-number" data-target="{{ total_jobs or 8750 }}">0</div>
+            <div class="stat-label">Total Jobs</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon active">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-number" data-target="{{ active_jobs or 6420 }}">0</div>
+            <div class="stat-label">Active Jobs</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon pending">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-number" data-target="{{ pending_jobs or 145 }}">0</div>
+            <div class="stat-label">Pending Review</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon expired">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <div class="stat-number" data-target="{{ expired_jobs or 2185 }}">0</div>
+            <div class="stat-label">Expired Jobs</div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <h3 class="filters-title">Filters & Search</h3>
+        <form id="jobFilters">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Search Jobs</label>
+                    <input type="text" class="filter-input" name="search" placeholder="Title, company, or keywords...">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select class="filter-input" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="pending">Pending Review</option>
+                        <option value="expired">Expired</option>
+                        <option value="paused">Paused</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Category</label>
+                    <select class="filter-input" name="category">
+                        <option value="">All Categories</option>
+                        <option value="technology">Technology</option>
+                        <option value="finance">Finance</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="education">Education</option>
+                        <option value="marketing">Marketing</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Location</label>
+                    <input type="text" class="filter-input" name="location" placeholder="City or province...">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Posted Date</label>
+                    <select class="filter-input" name="date_range">
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="quarter">This Quarter</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Priority</label>
+                    <select class="filter-input" name="priority">
+                        <option value="">All Priorities</option>
+                        <option value="high">High Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="low">Low Priority</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-search me-1"></i>Apply Filters
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                    <i class="fas fa-times me-1"></i>Clear
+                </button>
+                <span class="ms-3 text-muted" id="filterResults">
+                Showing {{ jobs|length if jobs else 0 }} of {{ total_jobs or 0 }} jobs
+            </span>
+            </div>
+        </form>
+    </div>
+
+    <!-- Jobs Table -->
+    <div class="jobs-table-section">
+        <div class="table-header">
+            <h3 class="table-title">Jobs</h3>
+            <div class="table-meta">
+                <span id="selectedCount">0</span> selected
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="jobs-table">
+                <thead>
+                <tr>
+                    <th>
+                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                    </th>
+                    <th>Job Details</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Applications</th>
+                    <th>Posted Date</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="jobsTableBody">
+                {% if jobs %}
+                    {% for job in jobs %}
+                        <tr data-job-id="{{ job.id }}">
+                            <td>
+                                <input type="checkbox" class="job-checkbox" value="{{ job.id }}"
+                                       onchange="updateSelection()">
+                            </td>
+                            <td>
+                                <div class="job-info">
+                                    <div class="job-icon">
+                                        <i class="fas fa-briefcase"></i>
+                                    </div>
+                                    <div class="job-details">
+                                        <a href="/jobs/{{ job.id }}" class="job-title" target="_blank">
+                                            {{ job.title }}
+                                        </a>
+                                        <div class="job-company">{{ job.company_name or 'Unknown Company' }}</div>
+                                        <div class="job-location">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            {{ job.location or 'Remote' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                            <span class="status-badge status-{{ job.status or 'active' }}">
+                                {{ (job.status or 'active').title() }}
+                            </span>
+                            </td>
+                            <td>
+                            <span class="priority-badge priority-{{ job.priority or 'medium' }}">
+                                {{ (job.priority or 'medium').title() }}
+                            </span>
+                            </td>
+                            <td>
+                                <div class="text-center">
+                                    <strong>{{ job.applications_count or 0 }}</strong>
+                                    <div class="text-muted" style="font-size: 0.75rem;">applications</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>{{ job.created_at.strftime('%b %d, %Y') if job.created_at else 'N/A' }}</div>
+                                <small class="text-muted">{{ job.created_at.strftime('%H:%M') if job.created_at else '' }}</small>
+                            </td>
+                            <td>
+                                <div class="job-actions">
+                                    <button class="action-btn view" onclick="viewJob({{ job.id }})"
+                                            title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% if job.status == 'pending' %}
+                                        <button class="action-btn approve" onclick="approveJob({{ job.id }})"
+                                                title="Approve Job">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="action-btn reject" onclick="rejectJob({{ job.id }})"
+                                                title="Reject Job">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    {% endif %}
+                                    <button class="action-btn edit" onclick="editJob({{ job.id }})" title="Edit Job">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn delete" onclick="deleteJob({{ job.id }})"
+                                            title="Delete Job">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-briefcase fa-2x mb-3"></i>
+                                <p>No jobs found matching your criteria.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="bulk-actions" id="bulkActions">
+        <span class="bulk-actions-text">
+            <span id="bulkSelectedCount">0</span> jobs selected
+        </span>
+            <div class="bulk-actions-buttons">
+                <button class="btn btn-sm btn-outline-success" onclick="bulkApprove()">
+                    <i class="fas fa-check me-1"></i>Approve
+                </button>
+                <button class="btn btn-sm btn-outline-warning" onclick="bulkPause()">
+                    <i class="fas fa-pause me-1"></i>Pause
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
+                    <i class="fas fa-trash me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-section">
+        <div class="pagination-info">
+            Showing {{ ((page - 1) * per_page + 1) if jobs else 0 }}
+            to {{ (page * per_page) if (page * per_page) < total_jobs else total_jobs }} of {{ total_jobs or 0 }} jobs
+        </div>
+        <nav aria-label="Jobs pagination">
+            <ul class="pagination">
+                <li class="page-item {{ 'disabled' if page <= 1 else '' }}">
+                    <a class="page-link" href="?page={{ page - 1 if page > 1 else 1 }}">Previous</a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                    <li class="page-item {{ 'active' if p == page else '' }}">
+                        <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                    </li>
+                {% endfor %}
+                <li class="page-item {{ 'disabled' if page >= total_pages else '' }}">
+                    <a class="page-link" href="?page={{ page + 1 if page < total_pages else total_pages }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- View Job Modal -->
+    <div class="modal fade job-modal" id="viewJobModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Job Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="jobDetailsContent">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="editJobFromView()">Edit Job</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Animate statistics
+            function animateNumbers() {
+                const statNumbers = document.querySelectorAll('[data-target]');
+
+                statNumbers.forEach(stat => {
+                    const target = parseInt(stat.dataset.target);
+                    const duration = 2000;
+                    const increment = target / (duration / 16);
+                    let current = 0;
+
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) {
+                            current = target;
+                            clearInterval(timer);
+                        }
+                        stat.textContent = Math.floor(current).toLocaleString();
+                    }, 16);
+                });
+            }
+
+            setTimeout(animateNumbers, 500);
+
+            // Initialize filters
+            const filterForm = document.getElementById('jobFilters');
+            filterForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                applyFilters();
+            });
+
+            // Auto-apply filters on input change
+            const filterInputs = filterForm.querySelectorAll('input, select');
+            filterInputs.forEach(input => {
+                input.addEventListener('change', debounce(applyFilters, 500));
+            });
+        });
+
+        function applyFilters() {
+            const formData = new FormData(document.getElementById('jobFilters'));
+            const params = new URLSearchParams(formData);
+
+            fetch(`/admin/jobs/filter?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateJobsTable(data.jobs);
+                    updateFilterResults(data.total, data.filtered);
+                })
+                .catch(error => {
+                    console.error('Error applying filters:', error);
+                    showNotification('Error applying filters', 'error');
+                });
+        }
+
+        function clearFilters() {
+            document.getElementById('jobFilters').reset();
+            applyFilters();
+        }
+
+        function updateJobsTable(jobs) {
+            const tbody = document.getElementById('jobsTableBody');
+
+            if (jobs.length === 0) {
+                tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="fas fa-briefcase fa-2x mb-3"></i>
+                        <p>No jobs found matching your criteria.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+                return;
+            }
+
+            tbody.innerHTML = jobs.map(job => `
+        <tr data-job-id="${job.id}">
+            <td>
+                <input type="checkbox" class="job-checkbox" value="${job.id}" onchange="updateSelection()">
+            </td>
+            <td>
+                <div class="job-info">
+                    <div class="job-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div class="job-details">
+                        <a href="/jobs/${job.id}" class="job-title" target="_blank">
+                            ${job.title}
+                        </a>
+                        <div class="job-company">${job.company_name || 'Unknown Company'}</div>
+                        <div class="job-location">
+                            <i class="fas fa-map-marker-alt"></i>
+                            ${job.location || 'Remote'}
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <span class="status-badge status-${job.status || 'active'}">
+                    ${(job.status || 'active').charAt(0).toUpperCase() + (job.status || 'active').slice(1)}
+                </span>
+            </td>
+            <td>
+                <span class="priority-badge priority-${job.priority || 'medium'}">
+                    ${(job.priority || 'medium').charAt(0).toUpperCase() + (job.priority || 'medium').slice(1)}
+                </span>
+            </td>
+            <td>
+                <div class="text-center">
+                    <strong>${job.applications_count || 0}</strong>
+                    <div class="text-muted" style="font-size: 0.75rem;">applications</div>
+                </div>
+            </td>
+            <td>
+                <div>${formatDate(job.created_at)}</div>
+                <small class="text-muted">${formatTime(job.created_at)}</small>
+            </td>
+            <td>
+                <div class="job-actions">
+                    <button class="action-btn view" onclick="viewJob(${job.id})" title="View Details">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    ${job.status === 'pending' ? `
+                        <button class="action-btn approve" onclick="approveJob(${job.id})" title="Approve Job">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="action-btn reject" onclick="rejectJob(${job.id})" title="Reject Job">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    ` : ''}
+                    <button class="action-btn edit" onclick="editJob(${job.id})" title="Edit Job">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn delete" onclick="deleteJob(${job.id})" title="Delete Job">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+        }
+
+        function updateFilterResults(total, filtered) {
+            document.getElementById('filterResults').textContent =
+                `Showing ${filtered} of ${total} jobs`;
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.job-checkbox');
+
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+
+            updateSelection();
+        }
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.job-checkbox:checked');
+            const count = checkboxes.length;
+
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('bulkSelectedCount').textContent = count;
+
+            const bulkActions = document.getElementById('bulkActions');
+            if (count > 0) {
+                bulkActions.classList.add('show');
+            } else {
+                bulkActions.classList.remove('show');
+            }
+
+            // Update select all checkbox state
+            const allCheckboxes = document.querySelectorAll('.job-checkbox');
+            const selectAll = document.getElementById('selectAll');
+            selectAll.indeterminate = count > 0 && count < allCheckboxes.length;
+            selectAll.checked = count === allCheckboxes.length;
+        }
+
+        function viewJob(jobId) {
+            fetch(`/admin/jobs/${jobId}`)
+                .then(response => response.json())
+                .then(job => {
+                    const content = document.getElementById('jobDetailsContent');
+                    content.innerHTML = `
+                <div class="job-detail-section">
+                    <h6 class="job-detail-title">Job Information</h6>
+                    <div class="job-meta-grid">
+                        <div class="job-meta-item">
+                            <div class="job-meta-label">Title</div>
+                            <div class="job-meta-value">${job.title}</div>
+                        </div>
+                        <div class="job-meta-item">
+                            <div class="job-meta-label">Company</div>
+                            <div class="job-meta-value">${job.company_name || 'Unknown'}</div>
+                        </div>
+                        <div class="job-meta-item">
+                            <div class="job-meta-label">Location</div>
+                            <div class="job-meta-value">${job.location || 'Remote'}</div>
+                        </div>
+                        <div class="job-meta-item">
+                            <div class="job-meta-label">Status</div>
+                            <div class="job-meta-value">
+                                <span class="status-badge status-${job.status || 'active'}">
+                                    ${(job.status || 'active').charAt(0).toUpperCase() + (job.status || 'active').slice(1)}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="job-meta-item">
+                            <div class="job-meta-label">Applications</div>
+                            <div class="job-meta-value">${job.applications_count || 0}</div>
+                        </div>
+                        <div class="job-meta-item">
+                            <div class="job-meta-label">Posted Date</div>
+                            <div class="job-meta-value">${formatDate(job.created_at)}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="job-detail-section">
+                    <h6 class="job-detail-title">Job Description</h6>
+                    <div class="job-meta-value">${job.description || 'No description available'}</div>
+                </div>
+                
+                ${job.status === 'pending' ? `
+                <div class="moderation-section">
+                    <h6 class="moderation-title">Moderation Actions</h6>
+                    <div class="moderation-actions">
+                        <button class="btn btn-success" onclick="approveJobFromModal(${job.id})">
+                            <i class="fas fa-check me-2"></i>Approve Job
+                        </button>
+                        <button class="btn btn-danger" onclick="rejectJobFromModal(${job.id})">
+                            <i class="fas fa-times me-2"></i>Reject Job
+                        </button>
+                    </div>
+                    <textarea class="moderation-notes" placeholder="Add moderation notes (optional)..." id="moderationNotes"></textarea>
+                </div>
+                ` : ''}
+            `;
+
+                    // Store job ID for edit function
+                    document.getElementById('viewJobModal').dataset.jobId = jobId;
+
+                    new bootstrap.Modal(document.getElementById('viewJobModal')).show();
+                })
+                .catch(error => {
+                    console.error('Error loading job details:', error);
+                    showNotification('Error loading job details', 'error');
+                });
+        }
+
+        function approveJob(jobId) {
+            if (confirm('Are you sure you want to approve this job?')) {
+                moderateJob(jobId, 'approve');
+            }
+        }
+
+        function rejectJob(jobId) {
+            const reason = prompt('Please provide a reason for rejection (optional):');
+            moderateJob(jobId, 'reject', reason);
+        }
+
+        function moderateJob(jobId, action, notes = '') {
+            fetch(`/admin/jobs/${jobId}/moderate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+                },
+                body: JSON.stringify({
+                    action: action,
+                    notes: notes
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`Job ${action}d successfully`, 'success');
+                        applyFilters(); // Refresh the table
+                    } else {
+                        showNotification(`Error ${action}ing job`, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error ${action}ing job:`, error);
+                    showNotification(`Error ${action}ing job`, 'error');
+                });
+        }
+
+        function editJob(jobId) {
+            // Implementation for edit job functionality
+            console.log('Edit job:', jobId);
+            showNotification('Edit job functionality coming soon', 'info');
+        }
+
+        function deleteJob(jobId) {
+            if (confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+                fetch(`/admin/jobs/${jobId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Job deleted successfully', 'success');
+                            applyFilters(); // Refresh the table
+                        } else {
+                            showNotification('Error deleting job', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting job:', error);
+                        showNotification('Error deleting job', 'error');
+                    });
+            }
+        }
+
+        function bulkApprove() {
+            const selectedJobs = getSelectedJobs();
+            if (selectedJobs.length === 0) return;
+
+            if (confirm(`Approve ${selectedJobs.length} selected jobs?`)) {
+                bulkAction('approve', selectedJobs);
+            }
+        }
+
+        function bulkPause() {
+            const selectedJobs = getSelectedJobs();
+            if (selectedJobs.length === 0) return;
+
+            if (confirm(`Pause ${selectedJobs.length} selected jobs?`)) {
+                bulkAction('pause', selectedJobs);
+            }
+        }
+
+        function bulkDelete() {
+            const selectedJobs = getSelectedJobs();
+            if (selectedJobs.length === 0) return;
+
+            if (confirm(`Delete ${selectedJobs.length} selected jobs? This action cannot be undone.`)) {
+                bulkAction('delete', selectedJobs);
+            }
+        }
+
+        function getSelectedJobs() {
+            const checkboxes = document.querySelectorAll('.job-checkbox:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function bulkAction(action, jobIds) {
+            fetch('/admin/jobs/bulk-action', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+                },
+                body: JSON.stringify({
+                    action: action,
+                    job_ids: jobIds
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`${action.charAt(0).toUpperCase() + action.slice(1)} completed successfully`, 'success');
+                        applyFilters(); // Refresh the table
+                        updateSelection(); // Clear selection
+                    } else {
+                        showNotification(`Error performing ${action}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error performing ${action}:`, error);
+                    showNotification(`Error performing ${action}`, 'error');
+                });
+        }
+
+        function exportJobs() {
+            const formData = new FormData(document.getElementById('jobFilters'));
+            const params = new URLSearchParams(formData);
+
+            window.open(`/admin/jobs/export?${params}`, '_blank');
+        }
+
+        function editJobFromView() {
+            const jobId = document.getElementById('viewJobModal').dataset.jobId;
+            bootstrap.Modal.getInstance(document.getElementById('viewJobModal')).hide();
+            editJob(jobId);
+        }
+
+        function approveJobFromModal(jobId) {
+            const notes = document.getElementById('moderationNotes').value;
+            moderateJob(jobId, 'approve', notes);
+            bootstrap.Modal.getInstance(document.getElementById('viewJobModal')).hide();
+        }
+
+        function rejectJobFromModal(jobId) {
+            const notes = document.getElementById('moderationNotes').value;
+            if (!notes.trim()) {
+                alert('Please provide a reason for rejection.');
+                return;
+            }
+            moderateJob(jobId, 'reject', notes);
+            bootstrap.Modal.getInstance(document.getElementById('viewJobModal')).hide();
+        }
+
+        // Utility functions
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return '';
+            return new Date(dateString).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+    </script>
+{% endblock %}

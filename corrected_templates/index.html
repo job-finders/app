@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Jobs in South Africa - JobFinders.site</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <!-- CSS styles remain the same -->
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark hero-gradient shadow-sm py-3">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-white" href="{{ url_for('home.get_home') }}">
+            <i class="fas fa-briefcase me-2"></i>JobFinders.site
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                <!-- Job Seekers Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="jobSeekersDropdown"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-tie me-1"></i> Job Seekers
+                    </a>
+                    <ul class="dropdown-menu border-0 shadow-lg rounded-3">
+                        <!-- CORRECTED: Changed from hardcoded /jobs to url_for -->
+                        <li><a class="dropdown-item" href="{{ url_for('jobs.list_jobs') }}"><i
+                                class="fas fa-search me-2 text-primary"></i>Browse Jobs</a></li>
+
+                        <!-- CORRECTED: Changed from hardcoded /job-alerts to url_for -->
+                        {% if current_user and current_user.is_authenticated and current_user.role == 'jobseeker' %}
+                            <li><a class="dropdown-item" href="{{ url_for('jobseeker.job_alerts') }}"><i
+                                    class="fas fa-bell me-2 text-success"></i>Job Alerts</a></li>
+                            <!-- CORRECTED: Changed from hardcoded /resumes to url_for -->
+                            <li><a class="dropdown-item" href="{{ url_for('resumes.manage_resumes') }}"><i
+                                    class="fas fa-file-alt me-2 text-info"></i>My CV / Resume</a></li>
+                            <!-- CORRECTED: Changed from hardcoded /applications to url_for -->
+                            <li><a class="dropdown-item" href="{{ url_for('jobseeker_applications.my_applications') }}"><i
+                                    class="fas fa-clipboard-list me-2 text-secondary"></i>My Applications</a></li>
+                        {% else %}
+                            <li><a class="dropdown-item" href="{{ url_for('auth.login') }}"><i
+                                    class="fas fa-sign-in-alt me-2 text-success"></i>Login for Job Alerts</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.subscribe') }}"><i
+                                    class="fas fa-user-plus me-2 text-info"></i>Create Account</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+
+                <!-- Employers Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="employersDropdown"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-building me-1"></i> Employers
+                    </a>
+                    <ul class="dropdown-menu border-0 shadow-lg rounded-3">
+                        {% if current_user and current_user.is_authenticated and current_user.role == 'employer' %}
+                            {% if current_user.company_verified and current_user.has_active_billing %}
+                                <!-- CORRECTED: Changed from hardcoded /employer/post-job to url_for -->
+                                <li><a class="dropdown-item" href="{{ url_for('jobs_workflow.show_create_form') }}"><i
+                                        class="fas fa-bullhorn me-2 text-warning"></i>Post a Job</a></li>
+                                <!-- CORRECTED: Changed from hardcoded /employer/manage-jobs to url_for -->
+                                <li><a class="dropdown-item" href="{{ url_for('company.manage_jobs') }}"><i
+                                        class="fas fa-tasks me-2 text-primary"></i>Manage Jobs</a></li>
+                                <!-- CORRECTED: Changed from hardcoded /employer/search-candidates to url_for -->
+                                <li><a class="dropdown-item" href="{{ url_for('company.candidate_management') }}"><i
+                                        class="fas fa-search me-2 text-info"></i>Search Candidates</a></li>
+                                <!-- CORRECTED: Changed from hardcoded /employer/applicants to url_for -->
+                                <li><a class="dropdown-item" href="{{ url_for('company.application_analytics') }}"><i
+                                        class="fas fa-users me-2 text-secondary"></i>View Applicants</a></li>
+                            {% elif not current_user.company_verified %}
+                                <li><a class="dropdown-item"
+                                       href="{{ url_for('company.initiate_company_verification') }}"><i
+                                        class="fas fa-shield-check me-2 text-warning"></i>Verify Company First</a></li>
+                            {% else %}
+                                <li><a class="dropdown-item" href="{{ url_for('billing.upgrade') }}"><i
+                                        class="fas fa-credit-card me-2 text-warning"></i>Upgrade to Post Jobs</a></li>
+                            {% endif %}
+                        {% else %}
+                            <li><a class="dropdown-item" href="{{ url_for('auth.login') }}"><i
+                                    class="fas fa-sign-in-alt me-2 text-success"></i>Login as Employer</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.subscribe') }}"><i
+                                    class="fas fa-building me-2 text-info"></i>Create Employer Account</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+
+                <!-- Blog Link -->
+                <li class="nav-item">
+                    <a class="nav-link text-white fw-semibold" href="https://blog.jobfinders.site" target="_blank">
+                        <i class="fas fa-blog me-1"></i> Blog
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Right Side User Dropdown -->
+            <ul class="navbar-nav mb-2 mb-lg-0">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white fw-semibold d-flex align-items-center" href="#"
+                       id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle fa-lg me-1"></i> Account
+                    </a>
+                    <ul class="dropdown-menu border-0 shadow-lg rounded-3 dropdown-menu-end"
+                        aria-labelledby="userDropdown">
+                        {% if current_user and current_user.is_authenticated %}
+                            <!-- Authenticated User Links -->
+                            {% if current_user.role == 'employer' %}
+                                <li><a class="dropdown-item" href="{{ url_for('company.view_company') }}"><i
+                                        class="fas fa-tachometer-alt me-2 text-success"></i>Dashboard</a></li>
+                            {% elif current_user.role == 'jobseeker' %}
+                                <li><a class="dropdown-item" href="{{ url_for('jobseeker.dashboard') }}"><i
+                                        class="fas fa-tachometer-alt me-2 text-success"></i>Dashboard</a></li>
+                            {% elif current_user.role == 'admin' %}
+                                <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i
+                                        class="fas fa-cog me-2 text-warning"></i>Admin Panel</a></li>
+                            {% endif %}
+
+                            <li><a class="dropdown-item" href="{{ url_for('users.profile') }}"><i
+                                    class="fas fa-id-card me-2 text-primary"></i>Profile</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <!-- CORRECTED: Changed from hardcoded /logout to url_for -->
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i
+                                    class="fas fa-sign-out-alt me-2 text-danger"></i>Logout</a></li>
+                        {% else %}
+                            <!-- Unauthenticated User Links -->
+                            <!-- CORRECTED: Changed from hardcoded /register to url_for -->
+                            <li><a class="dropdown-item" href="{{ url_for('auth.subscribe') }}"><i
+                                    class="fas fa-user-plus me-2 text-info"></i>Create Account</a></li>
+                            <!-- CORRECTED: Changed from hardcoded /login to url_for -->
+                            <li><a class="dropdown-item" href="{{ url_for('auth.login') }}"><i
+                                    class="fas fa-sign-in-alt me-2 text-success"></i>Login</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero-gradient text-white py-5">
+    <div class="container">
+        <div class="row align-items-center min-vh-75">
+            <div class="col-lg-6">
+                <h1 class="display-3 fw-bold mb-4">Find Your Dream Job in South Africa</h1>
+                <p class="lead mb-4">Connect with top employers and discover opportunities across all industries and
+                    provinces. Your career journey starts here.</p>
+
+                <!-- Search Bar -->
+                <div class="card shadow-lg border-0 p-4 mb-4">
+                    <form action="{{ url_for('jobs.search_jobs') }}" method="get">
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <input type="text" name="keyword" class="form-control form-control-lg"
+                                       placeholder="Job title or keyword">
+                            </div>
+                            <div class="col-md-4">
+                                <select name="location" class="form-select form-select-lg">
+                                    <option value="">All Locations</option>
+                                    <option value="gauteng">Gauteng</option>
+                                    <option value="western-cape">Western Cape</option>
+                                    <option value="kwazulu-natal">KwaZulu-Natal</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary-custom btn-lg w-100">
+                                    <i class="fas fa-search me-2"></i>Search
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="stats-counter text-warning">15K+</div>
+                        <small>Active Jobs</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="stats-counter text-warning">50K+</div>
+                        <small>Job Seekers</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="stats-counter text-warning">2K+</div>
+                        <small>Companies</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <!-- CORRECTED: Changed from hardcoded static path to url_for -->
+                <img src="{{ url_for('static', filename='images/hero-illustration.svg') }}" alt="Job Search"
+                     class="img-fluid" style="max-height: 400px;">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Rest of the template content remains the same -->
+<!-- Features Section, Categories Section, etc. -->
+
+</body>
+</html>

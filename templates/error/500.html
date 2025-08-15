@@ -1,0 +1,755 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Server Error - JobFinders{% endblock %}
+
+{% block meta_description %}We're experiencing technical difficulties. Our team has been notified and is working to
+    resolve the issue.{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .error-container {
+            min-height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 0;
+        }
+
+        .error-content {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .error-code {
+            font-size: 8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .error-message {
+            font-size: 1.1rem;
+            color: #6c757d;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 3rem;
+        }
+
+        .btn-primary-gradient {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-outline-danger {
+            background: transparent;
+            color: #dc3545;
+            border: 2px solid #dc3545;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-outline-danger:hover {
+            background: #dc3545;
+            color: white;
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        .status-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid #dc3545;
+        }
+
+        .status-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-icon {
+            width: 24px;
+            height: 24px;
+            background: #dc3545;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .status-message {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .status-details {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .status-value {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 0.5rem;
+        }
+
+        .status-error {
+            background: #dc3545;
+        }
+
+        .status-warning {
+            background: #ffc107;
+        }
+
+        .status-success {
+            background: #28a745;
+        }
+
+        .help-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .help-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .help-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .help-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .help-card:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .help-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        .help-card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .help-description {
+            color: #6c757d;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .help-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .help-link:hover {
+            text-decoration: underline;
+        }
+
+        .error-illustration {
+            margin-bottom: 2rem;
+            opacity: 0.8;
+            position: relative;
+        }
+
+        .server-icon {
+            font-size: 4rem;
+            color: #dc3545;
+            margin-bottom: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .floating-element {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-element:nth-child(1) {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-element:nth-child(2) {
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        .floating-element:nth-child(3) {
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .breadcrumb-section {
+            background: #f8f9fa;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .breadcrumb {
+            background: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: ">";
+            color: #6c757d;
+        }
+
+        .breadcrumb-item a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item a:hover {
+            text-decoration: underline;
+        }
+
+        .breadcrumb-item.active {
+            color: #6c757d;
+        }
+
+        .retry-section {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid rgba(40, 167, 69, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .retry-title {
+            font-weight: 600;
+            color: #28a745;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .retry-message {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .retry-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .retry-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .retry-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 5rem;
+            }
+
+            .error-title {
+                font-size: 2rem;
+            }
+
+            .error-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-primary-gradient,
+            .btn-outline-danger {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+
+            .help-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-section,
+            .help-section {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Breadcrumb -->
+    <section class="breadcrumb-section">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Server Error</li>
+                </ol>
+            </nav>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="error-container">
+            <div class="floating-elements">
+                <div class="floating-element">
+                    <i class="fas fa-server" style="font-size: 3rem; color: #dc3545;"></i>
+                </div>
+                <div class="floating-element">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: #ffc107;"></i>
+                </div>
+                <div class="floating-element">
+                    <i class="fas fa-tools" style="font-size: 2rem; color: var(--primary-color);"></i>
+                </div>
+            </div>
+
+            <div class="error-content">
+                <!-- Error Illustration -->
+                <div class="error-illustration">
+                    <div class="server-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="error-code">500</div>
+                </div>
+
+                <h1 class="error-title">Server Error</h1>
+                <p class="error-message">
+                    We're experiencing technical difficulties on our end. Our engineering team
+                    has been automatically notified and is working to resolve the issue.
+                </p>
+
+                <!-- Primary Actions -->
+                <div class="error-actions">
+                    <a href="/" class="btn-primary-gradient">
+                        <i class="fas fa-home"></i>
+                        Back to Home
+                    </a>
+                    <button onclick="reportError()" class="btn-outline-danger">
+                        <i class="fas fa-bug"></i>
+                        Report Issue
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Section -->
+        <div class="status-section">
+            <h2 class="status-title">
+                <div class="status-icon">
+                    <i class="fas fa-exclamation"></i>
+                </div>
+                System Status
+            </h2>
+            <p class="status-message">
+                We're monitoring the situation and working to restore normal service as quickly as possible.
+            </p>
+            <div class="status-details">
+                <div class="status-item">
+                    <span class="status-label">Incident ID</span>
+                    <span class="status-value">
+                    #{{ incident_id or "INC-" + moment().format("YYYYMMDD-HHmmss") }}
+                    <span class="status-indicator status-error"></span>
+                </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Reported Time</span>
+                    <span class="status-value">
+                    {{ error_time or moment().format("YYYY-MM-DD HH:mm:ss") }} SAST
+                </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Estimated Resolution</span>
+                    <span class="status-value">
+                    Within 30 minutes
+                    <span class="status-indicator status-warning"></span>
+                </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Affected Services</span>
+                    <span class="status-value">
+                    Web Application
+                    <span class="status-indicator status-error"></span>
+                </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Retry Section -->
+        <div class="retry-section">
+            <h3 class="retry-title">
+                <i class="fas fa-redo"></i>
+                Try Again
+            </h3>
+            <p class="retry-message">
+                Sometimes a simple refresh can resolve temporary issues. Click below to retry your request.
+            </p>
+            <button onclick="retryRequest()" class="retry-btn" id="retryBtn">
+                <i class="fas fa-sync-alt"></i>
+                Retry Now
+            </button>
+        </div>
+
+        <!-- Help Section -->
+        <div class="help-section">
+            <h2 class="help-title">What You Can Do</h2>
+            <div class="help-grid">
+                <div class="help-card">
+                    <div class="help-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3 class="help-card-title">Wait a Few Minutes</h3>
+                    <p class="help-description">
+                        This is likely a temporary issue that will resolve itself shortly.
+                    </p>
+                    <a href="#" onclick="setTimeout(() => location.reload(), 60000); return false;" class="help-link">
+                        Auto-refresh in 1 minute
+                    </a>
+                </div>
+
+                <div class="help-card">
+                    <div class="help-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h3 class="help-card-title">Contact Support</h3>
+                    <p class="help-description">
+                        If the problem persists, our support team is here to help.
+                    </p>
+                    <a href="/contact" class="help-link">
+                        Get Support
+                    </a>
+                </div>
+
+                <div class="help-card">
+                    <div class="help-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="help-card-title">Check Status</h3>
+                    <p class="help-description">
+                        Monitor our system status for real-time updates on service availability.
+                    </p>
+                    <a href="/status" class="help-link">
+                        View Status Page
+                    </a>
+                </div>
+
+                <div class="help-card">
+                    <div class="help-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="help-card-title">Browse Jobs</h3>
+                    <p class="help-description">
+                        Continue your job search while we resolve the technical issue.
+                    </p>
+                    <a href="/jobs" class="help-link">
+                        View Jobs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Track 500 errors for analytics
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'exception', {
+                    description: '500 Server Error',
+                    fatal: false,
+                    custom_map: {
+                        'error_type': '500',
+                        'page_location': window.location.href
+                    }
+                });
+            }
+
+            // Auto-retry functionality
+            let retryCount = 0;
+            const maxRetries = 3;
+            const retryBtn = document.getElementById('retryBtn');
+
+            // Auto-refresh after 2 minutes if no user interaction
+            let autoRefreshTimer = setTimeout(() => {
+                if (retryCount === 0) {
+                    location.reload();
+                }
+            }, 120000);
+
+            window.retryRequest = function () {
+                if (retryCount >= maxRetries) {
+                    retryBtn.textContent = 'Maximum retries reached';
+                    retryBtn.disabled = true;
+                    return;
+                }
+
+                retryCount++;
+                retryBtn.disabled = true;
+                retryBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Retrying...';
+
+                // Clear auto-refresh timer
+                clearTimeout(autoRefreshTimer);
+
+                // Attempt to reload after a short delay
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            };
+
+            window.reportError = function () {
+                const errorData = {
+                    url: window.location.href,
+                    userAgent: navigator.userAgent,
+                    timestamp: new Date().toISOString(),
+                    referrer: document.referrer,
+                    errorType: '500'
+                };
+
+                // Try to send error report
+                if (navigator.sendBeacon) {
+                    const formData = new FormData();
+                    formData.append('error_report', JSON.stringify(errorData));
+                    navigator.sendBeacon('/api/error-report', formData);
+                }
+
+                // Redirect to contact form with pre-filled information
+                const contactUrl = `/contact?subject=Server Error Report&message=I encountered a 500 error on ${encodeURIComponent(window.location.href)} at ${new Date().toLocaleString()}`;
+                window.open(contactUrl, '_blank');
+            };
+
+            // Add periodic status checks
+            let statusCheckInterval = setInterval(() => {
+                fetch('/api/health-check', {
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            clearInterval(statusCheckInterval);
+                            showRecoveryNotification();
+                        }
+                    })
+                    .catch(() => {
+                        // Service still unavailable
+                    });
+            }, 30000); // Check every 30 seconds
+
+            function showRecoveryNotification() {
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+        `;
+                notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <div style="font-weight: 600;">Service Restored</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">The issue has been resolved. Click to refresh.</div>
+                </div>
+            </div>
+        `;
+
+                notification.addEventListener('click', () => {
+                    location.reload();
+                });
+
+                document.body.appendChild(notification);
+
+                // Auto-refresh after 5 seconds
+                setTimeout(() => {
+                    location.reload();
+                }, 5000);
+            }
+
+            // Add CSS for slide-in animation
+            const style = document.createElement('style');
+            style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    `;
+            document.head.appendChild(style);
+
+            // Clean up intervals when page is unloaded
+            window.addEventListener('beforeunload', () => {
+                clearInterval(statusCheckInterval);
+                clearTimeout(autoRefreshTimer);
+            });
+        });
+    </script>
+{% endblock %}

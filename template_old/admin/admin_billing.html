@@ -1,0 +1,59 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Manage Subscription Plans{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Plan Management</h2>
+      <a href="{{ url_for('admin.create_plan') }}" class="btn btn-success">
+      <i class="bi bi-plus-circle me-1"></i> Add New Plan
+    </a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Price (USD)</th>
+          <th>Billing Cycle</th>
+          <th>Job Slots</th>
+          <th>ATS</th>
+          <th>Analytics</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for plan in plans %}
+        <tr>
+          <td>{{ plan.name }}</td>
+          <td>${{ plan.price_usd }}</td>
+          <td>{{ plan.billing_cycle }}</td>
+          <td>{{ plan.max_jobs }}</td>
+          <td>{{ 'Yes' if plan.includes_ats else 'No' }}</td>
+          <td>{{ 'Yes' if plan.includes_analytics else 'No' }}</td>
+          <td>
+            {% if plan.is_active %}
+              <span class="badge bg-success">Active</span>
+            {% else %}
+              <span class="badge bg-secondary">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+              <a href="{{ url_for('admin.edit_plan', plan_id=plan.plan_id) }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-pencil"></i>
+            </a>
+              <form method="POST" action="{{ url_for('admin.delete_plan', plan_id=plan.plan_id) }}" class="d-inline">
+              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

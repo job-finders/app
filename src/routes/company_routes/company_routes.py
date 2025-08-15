@@ -207,15 +207,16 @@ async def update_company_profile(user: User):
             field = error['loc'][0]
             msg = error['msg']
             flash(f'{field.title()} error: {msg}', 'danger')
-
-        # Re-fetch company to repopulate form
-        company: Company = company_controller.get_company_by_id(company_id=company_id)
-        context = dict(
-            company=company,
-            form_data=request.form,
-            current_year=datetime.now().year
-        )
-        return render_template('company/company_editor.html',**context), 400
+        return redirect(url_for('company.edit_company_profile'))
+        #
+        # # Re-fetch company to repopulate form
+        # company: Company = company_controller.get_company_by_id(company_id=company_id)
+        # context = dict(
+        #     company=company,
+        #     form_data=request.form,
+        #     current_year=datetime.now().year
+        # )
+        # return render_template('company/company_editor.html',**context), 400
 
     except Exception as e:
         logger.error(f"Error updating company profile: {str(e)}")
@@ -930,7 +931,7 @@ async def save_settings(user: User):
     :param user:
     :return:
     """
-    settings_data = request.form.dict()
+    settings_data = request.json
 
     company_controller = get_controller('company')
     employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)

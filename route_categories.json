@@ -1,0 +1,119 @@
+{
+  "metadata": {
+    "categorization_date": "2025-01-14T10:45:00Z",
+    "total_routes": 85,
+    "total_categories": 12,
+    "analysis_method": "functional_grouping"
+  },
+  "categories": {
+    "public_content": {
+      "description": "Public-facing content pages accessible without authentication",
+      "routes": [
+        "home.get_home",
+        "home.about",
+        "home.contact",
+        "home.terms",
+        "home.privacy",
+        "home.faq",
+        "home.documentation",
+        "home.sister_sites",
+        "home.linkedin_learning"
+      ],
+      "auth_required": false,
+      "common_navigation": true,
+      "seo_important": true
+    },
+    "authentication": {
+      "description": "User authentication and account management",
+      "routes": [
+        "auth.login",
+        "auth.logout",
+        "auth.subscribe",
+        "auth.password_reset"
+      ],
+      "auth_required": false,
+      "redirect_patterns": {
+        "after_login": {
+          "employer": "company.get_dashboard",
+          "jobseeker": "jobseekers.dashboard",
+          "admin": "admin.dashboard"
+        },
+        "after_logout": "auth.login"
+      }
+    },
+    "job_browsing": {
+      "description": "Public job search and browsing functionality",
+      "routes": [
+        "jobs.list_jobs",
+        "jobs.search_jobs",
+        "jobs.job_categories",
+        "jobs.category_jobs",
+        "jobs.job_details",
+        "jobs.full_job_details",
+        "jobs.jobs_by_location",
+        "jobs.jobs_by_type",
+        "jobs.featured_jobs",
+        "jobs.recent_jobs",
+        "jobs.jobs_by_salary_range"
+      ],
+      "auth_required": false,
+      "search_functionality": true,
+      "pagination_required": true,
+      "seo_important": true
+    },
+    "job_management": {
+      "description": "Employer job posting and management functionality",
+      "routes": [
+        "jobs_workflow.show_create_form",
+        "jobs_workflow.create_job",
+        "jobs_workflow.save_job_draft",
+        "jobs_workflow.show_edit_form",
+        "jobs_workflow.edit_job",
+        "jobs_workflow.calculate_ats",
+        "jobs_workflow.archive_job",
+        "jobs_workflow.feature_job",
+        "jobs_workflow.job_insights",
+        "jobs_workflow.view_job_applications",
+        "jobs_workflow.get_application",
+        "jobs_workflow.update_status"
+      ],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "billing_required": true
+    },
+    "company_management": {
+      "description": "Company profile and employer management functionality",
+      "routes": [
+        "company.create_company_profile",
+        "company.view_company",
+        "company.edit_company_profile",
+        "company.update_company_profile",
+        "company.view_employer_profile",
+        "company.update_employer_profile",
+        "company.manage_jobs",
+        "company.candidate_management",
+        "company.candidate_details",
+        "company.application_analytics"
+      ],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "verification_workflows": true
+    },
+    "job_actions": {
+      "description": "User interactions with job postings",
+      "routes": [
+        "jobs_actions.save_job",
+        "jobs_actions.unsave_job",
+        "jobs_actions.share_job",
+        "jobs_actions.report_job"
+      ],
+      "auth_required": true,
+      "api_endpoints": true,
+      "ajax_functionality": true
+    }
+  }
+}

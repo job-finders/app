@@ -1,0 +1,248 @@
+{
+  "metadata": {
+    "created_date": "2025-01-14T11:00:00Z",
+    "purpose": "Parameter mapping for template route validation",
+    "total_parameterized_routes": 25
+  },
+  "parameter_patterns": {
+    "job_id": {
+      "description": "Job identifier (UUID format)",
+      "routes": [
+        "jobs.job_details",
+        "jobs.full_job_details",
+        "jobs_workflow.show_edit_form",
+        "jobs_workflow.edit_job",
+        "jobs_workflow.calculate_ats",
+        "jobs_workflow.archive_job",
+        "jobs_workflow.feature_job",
+        "jobs_workflow.job_insights",
+        "jobs_workflow.view_job_applications",
+        "jobs_workflow.submit_application",
+        "jobs_workflow.update_status",
+        "jobs.get_job_match_analysis"
+      ],
+      "format": "UUID string",
+      "example": "123e4567-e89b-12d3-a456-426614174000",
+      "validation": "Must be valid UUID format",
+      "template_usage": "{{ url_for('jobs.job_details', job_id=job.job_id) }}"
+    },
+    "category": {
+      "description": "Job category slug",
+      "routes": [
+        "jobs.category_jobs"
+      ],
+      "format": "Lowercase slug with hyphens",
+      "example": "software-engineering",
+      "validation": "Must match existing category slug",
+      "template_usage": "{{ url_for('jobs.category_jobs', category=category.slug) }}"
+    },
+    "location": {
+      "description": "Geographic location identifier",
+      "routes": [
+        "jobs.jobs_by_location"
+      ],
+      "format": "Location name or slug",
+      "example": "johannesburg",
+      "validation": "Must match valid location",
+      "template_usage": "{{ url_for('jobs.jobs_by_location', location=location.slug) }}"
+    },
+    "job_type": {
+      "description": "Employment type identifier",
+      "routes": [
+        "jobs.jobs_by_type"
+      ],
+      "format": "Job type slug",
+      "example": "full-time",
+      "validation": "Must be valid job type",
+      "template_usage": "{{ url_for('jobs.jobs_by_type', job_type=job_type.slug) }}"
+    },
+    "cv_id": {
+      "description": "CV/Resume identifier",
+      "routes": [
+        "company.candidate_details"
+      ],
+      "format": "UUID string",
+      "example": "456e7890-e12b-34d5-a678-901234567890",
+      "validation": "Must be valid CV ID",
+      "template_usage": "{{ url_for('company.candidate_details', cv_id=cv.cv_id) }}"
+    },
+    "application_id": {
+      "description": "Job application identifier",
+      "routes": [
+        "jobs_workflow.get_application"
+      ],
+      "format": "UUID string",
+      "example": "789e0123-e45b-67d8-a901-234567890123",
+      "validation": "Must be valid application ID",
+      "template_usage": "{{ url_for('jobs_workflow.get_application', job_id=job.job_id, application_id=app.application_id) }}"
+    },
+    "approval_token": {
+      "description": "Job approval token for admin actions",
+      "routes": [
+        "jobs_workflow.approve_job",
+        "jobs_workflow.reject_job"
+      ],
+      "format": "Secure token string",
+      "example": "abc123def456ghi789",
+      "validation": "Must be valid approval token",
+      "template_usage": "{{ url_for('jobs_workflow.approve_job', approval_token=token) }}"
+    },
+    "employer_id": {
+      "description": "Employer identifier",
+      "routes": [
+        "company.verify_employer_profile"
+      ],
+      "format": "UUID string",
+      "example": "012e3456-e78b-90d1-a234-567890123456",
+      "validation": "Must be valid employer ID",
+      "template_usage": "{{ url_for('company.verify_employer_profile', token=token, employer_id=employer.employer_id) }}"
+    },
+    "verification_id": {
+      "description": "Email verification identifier",
+      "routes": [
+        "home.verify_email"
+      ],
+      "format": "Verification token string",
+      "example": "verify123token456",
+      "validation": "Must be valid verification token",
+      "template_usage": "{{ url_for('home.verify_email', verification_id=verification_id) }}"
+    },
+    "search_term": {
+      "description": "Search keyword or notification topic",
+      "routes": [
+        "home.email_me"
+      ],
+      "format": "URL-encoded string",
+      "example": "software-developer",
+      "validation": "Must be valid search term",
+      "template_usage": "{{ url_for('home.email_me', search_term=search_term) }}"
+    },
+    "job_ref": {
+      "description": "Job reference for logo serving",
+      "routes": [
+        "home.serve_logo"
+      ],
+      "format": "Job reference string",
+      "example": "job_12345",
+      "validation": "Must be valid job reference",
+      "template_usage": "{{ url_for('home.serve_logo', job_ref=job.job_ref) }}"
+    },
+    "job_slug": {
+      "description": "Job slug for SEO-friendly URLs",
+      "routes": [
+        "jobs.get_job_match_analysis_by_slug"
+      ],
+      "format": "SEO slug string",
+      "example": "senior-software-engineer-johannesburg",
+      "validation": "Must be valid job slug",
+      "template_usage": "{{ url_for('jobs.get_job_match_analysis_by_slug', job_slug=job.slug) }}"
+    }
+  },
+  "query_parameters": {
+    "pagination": {
+      "parameters": [
+        "page",
+        "page_size"
+      ],
+      "routes": [
+        "jobs.list_jobs",
+        "jobs.search_jobs",
+        "jobs.category_jobs",
+        "jobs.jobs_by_location",
+        "jobs.jobs_by_type",
+        "jobs.featured_jobs",
+        "jobs.recent_jobs"
+      ],
+      "defaults": {
+        "page": 1,
+        "page_size": 25
+      },
+      "template_usage": "{{ url_for('jobs.search_jobs', keyword=keyword, page=page) }}"
+    },
+    "search": {
+      "parameters": [
+        "keyword",
+        "q"
+      ],
+      "routes": [
+        "jobs.search_jobs"
+      ],
+      "template_usage": "{{ url_for('jobs.search_jobs', keyword=search_term) }}"
+    },
+    "salary_filter": {
+      "parameters": [
+        "min",
+        "max",
+        "unit"
+      ],
+      "routes": [
+        "jobs.jobs_by_salary_range"
+      ],
+      "defaults": {
+        "unit": "yearly"
+      },
+      "template_usage": "{{ url_for('jobs.jobs_by_salary_range', min=min_salary, max=max_salary, unit='monthly') }}"
+    },
+    "email_verification": {
+      "parameters": [
+        "email"
+      ],
+      "routes": [
+        "home.verify_email"
+      ],
+      "template_usage": "{{ url_for('home.verify_email', verification_id=id, email=email) }}"
+    }
+  },
+  "validation_rules": {
+    "uuid_parameters": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "parameters": [
+        "job_id",
+        "cv_id",
+        "application_id",
+        "employer_id"
+      ],
+      "error_handling": "Return 404 if invalid UUID format"
+    },
+    "slug_parameters": {
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "parameters": [
+        "category",
+        "location",
+        "job_type",
+        "job_slug"
+      ],
+      "error_handling": "Return 404 if slug not found"
+    },
+    "token_parameters": {
+      "pattern": "^[a-zA-Z0-9]+$",
+      "parameters": [
+        "approval_token",
+        "verification_id"
+      ],
+      "error_handling": "Return 403 if token invalid or expired"
+    }
+  },
+  "common_template_patterns": {
+    "job_listing_card": {
+      "description": "Standard job card component links",
+      "template_code": "<!-- Job card links -->\n<a href=\"{{ url_for('jobs.job_details', job_id=job.job_id) }}\" class=\"job-title\">{{ job.title }}</a>\n<a href=\"{{ url_for('jobs.category_jobs', category=job.category_slug) }}\" class=\"job-category\">{{ job.category }}</a>\n<a href=\"{{ url_for('jobs.jobs_by_location', location=job.location_slug) }}\" class=\"job-location\">{{ job.location }}</a>"
+    },
+    "pagination_links": {
+      "description": "Standard pagination component",
+      "template_code": "<!-- Pagination -->\n{% if page > 1 %}\n    <a href=\"{{ url_for(request.endpoint, page=page-1, **request.args) }}\">Previous</a>\n{% endif %}\n{% if page < total_pages %}\n    <a href=\"{{ url_for(request.endpoint, page=page+1, **request.args) }}\">Next</a>\n{% endif %}"
+    },
+    "breadcrumb_navigation": {
+      "description": "Breadcrumb navigation patterns",
+      "template_code": "<!-- Breadcrumbs -->\n<nav aria-label=\"breadcrumb\">\n    <ol class=\"breadcrumb\">\n        <li><a href=\"{{ url_for('home.get_home') }}\">Home</a></li>\n        <li><a href=\"{{ url_for('jobs.search_jobs') }}\">Jobs</a></li>\n        {% if category %}\n            <li><a href=\"{{ url_for('jobs.category_jobs', category=category.slug) }}\">{{ category.name }}</a></li>\n        {% endif %}\n        <li class=\"active\">{{ current_page_title }}</li>\n    </ol>\n</nav>"
+    },
+    "employer_job_actions": {
+      "description": "Employer job management actions",
+      "template_code": "<!-- Employer job actions -->\n{% if current_user.role == 'employer' and job.employer_id == current_user.employer_id %}\n    <div class=\"job-actions\">\n        <a href=\"{{ url_for('jobs_workflow.show_edit_form', job_id=job.job_id) }}\" class=\"btn btn-primary\">Edit Job</a>\n        <a href=\"{{ url_for('jobs_workflow.job_insights', job_id=job.job_id) }}\" class=\"btn btn-info\">View Analytics</a>\n        <a href=\"{{ url_for('jobs_workflow.view_job_applications', job_id=job.job_id) }}\" class=\"btn btn-success\">View Applications</a>\n        <a href=\"{{ url_for('jobs_workflow.archive_job', job_id=job.job_id) }}\" class=\"btn btn-warning\" onclick=\"return confirm('Archive this job?')\">Archive</a>\n    </div>\n{% endif %}"
+    },
+    "job_application_form": {
+      "description": "Job application form action",
+      "template_code": "<!-- Job application form -->\n{% if current_user.is_authenticated and current_user.role == 'jobseeker' %}\n    <form action=\"{{ url_for('jobs_workflow.submit_application', job_id=job.job_id) }}\" method=\"post\" enctype=\"multipart/form-data\">\n        <!-- form fields -->\n        <button type=\"submit\" class=\"btn btn-primary\">Apply Now</button>\n    </form>\n{% else %}\n    <a href=\"{{ url_for('auth.login') }}\" class=\"btn btn-primary\">Login to Apply</a>\n{% endif %}"
+    }
+  }
+}

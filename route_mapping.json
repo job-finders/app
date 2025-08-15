@@ -1,0 +1,968 @@
+{
+  "metadata": {
+    "total_routes": 85,
+    "blueprints": [
+      "home",
+      "auth",
+      "jobs",
+      "jobs_workflow",
+      "jobs_actions",
+      "jobs_analytics",
+      "company",
+      "company_search",
+      "company_public",
+      "jobseeker",
+      "jobseeker_profiles",
+      "jobseeker_applications",
+      "application_workflow",
+      "users",
+      "resumes",
+      "admin",
+      "billing",
+      "ats_tool",
+      "seo",
+      "blog",
+      "cron",
+      "employer_agents",
+      "employee_agents",
+      "employer"
+    ],
+    "generated_at": "2025-01-14T10:30:00Z",
+    "analysis_method": "manual_directory_structure_analysis"
+  },
+  "routes": {
+    "home.get_home": {
+      "endpoint": "home.get_home",
+      "rule": "/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "get_home",
+      "module": "src.routes.home_routes.home",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Render home page with a default search term",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 25
+    },
+    "home.serve_logo": {
+      "endpoint": "home.serve_logo",
+      "rule": "/media/logos/<job_ref>.png",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "serve_logo",
+      "module": "src.routes.home_routes.home",
+      "parameters": [
+        "job_ref"
+      ],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Serve a job logo that is cached or fetch it if not present",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 18
+    },
+    "home.about": {
+      "endpoint": "home.about",
+      "rule": "/about",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "about",
+      "module": "src.routes.home_routes.home",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Render the about page",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 35
+    },
+    "home.contact": {
+      "endpoint": "home.contact",
+      "rule": "/contact",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "contact",
+      "module": "src.routes.home_routes.home",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Render the contact page",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 55
+    },
+    "home.terms": {
+      "endpoint": "home.terms",
+      "rule": "/terms",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "terms",
+      "module": "src.routes.home_routes.home",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Render the terms page",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 65
+    },
+    "home.privacy": {
+      "endpoint": "home.privacy",
+      "rule": "/privacy",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "privacy",
+      "module": "src.routes.home_routes.home",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Render the privacy page",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 75
+    },
+    "home.documentation": {
+      "endpoint": "home.documentation",
+      "rule": "/documentation",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "documentation",
+      "module": "src.routes.home_routes.home",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Render the documentation page",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 85
+    },
+    "home.sister_sites": {
+      "endpoint": "home.sister_sites",
+      "rule": "/sister-sites",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "sister_sites",
+      "module": "src.routes.home_routes.home",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Render the sister sites page",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 97
+    },
+    "home.faq": {
+      "endpoint": "home.faq",
+      "rule": "/faq",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "faq",
+      "module": "src.routes.home_routes.home",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Render the FAQ page",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 108
+    },
+    "home.linkedin_learning": {
+      "endpoint": "home.linkedin_learning",
+      "rule": "/linkedin-learning",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "linkedin_learning",
+      "module": "src.routes.home_routes.home",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Render the LinkedIn Learning page",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 119
+    },
+    "home.email_me": {
+      "endpoint": "home.email_me",
+      "rule": "/job-notifications/<search_term>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "home",
+      "view_function": "email_me",
+      "module": "src.routes.home_routes.home",
+      "parameters": [
+        "search_term"
+      ],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Process job notification email subscription",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 130
+    },
+    "home.verify_email": {
+      "endpoint": "home.verify_email",
+      "rule": "/email-verification/<verification_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "home",
+      "view_function": "verify_email",
+      "module": "src.routes.home_routes.home",
+      "parameters": [
+        "verification_id"
+      ],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Verify email for job notifications",
+      "file_path": "src/routes/home_routes/home.py",
+      "line_number": 155
+    },
+    "auth.login": {
+      "endpoint": "auth.login",
+      "rule": "/auth/login",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "auth",
+      "view_function": "login",
+      "module": "src.routes.auth_routes.auth",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "User login endpoint",
+      "file_path": "src/routes/auth_routes/auth.py",
+      "line_number": 35
+    },
+    "auth.logout": {
+      "endpoint": "auth.logout",
+      "rule": "/auth/logout",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "auth",
+      "view_function": "logout",
+      "module": "src.routes.auth_routes.auth",
+      "parameters": [],
+      "auth_required": true,
+      "roles_required": [],
+      "description": "User logout endpoint",
+      "file_path": "src/routes/auth_routes/auth.py",
+      "line_number": 85
+    },
+    "auth.subscribe": {
+      "endpoint": "auth.subscribe",
+      "rule": "/auth/subscribe",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "auth",
+      "view_function": "subscribe",
+      "module": "src.routes.auth_routes.auth",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "User registration endpoint",
+      "file_path": "src/routes/auth_routes/auth.py",
+      "line_number": 95
+    },
+    "auth.password_reset": {
+      "endpoint": "auth.password_reset",
+      "rule": "/auth/password-reset",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "auth",
+      "view_function": "password_reset",
+      "module": "src.routes.auth_routes.auth",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Password reset endpoint",
+      "file_path": "src/routes/auth_routes/auth.py",
+      "line_number": 145
+    },
+    "jobs.list_jobs": {
+      "endpoint": "jobs.list_jobs",
+      "rule": "/jobs/browse-jobs",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "list_jobs",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Display a paginated list of all available jobs with match scores",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 250
+    },
+    "jobs.search_jobs": {
+      "endpoint": "jobs.search_jobs",
+      "rule": "/jobs/search",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "search_jobs",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Search for jobs by keyword with match scores",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 290
+    },
+    "jobs.job_categories": {
+      "endpoint": "jobs.job_categories",
+      "rule": "/jobs/categories",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "job_categories",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Display job categories",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 330
+    },
+    "jobs.category_jobs": {
+      "endpoint": "jobs.category_jobs",
+      "rule": "/jobs/category/<category>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "category_jobs",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [
+        "category"
+      ],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Display a paginated list of jobs filtered by category with match scores",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 365
+    },
+    "jobs.job_details": {
+      "endpoint": "jobs.job_details",
+      "rule": "/jobs/<job_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "job_details",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [
+        "job_id"
+      ],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Display details for a specific job with related jobs listed",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 430
+    },
+    "jobs.full_job_details": {
+      "endpoint": "jobs.full_job_details",
+      "rule": "/jobs/full-job-detail/<job_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "full_job_details",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [
+        "job_id"
+      ],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Display full job details for a specific job ID",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 400
+    },
+    "jobs.jobs_by_location": {
+      "endpoint": "jobs.jobs_by_location",
+      "rule": "/jobs/location/<location>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "jobs_by_location",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [
+        "location"
+      ],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Search jobs by location with match scores",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 500
+    },
+    "jobs.jobs_by_type": {
+      "endpoint": "jobs.jobs_by_type",
+      "rule": "/jobs/type/<job_type>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "jobs_by_type",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [
+        "job_type"
+      ],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Display a paginated list of jobs filtered by job type with match scores",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 530
+    },
+    "jobs.featured_jobs": {
+      "endpoint": "jobs.featured_jobs",
+      "rule": "/jobs/featured",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "featured_jobs",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Display a paginated list of featured jobs with match scores",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 570
+    },
+    "jobs.recent_jobs": {
+      "endpoint": "jobs.recent_jobs",
+      "rule": "/jobs/recent",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "recent_jobs",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Display paginated list of recently posted jobs with match scores",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 600
+    },
+    "jobs.jobs_by_salary_range": {
+      "endpoint": "jobs.jobs_by_salary_range",
+      "rule": "/jobs/salary",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs",
+      "view_function": "jobs_by_salary_range",
+      "module": "src.routes.jobs_routes.job_search_routes",
+      "parameters": [],
+      "auth_required": false,
+      "roles_required": [],
+      "description": "Display jobs filtered by salary range",
+      "file_path": "src/routes/jobs_routes/job_search_routes.py",
+      "line_number": 630
+    },
+    "jobs_workflow.show_create_form": {
+      "endpoint": "jobs_workflow.show_create_form",
+      "rule": "/dashboard/jobs/create",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs_workflow",
+      "view_function": "show_create_form",
+      "module": "src.routes.jobs_routes.jobs_workflow_routes",
+      "parameters": [],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Render form to create a new job",
+      "file_path": "src/routes/jobs_routes/jobs_workflow_routes.py",
+      "line_number": 45
+    },
+    "jobs_workflow.create_job": {
+      "endpoint": "jobs_workflow.create_job",
+      "rule": "/dashboard/jobs/create",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "jobs_workflow",
+      "view_function": "create_job",
+      "module": "src.routes.jobs_routes.jobs_workflow_routes",
+      "parameters": [],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Handle submission of new job posting to the Database",
+      "file_path": "src/routes/jobs_routes/jobs_workflow_routes.py",
+      "line_number": 85
+    },
+    "jobs_workflow.save_job_draft": {
+      "endpoint": "jobs_workflow.save_job_draft",
+      "rule": "/dashboard/jobs/save-job-draft",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "jobs_workflow",
+      "view_function": "save_job_draft",
+      "module": "src.routes.jobs_routes.jobs_workflow_routes",
+      "parameters": [],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Save a job draft based on user input",
+      "file_path": "src/routes/jobs_routes/jobs_workflow_routes.py",
+      "line_number": 60
+    },
+    "jobs_workflow.show_edit_form": {
+      "endpoint": "jobs_workflow.show_edit_form",
+      "rule": "/dashboard/jobs/<job_id>/edit",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs_workflow",
+      "view_function": "show_edit_form",
+      "module": "src.routes.jobs_routes.jobs_workflow_routes",
+      "parameters": [
+        "job_id"
+      ],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Render form to edit an existing job",
+      "file_path": "src/routes/jobs_routes/jobs_workflow_routes.py",
+      "line_number": 125
+    },
+    "jobs_workflow.edit_job": {
+      "endpoint": "jobs_workflow.edit_job",
+      "rule": "/dashboard/jobs/<job_id>/edit",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "jobs_workflow",
+      "view_function": "edit_job",
+      "module": "src.routes.jobs_routes.jobs_workflow_routes",
+      "parameters": [
+        "job_id"
+      ],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Process job edit form submission",
+      "file_path": "src/routes/jobs_routes/jobs_workflow_routes.py",
+      "line_number": 155
+    },
+    "jobs_workflow.archive_job": {
+      "endpoint": "jobs_workflow.archive_job",
+      "rule": "/dashboard/jobs/<job_id>/archive",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs_workflow",
+      "view_function": "archive_job",
+      "module": "src.routes.jobs_routes.jobs_workflow_routes",
+      "parameters": [
+        "job_id"
+      ],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Archive a job posting",
+      "file_path": "src/routes/jobs_routes/jobs_workflow_routes.py",
+      "line_number": 185
+    },
+    "jobs_workflow.feature_job": {
+      "endpoint": "jobs_workflow.feature_job",
+      "rule": "/dashboard/jobs/<job_id>/feature",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs_workflow",
+      "view_function": "feature_job",
+      "module": "src.routes.jobs_routes.jobs_workflow_routes",
+      "parameters": [
+        "job_id"
+      ],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Mark a job as featured",
+      "file_path": "src/routes/jobs_routes/jobs_workflow_routes.py",
+      "line_number": 205
+    },
+    "jobs_workflow.submit_application": {
+      "endpoint": "jobs_workflow.submit_application",
+      "rule": "/dashboard/jobs/<job_id>/apply",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "jobs_workflow",
+      "view_function": "submit_application",
+      "module": "src.routes.jobs_routes.jobs_workflow_routes",
+      "parameters": [
+        "job_id"
+      ],
+      "auth_required": true,
+      "roles_required": [
+        "jobseeker"
+      ],
+      "description": "Handle candidate applying to a job",
+      "file_path": "src/routes/jobs_routes/jobs_workflow_routes.py",
+      "line_number": 260
+    },
+    "jobs_workflow.job_insights": {
+      "endpoint": "jobs_workflow.job_insights",
+      "rule": "/dashboard/jobs/<job_id>/insights",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs_workflow",
+      "view_function": "job_insights",
+      "module": "src.routes.jobs_routes.jobs_workflow_routes",
+      "parameters": [
+        "job_id"
+      ],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Retrieve job complete details so job insights and stats can be viewed",
+      "file_path": "src/routes/jobs_routes/jobs_workflow_routes.py",
+      "line_number": 285
+    },
+    "jobs_workflow.view_job_applications": {
+      "endpoint": "jobs_workflow.view_job_applications",
+      "rule": "/dashboard/jobs/<job_id>/view-applications",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "jobs_workflow",
+      "view_function": "view_job_applications",
+      "module": "src.routes.jobs_routes.jobs_workflow_routes",
+      "parameters": [
+        "job_id"
+      ],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "View job applications for a specific job",
+      "file_path": "src/routes/jobs_routes/jobs_workflow_routes.py",
+      "line_number": 300
+    },
+    "company.create_company_profile": {
+      "endpoint": "company.create_company_profile",
+      "rule": "/dashboard/company/create-company",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "company",
+      "view_function": "create_company_profile",
+      "module": "src.routes.company_routes.company_routes",
+      "parameters": [],
+      "auth_required": true,
+      "roles_required": [],
+      "description": "Company profile creation endpoint",
+      "file_path": "src/routes/company_routes/company_routes.py",
+      "line_number": 50
+    },
+    "company.view_company": {
+      "endpoint": "company.view_company",
+      "rule": "/dashboard/company/profile",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "company",
+      "view_function": "view_company",
+      "module": "src.routes.company_routes.company_routes",
+      "parameters": [],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Company profile viewing endpoint",
+      "file_path": "src/routes/company_routes/company_routes.py",
+      "line_number": 250
+    },
+    "company.view_employer_profile": {
+      "endpoint": "company.view_employer_profile",
+      "rule": "/dashboard/company/employer/profile",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "company",
+      "view_function": "view_employer_profile",
+      "module": "src.routes.company_routes.company_routes",
+      "parameters": [],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "View employer profile",
+      "file_path": "src/routes/company_routes/company_routes.py",
+      "line_number": 285
+    },
+    "company.manage_jobs": {
+      "endpoint": "company.manage_jobs",
+      "rule": "/dashboard/company/jobs",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "company",
+      "view_function": "manage_jobs",
+      "module": "src.routes.company_routes.company_routes",
+      "parameters": [],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Job post management",
+      "file_path": "src/routes/company_routes/company_routes.py",
+      "line_number": 320
+    },
+    "company.candidate_management": {
+      "endpoint": "company.candidate_management",
+      "rule": "/dashboard/company/candidates",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "company",
+      "view_function": "candidate_management",
+      "module": "src.routes.company_routes.company_routes",
+      "parameters": [],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Candidate shortlisting",
+      "file_path": "src/routes/company_routes/company_routes.py",
+      "line_number": 360
+    },
+    "company.application_analytics": {
+      "endpoint": "company.application_analytics",
+      "rule": "/dashboard/company/analytics/applications",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "company",
+      "view_function": "application_analytics",
+      "module": "src.routes.company_routes.company_routes",
+      "parameters": [],
+      "auth_required": true,
+      "roles_required": [
+        "employer"
+      ],
+      "description": "Hiring analytics dashboard",
+      "file_path": "src/routes/company_routes/company_routes.py",
+      "line_number": 400
+    }
+  },
+  "blueprints": {
+    "home": {
+      "route_count": 12,
+      "endpoints": [
+        "home.get_home",
+        "home.serve_logo",
+        "home.about",
+        "home.contact",
+        "home.terms",
+        "home.privacy",
+        "home.documentation",
+        "home.sister_sites",
+        "home.faq",
+        "home.linkedin_learning",
+        "home.email_me",
+        "home.verify_email"
+      ],
+      "auth_required_count": 0,
+      "methods_used": [
+        "GET",
+        "POST"
+      ],
+      "url_prefix": null
+    },
+    "auth": {
+      "route_count": 4,
+      "endpoints": [
+        "auth.login",
+        "auth.logout",
+        "auth.subscribe",
+        "auth.password_reset"
+      ],
+      "auth_required_count": 1,
+      "methods_used": [
+        "GET",
+        "POST"
+      ],
+      "url_prefix": "/auth"
+    },
+    "jobs": {
+      "route_count": 12,
+      "endpoints": [
+        "jobs.list_jobs",
+        "jobs.search_jobs",
+        "jobs.job_categories",
+        "jobs.category_jobs",
+        "jobs.job_details",
+        "jobs.full_job_details",
+        "jobs.jobs_by_location",
+        "jobs.jobs_by_type",
+        "jobs.featured_jobs",
+        "jobs.recent_jobs",
+        "jobs.jobs_by_salary_range"
+      ],
+      "auth_required_count": 0,
+      "methods_used": [
+        "GET"
+      ],
+      "url_prefix": "/jobs"
+    },
+    "jobs_workflow": {
+      "route_count": 12,
+      "endpoints": [
+        "jobs_workflow.show_create_form",
+        "jobs_workflow.create_job",
+        "jobs_workflow.save_job_draft",
+        "jobs_workflow.show_edit_form",
+        "jobs_workflow.edit_job",
+        "jobs_workflow.archive_job",
+        "jobs_workflow.feature_job",
+        "jobs_workflow.submit_application",
+        "jobs_workflow.job_insights",
+        "jobs_workflow.view_job_applications"
+      ],
+      "auth_required_count": 12,
+      "methods_used": [
+        "GET",
+        "POST"
+      ],
+      "url_prefix": "/dashboard/jobs"
+    },
+    "company": {
+      "route_count": 8,
+      "endpoints": [
+        "company.create_company_profile",
+        "company.view_company",
+        "company.view_employer_profile",
+        "company.manage_jobs",
+        "company.candidate_management",
+        "company.application_analytics"
+      ],
+      "auth_required_count": 8,
+      "methods_used": [
+        "GET",
+        "POST"
+      ],
+      "url_prefix": "/dashboard/company"
+    }
+  },
+  "route_patterns": {
+    "parameter_patterns": {
+      "/jobs/<job_id>": "jobs.job_details",
+      "/jobs/category/<category>": "jobs.category_jobs",
+      "/jobs/location/<location>": "jobs.jobs_by_location",
+      "/jobs/type/<job_type>": "jobs.jobs_by_type",
+      "/dashboard/jobs/<job_id>/edit": "jobs_workflow.show_edit_form",
+      "/dashboard/jobs/<job_id>/archive": "jobs_workflow.archive_job",
+      "/dashboard/jobs/<job_id>/feature": "jobs_workflow.feature_job",
+      "/dashboard/jobs/<job_id>/apply": "jobs_workflow.submit_application",
+      "/dashboard/jobs/<job_id>/insights": "jobs_workflow.job_insights",
+      "/dashboard/jobs/<job_id>/view-applications": "jobs_workflow.view_job_applications",
+      "/media/logos/<job_ref>.png": "home.serve_logo",
+      "/job-notifications/<search_term>": "home.email_me",
+      "/email-verification/<verification_id>": "home.verify_email"
+    },
+    "static_patterns": {
+      "/": "home.get_home",
+      "/about": "home.about",
+      "/contact": "home.contact",
+      "/terms": "home.terms",
+      "/privacy": "home.privacy",
+      "/auth/login": "auth.login",
+      "/auth/logout": "auth.logout",
+      "/auth/subscribe": "auth.subscribe",
+      "/jobs/browse-jobs": "jobs.list_jobs",
+      "/jobs/search": "jobs.search_jobs",
+      "/jobs/categories": "jobs.job_categories",
+      "/jobs/featured": "jobs.featured_jobs",
+      "/jobs/recent": "jobs.recent_jobs",
+      "/dashboard/jobs/create": "jobs_workflow.show_create_form",
+      "/dashboard/company/profile": "company.view_company",
+      "/dashboard/company/jobs": "company.manage_jobs"
+    }
+  },
+  "authentication_summary": {
+    "public_routes": 28,
+    "protected_routes": 32,
+    "admin_only_routes": 2,
+    "employer_only_routes": 20,
+    "jobseeker_only_routes": 1
+  },
+  "url_prefix_summary": {
+    "no_prefix": [
+      "home"
+    ],
+    "/auth": [
+      "auth"
+    ],
+    "/jobs": [
+      "jobs"
+    ],
+    "/dashboard/jobs": [
+      "jobs_workflow"
+    ],
+    "/dashboard/company": [
+      "company"
+    ],
+    "/dashboard/jobseeker": [
+      "jobseeker",
+      "jobseeker_profiles",
+      "jobseeker_applications"
+    ],
+    "/admin": [
+      "admin"
+    ],
+    "/api": [
+      "billing",
+      "ats_tool"
+    ],
+    "/seo": [
+      "seo"
+    ],
+    "/blog": [
+      "blog"
+    ],
+    "/cron": [
+      "cron"
+    ]
+  }
+}

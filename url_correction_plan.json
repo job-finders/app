@@ -1,0 +1,337 @@
+{
+  "metadata": {
+    "plan_date": "2025-01-14T13:15:00Z",
+    "correction_method": "systematic_template_updates",
+    "total_templates_to_update": 5,
+    "total_corrections": 22
+  },
+  "correction_implementation_plan": {
+    "template_updates": {
+      "template_index_html": {
+        "file_path": "template/index.html",
+        "priority": "CRITICAL",
+        "corrections_needed": 12,
+        "backup_required": true,
+        "corrections": [
+          {
+            "line_range": "150-170",
+            "section": "Job Seekers Dropdown Navigation",
+            "corrections": [
+              {
+                "line": 150,
+                "current": "<li><a class=\"dropdown-item\" href=\"/jobs\"><i class=\"fas fa-search me-2 text-primary\"></i>Browse Jobs</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('jobs.list_jobs') }}\"><i class=\"fas fa-search me-2 text-primary\"></i>Browse Jobs</a></li>",
+                "change_type": "hardcoded_to_url_for"
+              },
+              {
+                "line": 151,
+                "current": "<li><a class=\"dropdown-item\" href=\"/job-alerts\"><i class=\"fas fa-bell me-2 text-success\"></i>Job Alerts</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('jobseeker.job_alerts') }}\"><i class=\"fas fa-bell me-2 text-success\"></i>Job Alerts</a></li>",
+                "change_type": "hardcoded_to_url_for",
+                "note": "Route existence needs verification"
+              },
+              {
+                "line": 153,
+                "current": "<li><a class=\"dropdown-item\" href=\"/resumes\"><i class=\"fas fa-file-alt me-2 text-info\"></i>My CV / Resume</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('resumes.manage_resumes') }}\"><i class=\"fas fa-file-alt me-2 text-info\"></i>My CV / Resume</a></li>",
+                "change_type": "hardcoded_to_url_for"
+              },
+              {
+                "line": 154,
+                "current": "<li><a class=\"dropdown-item\" href=\"/applications\"><i class=\"fas fa-clipboard-list me-2 text-secondary\"></i>My Applications</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('jobseeker_applications.my_applications') }}\"><i class=\"fas fa-clipboard-list me-2 text-secondary\"></i>My Applications</a></li>",
+                "change_type": "hardcoded_to_url_for"
+              }
+            ]
+          },
+          {
+            "line_range": "160-170",
+            "section": "Employers Dropdown Navigation",
+            "corrections": [
+              {
+                "line": 163,
+                "current": "<li><a class=\"dropdown-item\" href=\"/employer/post-job\"><i class=\"fas fa-bullhorn me-2 text-warning\"></i>Post a Job</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('jobs_workflow.show_create_form') }}\"><i class=\"fas fa-bullhorn me-2 text-warning\"></i>Post a Job</a></li>",
+                "change_type": "hardcoded_to_url_for"
+              },
+              {
+                "line": 164,
+                "current": "<li><a class=\"dropdown-item\" href=\"/employer/manage-jobs\"><i class=\"fas fa-tasks me-2 text-primary\"></i>Manage Jobs</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('company.manage_jobs') }}\"><i class=\"fas fa-tasks me-2 text-primary\"></i>Manage Jobs</a></li>",
+                "change_type": "hardcoded_to_url_for"
+              },
+              {
+                "line": 165,
+                "current": "<li><a class=\"dropdown-item\" href=\"/employer/search-candidates\"><i class=\"fas fa-search me-2 text-info\"></i>Search Candidates</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('company.candidate_management') }}\"><i class=\"fas fa-search me-2 text-info\"></i>Search Candidates</a></li>",
+                "change_type": "hardcoded_to_url_for"
+              },
+              {
+                "line": 166,
+                "current": "<li><a class=\"dropdown-item\" href=\"/employer/applicants\"><i class=\"fas fa-users me-2 text-secondary\"></i>View Applicants</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('company.application_analytics') }}\"><i class=\"fas fa-users me-2 text-secondary\"></i>View Applicants</a></li>",
+                "change_type": "hardcoded_to_url_for"
+              }
+            ]
+          },
+          {
+            "line_range": "200-210",
+            "section": "User Account Dropdown",
+            "corrections": [
+              {
+                "line": 200,
+                "current": "<li><a class=\"dropdown-item\" href=\"/register\"><i class=\"fas fa-user-plus me-2 text-info\"></i>Create Account</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('auth.subscribe') }}\"><i class=\"fas fa-user-plus me-2 text-info\"></i>Create Account</a></li>",
+                "change_type": "hardcoded_to_url_for"
+              },
+              {
+                "line": 204,
+                "current": "<li><a class=\"dropdown-item\" href=\"/login\"><i class=\"fas fa-sign-in-alt me-2 text-success\"></i>Login</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('auth.login') }}\"><i class=\"fas fa-sign-in-alt me-2 text-success\"></i>Login</a></li>",
+                "change_type": "hardcoded_to_url_for"
+              },
+              {
+                "line": 208,
+                "current": "<li><a class=\"dropdown-item\" href=\"/logout\"><i class=\"fas fa-sign-out-alt me-2 text-danger\"></i>Logout</a></li>",
+                "corrected": "<li><a class=\"dropdown-item\" href=\"{{ url_for('auth.logout') }}\"><i class=\"fas fa-sign-out-alt me-2 text-danger\"></i>Logout</a></li>",
+                "change_type": "hardcoded_to_url_for"
+              }
+            ]
+          },
+          {
+            "line_range": "400",
+            "section": "Static Assets",
+            "corrections": [
+              {
+                "line": 400,
+                "current": "<img src=\"/static/images/hero-illustration.svg\" alt=\"Job Search\" class=\"img-fluid\" style=\"max-height: 400px;\">",
+                "corrected": "<img src=\"{{ url_for('static', filename='images/hero-illustration.svg') }}\" alt=\"Job Search\" class=\"img-fluid\" style=\"max-height: 400px;\">",
+                "change_type": "static_path_to_url_for"
+              }
+            ]
+          }
+        ]
+      },
+      "template_layouts_header_html": {
+        "file_path": "template/layouts/header.html",
+        "priority": "HIGH",
+        "corrections_needed": 3,
+        "backup_required": true,
+        "corrections": [
+          {
+            "line": 20,
+            "current": "<a href=\"{{ url_for('company.get_dashboard') }}\" class=\"btn btn-sm btn-outline-primary font-weight-bold mx-1\">Dashboard</a>",
+            "corrected": "<a href=\"{{ url_for('company.view_company') }}\" class=\"btn btn-sm btn-outline-primary font-weight-bold mx-1\">Dashboard</a>",
+            "change_type": "endpoint_correction"
+          },
+          {
+            "line": 24,
+            "current": "<a href=\"{{ url_for('jobseekers.dashboard') }}\" class=\"btn btn-sm btn-outline-primary font-weight-bold mx-1\">Dashboard</a>",
+            "corrected": "<a href=\"{{ url_for('jobseeker.dashboard') }}\" class=\"btn btn-sm btn-outline-primary font-weight-bold mx-1\">Dashboard</a>",
+            "change_type": "blueprint_name_correction"
+          },
+          {
+            "line": 19,
+            "current": "{% if current_user and current_user.role == 'seeker' %}",
+            "corrected": "{% if current_user and current_user.role == 'jobseeker' %}",
+            "change_type": "role_value_correction"
+          }
+        ]
+      },
+      "template_jobs_search_html": {
+        "file_path": "template/jobs/search.html",
+        "priority": "MEDIUM",
+        "corrections_needed": 1,
+        "backup_required": false,
+        "corrections": [
+          {
+            "line": 145,
+            "current": "<a href=\"{{ url_for('jobs_search_route.search_jobs', search_term=filters.search_keyword, page=page-1) }}\"",
+            "corrected": "<a href=\"{{ url_for('jobs.search_jobs', keyword=filters.search_keyword, page=page-1) }}\"",
+            "change_type": "endpoint_and_parameter_correction"
+          }
+        ]
+      },
+      "template_jobs_jobs_list_html": {
+        "file_path": "template/jobs/_jobs_list.html",
+        "priority": "MEDIUM",
+        "corrections_needed": 2,
+        "backup_required": false,
+        "corrections": [
+          {
+            "line": 110,
+            "current": "<a class=\"page-link\" href=\"?page={{ page-1 }}{% if search_keyword %}&keyword={{ search_keyword }}{% endif %}\" aria-label=\"Previous\">",
+            "corrected": "<a class=\"page-link\" href=\"{{ url_for(request.endpoint, page=page-1, **request.args) }}\" aria-label=\"Previous\">",
+            "change_type": "pagination_improvement"
+          },
+          {
+            "line": 115,
+            "current": "<a class=\"page-link\" href=\"?page={{ p }}{% if search_keyword %}&keyword={{ search_keyword }}{% endif %}\">{{ p }}</a>",
+            "corrected": "<a class=\"page-link\" href=\"{{ url_for(request.endpoint, page=p, **request.args) }}\">{{ p }}</a>",
+            "change_type": "pagination_improvement"
+          }
+        ]
+      },
+      "template_layouts_footer_html": {
+        "file_path": "template/layouts/footer.html",
+        "priority": "LOW",
+        "corrections_needed": 1,
+        "backup_required": false,
+        "corrections": [
+          {
+            "line": 15,
+            "current": "<li><a href=\"/ai-crawlers-info\" class=\"text-muted\">AI Crawler Info</a></li>",
+            "corrected": "<li><a href=\"{{ url_for('home.ai_crawlers_info') }}\" class=\"text-muted\">AI Crawler Info</a></li>",
+            "change_type": "hardcoded_to_url_for",
+            "note": "Route may need to be created"
+          }
+        ]
+      }
+    }
+  },
+  "conditional_navigation_improvements": {
+    "authentication_based_navigation": {
+      "description": "Improve conditional navigation based on user authentication status",
+      "templates_affected": [
+        "template/index.html",
+        "template/layouts/header.html"
+      ],
+      "improvements": [
+        {
+          "current_pattern": "Basic role checking",
+          "improved_pattern": "Enhanced authentication and role validation",
+          "example_improvement": {
+            "current": "{% if current_user and current_user.role == 'employer' %}",
+            "improved": "{% if current_user and current_user.is_authenticated and current_user.role == 'employer' %}"
+          }
+        }
+      ]
+    },
+    "billing_based_navigation": {
+      "description": "Add billing status checks for premium features",
+      "templates_affected": [
+        "template/index.html"
+      ],
+      "improvements": [
+        {
+          "feature": "Job posting link",
+          "current": "Always visible to employers",
+          "improved": "Check billing status before showing",
+          "implementation": "{% if current_user.has_active_billing %}{{ url_for('jobs_workflow.show_create_form') }}{% else %}{{ url_for('billing.upgrade') }}{% endif %}"
+        }
+      ]
+    }
+  },
+  "error_handling_improvements": {
+    "missing_context_handling": {
+      "description": "Add null checks for required template context",
+      "improvements": [
+        {
+          "template": "template/jobs/_jobs_list.html",
+          "current": "{{ url_for('jobs.job_details', job_id=job.job_id) }}",
+          "improved": "{% if job and job.job_id %}{{ url_for('jobs.job_details', job_id=job.job_id) }}{% else %}#{% endif %}"
+        },
+        {
+          "template": "template/company/view_company_profile.html",
+          "current": "{{ url_for('company.manage_jobs') }}",
+          "improved": "{% if company %}{{ url_for('company.manage_jobs') }}{% else %}#{% endif %}"
+        }
+      ]
+    },
+    "fallback_urls": {
+      "description": "Provide fallback URLs for missing routes",
+      "implementation": [
+        {
+          "scenario": "Route generation fails",
+          "fallback": "Use try-catch in template or provide default URL",
+          "example": "{% try %}{{ url_for('jobs.list_jobs') }}{% except %}/#{% endtry %}"
+        }
+      ]
+    }
+  },
+  "implementation_steps": {
+    "step_1_backup": {
+      "description": "Create backups of templates to be modified",
+      "files_to_backup": [
+        "template/index.html",
+        "template/layouts/header.html",
+        "template/jobs/search.html",
+        "template/jobs/_jobs_list.html",
+        "template/layouts/footer.html"
+      ],
+      "backup_location": "template_backups/",
+      "backup_naming": "original_filename.backup.html"
+    },
+    "step_2_critical_updates": {
+      "description": "Apply critical navigation fixes first",
+      "order": [
+        "template/index.html - main navigation dropdowns",
+        "template/layouts/header.html - site header navigation"
+      ],
+      "testing_after_each": true
+    },
+    "step_3_functional_updates": {
+      "description": "Apply functional improvements",
+      "order": [
+        "template/jobs/search.html - search pagination",
+        "template/jobs/_jobs_list.html - job list pagination"
+      ],
+      "testing_required": "Job search and pagination functionality"
+    },
+    "step_4_minor_updates": {
+      "description": "Apply minor optimizations",
+      "order": [
+        "template/layouts/footer.html - footer links",
+        "Static file path corrections"
+      ],
+      "testing_required": "Basic functionality verification"
+    },
+    "step_5_validation": {
+      "description": "Comprehensive testing and validation",
+      "validation_steps": [
+        "Test all navigation links",
+        "Verify role-based navigation",
+        "Test parameterized routes",
+        "Validate pagination functionality",
+        "Check authentication flows"
+      ]
+    }
+  },
+  "rollback_plan": {
+    "rollback_triggers": [
+      "Navigation links broken",
+      "Authentication flow disrupted",
+      "Critical functionality lost"
+    ],
+    "rollback_steps": [
+      "Stop application if running",
+      "Restore backup files",
+      "Restart application",
+      "Verify functionality restored"
+    ],
+    "rollback_testing": [
+      "Test main navigation",
+      "Test user authentication",
+      "Test job search functionality"
+    ]
+  },
+  "success_validation": {
+    "automated_checks": [
+      "All internal links use url_for syntax",
+      "No hardcoded internal URLs remain",
+      "All endpoint references are valid",
+      "Parameter passing is correct"
+    ],
+    "manual_testing": [
+      "Navigate through all main site sections",
+      "Test as different user roles",
+      "Verify job search and pagination",
+      "Test authentication flows"
+    ],
+    "performance_validation": [
+      "Page load times unchanged",
+      "No broken links or 404 errors",
+      "Proper URL generation"
+    ]
+  }
+}

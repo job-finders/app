@@ -1,0 +1,13 @@
+{% extends "email/layout/base.html" %}
+{% set title = "Subscription Activated" %}
+{% set header = "Subscription Now Active" %}
+
+{% block content %}
+<p>Good news!</p>
+
+<p>Your subscription to plan <strong>{{ plan_id }}</strong> is now active.</p>
+
+<p>Your current billing cycle ends on <span class="highlight">{{ subscription_end }}</span>.</p>
+
+<p>We appreciate your business and look forward to serving you.</p>
+{% endblock %}

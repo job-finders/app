@@ -1,0 +1,360 @@
+{
+  "metadata": {
+    "analysis_date": "2025-01-14T13:30:00Z",
+    "focus": "authentication_and_conditional_routing",
+    "templates_analyzed": 8,
+    "auth_patterns_found": 15
+  },
+  "authentication_routing_analysis": {
+    "current_authentication_patterns": {
+      "basic_authentication_check": {
+        "pattern": "{% if current_user and current_user.is_authenticated %}",
+        "usage_count": 5,
+        "templates": [
+          "template/layouts/header.html",
+          "template/jobs/_jobs_list.html"
+        ],
+        "assessment": "Good basic pattern"
+      },
+      "role_based_navigation": {
+        "pattern": "{% if current_user.role == 'employer' %}",
+        "usage_count": 8,
+        "templates": [
+          "template/layouts/header.html",
+          "template/index.html",
+          "template/company/view_company_profile.html"
+        ],
+        "issues": [
+          "Role value inconsistency ('seeker' vs 'jobseeker')",
+          "Missing authentication check before role check"
+        ]
+      },
+      "conditional_dashboard_routing": {
+        "pattern": "Different dashboard URLs based on user role",
+        "current_implementation": {
+          "employer": "{{ url_for('company.get_dashboard') }}",
+          "jobseeker": "{{ url_for('jobseekers.dashboard') }}"
+        },
+        "issues": [
+          "Non-existent endpoint (company.get_dashboard)",
+          "Incorrect blueprint name (jobseekers vs jobseeker)"
+        ]
+      }
+    },
+    "authentication_improvements_needed": {
+      "role_value_standardization": {
+        "description": "Standardize role values across templates",
+        "current_inconsistencies": [
+          "'seeker' vs 'jobseeker'",
+          "'employer' (consistent)",
+          "'admin' vs 'system_admin'"
+        ],
+        "recommended_standard": {
+          "jobseeker_role": "jobseeker",
+          "employer_role": "employer",
+          "admin_role": "admin"
+        },
+        "templates_to_update": [
+          "template/layouts/header.html",
+          "template/index.html"
+        ]
+      },
+      "enhanced_authentication_checks": {
+        "description": "Improve authentication validation before role checks",
+        "current_pattern": "{% if current_user.role == 'employer' %}",
+        "improved_pattern": "{% if current_user and current_user.is_authenticated and current_user.role == 'employer' %}",
+        "benefits": [
+          "Prevents errors when current_user is None",
+          "Ensures user is actually authenticated",
+          "More robust error handling"
+        ]
+      },
+      "billing_status_integration": {
+        "description": "Add billing status checks for premium features",
+        "implementation_needed": [
+          {
+            "feature": "Job posting",
+            "current": "Always available to employers",
+            "improved": "Check billing status before allowing access",
+            "template_logic": "{% if current_user.has_active_billing %}...{% else %}...{% endif %}"
+          },
+          {
+            "feature": "Candidate management",
+            "current": "Available to all employers",
+            "improved": "Require minimum billing tier",
+            "template_logic": "{% if current_user.billing_tier >= 'starter' %}...{% endif %}"
+          }
+        ]
+      }
+    }
+  },
+  "conditional_routing_improvements": {
+    "dashboard_routing_logic": {
+      "description": "Improve dashboard routing based on user type and status",
+      "current_implementation": {
+        "template": "template/layouts/header.html",
+        "logic": "Simple role-based routing",
+        "issues": [
+          "Incorrect endpoint references",
+          "No fallback for unrecognized roles",
+          "No verification status checks"
+        ]
+      },
+      "improved_implementation": {
+        "template": "template/layouts/header.html",
+        "enhanced_logic": {
+          "employer_routing": {
+            "condition": "{% if current_user and current_user.is_authenticated and current_user.role == 'employer' %}",
+            "routing_logic": [
+              "{% if current_user.company_verified %}",
+              "  <a href=\"{{ url_for('company.view_company') }}\">Dashboard</a>",
+              "{% else %}",
+              "  <a href=\"{{ url_for('company.create_company_profile') }}\">Complete Setup</a>",
+              "{% endif %}"
+            ]
+          },
+          "jobseeker_routing": {
+            "condition": "{% elif current_user.role == 'jobseeker' %}",
+            "routing_logic": [
+              "{% if current_user.profile_complete %}",
+              "  <a href=\"{{ url_for('jobseeker.dashboard') }}\">Dashboard</a>",
+              "{% else %}",
+              "  <a href=\"{{ url_for('jobseeker_profiles.view_profile') }}\">Complete Profile</a>",
+              "{% endif %}"
+            ]
+          },
+          "admin_routing": {
+            "condition": "{% elif current_user.role == 'admin' %}",
+            "routing_logic": "<a href=\"{{ url_for('admin.dashboard') }}\">Admin Panel</a>"
+          },
+          "fallback_routing": {
+            "condition": "{% else %}",
+            "routing_logic": "<a href=\"{{ url_for('home.get_home') }}\">Home</a>"
+          }
+        }
+      }
+    },
+    "feature_access_control": {
+      "description": "Control access to features based on user status",
+      "job_posting_access": {
+        "current": "Available to all employers",
+        "improved_logic": [
+          "{% if current_user and current_user.is_authenticated and current_user.role == 'employer' %}",
+          "  {% if current_user.company_verified and current_user.has_active_billing %}",
+          "    <a href=\"{{ url_for('jobs_workflow.show_create_form') }}\">Post Job</a>",
+          "  {% elif not current_user.company_verified %}",
+          "    <a href=\"{{ url_for('company.initiate_company_verification') }}\">Verify Company First</a>",
+          "  {% else %}",
+          "    <a href=\"{{ url_for('billing.upgrade') }}\">Upgrade to Post Jobs</a>",
+          "  {% endif %}",
+          "{% endif %}"
+        ]
+      },
+      "candidate_search_access": {
+        "current": "Available to all employers",
+        "improved_logic": [
+          "{% if current_user and current_user.role == 'employer' and current_user.billing_tier >= 'starter' %}",
+          "  <a href=\"{{ url_for('company.candidate_management') }}\">Search Candidates</a>",
+          "{% else %}",
+          "  <a href=\"{{ url_for('billing.upgrade') }}\">Upgrade to Search Candidates</a>",
+          "{% endif %}"
+        ]
+      },
+      "job_application_access": {
+        "current": "Available to authenticated jobseekers",
+        "improved_logic": [
+          "{% if current_user and current_user.is_authenticated and current_user.role == 'jobseeker' %}",
+          "  {% if current_user.profile_complete %}",
+          "    <a href=\"{{ url_for('jobs_workflow.submit_application', job_id=job.job_id) }}\">Apply Now</a>",
+          "  {% else %}",
+          "    <a href=\"{{ url_for('jobseeker_profiles.view_profile') }}\">Complete Profile to Apply</a>",
+          "  {% endif %}",
+          "{% else %}",
+          "  <a href=\"{{ url_for('auth.login') }}\">Login to Apply</a>",
+          "{% endif %}"
+        ]
+      }
+    },
+    "navigation_personalization": {
+      "description": "Personalize navigation based on user context",
+      "main_navigation_improvements": {
+        "template": "template/index.html",
+        "current": "Static dropdown menus",
+        "improved": "Dynamic menus based on user status",
+        "jobseeker_menu": {
+          "authenticated_complete_profile": [
+            "{{ url_for('jobs.search_jobs') }} - Browse Jobs",
+            "{{ url_for('jobseeker_applications.my_applications') }} - My Applications",
+            "{{ url_for('resumes.manage_resumes') }} - My Resume",
+            "{{ url_for('jobseeker.job_alerts') }} - Job Alerts"
+          ],
+          "authenticated_incomplete_profile": [
+            "{{ url_for('jobseeker_profiles.view_profile') }} - Complete Profile",
+            "{{ url_for('jobs.search_jobs') }} - Browse Jobs",
+            "{{ url_for('resumes.manage_resumes') }} - Upload Resume"
+          ],
+          "unauthenticated": [
+            "{{ url_for('jobs.search_jobs') }} - Browse Jobs",
+            "{{ url_for('auth.subscribe') }} - Create Account",
+            "{{ url_for('auth.login') }} - Login"
+          ]
+        },
+        "employer_menu": {
+          "verified_with_billing": [
+            "{{ url_for('jobs_workflow.show_create_form') }} - Post Job",
+            "{{ url_for('company.manage_jobs') }} - Manage Jobs",
+            "{{ url_for('company.candidate_management') }} - Find Candidates",
+            "{{ url_for('company.application_analytics') }} - Analytics"
+          ],
+          "verified_no_billing": [
+            "{{ url_for('billing.upgrade') }} - Upgrade to Post Jobs",
+            "{{ url_for('company.view_company') }} - Company Profile",
+            "{{ url_for('company.candidate_management') }} - Find Candidates"
+          ],
+          "unverified": [
+            "{{ url_for('company.initiate_company_verification') }} - Verify Company",
+            "{{ url_for('company.view_company') }} - Company Profile"
+          ]
+        }
+      }
+    }
+  },
+  "security_improvements": {
+    "csrf_protection": {
+      "description": "Ensure CSRF tokens are included in forms",
+      "forms_to_check": [
+        "template/login.html - login form",
+        "Job application forms",
+        "Company profile update forms"
+      ],
+      "implementation": "Add {{ csrf_token() }} to all forms"
+    },
+    "authorization_checks": {
+      "description": "Verify user authorization before showing sensitive links",
+      "job_management_links": {
+        "current": "Show to all employers",
+        "improved": "Verify employer owns the job before showing edit/delete links",
+        "template_logic": "{% if current_user.can_manage_job(job.job_id) %}...{% endif %}"
+      },
+      "company_data_access": {
+        "current": "Show to all employers",
+        "improved": "Verify employer belongs to company",
+        "template_logic": "{% if current_user.company_id == company.company_id %}...{% endif %}"
+      }
+    },
+    "sensitive_data_protection": {
+      "description": "Protect sensitive information in templates",
+      "recommendations": [
+        "Don't expose user IDs in URLs where possible",
+        "Use slugs or tokens for public-facing URLs",
+        "Validate user permissions before displaying data"
+      ]
+    }
+  },
+  "template_specific_improvements": {
+    "template_layouts_header_html": {
+      "current_issues": [
+        "Role value inconsistency",
+        "Missing authentication checks",
+        "Incorrect endpoint references"
+      ],
+      "improved_implementation": {
+        "authentication_section": [
+          "{% if current_user and current_user.is_authenticated %}",
+          "  {% if current_user.role == 'employer' %}",
+          "    {% if current_user.company_verified %}",
+          "      <a href=\"{{ url_for('company.view_company') }}\">Dashboard</a>",
+          "    {% else %}",
+          "      <a href=\"{{ url_for('company.create_company_profile') }}\">Setup Company</a>",
+          "    {% endif %}",
+          "  {% elif current_user.role == 'jobseeker' %}",
+          "    <a href=\"{{ url_for('jobseeker.dashboard') }}\">Dashboard</a>",
+          "  {% elif current_user.role == 'admin' %}",
+          "    <a href=\"{{ url_for('admin.dashboard') }}\">Admin</a>",
+          "  {% endif %}",
+          "  <a href=\"{{ url_for('auth.logout') }}\">Logout</a>",
+          "{% else %}",
+          "  <a href=\"{{ url_for('auth.login') }}\">Login</a>",
+          "  <a href=\"{{ url_for('auth.subscribe') }}\">Register</a>",
+          "{% endif %}"
+        ]
+      }
+    },
+    "template_jobs_jobs_list_html": {
+      "current_issues": [
+        "No authentication check before showing match details",
+        "Missing profile completion check"
+      ],
+      "improved_implementation": {
+        "match_details_section": [
+          "{% if current_user and current_user.is_authenticated %}",
+          "  {% if current_user.role == 'jobseeker' and current_user.profile_complete %}",
+          "    <button class=\"btn btn-match-details\" data-job-id=\"{{ job.job_id }}\">Match Details</button>",
+          "  {% elif current_user.role == 'jobseeker' %}",
+          "    <a href=\"{{ url_for('jobseeker_profiles.view_profile') }}\">Complete Profile for Match Score</a>",
+          "  {% endif %}",
+          "{% else %}",
+          "  <a href=\"{{ url_for('auth.login') }}\">Login for Match Details</a>",
+          "{% endif %}"
+        ]
+      }
+    },
+    "template_company_view_company_profile_html": {
+      "current_issues": [
+        "No verification status checks",
+        "Missing billing status validation"
+      ],
+      "improved_implementation": {
+        "action_buttons_section": [
+          "{% if current_user.company_verified %}",
+          "  {% if current_user.has_active_billing %}",
+          "    <a href=\"{{ url_for('jobs_workflow.show_create_form') }}\">Post New Job</a>",
+          "  {% else %}",
+          "    <a href=\"{{ url_for('billing.upgrade') }}\">Upgrade to Post Jobs</a>",
+          "  {% endif %}",
+          "{% else %}",
+          "  <a href=\"{{ url_for('company.initiate_company_verification') }}\">Verify Company First</a>",
+          "{% endif %}"
+        ]
+      }
+    }
+  },
+  "implementation_recommendations": {
+    "phase_1_authentication_fixes": {
+      "priority": "HIGH",
+      "changes": [
+        "Fix role value inconsistencies",
+        "Add proper authentication checks",
+        "Correct endpoint references"
+      ],
+      "templates": [
+        "template/layouts/header.html",
+        "template/index.html"
+      ]
+    },
+    "phase_2_conditional_logic": {
+      "priority": "MEDIUM",
+      "changes": [
+        "Add verification status checks",
+        "Implement billing status validation",
+        "Enhance feature access control"
+      ],
+      "templates": [
+        "template/company/view_company_profile.html",
+        "template/jobs/_jobs_list.html"
+      ]
+    },
+    "phase_3_security_enhancements": {
+      "priority": "MEDIUM",
+      "changes": [
+        "Add authorization checks",
+        "Implement CSRF protection",
+        "Enhance data protection"
+      ],
+      "templates": [
+        "All form templates",
+        "Sensitive data display templates"
+      ]
+    }
+  }
+}

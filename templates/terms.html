@@ -1,0 +1,975 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Terms of Service - JobFinders{% endblock %}
+
+{% block meta_description %}JobFinders Terms of Service - Read our terms and conditions for using our South African job
+    search platform and employment services.{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .last-updated {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .last-updated-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .last-updated-date {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .content-wrapper {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+        }
+
+        .table-of-contents {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .toc-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .toc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .toc-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .toc-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+            display: block;
+            padding: 0.25rem 0;
+        }
+
+        .toc-link:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+
+        .content-section {
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .section-content {
+            color: #495057;
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+
+        .section-content h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .section-content h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #495057;
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        .section-content ul {
+            padding-left: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .section-content ol {
+            padding-left: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .section-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .section-content p {
+            margin-bottom: 1rem;
+        }
+
+        .highlight-box {
+            background: rgba(var(--primary-color-rgb), 0.1);
+            border: 1px solid rgba(var(--primary-color-rgb), 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .highlight-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .warning-box {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .warning-title {
+            font-weight: 600;
+            color: #dc3545;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .warning-title i {
+            margin-right: 0.5rem;
+        }
+
+        .contact-section {
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .contact-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .contact-info {
+            color: #6c757d;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .contact-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-link:hover {
+            text-decoration: underline;
+        }
+
+        .btn-contact {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-contact:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            color: white;
+            text-decoration: none;
+        }
+
+        .acceptance-notice {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .acceptance-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .acceptance-text {
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .content-section {
+                padding: 1.5rem;
+            }
+
+            .table-of-contents {
+                padding: 1.5rem;
+            }
+
+            .toc-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Terms of Service</h1>
+                <p class="hero-subtitle">
+                    Please read these terms carefully before using JobFinders.
+                    By using our platform, you agree to be bound by these terms.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- Last Updated -->
+        <div class="last-updated">
+            <div class="last-updated-label">Last Updated</div>
+            <div class="last-updated-date">{{ last_updated or "January 1, 2024" }}</div>
+        </div>
+
+        <div class="content-wrapper">
+            <!-- Table of Contents -->
+            <div class="table-of-contents">
+                <h2 class="toc-title">Table of Contents</h2>
+                <ul class="toc-list">
+                    <li class="toc-item"><a href="#definitions" class="toc-link">1. Definitions</a></li>
+                    <li class="toc-item"><a href="#acceptance" class="toc-link">2. Acceptance of Terms</a></li>
+                    <li class="toc-item"><a href="#use-of-website" class="toc-link">3. Use of Website</a></li>
+                    <li class="toc-item"><a href="#user-accounts" class="toc-link">4. User Accounts</a></li>
+                    <li class="toc-item"><a href="#job-listings" class="toc-link">5. Job Listings</a></li>
+                    <li class="toc-item"><a href="#user-content" class="toc-link">6. User Content</a></li>
+                    <li class="toc-item"><a href="#prohibited-conduct" class="toc-link">7. Prohibited Conduct</a></li>
+                    <li class="toc-item"><a href="#intellectual-property" class="toc-link">8. Intellectual Property</a>
+                    </li>
+                    <li class="toc-item"><a href="#privacy" class="toc-link">9. Privacy</a></li>
+                    <li class="toc-item"><a href="#payment-terms" class="toc-link">10. Payment Terms</a></li>
+                    <li class="toc-item"><a href="#third-party-links" class="toc-link">11. Third-Party Links</a></li>
+                    <li class="toc-item"><a href="#disclaimers" class="toc-link">12. Disclaimers</a></li>
+                    <li class="toc-item"><a href="#limitation-liability" class="toc-link">13. Limitation of
+                        Liability</a></li>
+                    <li class="toc-item"><a href="#indemnification" class="toc-link">14. Indemnification</a></li>
+                    <li class="toc-item"><a href="#termination" class="toc-link">15. Termination</a></li>
+                    <li class="toc-item"><a href="#governing-law" class="toc-link">16. Governing Law</a></li>
+                    <li class="toc-item"><a href="#changes-terms" class="toc-link">17. Changes to Terms</a></li>
+                    <li class="toc-item"><a href="#contact" class="toc-link">18. Contact Information</a></li>
+                </ul>
+            </div>
+
+            <!-- Content Sections -->
+            <div class="content-section">
+                <!-- Definitions -->
+                <section id="definitions">
+                    <h2 class="section-title">1. Definitions</h2>
+                    <div class="section-content">
+                        <p>In these Terms of Service:</p>
+                        <ul>
+                            <li><strong>"JobFinders," "we," "our," or "us"</strong> refers to JobFinders.site and its
+                                operators.
+                            </li>
+                            <li><strong>"User," "you," or "your"</strong> refers to any person using this website or our
+                                services.
+                            </li>
+                            <li><strong>"Platform" or "Site"</strong> refers to the JobFinders website and all
+                                associated services.
+                            </li>
+                            <li><strong>"Services"</strong> refers to all features, tools, and functionality provided by
+                                JobFinders.
+                            </li>
+                            <li><strong>"Content"</strong> refers to all text, images, data, and other materials on the
+                                platform.
+                            </li>
+                            <li><strong>"Job Seeker"</strong> refers to users seeking employment opportunities.</li>
+                            <li><strong>"Employer"</strong> refers to users posting job opportunities or seeking
+                                candidates.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Acceptance -->
+                <section id="acceptance">
+                    <h2 class="section-title">2. Acceptance of Terms</h2>
+                    <div class="section-content">
+                        <p>
+                            By accessing or using JobFinders, you acknowledge that you have read, understood,
+                            and agree to be bound by these Terms of Service and our Privacy Policy. If you
+                            do not agree to these terms, you must not use our services.
+                        </p>
+                        <p>
+                            These terms constitute a legally binding agreement between you and JobFinders.
+                            You represent that you have the legal authority to enter into this agreement.
+                        </p>
+                        <div class="highlight-box">
+                            <div class="highlight-title">Age Requirement</div>
+                            <p>
+                                You must be at least 18 years old to use our services. By using JobFinders,
+                                you represent and warrant that you meet this age requirement.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Use of Website -->
+                <section id="use-of-website">
+                    <h2 class="section-title">3. Use of Website</h2>
+                    <div class="section-content">
+                        <h3>3.1 Permitted Uses</h3>
+                        <p>You may use JobFinders to:</p>
+                        <ul>
+                            <li>Browse and search job listings</li>
+                            <li>Create and maintain a user profile</li>
+                            <li>Apply for job opportunities</li>
+                            <li>Post job listings (if you are an employer)</li>
+                            <li>Communicate with other users through our platform</li>
+                            <li>Access career resources and tools</li>
+                        </ul>
+
+                        <h3>3.2 License to Use</h3>
+                        <p>
+                            Subject to these terms, we grant you a limited, non-exclusive, non-transferable,
+                            revocable license to access and use our services for their intended purpose.
+                        </p>
+
+                        <h3>3.3 Compliance</h3>
+                        <p>You agree to:</p>
+                        <ul>
+                            <li>Use the platform in accordance with all applicable laws and regulations</li>
+                            <li>Respect the rights and privacy of other users</li>
+                            <li>Provide accurate and truthful information</li>
+                            <li>Maintain the security of your account credentials</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- User Accounts -->
+                <section id="user-accounts">
+                    <h2 class="section-title">4. User Accounts</h2>
+                    <div class="section-content">
+                        <h3>4.1 Account Creation</h3>
+                        <p>
+                            To access certain features, you must create an account. You agree to provide
+                            accurate, current, and complete information during registration and to update
+                            such information as necessary.
+                        </p>
+
+                        <h3>4.2 Account Security</h3>
+                        <p>You are responsible for:</p>
+                        <ul>
+                            <li>Maintaining the confidentiality of your login credentials</li>
+                            <li>All activities that occur under your account</li>
+                            <li>Notifying us immediately of any unauthorized use</li>
+                            <li>Ensuring your account information remains accurate and up-to-date</li>
+                        </ul>
+
+                        <h3>4.3 Account Types</h3>
+                        <p>We offer different account types:</p>
+                        <ul>
+                            <li><strong>Job Seeker Accounts:</strong> For individuals seeking employment</li>
+                            <li><strong>Employer Accounts:</strong> For companies and recruiters posting jobs</li>
+                            <li><strong>Premium Accounts:</strong> Enhanced features for paid subscribers</li>
+                        </ul>
+
+                        <div class="warning-box">
+                            <div class="warning-title">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Account Suspension
+                            </div>
+                            <p>
+                                We reserve the right to suspend or terminate accounts that violate these
+                                terms or engage in prohibited activities.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Job Listings -->
+                <section id="job-listings">
+                    <h2 class="section-title">5. Job Listings</h2>
+                    <div class="section-content">
+                        <h3>5.1 Job Aggregation</h3>
+                        <p>
+                            We aggregate job listings from various sources including direct employer postings
+                            and third-party job boards. While we strive for accuracy, we do not guarantee
+                            that all job listings are current, valid, or legitimate.
+                        </p>
+
+                        <h3>5.2 Employer Responsibilities</h3>
+                        <p>If you post job listings, you agree to:</p>
+                        <ul>
+                            <li>Provide accurate and complete job descriptions</li>
+                            <li>Comply with all employment laws and regulations</li>
+                            <li>Not discriminate based on protected characteristics</li>
+                            <li>Honor the terms and conditions stated in your job postings</li>
+                            <li>Remove or update listings that are no longer valid</li>
+                        </ul>
+
+                        <h3>5.3 Job Applications</h3>
+                        <p>
+                            JobFinders facilitates job applications but is not involved in the hiring process.
+                            We do not endorse specific employers or guarantee employment outcomes.
+                        </p>
+
+                        <h3>5.4 Third-Party Job Listings</h3>
+                        <p>
+                            For jobs sourced from third-party sites, you may be redirected to external
+                            websites to complete your application. We are not responsible for the content
+                            or practices of these external sites.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- User Content -->
+                <section id="user-content">
+                    <h2 class="section-title">6. User Content</h2>
+                    <div class="section-content">
+                        <h3>6.1 Content Ownership</h3>
+                        <p>
+                            You retain ownership of content you submit to JobFinders, including your profile
+                            information, CV, and communications. However, you grant us a license to use,
+                            display, and distribute this content as necessary to provide our services.
+                        </p>
+
+                        <h3>6.2 Content Standards</h3>
+                        <p>All user content must:</p>
+                        <ul>
+                            <li>Be accurate and truthful</li>
+                            <li>Not violate any laws or regulations</li>
+                            <li>Not infringe on third-party rights</li>
+                            <li>Not contain harmful, offensive, or inappropriate material</li>
+                            <li>Not include spam or promotional content unrelated to employment</li>
+                        </ul>
+
+                        <h3>6.3 Content Moderation</h3>
+                        <p>
+                            We reserve the right to review, edit, or remove any user content that violates
+                            these terms or our community standards. We may also use automated systems to
+                            detect and prevent prohibited content.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Prohibited Conduct -->
+                <section id="prohibited-conduct">
+                    <h2 class="section-title">7. Prohibited Conduct</h2>
+                    <div class="section-content">
+                        <p>You may not use JobFinders to:</p>
+                        <ul>
+                            <li>Post false, misleading, or fraudulent job listings or profiles</li>
+                            <li>Harvest or collect user data without permission</li>
+                            <li>Send spam or unsolicited communications</li>
+                            <li>Attempt to gain unauthorized access to our systems</li>
+                            <li>Use automated tools to scrape or extract data</li>
+                            <li>Impersonate other users or entities</li>
+                            <li>Post content that is discriminatory, harassing, or offensive</li>
+                            <li>Violate any applicable laws or regulations</li>
+                            <li>Interfere with the normal operation of our platform</li>
+                            <li>Circumvent our security measures or access controls</li>
+                        </ul>
+
+                        <div class="warning-box">
+                            <div class="warning-title">
+                                <i class="fas fa-ban"></i>
+                                Consequences of Violations
+                            </div>
+                            <p>
+                                Violations of these prohibited conduct rules may result in immediate
+                                suspension or termination of your account, removal of content, and
+                                potential legal action.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Intellectual Property -->
+                <section id="intellectual-property">
+                    <h2 class="section-title">8. Intellectual Property</h2>
+                    <div class="section-content">
+                        <h3>8.1 Our Intellectual Property</h3>
+                        <p>
+                            All content on JobFinders, including logos, text, graphics, user interfaces,
+                            visual interfaces, photographs, trademarks, and computer code, is owned by
+                            JobFinders or its licensors and is protected by intellectual property laws.
+                        </p>
+
+                        <h3>8.2 Limited License</h3>
+                        <p>
+                            We grant you a limited license to access and use our platform for its intended
+                            purpose. You may not reproduce, distribute, modify, or create derivative works
+                            from our content without written permission.
+                        </p>
+
+                        <h3>8.3 User Content License</h3>
+                        <p>
+                            By submitting content to JobFinders, you grant us a worldwide, non-exclusive,
+                            royalty-free license to use, reproduce, modify, adapt, publish, translate,
+                            and distribute such content in connection with our services.
+                        </p>
+
+                        <h3>8.4 Copyright Infringement</h3>
+                        <p>
+                            If you believe your copyright has been infringed, please contact us with
+                            details of the alleged infringement. We will investigate and take appropriate
+                            action in accordance with applicable law.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Privacy -->
+                <section id="privacy">
+                    <h2 class="section-title">9. Privacy</h2>
+                    <div class="section-content">
+                        <p>
+                            Your privacy is important to us. Our Privacy Policy explains how we collect,
+                            use, and protect your personal information. By using JobFinders, you consent
+                            to our privacy practices as described in our Privacy Policy.
+                        </p>
+
+                        <h3>9.1 Data Collection</h3>
+                        <p>We collect only the information necessary to provide our services, including:</p>
+                        <ul>
+                            <li>Account registration information</li>
+                            <li>Profile and CV data</li>
+                            <li>Usage and interaction data</li>
+                            <li>Communication records</li>
+                        </ul>
+
+                        <h3>9.2 Data Use</h3>
+                        <p>
+                            We use your information to provide and improve our services, facilitate
+                            job matching, and communicate with you about relevant opportunities.
+                        </p>
+
+                        <div class="highlight-box">
+                            <div class="highlight-title">Privacy Commitment</div>
+                            <p>
+                                We do not sell, rent, or trade your personal information to third parties
+                                for marketing purposes. Please read our full
+                                <a href="/privacy">Privacy Policy</a> for complete details.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Payment Terms -->
+                <section id="payment-terms">
+                    <h2 class="section-title">10. Payment Terms</h2>
+                    <div class="section-content">
+                        <h3>10.1 Premium Services</h3>
+                        <p>
+                            Some features require payment. By purchasing premium services, you agree to
+                            pay all applicable fees and charges. All payments are processed securely
+                            through our payment partners.
+                        </p>
+
+                        <h3>10.2 Billing</h3>
+                        <p>
+                            Subscription fees are billed in advance on a recurring basis. You authorize
+                            us to charge your payment method for all applicable fees.
+                        </p>
+
+                        <h3>10.3 Refunds</h3>
+                        <p>
+                            Refund policies vary by service type. Generally, subscription fees are
+                            non-refundable, but we may provide refunds at our discretion for unused
+                            portions of premium services.
+                        </p>
+
+                        <h3>10.4 Price Changes</h3>
+                        <p>
+                            We reserve the right to change our pricing with reasonable notice.
+                            Price changes will not affect existing subscription periods.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Third Party Links -->
+                <section id="third-party-links">
+                    <h2 class="section-title">11. Third-Party Links</h2>
+                    <div class="section-content">
+                        <p>
+                            Our platform may contain links to third-party websites, services, or resources.
+                            These links are provided for your convenience and do not constitute an endorsement
+                            by JobFinders.
+                        </p>
+
+                        <h3>11.1 No Responsibility</h3>
+                        <p>We are not responsible for:</p>
+                        <ul>
+                            <li>The content, accuracy, or practices of third-party sites</li>
+                            <li>Privacy policies or terms of service of external sites</li>
+                            <li>Any damages or losses from your use of third-party services</li>
+                            <li>The availability or functionality of external links</li>
+                        </ul>
+
+                        <h3>11.2 Your Risk</h3>
+                        <p>
+                            Accessing third-party links is at your own risk. We recommend reviewing
+                            the terms and privacy policies of any external sites you visit.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Disclaimers -->
+                <section id="disclaimers">
+                    <h2 class="section-title">12. Disclaimers</h2>
+                    <div class="section-content">
+                        <h3>12.1 Service Availability</h3>
+                        <p>
+                            We provide our services "as is" and "as available." We do not guarantee
+                            uninterrupted or error-free operation of our platform.
+                        </p>
+
+                        <h3>12.2 No Employment Guarantee</h3>
+                        <p>
+                            JobFinders does not guarantee employment outcomes, interview opportunities,
+                            or job placement. We are a platform that facilitates connections between
+                            job seekers and employers.
+                        </p>
+
+                        <h3>12.3 Content Accuracy</h3>
+                        <p>
+                            While we strive for accuracy, we do not warrant that all information on
+                            our platform is complete, current, or error-free.
+                        </p>
+
+                        <h3>12.4 Third-Party Content</h3>
+                        <p>
+                            We are not responsible for the accuracy, completeness, or reliability of
+                            user-generated content or third-party job listings.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Limitation of Liability -->
+                <section id="limitation-liability">
+                    <h2 class="section-title">13. Limitation of Liability</h2>
+                    <div class="section-content">
+                        <p>
+                            To the maximum extent permitted by law, JobFinders shall not be liable for
+                            any indirect, incidental, special, consequential, or punitive damages,
+                            including but not limited to:
+                        </p>
+                        <ul>
+                            <li>Loss of profits, revenue, or business opportunities</li>
+                            <li>Loss of data or information</li>
+                            <li>Cost of substitute services</li>
+                            <li>Personal injury or property damage</li>
+                            <li>Emotional distress or reputational harm</li>
+                        </ul>
+
+                        <p>
+                            Our total liability for any claims arising from your use of our services
+                            shall not exceed the amount you paid us in the twelve months preceding
+                            the claim, or R1,000, whichever is greater.
+                        </p>
+
+                        <div class="warning-box">
+                            <div class="warning-title">
+                                <i class="fas fa-info-circle"></i>
+                                Legal Limitations
+                            </div>
+                            <p>
+                                Some jurisdictions do not allow the exclusion or limitation of certain
+                                damages. In such jurisdictions, our liability is limited to the maximum
+                                extent permitted by law.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Indemnification -->
+                <section id="indemnification">
+                    <h2 class="section-title">14. Indemnification</h2>
+                    <div class="section-content">
+                        <p>
+                            You agree to indemnify, defend, and hold harmless JobFinders, its officers,
+                            directors, employees, and agents from any claims, damages, losses, or expenses
+                            (including reasonable attorney fees) arising from:
+                        </p>
+                        <ul>
+                            <li>Your use of our services</li>
+                            <li>Your violation of these terms</li>
+                            <li>Your violation of any third-party rights</li>
+                            <li>Content you submit to our platform</li>
+                            <li>Your negligent or wrongful conduct</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Termination -->
+                <section id="termination">
+                    <h2 class="section-title">15. Termination</h2>
+                    <div class="section-content">
+                        <h3>15.1 Termination by You</h3>
+                        <p>
+                            You may terminate your account at any time by following the account
+                            deletion process in your account settings or by contacting us.
+                        </p>
+
+                        <h3>15.2 Termination by Us</h3>
+                        <p>We may suspend or terminate your account if you:</p>
+                        <ul>
+                            <li>Violate these terms of service</li>
+                            <li>Engage in prohibited conduct</li>
+                            <li>Fail to pay applicable fees</li>
+                            <li>Provide false or misleading information</li>
+                            <li>Remain inactive for an extended period</li>
+                        </ul>
+
+                        <h3>15.3 Effect of Termination</h3>
+                        <p>
+                            Upon termination, your right to use our services ceases immediately.
+                            We may delete your account and associated data, subject to our data
+                            retention policies and legal obligations.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Governing Law -->
+                <section id="governing-law">
+                    <h2 class="section-title">16. Governing Law</h2>
+                    <div class="section-content">
+                        <p>
+                            These terms are governed by the laws of South Africa. Any disputes arising
+                            from these terms or your use of our services shall be subject to the
+                            exclusive jurisdiction of the South African courts.
+                        </p>
+
+                        <h3>16.1 Dispute Resolution</h3>
+                        <p>
+                            We encourage resolving disputes through direct communication. If informal
+                            resolution is not possible, disputes may be resolved through mediation
+                            or arbitration as permitted by South African law.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Changes to Terms -->
+                <section id="changes-terms">
+                    <h2 class="section-title">17. Changes to Terms</h2>
+                    <div class="section-content">
+                        <p>
+                            We reserve the right to modify these terms at any time. When we make changes,
+                            we will:
+                        </p>
+                        <ul>
+                            <li>Update the "Last Updated" date</li>
+                            <li>Notify you via email or platform notification for significant changes</li>
+                            <li>Provide a reasonable notice period before changes take effect</li>
+                            <li>Allow you to review the updated terms</li>
+                        </ul>
+
+                        <p>
+                            Your continued use of our services after any changes indicates your
+                            acceptance of the updated terms. If you do not agree to the changes,
+                            you must stop using our services.
+                        </p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Contact Section -->
+            <div class="contact-section" id="contact">
+                <h2 class="contact-title">18. Contact Information</h2>
+                <div class="contact-info">
+                    <p>
+                        If you have any questions about these Terms of Service, please contact us:
+                    </p>
+                    <p>
+                        <strong>Email:</strong> <a href="mailto:legal@jobfinders.co.za" class="contact-link">legal@jobfinders.co.za</a><br>
+                        <strong>Support:</strong> <a href="mailto:support@jobfinders.co.za" class="contact-link">support@jobfinders.co.za</a><br>
+                        <strong>Phone:</strong> <a href="tel:+27123456789" class="contact-link">+27 12 345 6789</a><br>
+                        <strong>Address:</strong> 123 Business Street, Sandton, Johannesburg, 2196, South Africa
+                    </p>
+                </div>
+                <a href="/contact" class="btn-contact">
+                    <i class="fas fa-envelope me-2"></i>Contact Us
+                </a>
+            </div>
+        </div>
+
+        <!-- Acceptance Notice -->
+        <div class="acceptance-notice">
+            <div class="acceptance-title">Agreement Confirmation</div>
+            <div class="acceptance-text">
+                By using JobFinders, you confirm that you have read, understood, and agree to be
+                bound by these Terms of Service and our Privacy Policy. Thank you for choosing
+                JobFinders as your trusted employment platform.
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Smooth scrolling for table of contents links
+            document.querySelectorAll('.toc-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+
+                    if (targetElement) {
+                        const headerOffset = 100;
+                        const elementPosition = targetElement.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                        });
+
+                        // Highlight the section briefly
+                        targetElement.style.backgroundColor = 'rgba(var(--primary-color-rgb), 0.1)';
+                        setTimeout(() => {
+                            targetElement.style.backgroundColor = '';
+                        }, 2000);
+                    }
+                });
+            });
+
+            // Update active TOC link on scroll
+            const sections = document.querySelectorAll('section[id]');
+            const tocLinks = document.querySelectorAll('.toc-link');
+
+            function updateActiveTocLink() {
+                let current = '';
+
+                sections.forEach(section => {
+                    const sectionTop = section.getBoundingClientRect().top;
+                    if (sectionTop <= 150) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                tocLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                        link.style.fontWeight = '600';
+                        link.style.color = 'var(--secondary-color)';
+                    } else {
+                        link.style.fontWeight = 'normal';
+                        link.style.color = 'var(--primary-color)';
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', updateActiveTocLink);
+            updateActiveTocLink(); // Initial call
+
+            // Print functionality
+            function addPrintStyles() {
+                const printStyles = `
+            @media print {
+                .hero-section, .table-of-contents { display: none; }
+                .content-section { padding: 0; }
+                .section-title { page-break-after: avoid; }
+                .highlight-box, .warning-box { page-break-inside: avoid; }
+                .acceptance-notice { page-break-inside: avoid; }
+            }
+        `;
+
+                const styleSheet = document.createElement('style');
+                styleSheet.textContent = printStyles;
+                document.head.appendChild(styleSheet);
+            }
+
+            addPrintStyles();
+
+            // Add reading progress indicator
+            function addProgressIndicator() {
+                const progressBar = document.createElement('div');
+                progressBar.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            z-index: 9999;
+            transition: width 0.3s ease;
+        `;
+                document.body.appendChild(progressBar);
+
+                window.addEventListener('scroll', function () {
+                    const scrollTop = window.pageYOffset;
+                    const docHeight = document.body.scrollHeight - window.innerHeight;
+                    const scrollPercent = (scrollTop / docHeight) * 100;
+                    progressBar.style.width = scrollPercent + '%';
+                });
+            }
+
+            addProgressIndicator();
+        });
+    </script>
+{% endblock %}

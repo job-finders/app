@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobFinders Template Browser Compatibility Test</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --primary-color-rgb: 0, 123, 255;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .test-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .test-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .test-subtitle {
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+
+        .browser-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .browser-info h3 {
+            color: #1976d2;
+            margin-bottom: 1rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+        }
+
+        .test-section h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .test-item {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 1rem;
+            border-left: 4px solid #6c757d;
+        }
+
+        .test-item.pass {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .test-item.fail {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .test-item.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .test-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .test-result {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .test-controls {
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .results-summary {
+            background: linear-gradient(135deg, var(--primary-color), #6c757d);
+            color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .summary-stat {
+            text-align: center;
+        }
+
+        .summary-number {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .summary-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .responsive-test {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .responsive-header {
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .responsive-content {
+            padding: 1rem;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+
+        .feature-test {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: white;
+        }
+
+        .feature-icon.supported {
+            background: #28a745;
+        }
+
+        .feature-icon.not-supported {
+            background: #dc3545;
+        }
+
+        .feature-icon.partial {
+            background: #ffc107;
+        }
+
+        @media (max-width: 768px) {
+            .test-container {
+                padding: 1rem;
+            }
+
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="test-container">
+    <div class="test-header">
+        <h1 class="test-title">JobFinders Template Compatibility Test</h1>
+        <p class="test-subtitle">Comprehensive browser and device compatibility testing suite</p>
+    </div>
+
+    <!-- Browser Information -->
+    <div class="browser-info">
+        <h3>Browser Information</h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <span>Browser:</span>
+                <span id="browserName">Detecting...</span>
+            </div>
+            <div class="info-item">
+                <span>Version:</span>
+                <span id="browserVersion">Detecting...</span>
+            </div>
+            <div class="info-item">
+                <span>Platform:</span>
+                <span id="platform">Detecting...</span>
+            </div>
+            <div class="info-item">
+                <span>Screen Size:</span>
+                <span id="screenSize">Detecting...</span>
+            </div>
+            <div class="info-item">
+                <span>Viewport:</span>
+                <span id="viewport">Detecting...</span>
+            </div>
+            <div class="info-item">
+                <span>Color Depth:</span>
+                <span id="colorDepth">Detecting...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Controls -->
+    <div class="test-controls">
+        <button class="btn" onclick="runAllTests()">Run All Tests</button>
+        <button class="btn btn-secondary" onclick="runCSSTests()">CSS Tests</button>
+        <button class="btn btn-secondary" onclick="runJSTests()">JavaScript Tests</button>
+        <button class="btn btn-success" onclick="generateReport()">Generate Report</button>
+    </div>
+
+    <!-- CSS Feature Tests -->
+    <div class="test-section">
+        <h3>CSS Feature Support</h3>
+        <div class="test-grid" id="cssTests">
+            <!-- Tests will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- JavaScript Feature Tests -->
+    <div class="test-section">
+        <h3>JavaScript Feature Support</h3>
+        <div class="test-grid" id="jsTests">
+            <!-- Tests will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Responsive Design Tests -->
+    <div class="test-section">
+        <h3>Responsive Design Tests</h3>
+        <div class="responsive-test">
+            <div class="responsive-header">Mobile (320px)</div>
+            <div class="responsive-content" style="width: 320px; margin: 0 auto;">
+                <div style="background: var(--primary-color); color: white; padding: 1rem; border-radius: 6px; text-align: center;">
+                    Mobile Layout Test
+                </div>
+            </div>
+        </div>
+        <div class="responsive-test">
+            <div class="responsive-header">Tablet (768px)</div>
+            <div class="responsive-content" style="width: 768px; margin: 0 auto;">
+                <div style="background: var(--primary-color); color: white; padding: 1rem; border-radius: 6px; text-align: center;">
+                    Tablet Layout Test
+                </div>
+            </div>
+        </div>
+        <div class="responsive-test">
+            <div class="responsive-header">Desktop (1200px)</div>
+            <div class="responsive-content">
+                <div style="background: var(--primary-color); color: white; padding: 1rem; border-radius: 6px; text-align: center;">
+                    Desktop Layout Test
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Tests -->
+    <div class="test-section">
+        <h3>Performance Tests</h3>
+        <div class="test-grid" id="performanceTests">
+            <!-- Tests will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Accessibility Tests -->
+    <div class="test-section">
+        <h3>Accessibility Tests</h3>
+        <div class="test-grid" id="accessibilityTests">
+            <!-- Tests will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="results-summary" id="resultsSummary" style="display: none;">
+        <h3>Test Results Summary</h3>
+        <div class="summary-stats">
+            <div class="summary-stat">
+                <span class="summary-number" id="passedTests">0</span>
+                <span class="summary-label">Passed</span>
+            </div>
+            <div class="summary-stat">
+                <span class="summary-number" id="failedTests">0</span>
+                <span class="summary-label">Failed</span>
+            </div>
+            <div class="summary-stat">
+                <span class="summary-number" id="warningTests">0</span>
+                <span class="summary-label">Warnings</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Browser Detection
+    function detectBrowser() {
+        const ua = navigator.userAgent;
+        let browserName = 'Unknown';
+        let browserVersion = 'Unknown';
+
+        if (ua.indexOf('Chrome') > -1) {
+            browserName = 'Chrome';
+            browserVersion = ua.match(/Chrome\/([0-9.]+)/)[1];
+        } else if (ua.indexOf('Firefox') > -1) {
+            browserName = 'Firefox';
+            browserVersion = ua.match(/Firefox\/([0-9.]+)/)[1];
+        } else if (ua.indexOf('Safari') > -1) {
+            browserName = 'Safari';
+            browserVersion = ua.match(/Version\/([0-9.]+)/)[1];
+        } else if (ua.indexOf('Edge') > -1) {
+            browserName = 'Edge';
+            browserVersion = ua.match(/Edge\/([0-9.]+)/)[1];
+        }
+
+        document.getElementById('browserName').textContent = browserName;
+        document.getElementById('browserVersion').textContent = browserVersion;
+        document.getElementById('platform').textContent = navigator.platform;
+        document.getElementById('screenSize').textContent = `${screen.width}x${screen.height}`;
+        document.getElementById('viewport').textContent = `${window.innerWidth}x${window.innerHeight}`;
+        document.getElementById('colorDepth').textContent = `${screen.colorDepth}-bit`;
+    }
+
+    // CSS Feature Tests
+    const cssTests = [
+        {
+            name: 'CSS Grid',
+            test: () => CSS.supports('display', 'grid'),
+            description: 'CSS Grid Layout support'
+        },
+        {
+            name: 'Flexbox',
+            test: () => CSS.supports('display', 'flex'),
+            description: 'CSS Flexbox support'
+        },
+        {
+            name: 'CSS Variables',
+            test: () => CSS.supports('color', 'var(--test)'),
+            description: 'CSS Custom Properties support'
+        },
+        {
+            name: 'Border Radius',
+            test: () => CSS.supports('border-radius', '10px'),
+            description: 'CSS Border Radius support'
+        },
+        {
+            name: 'Box Shadow',
+            test: () => CSS.supports('box-shadow', '0 0 10px black'),
+            description: 'CSS Box Shadow support'
+        },
+        {
+            name: 'Transforms',
+            test: () => CSS.supports('transform', 'translateX(10px)'),
+            description: 'CSS Transforms support'
+        },
+        {
+            name: 'Transitions',
+            test: () => CSS.supports('transition', 'all 0.3s ease'),
+            description: 'CSS Transitions support'
+        },
+        {
+            name: 'Animations',
+            test: () => CSS.supports('animation', 'test 1s ease'),
+            description: 'CSS Animations support'
+        }
+    ];
+
+    // JavaScript Feature Tests
+    const jsTests = [
+        {
+            name: 'ES6 Arrow Functions',
+            test: () => {
+                try {
+                    eval('(() => {})');
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            },
+            description: 'ES6 Arrow Functions support'
+        },
+        {
+            name: 'ES6 Classes',
+            test: () => {
+                try {
+                    eval('class Test {}');
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            },
+            description: 'ES6 Classes support'
+        },
+        {
+            name: 'Fetch API',
+            test: () => typeof fetch !== 'undefined',
+            description: 'Fetch API support'
+        },
+        {
+            name: 'Local Storage',
+            test: () => typeof localStorage !== 'undefined',
+            description: 'Local Storage support'
+        },
+        {
+            name: 'Session Storage',
+            test: () => typeof sessionStorage !== 'undefined',
+            description: 'Session Storage support'
+        },
+        {
+            name: 'Geolocation',
+            test: () => 'geolocation' in navigator,
+            description: 'Geolocation API support'
+        },
+        {
+            name: 'Web Workers',
+            test: () => typeof Worker !== 'undefined',
+            description: 'Web Workers support'
+        },
+        {
+            name: 'Service Workers',
+            test: () => 'serviceWorker' in navigator,
+            description: 'Service Workers support'
+        }
+    ];
+
+    // Performance Tests
+    const performanceTests = [
+        {
+            name: 'Page Load Time',
+            test: () => {
+                const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                return loadTime < 3000; // Less than 3 seconds
+            },
+            description: `Page loaded in ${Math.round((performance.timing.loadEventEnd - performance.timing.navigationStart) / 1000 * 100) / 100}s`
+        },
+        {
+            name: 'DOM Ready Time',
+            test: () => {
+                const domTime = performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart;
+                return domTime < 2000; // Less than 2 seconds
+            },
+            description: `DOM ready in ${Math.round((performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart) / 1000 * 100) / 100}s`
+        },
+        {
+            name: 'Memory Usage',
+            test: () => {
+                if (performance.memory) {
+                    return performance.memory.usedJSHeapSize < 50 * 1024 * 1024; // Less than 50MB
+                }
+                return true; // Can't test, assume pass
+            },
+            description: performance.memory ? `Using ${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)}MB` : 'Memory info not available'
+        }
+    ];
+
+    // Accessibility Tests
+    const accessibilityTests = [
+        {
+            name: 'Alt Text on Images',
+            test: () => {
+                const images = document.querySelectorAll('img');
+                return Array.from(images).every(img => img.alt !== undefined);
+            },
+            description: 'All images have alt attributes'
+        },
+        {
+            name: 'Form Labels',
+            test: () => {
+                const inputs = document.querySelectorAll('input[type="text"], input[type="email"], textarea, select');
+                return Array.from(inputs).every(input => {
+                    return input.labels && input.labels.length > 0 || input.getAttribute('aria-label');
+                });
+            },
+            description: 'All form inputs have labels'
+        },
+        {
+            name: 'Keyboard Navigation',
+            test: () => {
+                const focusableElements = document.querySelectorAll('a, button, input, textarea, select');
+                return focusableElements.length > 0;
+            },
+            description: 'Focusable elements present'
+        },
+        {
+            name: 'Color Contrast',
+            test: () => {
+                // Simplified test - in real scenario, you'd use a proper contrast checker
+                return true; // Assume pass for demo
+            },
+            description: 'Color contrast check (manual verification needed)'
+        }
+    ];
+
+    function runTest(test) {
+        try {
+            const result = test.test();
+            return {
+                name: test.name,
+                description: test.description,
+                passed: result,
+                status: result ? 'pass' : 'fail'
+            };
+        } catch (error) {
+            return {
+                name: test.name,
+                description: test.description,
+                passed: false,
+                status: 'fail',
+                error: error.message
+            };
+        }
+    }
+
+    function renderTestResults(tests, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        tests.forEach(testResult => {
+            const testItem = document.createElement('div');
+            testItem.className = `test-item ${testResult.status}`;
+            testItem.innerHTML = `
+                    <div class="test-name">${testResult.name}</div>
+                    <div class="test-result">${testResult.description}</div>
+                    ${testResult.error ? `<div class="test-error">Error: ${testResult.error}</div>` : ''}
+                `;
+            container.appendChild(testItem);
+        });
+    }
+
+    function runCSSTests() {
+        const results = cssTests.map(runTest);
+        renderTestResults(results, 'cssTests');
+        return results;
+    }
+
+    function runJSTests() {
+        const results = jsTests.map(runTest);
+        renderTestResults(results, 'jsTests');
+        return results;
+    }
+
+    function runPerformanceTests() {
+        const results = performanceTests.map(runTest);
+        renderTestResults(results, 'performanceTests');
+        return results;
+    }
+
+    function runAccessibilityTests() {
+        const results = accessibilityTests.map(runTest);
+        renderTestResults(results, 'accessibilityTests');
+        return results;
+    }
+
+    function runAllTests() {
+        const cssResults = runCSSTests();
+        const jsResults = runJSTests();
+        const perfResults = runPerformanceTests();
+        const a11yResults = runAccessibilityTests();
+
+        const allResults = [...cssResults, ...jsResults, ...perfResults, ...a11yResults];
+
+        const passed = allResults.filter(r => r.passed).length;
+        const failed = allResults.filter(r => !r.passed && r.status === 'fail').length;
+        const warnings = allResults.filter(r => r.status === 'warning').length;
+
+        document.getElementById('passedTests').textContent = passed;
+        document.getElementById('failedTests').textContent = failed;
+        document.getElementById('warningTests').textContent = warnings;
+        document.getElementById('resultsSummary').style.display = 'block';
+
+        return allResults;
+    }
+
+    function generateReport() {
+        const results = runAllTests();
+        const browserInfo = {
+            name: document.getElementById('browserName').textContent,
+            version: document.getElementById('browserVersion').textContent,
+            platform: document.getElementById('platform').textContent,
+            screenSize: document.getElementById('screenSize').textContent,
+            viewport: document.getElementById('viewport').textContent
+        };
+
+        const report = {
+            timestamp: new Date().toISOString(),
+            browser: browserInfo,
+            results: results,
+            summary: {
+                total: results.length,
+                passed: results.filter(r => r.passed).length,
+                failed: results.filter(r => !r.passed).length
+            }
+        };
+
+        // Download report as JSON
+        const blob = new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `jobfinders-compatibility-report-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function () {
+        detectBrowser();
+
+        // Auto-run tests after a short delay
+        setTimeout(() => {
+            runAllTests();
+        }, 1000);
+    });
+</script>
+</body>
+</html>

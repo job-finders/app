@@ -1,0 +1,346 @@
+{
+  "metadata": {
+    "analysis_date": "2025-01-14T12:30:00Z",
+    "matching_method": "static_cross_reference_analysis",
+    "routes_analyzed": 85,
+    "template_links_analyzed": 67
+  },
+  "route_matching_results": {
+    "exact_matches": {
+      "description": "Template links that exactly match discovered routes",
+      "count": 42,
+      "confidence": "100%",
+      "examples": [
+        {
+          "template_link": "{{ url_for('home.get_home') }}",
+          "matched_route": "home.get_home",
+          "route_url": "/",
+          "methods": [
+            "GET"
+          ],
+          "status": "VALID"
+        },
+        {
+          "template_link": "{{ url_for('auth.login') }}",
+          "matched_route": "auth.login",
+          "route_url": "/auth/login",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "status": "VALID"
+        },
+        {
+          "template_link": "{{ url_for('jobs.job_details', job_id=job.job_id) }}",
+          "matched_route": "jobs.job_details",
+          "route_url": "/jobs/<job_id>",
+          "methods": [
+            "GET"
+          ],
+          "parameters": [
+            "job_id"
+          ],
+          "status": "VALID"
+        },
+        {
+          "template_link": "{{ url_for('company.manage_jobs') }}",
+          "matched_route": "company.manage_jobs",
+          "route_url": "/dashboard/company/jobs",
+          "methods": [
+            "GET",
+            "POST"
+          ],
+          "auth_required": true,
+          "roles": [
+            "employer"
+          ],
+          "status": "VALID"
+        }
+      ]
+    },
+    "fuzzy_matches": {
+      "description": "Template links that approximately match routes with high confidence",
+      "count": 8,
+      "confidence": "85-95%",
+      "examples": [
+        {
+          "template_link": "jobs_search_route.search_jobs",
+          "closest_match": "jobs.search_jobs",
+          "confidence": "95%",
+          "route_url": "/jobs/search",
+          "issue": "Incorrect blueprint reference",
+          "suggested_fix": "jobs.search_jobs"
+        },
+        {
+          "template_link": "jobseekers.dashboard",
+          "closest_match": "jobseeker.dashboard",
+          "confidence": "90%",
+          "route_url": "/dashboard/jobseeker",
+          "issue": "Blueprint name inconsistency (plural vs singular)",
+          "suggested_fix": "jobseeker.dashboard"
+        },
+        {
+          "template_link": "company.get_dashboard",
+          "closest_match": "company.view_company",
+          "confidence": "85%",
+          "route_url": "/dashboard/company/profile",
+          "issue": "Non-existent endpoint, closest functional match",
+          "suggested_fix": "company.view_company"
+        }
+      ]
+    },
+    "hardcoded_url_matches": {
+      "description": "Hardcoded URLs matched to discovered routes",
+      "count": 12,
+      "confidence": "90-100%",
+      "examples": [
+        {
+          "hardcoded_url": "/jobs",
+          "matched_route": "jobs.list_jobs",
+          "route_url": "/jobs/browse-jobs",
+          "confidence": "100%",
+          "suggested_fix": "{{ url_for('jobs.list_jobs') }}"
+        },
+        {
+          "hardcoded_url": "/login",
+          "matched_route": "auth.login",
+          "route_url": "/auth/login",
+          "confidence": "100%",
+          "suggested_fix": "{{ url_for('auth.login') }}"
+        },
+        {
+          "hardcoded_url": "/employer/post-job",
+          "matched_route": "jobs_workflow.show_create_form",
+          "route_url": "/dashboard/jobs/create",
+          "confidence": "95%",
+          "suggested_fix": "{{ url_for('jobs_workflow.show_create_form') }}"
+        },
+        {
+          "hardcoded_url": "/employer/manage-jobs",
+          "matched_route": "company.manage_jobs",
+          "route_url": "/dashboard/company/jobs",
+          "confidence": "95%",
+          "suggested_fix": "{{ url_for('company.manage_jobs') }}"
+        },
+        {
+          "hardcoded_url": "/applications",
+          "matched_route": "jobseeker_applications.my_applications",
+          "route_url": "/dashboard/jobseeker/applications",
+          "confidence": "90%",
+          "suggested_fix": "{{ url_for('jobseeker_applications.my_applications') }}"
+        }
+      ]
+    },
+    "no_matches_found": {
+      "description": "Template links with no corresponding routes found",
+      "count": 3,
+      "examples": [
+        {
+          "template_link": "/ai-crawlers-info",
+          "issue": "No corresponding route found in route discovery",
+          "recommendation": "Create route or remove link",
+          "priority": "LOW"
+        },
+        {
+          "template_link": "company.view_company_job_applications",
+          "issue": "Endpoint not found in route mapping",
+          "recommendation": "Verify endpoint exists or use alternative",
+          "priority": "MEDIUM"
+        },
+        {
+          "template_link": "/job-alerts",
+          "issue": "No corresponding route found",
+          "recommendation": "Create route or update link",
+          "priority": "MEDIUM"
+        }
+      ]
+    },
+    "external_links": {
+      "description": "External links that don't need route matching",
+      "count": 8,
+      "status": "EXCLUDED_FROM_MATCHING",
+      "examples": [
+        "https://blog.jobfinders.site",
+        "https://www.labour.gov.za/",
+        "https://jobfinders.substack.com"
+      ]
+    }
+  },
+  "parameter_validation": {
+    "valid_parameters": {
+      "description": "Routes with correct parameter usage",
+      "count": 15,
+      "examples": [
+        {
+          "route": "jobs.job_details",
+          "template_usage": "{{ url_for('jobs.job_details', job_id=job.job_id) }}",
+          "required_params": [
+            "job_id"
+          ],
+          "provided_params": [
+            "job_id"
+          ],
+          "status": "VALID"
+        },
+        {
+          "route": "company.candidate_details",
+          "template_usage": "{{ url_for('company.candidate_details', cv_id=cv.cv_id) }}",
+          "required_params": [
+            "cv_id"
+          ],
+          "provided_params": [
+            "cv_id"
+          ],
+          "status": "VALID"
+        }
+      ]
+    },
+    "parameter_mismatches": {
+      "description": "Routes with parameter issues",
+      "count": 2,
+      "examples": [
+        {
+          "route": "jobs.search_jobs",
+          "template_usage": "search_term=filters.search_keyword",
+          "issue": "Parameter name mismatch",
+          "expected_param": "keyword",
+          "provided_param": "search_term",
+          "suggested_fix": "keyword=filters.search_keyword"
+        },
+        {
+          "route": "company.verify_employer_profile",
+          "template_usage": "token=token, employer_id=employer.employer_id",
+          "issue": "Parameter order validation needed",
+          "status": "NEEDS_VERIFICATION"
+        }
+      ]
+    }
+  },
+  "authentication_validation": {
+    "protected_route_usage": {
+      "description": "Protected routes used in templates with proper authentication checks",
+      "count": 25,
+      "examples": [
+        {
+          "route": "company.manage_jobs",
+          "auth_required": true,
+          "roles": [
+            "employer"
+          ],
+          "template_check": "{% if current_user.role == 'employer' %}",
+          "status": "PROPERLY_PROTECTED"
+        },
+        {
+          "route": "jobs_workflow.show_create_form",
+          "auth_required": true,
+          "roles": [
+            "employer"
+          ],
+          "billing_required": true,
+          "template_check": "Conditional navigation present",
+          "status": "PROPERLY_PROTECTED"
+        }
+      ]
+    },
+    "authentication_issues": {
+      "description": "Authentication-related issues in template usage",
+      "count": 3,
+      "examples": [
+        {
+          "issue": "Role value inconsistency",
+          "template": "template/layouts/header.html",
+          "current": "current_user.role == 'seeker'",
+          "should_be": "current_user.role == 'jobseeker'",
+          "priority": "MEDIUM"
+        },
+        {
+          "issue": "Missing authentication check",
+          "route": "jobseeker_profiles.view_profile",
+          "template_usage": "Used without authentication check",
+          "recommendation": "Add {% if current_user.is_authenticated %} check",
+          "priority": "LOW"
+        }
+      ]
+    }
+  },
+  "matching_algorithm_results": {
+    "overall_accuracy": {
+      "total_links": 67,
+      "successfully_matched": 62,
+      "accuracy_percentage": 92.5,
+      "confidence_breakdown": {
+        "high_confidence_100%": 42,
+        "medium_confidence_85-95%": 20,
+        "low_confidence_below_85%": 0,
+        "no_match": 3,
+        "external_excluded": 8
+      }
+    },
+    "matching_strategies_used": {
+      "exact_endpoint_match": {
+        "description": "Direct endpoint name matching",
+        "success_rate": "100%",
+        "count": 42
+      },
+      "blueprint_correction": {
+        "description": "Correcting blueprint name inconsistencies",
+        "success_rate": "95%",
+        "count": 3
+      },
+      "url_pattern_matching": {
+        "description": "Matching hardcoded URLs to route patterns",
+        "success_rate": "90%",
+        "count": 12
+      },
+      "functional_similarity": {
+        "description": "Matching based on functional purpose",
+        "success_rate": "85%",
+        "count": 5
+      }
+    }
+  },
+  "correction_recommendations": {
+    "high_priority_fixes": [
+      {
+        "template": "template/index.html",
+        "fixes_needed": 10,
+        "type": "hardcoded_url_conversion",
+        "impact": "Critical navigation functionality"
+      },
+      {
+        "template": "template/layouts/header.html",
+        "fixes_needed": 2,
+        "type": "endpoint_correction",
+        "impact": "Site-wide navigation"
+      }
+    ],
+    "medium_priority_fixes": [
+      {
+        "template": "template/jobs/search.html",
+        "fixes_needed": 1,
+        "type": "endpoint_correction",
+        "impact": "Job search functionality"
+      },
+      {
+        "template": "template/jobs/_jobs_list.html",
+        "fixes_needed": 1,
+        "type": "pagination_improvement",
+        "impact": "Job listing navigation"
+      }
+    ],
+    "validation_needed": [
+      {
+        "issue": "Missing routes",
+        "count": 3,
+        "action": "Create missing routes or update links",
+        "priority": "MEDIUM"
+      },
+      {
+        "issue": "Parameter validation",
+        "count": 2,
+        "action": "Verify parameter names and types",
+        "priority": "LOW"
+      }
+    ]
+  }
+}

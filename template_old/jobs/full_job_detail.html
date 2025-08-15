@@ -1,0 +1,80 @@
+{% extends "layouts/page.html" %}
+{% block title %}{{ job.title }} at {{ job.company.name if job.company else "Unknown Company" }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <!-- Job Header -->
+  <div class="mb-4">
+    <h1 class="display-5">{{ job.title }}</h1>
+    <p class="text-muted">{{ job.company.name if job.company else "Unknown Company" }} | {{ job.location }}</p>
+    <span class="badge bg-primary">{{ job.position_type }}</span>
+    <span class="badge bg-secondary">{{ job.remote_policy }}</span>
+    <span class="badge bg-info text-dark">{{ job.experience_level }}</span>
+    {% if job.is_featured %}
+      <span class="badge bg-warning text-dark">Featured</span>
+    {% endif %}
+  </div>
+
+  <!-- Salary Information -->
+  {% if not job.salary_confidential and job.salary_min and job.salary_max %}
+  <div class="mb-4">
+    <h4>Salary</h4>
+    <p>{{ job.salary_currency }} {{ "{:,.2f}".format(job.salary_min) }} - {{ "{:,.2f}".format(job.salary_max) }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Job Description -->
+  <div class="mb-4">
+    <h4>Job Description</h4>
+    <p>{{ job.description }}</p>
+  </div>
+
+  <!-- Requirements -->
+  <div class="mb-4">
+    <h4>Requirements</h4>
+    <ul>
+      <li><strong>Education:</strong>
+        {% if job.education_requirements %}
+          {% for level, value in job.education_requirements.items() %}
+            {{ level }}: {{ value }}{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        {% else %}
+          Not specified
+        {% endif %}
+      </li>
+      <li><strong>Required Skills:</strong> {{ ", ".join(job.required_skills) if job.required_skills else "Not specified" }}</li>
+      <li><strong>Preferred Skills:</strong> {{ ", ".join(job.preferred_skills) if job.preferred_skills else "None" }}</li>
+      <li><strong>Documents:</strong> {{ ", ".join(job.required_documents) if job.required_documents else "None" }}</li>
+      <li><strong>Questionnaire:</strong> {{ ", ".join(job.required_questionnaire) if job.required_questionnaire else "None" }}</li>
+    </ul>
+  </div>
+  <!-- Application Instructions -->
+  <div class="mb-4">
+    <h4>Application Instructions</h4>
+    <p>{{ job.application_instructions }}</p>      
+    
+  </div>
+  <div class="mb-4">
+    <a class="btn btn-success btn-lg" href="{{ url_for('jobs.job_details', job_id=job_id) }}" >Back To Job</a>
+  </div>
+  <div class="mb-4">
+    <h4>Company Details</h4>
+    <a class="btn btn-success btn-lg" href="{{ url_for('company_search.view_company_by_company_id', company_id=job.company_id) }}" >Back To Job</a>
+  </div>
+
+
+  <!-- Additional Information -->
+  <div class="mb-4">
+    <h4>Additional Information</h4>
+    <ul>
+      <li><strong>Posted At:</strong> {{ job.posted_at.strftime('%Y-%m-%d') }}</li>
+      <li><strong>Expires At:</strong> {{ job.expires_at.strftime('%Y-%m-%d') }}</li>
+      <li><strong>Application Deadline:</strong> {{ job.application_deadline.strftime('%Y-%m-%d') if job.application_deadline else "Not specified" }}</li>
+      <li><strong>Category:</strong> {{ job.category if job.category else "Not specified" }}</li>
+      <li><strong>Status:</strong> {{ job.status }}</li>
+      <li><strong>View Count:</strong> {{ job.view_count }}</li>
+      <li><strong>Application Count:</strong> {{ job.application_count }}</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

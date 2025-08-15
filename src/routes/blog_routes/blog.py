@@ -53,7 +53,6 @@ async def get_blog(user: User, topic: str):
         "career": ("Navigating Career Change", "blog/job_market/strategies_for_smooth_change.html"),
         "digital-branding": ("Personal Branding", "blog/job_market/building_personal_brand.html"),
         "education": ("Education and Training", "blog/education/index.html"),
-
     }
 
     if topic in topic_mappings:

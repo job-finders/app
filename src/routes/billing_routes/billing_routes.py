@@ -210,7 +210,7 @@ async def change_plan(user: User):
     if request.method == "GET":
         plans = await billing_ctl.billing_service.execute("list_all_billing_plans")
         return render_template(
-            "company/billing/fragments/change_plan_form.html",
+            "company/billing/components/change_plan_form.html",
             list_billing_plans=plans,
             company={"company_id": company_id}
         )

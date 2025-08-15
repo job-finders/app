@@ -2,7 +2,7 @@
 Job Application Controller with Referral Tracking Integration
 """
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from datetime import datetime
 
 from flask import Flask
@@ -10,7 +10,8 @@ from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 
 from src.controllers.controller import Controllers, error_handler
-from src.database.models import JobApplication, JobApplicationORM
+from src.database.models import JobApplication
+from src.database import JobReferralORM, JobApplicationORM
 from src.services.referral_tracking import ReferralTrackingService
 
 
@@ -105,10 +106,10 @@ class JobApplicationsController(Controllers):
             Dict with update result
         """
         with self.get_session() as session:
-            app = session.query(JobApplicationORM) \
-                .options(joinedload(JobApplicationORM.referral)) \
-                .filter_by(application_id=application_id) \
-                .first()
+            app = (session.query(JobApplicationORM)
+                   .options(joinedload(JobApplicationORM.referral))
+                   .filter_by(application_id=application_id)
+                   .first())
 
             if not app:
                 return {"success": False, "message": "Application not found", "code": 404}

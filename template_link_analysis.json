@@ -1,0 +1,443 @@
+{
+  "metadata": {
+    "analysis_date": "2025-01-14T11:30:00Z",
+    "analysis_method": "manual_template_examination",
+    "templates_analyzed": 8,
+    "total_links_found": 67
+  },
+  "link_patterns_found": {
+    "correct_url_for_usage": {
+      "description": "Links already using proper Flask url_for syntax",
+      "count": 45,
+      "examples": [
+        {
+          "template": "template/layouts/header.html",
+          "line": 13,
+          "code": "<a href=\"{{ url_for('home.get_home') }}\" class=\"btn btn-sm btn-outline-success font-weight-bold text-info mx-1\">Home</a>",
+          "endpoint": "home.get_home",
+          "element_type": "navigation_link"
+        },
+        {
+          "template": "template/layouts/header.html",
+          "line": 14,
+          "code": "<a href=\"{{ url_for('home.contact') }}\" class=\"btn btn-sm btn-outline-success font-weight-bold text-info mx-1\">Contact</a>",
+          "endpoint": "home.contact",
+          "element_type": "navigation_link"
+        },
+        {
+          "template": "template/layouts/header.html",
+          "line": 15,
+          "code": "<a href=\"{{ url_for('home.about') }}\" class=\"btn btn-sm btn-outline-success font-weight-bold text-info mx-1\">About</a>",
+          "endpoint": "home.about",
+          "element_type": "navigation_link"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 11,
+          "code": "<li><a href=\"{{ url_for('home.get_home') }}\" class=\"text-muted\">Home</a></li>",
+          "endpoint": "home.get_home",
+          "element_type": "footer_link"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 12,
+          "code": "<li><a href=\"{{ url_for('home.about') }}\" class=\"text-muted\">About</a></li>",
+          "endpoint": "home.about",
+          "element_type": "footer_link"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 13,
+          "code": "<li><a href=\"{{ url_for('home.contact') }}\" class=\"text-muted\">Contact</a></li>",
+          "endpoint": "home.contact",
+          "element_type": "footer_link"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 14,
+          "code": "<li><a href=\"{{ url_for('home.terms') }}\" class=\"text-muted\">Terms of Use & Privacy</a></li>",
+          "endpoint": "home.terms",
+          "element_type": "footer_link"
+        },
+        {
+          "template": "template/jobs/_jobs_list.html",
+          "line": 25,
+          "code": "<a href=\"{{ url_for('jobs.job_details', job_id=job.job_id) }}\">{{ job.title }}</a>",
+          "endpoint": "jobs.job_details",
+          "parameters": [
+            "job_id"
+          ],
+          "element_type": "job_link"
+        },
+        {
+          "template": "template/jobs/_jobs_list.html",
+          "line": 85,
+          "code": "<a href=\"{{ url_for('jobs.job_details', job_id=job.job_id) }}\" class=\"btn btn-apply\">",
+          "endpoint": "jobs.job_details",
+          "parameters": [
+            "job_id"
+          ],
+          "element_type": "action_button"
+        },
+        {
+          "template": "template/jobs/_jobs_list.html",
+          "line": 95,
+          "code": "<a href=\"{{ url_for('jobseeker_profiles.view_profile') }}\" class=\"btn btn-complete-profile\">",
+          "endpoint": "jobseeker_profiles.view_profile",
+          "element_type": "action_button"
+        },
+        {
+          "template": "template/jobs/_jobs_list.html",
+          "line": 101,
+          "code": "<a href=\"{{ url_for('auth.login') }}\" class=\"btn btn-login-required\">",
+          "endpoint": "auth.login",
+          "element_type": "auth_link"
+        },
+        {
+          "template": "template/company/view_company_profile.html",
+          "line": 45,
+          "code": "<a href=\"{{ url_for('company.edit_company_profile') }}\" class=\"btn btn-outline-primary d-block mb-2\">",
+          "endpoint": "company.edit_company_profile",
+          "element_type": "action_button"
+        },
+        {
+          "template": "template/company/view_company_profile.html",
+          "line": 125,
+          "code": "<a href=\"{{ url_for('company.manage_jobs') }}\" class=\"btn btn-sm btn-outline-primary\">",
+          "endpoint": "company.manage_jobs",
+          "element_type": "action_button"
+        },
+        {
+          "template": "template/company/view_company_profile.html",
+          "line": 200,
+          "code": "<a href=\"{{ url_for('company.candidate_management') }}\" class=\"btn btn-outline-primary\">",
+          "endpoint": "company.candidate_management",
+          "element_type": "action_button"
+        },
+        {
+          "template": "template/login.html",
+          "line": 12,
+          "code": "<a href=\"{{ url_for('home.get_home') }}\" class=\"text-decoration-none\">",
+          "endpoint": "home.get_home",
+          "element_type": "logo_link"
+        },
+        {
+          "template": "template/login.html",
+          "line": 20,
+          "code": "<form action=\"{{ url_for('auth.login') }}\" method=\"POST\" enctype=\"multipart/form-data\" novalidate>",
+          "endpoint": "auth.login",
+          "element_type": "form_action"
+        },
+        {
+          "template": "template/login.html",
+          "line": 35,
+          "code": "<a href=\"{{ url_for('auth.password_reset') }}\" class=\"text-muted\">Forgot password?</a>",
+          "endpoint": "auth.password_reset",
+          "element_type": "auth_link"
+        },
+        {
+          "template": "template/login.html",
+          "line": 42,
+          "code": "<a href=\"{{ url_for('auth.subscribe') }}\">Create one here</a>",
+          "endpoint": "auth.subscribe",
+          "element_type": "auth_link"
+        }
+      ]
+    },
+    "hardcoded_internal_urls": {
+      "description": "Internal URLs that are hardcoded and should use url_for",
+      "count": 12,
+      "examples": [
+        {
+          "template": "template/index.html",
+          "line": 150,
+          "code": "<li><a class=\"dropdown-item\" href=\"/jobs\"><i class=\"fas fa-search me-2 text-primary\"></i>Browse Jobs</a></li>",
+          "hardcoded_url": "/jobs",
+          "suggested_fix": "{{ url_for('jobs.list_jobs') }}",
+          "issue": "Should use url_for for internal job browsing"
+        },
+        {
+          "template": "template/index.html",
+          "line": 151,
+          "code": "<li><a class=\"dropdown-item\" href=\"/job-alerts\"><i class=\"fas fa-bell me-2 text-success\"></i>Job Alerts</a></li>",
+          "hardcoded_url": "/job-alerts",
+          "suggested_fix": "{{ url_for('jobseeker.job_alerts') }}",
+          "issue": "Should use url_for for job alerts"
+        },
+        {
+          "template": "template/index.html",
+          "line": 153,
+          "code": "<li><a class=\"dropdown-item\" href=\"/resumes\"><i class=\"fas fa-file-alt me-2 text-info\"></i>My CV / Resume</a></li>",
+          "hardcoded_url": "/resumes",
+          "suggested_fix": "{{ url_for('resumes.manage_resumes') }}",
+          "issue": "Should use url_for for resume management"
+        },
+        {
+          "template": "template/index.html",
+          "line": 154,
+          "code": "<li><a class=\"dropdown-item\" href=\"/applications\"><i class=\"fas fa-clipboard-list me-2 text-secondary\"></i>My Applications</a></li>",
+          "hardcoded_url": "/applications",
+          "suggested_fix": "{{ url_for('jobseeker_applications.my_applications') }}",
+          "issue": "Should use url_for for applications"
+        },
+        {
+          "template": "template/index.html",
+          "line": 163,
+          "code": "<li><a class=\"dropdown-item\" href=\"/employer/post-job\"><i class=\"fas fa-bullhorn me-2 text-warning\"></i>Post a Job</a></li>",
+          "hardcoded_url": "/employer/post-job",
+          "suggested_fix": "{{ url_for('jobs_workflow.show_create_form') }}",
+          "issue": "Should use url_for for job posting"
+        },
+        {
+          "template": "template/index.html",
+          "line": 164,
+          "code": "<li><a class=\"dropdown-item\" href=\"/employer/manage-jobs\"><i class=\"fas fa-tasks me-2 text-primary\"></i>Manage Jobs</a></li>",
+          "hardcoded_url": "/employer/manage-jobs",
+          "suggested_fix": "{{ url_for('company.manage_jobs') }}",
+          "issue": "Should use url_for for job management"
+        },
+        {
+          "template": "template/index.html",
+          "line": 165,
+          "code": "<li><a class=\"dropdown-item\" href=\"/employer/search-candidates\"><i class=\"fas fa-search me-2 text-info\"></i>Search Candidates</a></li>",
+          "hardcoded_url": "/employer/search-candidates",
+          "suggested_fix": "{{ url_for('company.candidate_management') }}",
+          "issue": "Should use url_for for candidate search"
+        },
+        {
+          "template": "template/index.html",
+          "line": 166,
+          "code": "<li><a class=\"dropdown-item\" href=\"/employer/applicants\"><i class=\"fas fa-users me-2 text-secondary\"></i>View Applicants</a></li>",
+          "hardcoded_url": "/employer/applicants",
+          "suggested_fix": "{{ url_for('company.application_analytics') }}",
+          "issue": "Should use url_for for applicant viewing"
+        },
+        {
+          "template": "template/index.html",
+          "line": 200,
+          "code": "<li><a class=\"dropdown-item\" href=\"/register\"><i class=\"fas fa-user-plus me-2 text-info\"></i>Create Account</a></li>",
+          "hardcoded_url": "/register",
+          "suggested_fix": "{{ url_for('auth.subscribe') }}",
+          "issue": "Should use url_for for registration"
+        },
+        {
+          "template": "template/index.html",
+          "line": 204,
+          "code": "<li><a class=\"dropdown-item\" href=\"/login\"><i class=\"fas fa-sign-in-alt me-2 text-success\"></i>Login</a></li>",
+          "hardcoded_url": "/login",
+          "suggested_fix": "{{ url_for('auth.login') }}",
+          "issue": "Should use url_for for login"
+        },
+        {
+          "template": "template/index.html",
+          "line": 208,
+          "code": "<li><a class=\"dropdown-item\" href=\"/logout\"><i class=\"fas fa-sign-out-alt me-2 text-danger\"></i>Logout</a></li>",
+          "hardcoded_url": "/logout",
+          "suggested_fix": "{{ url_for('auth.logout') }}",
+          "issue": "Should use url_for for logout"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 15,
+          "code": "<li><a href=\"/ai-crawlers-info\" class=\"text-muted\">AI Crawler Info</a></li>",
+          "hardcoded_url": "/ai-crawlers-info",
+          "suggested_fix": "{{ url_for('home.ai_crawlers_info') }}",
+          "issue": "Should use url_for for AI crawler info page"
+        }
+      ]
+    },
+    "external_urls": {
+      "description": "External URLs that are correctly handled",
+      "count": 8,
+      "examples": [
+        {
+          "template": "template/layouts/header.html",
+          "line": 16,
+          "code": "<a href=\"https://blog.jobfinders.site\" class=\"btn btn-sm btn-outline-success font-weight-bold text-info mx-1\">Blog</a>",
+          "external_url": "https://blog.jobfinders.site",
+          "status": "correct"
+        },
+        {
+          "template": "template/index.html",
+          "line": 170,
+          "code": "<a class=\"nav-link text-white fw-semibold\" href=\"https://blog.jobfinders.site\">",
+          "external_url": "https://blog.jobfinders.site",
+          "status": "correct"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 20,
+          "code": "<li><a href=\"https://www.labour.gov.za/\" target=\"_blank\" class=\"text-muted\">Department of Labour SA</a></li>",
+          "external_url": "https://www.labour.gov.za/",
+          "status": "correct"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 21,
+          "code": "<li><a href=\"https://sayouth.mobi/\" target=\"_blank\" class=\"text-muted\">SA Youth Platform</a></li>",
+          "external_url": "https://sayouth.mobi/",
+          "status": "correct"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 22,
+          "code": "<li><a href=\"https://www.nyda.gov.za/\" target=\"_blank\" class=\"text-muted\">NYDA – Youth Agency</a></li>",
+          "external_url": "https://www.nyda.gov.za/",
+          "status": "correct"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 28,
+          "code": "<li><a href=\"https://blog.jobfinders.site\" target=\"_blank\" class=\"text-muted\">Jobfinders Blog</a></li>",
+          "external_url": "https://blog.jobfinders.site",
+          "status": "correct"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 29,
+          "code": "<li><a href=\"https://jobfinders.substack.com\" target=\"_blank\" class=\"text-muted\">JobFinders Substack</a></li>",
+          "external_url": "https://jobfinders.substack.com",
+          "status": "correct"
+        },
+        {
+          "template": "template/layouts/footer.html",
+          "line": 30,
+          "code": "<li><a href=\"https://dev.to/freelancingsolutions/\" target=\"_blank\" class=\"text-muted\">Dev Blog on DevTo</a></li>",
+          "external_url": "https://dev.to/freelancingsolutions/",
+          "status": "correct"
+        }
+      ]
+    },
+    "pagination_links": {
+      "description": "Pagination links that need special handling",
+      "count": 2,
+      "examples": [
+        {
+          "template": "template/jobs/_jobs_list.html",
+          "line": 110,
+          "code": "<a class=\"page-link\" href=\"?page={{ page-1 }}{% if search_keyword %}&keyword={{ search_keyword }}{% endif %}\" aria-label=\"Previous\">",
+          "issue": "Uses query parameters instead of url_for",
+          "suggested_fix": "{{ url_for(request.endpoint, page=page-1, **request.args) }}"
+        },
+        {
+          "template": "template/jobs/search.html",
+          "line": 145,
+          "code": "<a href=\"{{ url_for('jobs_search_route.search_jobs', search_term=filters.search_keyword, page=page-1) }}\"",
+          "issue": "Incorrect endpoint name",
+          "suggested_fix": "{{ url_for('jobs.search_jobs', keyword=filters.search_keyword, page=page-1) }}"
+        }
+      ]
+    },
+    "static_asset_links": {
+      "description": "Static asset links using url_for correctly",
+      "count": 5,
+      "examples": [
+        {
+          "template": "template/jobs/list.html",
+          "line": 5,
+          "code": "<link rel=\"stylesheet\" href=\"{{ url_for('static', filename='css/jobs/job-listings.css') }}\">",
+          "status": "correct"
+        },
+        {
+          "template": "template/jobs/list.html",
+          "line": 30,
+          "code": "<script src=\"{{ url_for('static', filename='js/jobs/match-details-modal.js') }}\"></script>",
+          "status": "correct"
+        },
+        {
+          "template": "template/jobs/search.html",
+          "line": 4,
+          "code": "<link rel=\"stylesheet\" href=\"{{ url_for('static', filename='css/jobs/job-listings.css') }}\">",
+          "status": "correct"
+        },
+        {
+          "template": "template/jobs/search.html",
+          "line": 150,
+          "code": "<script src=\"{{ url_for('static', filename='js/jobs/match-details-modal.js') }}\"></script>",
+          "status": "correct"
+        },
+        {
+          "template": "template/index.html",
+          "line": 400,
+          "code": "<img src=\"/static/images/hero-illustration.svg\" alt=\"Job Search\" class=\"img-fluid\" style=\"max-height: 400px;\">",
+          "issue": "Hardcoded static path",
+          "suggested_fix": "{{ url_for('static', filename='images/hero-illustration.svg') }}"
+        }
+      ]
+    }
+  },
+  "route_validation_issues": {
+    "incorrect_endpoints": [
+      {
+        "template": "template/jobs/search.html",
+        "line": 145,
+        "found": "jobs_search_route.search_jobs",
+        "should_be": "jobs.search_jobs",
+        "issue": "Incorrect blueprint reference"
+      },
+      {
+        "template": "template/layouts/header.html",
+        "line": 20,
+        "found": "company.get_dashboard",
+        "should_be": "company.view_company",
+        "issue": "Endpoint doesn't exist in route mapping"
+      },
+      {
+        "template": "template/layouts/header.html",
+        "line": 24,
+        "found": "jobseekers.dashboard",
+        "should_be": "jobseeker.dashboard",
+        "issue": "Incorrect blueprint name (plural vs singular)"
+      }
+    ],
+    "missing_parameters": [
+      {
+        "template": "template/company/view_company_profile.html",
+        "line": 180,
+        "found": "url_for('company.view_company_job_applications', company_id=company.company_id)",
+        "issue": "Route may not exist or parameter name incorrect"
+      }
+    ],
+    "conditional_logic_issues": [
+      {
+        "template": "template/layouts/header.html",
+        "line": 19,
+        "code": "{% if current_user and current_user.role == 'seeker' %}",
+        "issue": "Role value should be 'jobseeker' not 'seeker' based on route analysis"
+      }
+    ]
+  },
+  "template_inheritance_patterns": {
+    "base_templates": [
+      "layouts/page.html",
+      "layouts/auth.html",
+      "company/layout/page.html"
+    ],
+    "common_includes": [
+      "layouts/flash.html",
+      "jobs/_jobs_list.html",
+      "jobs/_match_details_modal.html",
+      "company/components/new_job.html"
+    ]
+  },
+  "recommendations": {
+    "immediate_fixes": [
+      "Convert 12 hardcoded internal URLs to use url_for",
+      "Fix 3 incorrect endpoint references",
+      "Update role checking logic to use correct role values",
+      "Fix pagination links to use proper url_for syntax"
+    ],
+    "validation_needed": [
+      "Verify all endpoint names against actual route definitions",
+      "Check parameter names match route parameter requirements",
+      "Validate conditional logic matches authentication system",
+      "Test all corrected links for functionality"
+    ],
+    "best_practices": [
+      "Use url_for for all internal links",
+      "Include proper target='_blank' for external links",
+      "Use consistent parameter passing patterns",
+      "Implement proper error handling for missing routes"
+    ]
+  }
+}

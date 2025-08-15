@@ -1,0 +1,16 @@
+{% extends "email/layout/base.html" %}
+{% set title = "Payment Received" %}
+{% set header = "Payment Confirmation" %}
+
+{% block content %}
+<p class="mb-3">Hello,</p>
+
+<p>We’ve received your payment for <span class="highlight">Invoice #{{ invoice_id }}</span>.</p>
+
+<ul class="list-group mb-3">
+    <li class="list-group-item"><strong>Amount Paid:</strong> {{ amount }}</li>
+    <li class="list-group-item"><strong>Date:</strong> {{ date }}</li>
+</ul>
+
+<p>Thank you for your business.</p>
+{% endblock %}

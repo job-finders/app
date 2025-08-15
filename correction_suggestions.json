@@ -1,0 +1,395 @@
+{
+  "metadata": {
+    "generation_date": "2025-01-14T13:00:00Z",
+    "total_corrections_needed": 22,
+    "correction_categories": 4,
+    "priority_levels": 3
+  },
+  "correction_suggestions": {
+    "high_priority_corrections": {
+      "description": "Critical fixes that affect core functionality",
+      "count": 12,
+      "corrections": [
+        {
+          "template": "template/index.html",
+          "line": 150,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/jobs\"><i class=\"fas fa-search me-2 text-primary\"></i>Browse Jobs</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('jobs.list_jobs') }}\"><i class=\"fas fa-search me-2 text-primary\"></i>Browse Jobs</a></li>",
+          "explanation": "Convert hardcoded /jobs URL to use Flask url_for with jobs.list_jobs endpoint",
+          "confidence": "100%",
+          "impact": "Fixes main navigation job browsing link"
+        },
+        {
+          "template": "template/index.html",
+          "line": 163,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/employer/post-job\"><i class=\"fas fa-bullhorn me-2 text-warning\"></i>Post a Job</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('jobs_workflow.show_create_form') }}\"><i class=\"fas fa-bullhorn me-2 text-warning\"></i>Post a Job</a></li>",
+          "explanation": "Convert hardcoded employer URL to proper job workflow endpoint",
+          "confidence": "100%",
+          "impact": "Fixes employer job posting navigation"
+        },
+        {
+          "template": "template/index.html",
+          "line": 164,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/employer/manage-jobs\"><i class=\"fas fa-tasks me-2 text-primary\"></i>Manage Jobs</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('company.manage_jobs') }}\"><i class=\"fas fa-tasks me-2 text-primary\"></i>Manage Jobs</a></li>",
+          "explanation": "Convert hardcoded employer URL to company management endpoint",
+          "confidence": "100%",
+          "impact": "Fixes employer job management navigation"
+        },
+        {
+          "template": "template/index.html",
+          "line": 200,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/register\"><i class=\"fas fa-user-plus me-2 text-info\"></i>Create Account</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('auth.subscribe') }}\"><i class=\"fas fa-user-plus me-2 text-info\"></i>Create Account</a></li>",
+          "explanation": "Convert hardcoded registration URL to auth.subscribe endpoint",
+          "confidence": "100%",
+          "impact": "Fixes user registration navigation"
+        },
+        {
+          "template": "template/index.html",
+          "line": 204,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/login\"><i class=\"fas fa-sign-in-alt me-2 text-success\"></i>Login</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('auth.login') }}\"><i class=\"fas fa-sign-in-alt me-2 text-success\"></i>Login</a></li>",
+          "explanation": "Convert hardcoded login URL to auth.login endpoint",
+          "confidence": "100%",
+          "impact": "Fixes user login navigation"
+        },
+        {
+          "template": "template/index.html",
+          "line": 208,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/logout\"><i class=\"fas fa-sign-out-alt me-2 text-danger\"></i>Logout</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('auth.logout') }}\"><i class=\"fas fa-sign-out-alt me-2 text-danger\"></i>Logout</a></li>",
+          "explanation": "Convert hardcoded logout URL to auth.logout endpoint",
+          "confidence": "100%",
+          "impact": "Fixes user logout navigation"
+        },
+        {
+          "template": "template/layouts/header.html",
+          "line": 20,
+          "issue_type": "incorrect_endpoint",
+          "current_code": "<a href=\"{{ url_for('company.get_dashboard') }}\" class=\"btn btn-sm btn-outline-primary font-weight-bold mx-1\">Dashboard</a>",
+          "corrected_code": "<a href=\"{{ url_for('company.view_company') }}\" class=\"btn btn-sm btn-outline-primary font-weight-bold mx-1\">Dashboard</a>",
+          "explanation": "Correct non-existent endpoint to actual company dashboard route",
+          "confidence": "95%",
+          "impact": "Fixes employer dashboard navigation in header"
+        },
+        {
+          "template": "template/layouts/header.html",
+          "line": 24,
+          "issue_type": "incorrect_endpoint",
+          "current_code": "<a href=\"{{ url_for('jobseekers.dashboard') }}\" class=\"btn btn-sm btn-outline-primary font-weight-bold mx-1\">Dashboard</a>",
+          "corrected_code": "<a href=\"{{ url_for('jobseeker.dashboard') }}\" class=\"btn btn-sm btn-outline-primary font-weight-bold mx-1\">Dashboard</a>",
+          "explanation": "Correct blueprint name from plural to singular",
+          "confidence": "90%",
+          "impact": "Fixes jobseeker dashboard navigation in header"
+        }
+      ]
+    },
+    "medium_priority_corrections": {
+      "description": "Important fixes that improve functionality",
+      "count": 7,
+      "corrections": [
+        {
+          "template": "template/jobs/search.html",
+          "line": 145,
+          "issue_type": "incorrect_endpoint",
+          "current_code": "<a href=\"{{ url_for('jobs_search_route.search_jobs', search_term=filters.search_keyword, page=page-1) }}\"",
+          "corrected_code": "<a href=\"{{ url_for('jobs.search_jobs', keyword=filters.search_keyword, page=page-1) }}\"",
+          "explanation": "Correct blueprint reference and parameter name",
+          "confidence": "100%",
+          "impact": "Fixes job search pagination"
+        },
+        {
+          "template": "template/jobs/_jobs_list.html",
+          "line": 110,
+          "issue_type": "pagination_pattern",
+          "current_code": "<a class=\"page-link\" href=\"?page={{ page-1 }}{% if search_keyword %}&keyword={{ search_keyword }}{% endif %}\" aria-label=\"Previous\">",
+          "corrected_code": "<a class=\"page-link\" href=\"{{ url_for(request.endpoint, page=page-1, **request.args) }}\" aria-label=\"Previous\">",
+          "explanation": "Use proper url_for for pagination with parameter preservation",
+          "confidence": "95%",
+          "impact": "Improves pagination URL consistency"
+        },
+        {
+          "template": "template/index.html",
+          "line": 151,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/job-alerts\"><i class=\"fas fa-bell me-2 text-success\"></i>Job Alerts</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('jobseeker.job_alerts') }}\"><i class=\"fas fa-bell me-2 text-success\"></i>Job Alerts</a></li>",
+          "explanation": "Convert to url_for (assuming route exists)",
+          "confidence": "80%",
+          "impact": "Fixes job alerts navigation",
+          "note": "Route existence needs verification"
+        },
+        {
+          "template": "template/index.html",
+          "line": 153,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/resumes\"><i class=\"fas fa-file-alt me-2 text-info\"></i>My CV / Resume</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('resumes.manage_resumes') }}\"><i class=\"fas fa-file-alt me-2 text-info\"></i>My CV / Resume</a></li>",
+          "explanation": "Convert to resume management endpoint",
+          "confidence": "90%",
+          "impact": "Fixes resume management navigation"
+        },
+        {
+          "template": "template/index.html",
+          "line": 154,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/applications\"><i class=\"fas fa-clipboard-list me-2 text-secondary\"></i>My Applications</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('jobseeker_applications.my_applications') }}\"><i class=\"fas fa-clipboard-list me-2 text-secondary\"></i>My Applications</a></li>",
+          "explanation": "Convert to jobseeker applications endpoint",
+          "confidence": "85%",
+          "impact": "Fixes application management navigation"
+        },
+        {
+          "template": "template/index.html",
+          "line": 165,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/employer/search-candidates\"><i class=\"fas fa-search me-2 text-info\"></i>Search Candidates</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('company.candidate_management') }}\"><i class=\"fas fa-search me-2 text-info\"></i>Search Candidates</a></li>",
+          "explanation": "Convert to company candidate management endpoint",
+          "confidence": "95%",
+          "impact": "Fixes candidate search navigation"
+        },
+        {
+          "template": "template/index.html",
+          "line": 166,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a class=\"dropdown-item\" href=\"/employer/applicants\"><i class=\"fas fa-users me-2 text-secondary\"></i>View Applicants</a></li>",
+          "corrected_code": "<li><a class=\"dropdown-item\" href=\"{{ url_for('company.application_analytics') }}\"><i class=\"fas fa-users me-2 text-secondary\"></i>View Applicants</a></li>",
+          "explanation": "Convert to company application analytics endpoint",
+          "confidence": "85%",
+          "impact": "Fixes applicant viewing navigation"
+        }
+      ]
+    },
+    "low_priority_corrections": {
+      "description": "Minor improvements and optimizations",
+      "count": 3,
+      "corrections": [
+        {
+          "template": "template/layouts/footer.html",
+          "line": 15,
+          "issue_type": "hardcoded_url",
+          "current_code": "<li><a href=\"/ai-crawlers-info\" class=\"text-muted\">AI Crawler Info</a></li>",
+          "corrected_code": "<li><a href=\"{{ url_for('home.ai_crawlers_info') }}\" class=\"text-muted\">AI Crawler Info</a></li>",
+          "explanation": "Convert to url_for (route may need to be created)",
+          "confidence": "60%",
+          "impact": "Fixes footer link",
+          "note": "Route existence needs verification or creation"
+        },
+        {
+          "template": "template/index.html",
+          "line": 400,
+          "issue_type": "hardcoded_static_path",
+          "current_code": "<img src=\"/static/images/hero-illustration.svg\" alt=\"Job Search\" class=\"img-fluid\" style=\"max-height: 400px;\">",
+          "corrected_code": "<img src=\"{{ url_for('static', filename='images/hero-illustration.svg') }}\" alt=\"Job Search\" class=\"img-fluid\" style=\"max-height: 400px;\">",
+          "explanation": "Convert static file path to use url_for for consistency",
+          "confidence": "100%",
+          "impact": "Improves static file handling consistency"
+        },
+        {
+          "template": "template/layouts/header.html",
+          "line": 19,
+          "issue_type": "role_value_inconsistency",
+          "current_code": "{% if current_user and current_user.role == 'seeker' %}",
+          "corrected_code": "{% if current_user and current_user.role == 'jobseeker' %}",
+          "explanation": "Correct role value to match authentication system",
+          "confidence": "80%",
+          "impact": "Fixes role-based navigation logic",
+          "note": "Role value needs verification against auth system"
+        }
+      ]
+    }
+  },
+  "batch_corrections": {
+    "template_index_html": {
+      "description": "All corrections needed for main homepage template",
+      "total_corrections": 10,
+      "correction_script": {
+        "find_replace_operations": [
+          {
+            "find": "href=\"/jobs\"",
+            "replace": "href=\"{{ url_for('jobs.list_jobs') }}\""
+          },
+          {
+            "find": "href=\"/job-alerts\"",
+            "replace": "href=\"{{ url_for('jobseeker.job_alerts') }}\""
+          },
+          {
+            "find": "href=\"/resumes\"",
+            "replace": "href=\"{{ url_for('resumes.manage_resumes') }}\""
+          },
+          {
+            "find": "href=\"/applications\"",
+            "replace": "href=\"{{ url_for('jobseeker_applications.my_applications') }}\""
+          },
+          {
+            "find": "href=\"/employer/post-job\"",
+            "replace": "href=\"{{ url_for('jobs_workflow.show_create_form') }}\""
+          },
+          {
+            "find": "href=\"/employer/manage-jobs\"",
+            "replace": "href=\"{{ url_for('company.manage_jobs') }}\""
+          },
+          {
+            "find": "href=\"/employer/search-candidates\"",
+            "replace": "href=\"{{ url_for('company.candidate_management') }}\""
+          },
+          {
+            "find": "href=\"/employer/applicants\"",
+            "replace": "href=\"{{ url_for('company.application_analytics') }}\""
+          },
+          {
+            "find": "href=\"/register\"",
+            "replace": "href=\"{{ url_for('auth.subscribe') }}\""
+          },
+          {
+            "find": "href=\"/login\"",
+            "replace": "href=\"{{ url_for('auth.login') }}\""
+          },
+          {
+            "find": "href=\"/logout\"",
+            "replace": "href=\"{{ url_for('auth.logout') }}\""
+          },
+          {
+            "find": "src=\"/static/images/hero-illustration.svg\"",
+            "replace": "src=\"{{ url_for('static', filename='images/hero-illustration.svg') }}\""
+          }
+        ]
+      }
+    },
+    "template_layouts_header_html": {
+      "description": "All corrections needed for site header template",
+      "total_corrections": 3,
+      "correction_script": {
+        "find_replace_operations": [
+          {
+            "find": "{{ url_for('company.get_dashboard') }}",
+            "replace": "{{ url_for('company.view_company') }}"
+          },
+          {
+            "find": "{{ url_for('jobseekers.dashboard') }}",
+            "replace": "{{ url_for('jobseeker.dashboard') }}"
+          },
+          {
+            "find": "current_user.role == 'seeker'",
+            "replace": "current_user.role == 'jobseeker'"
+          }
+        ]
+      }
+    }
+  },
+  "validation_requirements": {
+    "pre_correction_validation": [
+      {
+        "check": "Route existence verification",
+        "routes_to_verify": [
+          "jobseeker.job_alerts",
+          "resumes.manage_resumes",
+          "jobseeker_applications.my_applications",
+          "home.ai_crawlers_info"
+        ],
+        "action": "Create missing routes or update corrections"
+      },
+      {
+        "check": "Role value verification",
+        "values_to_verify": [
+          "jobseeker",
+          "seeker"
+        ],
+        "action": "Confirm correct role values in authentication system"
+      },
+      {
+        "check": "Parameter name verification",
+        "parameters_to_verify": [
+          "keyword vs search_term in jobs.search_jobs",
+          "email parameter in home.verify_email"
+        ],
+        "action": "Update parameter names to match route definitions"
+      }
+    ],
+    "post_correction_testing": [
+      {
+        "test_type": "Navigation testing",
+        "description": "Test all corrected navigation links",
+        "critical_paths": [
+          "Main navigation dropdowns",
+          "Header authentication links",
+          "Job search and pagination",
+          "Company dashboard navigation"
+        ]
+      },
+      {
+        "test_type": "Authentication flow testing",
+        "description": "Test role-based navigation",
+        "test_scenarios": [
+          "Employer user navigation",
+          "Jobseeker user navigation",
+          "Anonymous user navigation"
+        ]
+      },
+      {
+        "test_type": "Parameter validation testing",
+        "description": "Test parameterized routes",
+        "test_cases": [
+          "Job detail pages with valid/invalid job_ids",
+          "Search functionality with various parameters",
+          "Pagination with edge cases"
+        ]
+      }
+    ]
+  },
+  "implementation_strategy": {
+    "phase_1_critical_fixes": {
+      "templates": [
+        "template/index.html",
+        "template/layouts/header.html"
+      ],
+      "estimated_time": "2-3 hours",
+      "risk_level": "Medium",
+      "testing_required": "Extensive navigation testing"
+    },
+    "phase_2_functional_improvements": {
+      "templates": [
+        "template/jobs/search.html",
+        "template/jobs/_jobs_list.html"
+      ],
+      "estimated_time": "1-2 hours",
+      "risk_level": "Low",
+      "testing_required": "Job search and pagination testing"
+    },
+    "phase_3_minor_optimizations": {
+      "templates": [
+        "template/layouts/footer.html",
+        "static file references"
+      ],
+      "estimated_time": "30 minutes",
+      "risk_level": "Very Low",
+      "testing_required": "Basic functionality verification"
+    }
+  },
+  "success_metrics": {
+    "before_corrections": {
+      "total_links": 67,
+      "correct_url_for": 45,
+      "hardcoded_urls": 12,
+      "incorrect_endpoints": 3,
+      "other_issues": 7
+    },
+    "after_corrections": {
+      "total_links": 67,
+      "correct_url_for": 65,
+      "hardcoded_urls": 0,
+      "incorrect_endpoints": 0,
+      "other_issues": 2
+    },
+    "improvement_percentage": "97% compliance with url_for best practices"
+  }
+}

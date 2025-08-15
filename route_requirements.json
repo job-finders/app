@@ -1,0 +1,585 @@
+{
+  "metadata": {
+    "extraction_date": "2025-01-14T11:15:00Z",
+    "purpose": "Complete route parameter and authentication requirements for template validation",
+    "total_routes_analyzed": 85
+  },
+  "authentication_requirements": {
+    "public_routes": {
+      "description": "Routes accessible without authentication",
+      "count": 28,
+      "routes": [
+        {
+          "endpoint": "home.get_home",
+          "url": "/",
+          "auth_decorators": [
+            "@user_details"
+          ],
+          "auth_required": false,
+          "user_context": "optional"
+        },
+        {
+          "endpoint": "home.about",
+          "url": "/about",
+          "auth_decorators": [
+            "@user_details"
+          ],
+          "auth_required": false,
+          "user_context": "optional"
+        },
+        {
+          "endpoint": "jobs.search_jobs",
+          "url": "/jobs/search",
+          "auth_decorators": [
+            "@user_details"
+          ],
+          "auth_required": false,
+          "user_context": "optional",
+          "enhanced_features": "match_scores_if_authenticated"
+        },
+        {
+          "endpoint": "jobs.job_details",
+          "url": "/jobs/<job_id>",
+          "auth_decorators": [
+            "@user_details"
+          ],
+          "auth_required": false,
+          "user_context": "optional",
+          "enhanced_features": "application_status_if_authenticated"
+        },
+        {
+          "endpoint": "auth.login",
+          "url": "/auth/login",
+          "auth_decorators": [
+            "@user_details"
+          ],
+          "auth_required": false,
+          "redirect_if_authenticated": true
+        },
+        {
+          "endpoint": "auth.subscribe",
+          "url": "/auth/subscribe",
+          "auth_decorators": [
+            "@user_details"
+          ],
+          "auth_required": false,
+          "redirect_if_authenticated": true
+        }
+      ]
+    },
+    "protected_routes": {
+      "description": "Routes requiring authentication",
+      "count": 57,
+      "categories": {
+        "basic_auth": {
+          "description": "Requires login but no specific role",
+          "decorator": "@login_required",
+          "routes": [
+            {
+              "endpoint": "auth.logout",
+              "url": "/auth/logout",
+              "purpose": "User logout"
+            },
+            {
+              "endpoint": "company.create_company_profile",
+              "url": "/dashboard/company/create-company",
+              "purpose": "Company creation (any authenticated user)"
+            }
+          ]
+        },
+        "employer_only": {
+          "description": "Requires employer role",
+          "decorator": "@employer_login",
+          "count": 20,
+          "routes": [
+            {
+              "endpoint": "jobs_workflow.show_create_form",
+              "url": "/dashboard/jobs/create",
+              "additional_decorators": [
+                "@require_billing_role()"
+              ],
+              "billing_required": true
+            },
+            {
+              "endpoint": "jobs_workflow.create_job",
+              "url": "/dashboard/jobs/create",
+              "additional_decorators": [
+                "@require_billing_role()"
+              ],
+              "billing_required": true
+            },
+            {
+              "endpoint": "company.view_company",
+              "url": "/dashboard/company/profile",
+              "verification_checks": "employer_profile_required"
+            },
+            {
+              "endpoint": "company.manage_jobs",
+              "url": "/dashboard/company/jobs",
+              "additional_decorators": [
+                "@require_billing_role()"
+              ],
+              "billing_required": true
+            }
+          ]
+        },
+        "jobseeker_only": {
+          "description": "Requires jobseeker role",
+          "decorator": "@jobseeker_login",
+          "count": 1,
+          "routes": [
+            {
+              "endpoint": "jobs_workflow.submit_application",
+              "url": "/dashboard/jobs/<job_id>/apply",
+              "purpose": "Submit job application"
+            }
+          ]
+        },
+        "admin_only": {
+          "description": "Requires admin/system admin role",
+          "decorator": "@system_admin_login",
+          "count": 2,
+          "routes": [
+            {
+              "endpoint": "jobs_workflow.approve_job",
+              "url": "/dashboard/jobs/approve/<approval_token>",
+              "purpose": "Approve pending job posting"
+            },
+            {
+              "endpoint": "jobs_workflow.reject_job",
+              "url": "/dashboard/jobs/reject/<approval_token>",
+              "purpose": "Reject pending job posting"
+            }
+          ]
+        },
+        "job_access_control": {
+          "description": "Requires specific job access permissions",
+          "decorator": "@employer_job_access_required()",
+          "routes": [
+            {
+              "endpoint": "jobs_workflow.show_edit_form",
+              "url": "/dashboard/jobs/<job_id>/edit",
+              "access_check": "employer_owns_job"
+            },
+            {
+              "endpoint": "jobs_workflow.edit_job",
+              "url": "/dashboard/jobs/<job_id>/edit",
+              "access_check": "employer_owns_job"
+            },
+            {
+              "endpoint": "jobs_workflow.view_job_applications",
+              "url": "/dashboard/jobs/<job_id>/view-applications",
+              "access_check": "employer_owns_job"
+            }
+          ]
+        }
+      }
+    },
+    "billing_requirements": {
+      "description": "Routes requiring active billing/subscription",
+      "decorator": "@require_billing_role()",
+      "tiers": {
+        "basic": {
+          "routes": [
+            "jobs_workflow.show_create_form",
+            "jobs_workflow.create_job",
+            "company.manage_jobs"
+          ]
+        },
+        "starter": {
+          "minimum_tier": "BillingTiersEnum.Starter.value",
+          "routes": [
+            "company.candidate_details",
+            "company.application_analytics"
+          ]
+        },
+        "growth": {
+          "minimum_tier": "BillingTiersEnum.Growth.value",
+          "routes": [
+            "jobs_workflow.feature_job"
+          ]
+        }
+      }
+    }
+  },
+  "parameter_requirements": {
+    "url_parameters": {
+      "job_id": {
+        "type": "string",
+        "format": "UUID",
+        "validation": "Must be valid UUID format",
+        "routes": [
+          "jobs.job_details",
+          "jobs.full_job_details",
+          "jobs_workflow.show_edit_form",
+          "jobs_workflow.edit_job",
+          "jobs_workflow.calculate_ats",
+          "jobs_workflow.archive_job",
+          "jobs_workflow.feature_job",
+          "jobs_workflow.submit_application",
+          "jobs_workflow.job_insights",
+          "jobs_workflow.view_job_applications",
+          "jobs_workflow.get_application",
+          "jobs_workflow.update_status",
+          "jobs.get_job_match_analysis"
+        ],
+        "template_validation": {
+          "required_context": "job object with job_id attribute",
+          "example": "{{ url_for('jobs.job_details', job_id=job.job_id) }}",
+          "error_handling": "404 if job not found or invalid UUID"
+        }
+      },
+      "category": {
+        "type": "string",
+        "format": "slug",
+        "validation": "Must match existing category slug",
+        "routes": [
+          "jobs.category_jobs"
+        ],
+        "template_validation": {
+          "required_context": "category object with slug attribute",
+          "example": "{{ url_for('jobs.category_jobs', category=category.slug) }}",
+          "error_handling": "404 if category not found"
+        }
+      },
+      "location": {
+        "type": "string",
+        "format": "location_name_or_slug",
+        "validation": "Must be valid location identifier",
+        "routes": [
+          "jobs.jobs_by_location"
+        ],
+        "template_validation": {
+          "required_context": "location string or object",
+          "example": "{{ url_for('jobs.jobs_by_location', location=location) }}",
+          "error_handling": "Empty results if location not found"
+        }
+      },
+      "job_type": {
+        "type": "string",
+        "format": "job_type_slug",
+        "validation": "Must be valid job type",
+        "allowed_values": [
+          "full-time",
+          "part-time",
+          "contract",
+          "internship",
+          "temporary"
+        ],
+        "routes": [
+          "jobs.jobs_by_type"
+        ],
+        "template_validation": {
+          "required_context": "job_type string",
+          "example": "{{ url_for('jobs.jobs_by_type', job_type='full-time') }}",
+          "error_handling": "Empty results if job type not found"
+        }
+      },
+      "cv_id": {
+        "type": "string",
+        "format": "UUID",
+        "validation": "Must be valid CV identifier",
+        "routes": [
+          "company.candidate_details"
+        ],
+        "template_validation": {
+          "required_context": "cv object with cv_id attribute",
+          "example": "{{ url_for('company.candidate_details', cv_id=cv.cv_id) }}",
+          "error_handling": "404 if CV not found or access denied"
+        }
+      },
+      "application_id": {
+        "type": "string",
+        "format": "UUID",
+        "validation": "Must be valid application identifier",
+        "routes": [
+          "jobs_workflow.get_application"
+        ],
+        "template_validation": {
+          "required_context": "application object with application_id",
+          "example": "{{ url_for('jobs_workflow.get_application', job_id=job.job_id, application_id=app.application_id) }}",
+          "error_handling": "404 if application not found or access denied"
+        }
+      },
+      "approval_token": {
+        "type": "string",
+        "format": "secure_token",
+        "validation": "Must be valid approval token",
+        "routes": [
+          "jobs_workflow.approve_job",
+          "jobs_workflow.reject_job"
+        ],
+        "template_validation": {
+          "required_context": "approval_token from system",
+          "example": "{{ url_for('jobs_workflow.approve_job', approval_token=token) }}",
+          "error_handling": "403 if token invalid or expired"
+        }
+      },
+      "employer_id": {
+        "type": "string",
+        "format": "UUID",
+        "validation": "Must be valid employer identifier",
+        "routes": [
+          "company.verify_employer_profile"
+        ],
+        "template_validation": {
+          "required_context": "employer object with employer_id",
+          "example": "{{ url_for('company.verify_employer_profile', token=token, employer_id=employer.employer_id) }}",
+          "error_handling": "404 if employer not found"
+        }
+      },
+      "verification_id": {
+        "type": "string",
+        "format": "verification_token",
+        "validation": "Must be valid verification token",
+        "routes": [
+          "home.verify_email"
+        ],
+        "template_validation": {
+          "required_context": "verification_id from email",
+          "example": "{{ url_for('home.verify_email', verification_id=verification_id) }}",
+          "error_handling": "403 if token invalid or expired"
+        }
+      },
+      "search_term": {
+        "type": "string",
+        "format": "url_encoded_string",
+        "validation": "Must be valid search term",
+        "routes": [
+          "home.email_me"
+        ],
+        "template_validation": {
+          "required_context": "search term string",
+          "example": "{{ url_for('home.email_me', search_term=search_term) }}",
+          "error_handling": "400 if search term invalid"
+        }
+      },
+      "job_ref": {
+        "type": "string",
+        "format": "job_reference",
+        "validation": "Must be valid job reference for logo",
+        "routes": [
+          "home.serve_logo"
+        ],
+        "template_validation": {
+          "required_context": "job object with job_ref",
+          "example": "{{ url_for('home.serve_logo', job_ref=job.job_ref) }}",
+          "error_handling": "404 if logo not found"
+        }
+      },
+      "job_slug": {
+        "type": "string",
+        "format": "seo_slug",
+        "validation": "Must be valid job slug",
+        "routes": [
+          "jobs.get_job_match_analysis_by_slug"
+        ],
+        "template_validation": {
+          "required_context": "job object with slug",
+          "example": "{{ url_for('jobs.get_job_match_analysis_by_slug', job_slug=job.slug) }}",
+          "error_handling": "404 if job not found by slug"
+        }
+      }
+    },
+    "query_parameters": {
+      "pagination": {
+        "parameters": {
+          "page": {
+            "type": "integer",
+            "default": 1,
+            "validation": "Must be positive integer",
+            "min_value": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "default": 25,
+            "validation": "Must be between 1 and 100",
+            "min_value": 1,
+            "max_value": 100
+          }
+        },
+        "routes": [
+          "jobs.list_jobs",
+          "jobs.search_jobs",
+          "jobs.category_jobs",
+          "jobs.jobs_by_location",
+          "jobs.jobs_by_type",
+          "jobs.featured_jobs",
+          "jobs.recent_jobs"
+        ],
+        "template_usage": "{{ url_for('jobs.search_jobs', keyword=keyword, page=next_page) }}"
+      },
+      "search": {
+        "parameters": {
+          "keyword": {
+            "type": "string",
+            "validation": "Search term for job matching",
+            "max_length": 255
+          },
+          "q": {
+            "type": "string",
+            "validation": "Alternative search parameter",
+            "max_length": 255
+          }
+        },
+        "routes": [
+          "jobs.search_jobs"
+        ],
+        "template_usage": "{{ url_for('jobs.search_jobs', keyword=search_term) }}"
+      },
+      "salary_filter": {
+        "parameters": {
+          "min": {
+            "type": "integer",
+            "validation": "Minimum salary amount",
+            "min_value": 0
+          },
+          "max": {
+            "type": "integer",
+            "validation": "Maximum salary amount",
+            "min_value": 0
+          },
+          "unit": {
+            "type": "string",
+            "validation": "Salary period unit",
+            "allowed_values": [
+              "monthly",
+              "yearly"
+            ],
+            "default": "yearly"
+          }
+        },
+        "routes": [
+          "jobs.jobs_by_salary_range"
+        ],
+        "template_usage": "{{ url_for('jobs.jobs_by_salary_range', min=min_salary, max=max_salary, unit='monthly') }}"
+      },
+      "email_verification": {
+        "parameters": {
+          "email": {
+            "type": "string",
+            "validation": "Valid email address",
+            "format": "email"
+          }
+        },
+        "routes": [
+          "home.verify_email"
+        ],
+        "template_usage": "{{ url_for('home.verify_email', verification_id=id, email=user_email) }}"
+      }
+    }
+  },
+  "template_context_requirements": {
+    "user_context": {
+      "description": "User authentication context required in templates",
+      "required_variables": [
+        "current_user",
+        "current_user.is_authenticated",
+        "current_user.role",
+        "current_user.uid"
+      ],
+      "conditional_logic": {
+        "authentication_check": "{% if current_user.is_authenticated %}",
+        "role_check": "{% if current_user.role == 'employer' %}",
+        "permission_check": "{% if current_user.can_access_job(job.job_id) %}"
+      }
+    },
+    "job_context": {
+      "description": "Job-related context for job detail pages",
+      "required_variables": [
+        "job.job_id",
+        "job.title",
+        "job.company_name",
+        "job.category",
+        "job.location",
+        "job.job_type",
+        "job.status"
+      ],
+      "optional_variables": [
+        "job.slug",
+        "job.job_ref",
+        "job.employer_id",
+        "job.match_score"
+      ]
+    },
+    "company_context": {
+      "description": "Company-related context for employer pages",
+      "required_variables": [
+        "company.company_id",
+        "company.company_name",
+        "employer.employer_id",
+        "employer.is_verified"
+      ]
+    },
+    "pagination_context": {
+      "description": "Pagination context for list pages",
+      "required_variables": [
+        "page",
+        "total_pages",
+        "total_jobs",
+        "per_page"
+      ],
+      "template_logic": "{% if total_pages > 1 %}"
+    }
+  },
+  "error_handling_requirements": {
+    "parameter_validation_errors": {
+      "invalid_uuid": {
+        "status_code": 404,
+        "template": "errors/404.html",
+        "message": "Resource not found"
+      },
+      "invalid_slug": {
+        "status_code": 404,
+        "template": "errors/404.html",
+        "message": "Page not found"
+      },
+      "invalid_token": {
+        "status_code": 403,
+        "template": "errors/403.html",
+        "message": "Access denied or token expired"
+      }
+    },
+    "authentication_errors": {
+      "not_authenticated": {
+        "redirect": "auth.login",
+        "flash_message": "Please log in to access this page"
+      },
+      "insufficient_permissions": {
+        "status_code": 403,
+        "template": "errors/403.html",
+        "message": "You don't have permission to access this resource"
+      },
+      "billing_required": {
+        "redirect": "billing.upgrade",
+        "flash_message": "This feature requires an active subscription"
+      }
+    }
+  },
+  "template_validation_checklist": {
+    "url_generation": [
+      "All internal links use url_for() function",
+      "All parameters are properly passed to url_for()",
+      "No hardcoded URLs in templates",
+      "External URLs are clearly marked"
+    ],
+    "authentication_checks": [
+      "Authentication status checked before showing protected links",
+      "Role-based navigation implemented correctly",
+      "Billing status checked for premium features",
+      "Proper fallbacks for unauthenticated users"
+    ],
+    "parameter_handling": [
+      "All required parameters available in template context",
+      "Parameter validation handled gracefully",
+      "Default values used where appropriate",
+      "Error states handled properly"
+    ],
+    "form_actions": [
+      "All form actions use url_for()",
+      "CSRF tokens included where required",
+      "Method attributes set correctly (GET/POST)",
+      "File upload forms have proper enctype"
+    ]
+  }
+}

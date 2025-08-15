@@ -1,0 +1,528 @@
+{
+  "metadata": {
+    "test_plan_date": "2025-01-14T13:45:00Z",
+    "testing_approach": "comprehensive_validation",
+    "test_categories": 6,
+    "total_test_cases": 45
+  },
+  "validation_test_suite": {
+    "url_generation_tests": {
+      "description": "Validate that all url_for calls generate correct URLs",
+      "test_cases": [
+        {
+          "test_name": "home_navigation_urls",
+          "test_type": "url_generation",
+          "endpoints_to_test": [
+            "home.get_home",
+            "home.about",
+            "home.contact",
+            "home.terms",
+            "home.privacy"
+          ],
+          "expected_results": {
+            "home.get_home": "/",
+            "home.about": "/about",
+            "home.contact": "/contact",
+            "home.terms": "/terms",
+            "home.privacy": "/privacy"
+          },
+          "validation_method": "Compare generated URLs with expected patterns"
+        },
+        {
+          "test_name": "authentication_urls",
+          "test_type": "url_generation",
+          "endpoints_to_test": [
+            "auth.login",
+            "auth.logout",
+            "auth.subscribe",
+            "auth.password_reset"
+          ],
+          "expected_results": {
+            "auth.login": "/auth/login",
+            "auth.logout": "/auth/logout",
+            "auth.subscribe": "/auth/subscribe",
+            "auth.password_reset": "/auth/password-reset"
+          },
+          "validation_method": "Verify authentication URL patterns"
+        },
+        {
+          "test_name": "job_related_urls",
+          "test_type": "url_generation_with_parameters",
+          "endpoints_to_test": [
+            {
+              "endpoint": "jobs.job_details",
+              "parameters": {
+                "job_id": "123e4567-e89b-12d3-a456-426614174000"
+              },
+              "expected": "/jobs/123e4567-e89b-12d3-a456-426614174000"
+            },
+            {
+              "endpoint": "jobs.category_jobs",
+              "parameters": {
+                "category": "software-engineering"
+              },
+              "expected": "/jobs/category/software-engineering"
+            },
+            {
+              "endpoint": "jobs.jobs_by_location",
+              "parameters": {
+                "location": "johannesburg"
+              },
+              "expected": "/jobs/location/johannesburg"
+            }
+          ],
+          "validation_method": "Test parameterized URL generation"
+        },
+        {
+          "test_name": "company_dashboard_urls",
+          "test_type": "url_generation",
+          "endpoints_to_test": [
+            "company.view_company",
+            "company.manage_jobs",
+            "company.candidate_management",
+            "company.application_analytics"
+          ],
+          "expected_results": {
+            "company.view_company": "/dashboard/company/profile",
+            "company.manage_jobs": "/dashboard/company/jobs",
+            "company.candidate_management": "/dashboard/company/candidates",
+            "company.application_analytics": "/dashboard/company/analytics/applications"
+          },
+          "validation_method": "Verify company dashboard URL patterns"
+        }
+      ]
+    },
+    "template_rendering_tests": {
+      "description": "Test template rendering with corrected URLs",
+      "test_cases": [
+        {
+          "test_name": "index_template_rendering",
+          "template": "corrected_templates/index.html",
+          "test_contexts": [
+            {
+              "context_name": "anonymous_user",
+              "context_data": {
+                "current_user": null
+              },
+              "expected_elements": [
+                "Login and Register links visible",
+                "Job search form present",
+                "Public navigation menu"
+              ]
+            },
+            {
+              "context_name": "authenticated_jobseeker",
+              "context_data": {
+                "current_user": {
+                  "is_authenticated": true,
+                  "role": "jobseeker",
+                  "profile_complete": true
+                }
+              },
+              "expected_elements": [
+                "Jobseeker dashboard link",
+                "Job alerts and applications links",
+                "Logout link visible"
+              ]
+            },
+            {
+              "context_name": "authenticated_employer",
+              "context_data": {
+                "current_user": {
+                  "is_authenticated": true,
+                  "role": "employer",
+                  "company_verified": true,
+                  "has_active_billing": true
+                }
+              },
+              "expected_elements": [
+                "Post job and manage jobs links",
+                "Company dashboard link",
+                "Employer-specific navigation"
+              ]
+            }
+          ]
+        },
+        {
+          "test_name": "header_template_rendering",
+          "template": "corrected_templates/layouts/header.html",
+          "test_contexts": [
+            {
+              "context_name": "role_based_navigation",
+              "context_data": {
+                "current_user": {
+                  "is_authenticated": true,
+                  "role": "employer",
+                  "company_verified": false
+                }
+              },
+              "expected_elements": [
+                "Setup Company link instead of Dashboard",
+                "Proper role-based conditional rendering"
+              ]
+            }
+          ]
+        },
+        {
+          "test_name": "jobs_list_template_rendering",
+          "template": "corrected_templates/jobs/_jobs_list.html",
+          "test_contexts": [
+            {
+              "context_name": "pagination_rendering",
+              "context_data": {
+                "jobs": "mock_job_list",
+                "page": 2,
+                "total_pages": 5,
+                "request": {
+                  "endpoint": "jobs.search_jobs",
+                  "args": {
+                    "keyword": "developer"
+                  }
+                }
+              },
+              "expected_elements": [
+                "Pagination links use url_for",
+                "Query parameters preserved",
+                "Previous and next links functional"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "authentication_flow_tests": {
+      "description": "Test authentication-based navigation and conditional rendering",
+      "test_cases": [
+        {
+          "test_name": "role_based_navigation_test",
+          "test_scenarios": [
+            {
+              "scenario": "jobseeker_navigation",
+              "user_context": {
+                "role": "jobseeker",
+                "is_authenticated": true,
+                "profile_complete": true
+              },
+              "expected_navigation": [
+                "Dashboard link points to jobseeker.dashboard",
+                "Job alerts and applications accessible",
+                "Match details functionality available"
+              ]
+            },
+            {
+              "scenario": "employer_navigation",
+              "user_context": {
+                "role": "employer",
+                "is_authenticated": true,
+                "company_verified": true,
+                "has_active_billing": true
+              },
+              "expected_navigation": [
+                "Dashboard link points to company.view_company",
+                "Job posting and management accessible",
+                "Candidate search available"
+              ]
+            },
+            {
+              "scenario": "unverified_employer",
+              "user_context": {
+                "role": "employer",
+                "is_authenticated": true,
+                "company_verified": false
+              },
+              "expected_navigation": [
+                "Setup company link instead of dashboard",
+                "Verification prompts visible",
+                "Limited functionality access"
+              ]
+            }
+          ]
+        },
+        {
+          "test_name": "billing_status_navigation",
+          "test_scenarios": [
+            {
+              "scenario": "employer_with_billing",
+              "user_context": {
+                "role": "employer",
+                "has_active_billing": true,
+                "company_verified": true
+              },
+              "expected_behavior": [
+                "Job posting links accessible",
+                "Full employer functionality available"
+              ]
+            },
+            {
+              "scenario": "employer_without_billing",
+              "user_context": {
+                "role": "employer",
+                "has_active_billing": false,
+                "company_verified": true
+              },
+              "expected_behavior": [
+                "Upgrade prompts for job posting",
+                "Limited functionality access"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "parameter_validation_tests": {
+      "description": "Test parameter passing and validation in URLs",
+      "test_cases": [
+        {
+          "test_name": "job_detail_parameters",
+          "test_type": "parameter_validation",
+          "test_scenarios": [
+            {
+              "scenario": "valid_job_id",
+              "endpoint": "jobs.job_details",
+              "parameters": {
+                "job_id": "123e4567-e89b-12d3-a456-426614174000"
+              },
+              "expected_result": "URL generated successfully",
+              "validation": "UUID format validation"
+            },
+            {
+              "scenario": "invalid_job_id",
+              "endpoint": "jobs.job_details",
+              "parameters": {
+                "job_id": "invalid-id"
+              },
+              "expected_result": "Error handling or validation failure",
+              "validation": "Invalid UUID format handling"
+            },
+            {
+              "scenario": "missing_job_id",
+              "endpoint": "jobs.job_details",
+              "parameters": {},
+              "expected_result": "Missing parameter error",
+              "validation": "Required parameter validation"
+            }
+          ]
+        },
+        {
+          "test_name": "search_parameters",
+          "test_type": "query_parameter_validation",
+          "test_scenarios": [
+            {
+              "scenario": "job_search_with_keyword",
+              "endpoint": "jobs.search_jobs",
+              "parameters": {
+                "keyword": "developer",
+                "page": 1
+              },
+              "expected_result": "/jobs/search?keyword=developer&page=1",
+              "validation": "Query parameter handling"
+            },
+            {
+              "scenario": "pagination_parameter_preservation",
+              "endpoint": "jobs.search_jobs",
+              "current_args": {
+                "keyword": "developer",
+                "location": "johannesburg"
+              },
+              "new_parameters": {
+                "page": 2
+              },
+              "expected_result": "All parameters preserved in pagination",
+              "validation": "Parameter preservation in pagination"
+            }
+          ]
+        }
+      ]
+    },
+    "error_handling_tests": {
+      "description": "Test error handling and fallback behavior",
+      "test_cases": [
+        {
+          "test_name": "missing_context_handling",
+          "test_scenarios": [
+            {
+              "scenario": "job_object_missing",
+              "template_context": {
+                "job": null
+              },
+              "template_code": "{{ url_for('jobs.job_details', job_id=job.job_id) }}",
+              "expected_behavior": "Graceful handling or fallback URL",
+              "validation": "Null context handling"
+            },
+            {
+              "scenario": "user_object_missing",
+              "template_context": {
+                "current_user": null
+              },
+              "template_code": "{% if current_user.is_authenticated %}",
+              "expected_behavior": "No errors, proper conditional handling",
+              "validation": "Authentication context handling"
+            }
+          ]
+        },
+        {
+          "test_name": "route_generation_failures",
+          "test_scenarios": [
+            {
+              "scenario": "non_existent_endpoint",
+              "endpoint": "non_existent.route",
+              "expected_behavior": "Error handling or fallback",
+              "validation": "Invalid endpoint handling"
+            },
+            {
+              "scenario": "missing_required_parameter",
+              "endpoint": "jobs.job_details",
+              "parameters": {},
+              "expected_behavior": "Parameter missing error",
+              "validation": "Required parameter validation"
+            }
+          ]
+        }
+      ]
+    },
+    "performance_tests": {
+      "description": "Test performance impact of URL generation changes",
+      "test_cases": [
+        {
+          "test_name": "template_rendering_performance",
+          "test_scenarios": [
+            {
+              "scenario": "large_job_list_rendering",
+              "template": "corrected_templates/jobs/_jobs_list.html",
+              "context_size": "100 jobs",
+              "metrics_to_measure": [
+                "Template rendering time",
+                "URL generation overhead",
+                "Memory usage"
+              ],
+              "performance_baseline": "Compare with original template performance"
+            },
+            {
+              "scenario": "navigation_rendering_performance",
+              "template": "corrected_templates/layouts/header.html",
+              "context_variations": [
+                "Anonymous user",
+                "Authenticated jobseeker",
+                "Authenticated employer"
+              ],
+              "metrics_to_measure": [
+                "Conditional logic execution time",
+                "URL generation time"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "test_execution_plan": {
+    "phase_1_unit_tests": {
+      "description": "Test individual URL generation functions",
+      "duration": "1-2 hours",
+      "test_categories": [
+        "URL generation tests",
+        "Parameter validation tests"
+      ],
+      "success_criteria": [
+        "All url_for calls generate expected URLs",
+        "Parameter validation works correctly",
+        "No broken endpoint references"
+      ]
+    },
+    "phase_2_integration_tests": {
+      "description": "Test template rendering with corrected URLs",
+      "duration": "2-3 hours",
+      "test_categories": [
+        "Template rendering tests",
+        "Authentication flow tests"
+      ],
+      "success_criteria": [
+        "Templates render without errors",
+        "Conditional navigation works correctly",
+        "Role-based access control functions properly"
+      ]
+    },
+    "phase_3_user_acceptance_tests": {
+      "description": "Manual testing of user workflows",
+      "duration": "2-4 hours",
+      "test_scenarios": [
+        "Complete job search workflow",
+        "Employer job posting workflow",
+        "User authentication flows",
+        "Navigation between different sections"
+      ],
+      "success_criteria": [
+        "All navigation links work correctly",
+        "User workflows complete successfully",
+        "No broken links or 404 errors"
+      ]
+    },
+    "phase_4_performance_tests": {
+      "description": "Validate performance impact",
+      "duration": "1 hour",
+      "test_categories": [
+        "Performance tests"
+      ],
+      "success_criteria": [
+        "No significant performance degradation",
+        "Template rendering times acceptable",
+        "Memory usage within expected ranges"
+      ]
+    }
+  },
+  "test_automation_scripts": {
+    "url_generation_test_script": {
+      "description": "Automated script to test URL generation",
+      "test_framework": "pytest",
+      "sample_test_code": [
+        "def test_home_navigation_urls():",
+        "    with app.test_request_context():",
+        "        assert url_for('home.get_home') == '/'",
+        "        assert url_for('home.about') == '/about'",
+        "        assert url_for('auth.login') == '/auth/login'"
+      ]
+    },
+    "template_rendering_test_script": {
+      "description": "Test template rendering with various contexts",
+      "test_framework": "pytest + Jinja2",
+      "sample_test_code": [
+        "def test_header_template_rendering():",
+        "    template = env.get_template('corrected_templates/layouts/header.html')",
+        "    context = {'current_user': mock_employer_user}",
+        "    rendered = template.render(context)",
+        "    assert 'company.view_company' in rendered"
+      ]
+    },
+    "navigation_flow_test_script": {
+      "description": "Test complete navigation workflows",
+      "test_framework": "Selenium WebDriver",
+      "sample_test_code": [
+        "def test_employer_navigation_flow():",
+        "    # Login as employer",
+        "    # Navigate to dashboard",
+        "    # Verify correct URLs are generated",
+        "    # Test job posting workflow"
+      ]
+    }
+  },
+  "validation_checklist": {
+    "pre_deployment_checks": [
+      "All hardcoded URLs converted to url_for",
+      "No incorrect endpoint references remain",
+      "Parameter passing works correctly",
+      "Authentication flows function properly",
+      "Role-based navigation works as expected",
+      "Pagination functionality preserved",
+      "Error handling works gracefully",
+      "Performance impact is acceptable"
+    ],
+    "post_deployment_monitoring": [
+      "Monitor for 404 errors",
+      "Track URL generation performance",
+      "Monitor user navigation patterns",
+      "Check for authentication issues",
+      "Validate search functionality",
+      "Monitor job application workflows"
+    ]
+  }
+}

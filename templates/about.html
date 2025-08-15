@@ -1,0 +1,636 @@
+{% extends "layout/base.html" %}
+
+{% block title %}About Uses - JobFinders{% endblock %}
+
+{% block meta_description %}Learn about JobFinders, South Africa's leading employment platform connecting skilled
+    professionals with outstanding job opportunities across diverse industries.{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .stats-section {
+            background: #f8f9fa;
+            padding: 3rem 0;
+            margin: 3rem 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .stat-card {
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+
+        .content-section {
+            padding: 3rem 0;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: #6c757d;
+            text-align: center;
+            margin-bottom: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .mission-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .mission-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .feature-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .feature-description {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        .team-section {
+            background: #f8f9fa;
+            padding: 4rem 0;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .team-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .team-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .team-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .team-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-role {
+            color: var(--primary-color);
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .team-bio {
+            color: #6c757d;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .cta-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .cta-description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-white {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid white;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-white:hover {
+            background: transparent;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-white {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-white:hover {
+            background: white;
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .cta-title {
+                font-size: 2rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-white,
+            .btn-outline-white {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Welcome to JobFinders</h1>
+                <p class="hero-subtitle">
+                    South Africa's leading employment platform connecting skilled professionals
+                    with outstanding job opportunities across diverse industries.
+                </p>
+                <div class="cta-buttons">
+                    <a href="/register" class="btn-white">
+                        <i class="fas fa-user-plus me-2"></i>Join Our Community
+                    </a>
+                    <a href="/jobs" class="btn-outline-white">
+                        <i class="fas fa-search me-2"></i>Browse Jobs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number">50,000+</span>
+                    <span class="stat-label">Active Job Seekers</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">5,000+</span>
+                    <span class="stat-label">Companies</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">25,000+</span>
+                    <span class="stat-label">Jobs Posted</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">15,000+</span>
+                    <span class="stat-label">Successful Placements</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mission Section -->
+    <section class="content-section">
+        <div class="container">
+            <h2 class="section-title">Our Mission</h2>
+            <p class="section-subtitle">
+                We aim to eliminate the frustration of endless online searches by leveraging
+                advanced search algorithms and data-driven insights.
+            </p>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="mission-card">
+                        <div class="mission-icon">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <p class="mb-0">
+                            At JobFinders, we are dedicated to connecting skilled professionals with outstanding
+                            employment opportunities throughout South Africa. Our mission is to streamline your
+                            job search process, offering a carefully curated selection of openings from a diverse
+                            range of industries. Our platform delivers personalized job listings that match your
+                            unique skills, experience, and career aspirations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="content-section">
+        <div class="container">
+            <h2 class="section-title">Why Choose JobFinders?</h2>
+            <p class="section-subtitle">
+                Discover what makes us South Africa's preferred job search platform
+            </p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="feature-title">Privacy and Security</h3>
+                    <p class="feature-description">
+                        We prioritize your confidentiality by only collecting the essential information
+                        needed to provide tailored job recommendations. Your data is secure with us.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <h3 class="feature-title">Diverse Job Listings</h3>
+                    <p class="feature-description">
+                        From IT to finance, healthcare to engineering, we feature a broad spectrum of
+                        job listings that ensure every professional finds the right opportunity.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <h3 class="feature-title">User-Centric Experience</h3>
+                    <p class="feature-description">
+                        Designed with simplicity and clarity in mind, our intuitive interface makes
+                        navigating and applying for jobs effortless and enjoyable.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="feature-title">Advanced Search Technology</h3>
+                    <p class="feature-description">
+                        Our state-of-the-art algorithms scan the web for the most relevant and current
+                        job opportunities, saving you time and effort in your search.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h3 class="feature-title">Curated Job Collections</h3>
+                    <p class="feature-description">
+                        Our expert curation ensures that you are presented with opportunities that
+                        truly align with your career goals and aspirations.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3 class="feature-title">AI-Powered Matching</h3>
+                    <p class="feature-description">
+                        Our intelligent matching system learns from your preferences and behavior to
+                        deliver increasingly relevant job recommendations over time.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="team-section">
+        <div class="container">
+            <h2 class="section-title">Meet Our Team</h2>
+            <p class="section-subtitle">
+                The passionate professionals behind JobFinders' success
+            </p>
+
+            <div class="team-grid">
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3 class="team-name">Leadership Team</h3>
+                    <p class="team-role">Executive Leadership</p>
+                    <p class="team-bio">
+                        Our experienced leadership team brings decades of combined experience in
+                        technology, recruitment, and business development.
+                    </p>
+                </div>
+
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="team-name">Development Team</h3>
+                    <p class="team-role">Technology & Innovation</p>
+                    <p class="team-bio">
+                        Our skilled developers and engineers work tirelessly to create and maintain
+                        the best job search experience for our users.
+                    </p>
+                </div>
+
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="team-name">Customer Success</h3>
+                    <p class="team-role">Support & Success</p>
+                    <p class="team-bio">
+                        Our dedicated customer success team ensures that both job seekers and
+                        employers have the support they need to succeed.
+                    </p>
+                </div>
+
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="team-name">Growth Team</h3>
+                    <p class="team-role">Marketing & Growth</p>
+                    <p class="team-bio">
+                        Our growth team focuses on expanding our reach and connecting more
+                        professionals with their dream opportunities.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2 class="cta-title">Join Our Community</h2>
+            <p class="cta-description">
+                Whether you're launching a new career or looking to elevate your current trajectory,
+                JobFinders is committed to supporting your professional journey. Create an account,
+                complete your profile, and explore job listings tailored specifically to you.
+            </p>
+            <div class="cta-buttons">
+                <a href="/register" class="btn-white">
+                    <i class="fas fa-user-plus me-2"></i>Get Started Today
+                </a>
+                <a href="/contact" class="btn-outline-white">
+                    <i class="fas fa-envelope me-2"></i>Contact Us
+                </a>
+            </div>
+            <p class="mt-4" style="opacity: 0.8;">
+                Thank you for choosing JobFinders as your trusted partner in navigating the job market.
+                We look forward to being a part of your success story.
+            </p>
+        </div>
+    </section>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Animate statistics on scroll
+            const observerOptions = {
+                threshold: 0.5,
+                rootMargin: '0px 0px -100px 0px'
+            };
+
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const statNumbers = entry.target.querySelectorAll('.stat-number');
+                        statNumbers.forEach(stat => {
+                            const finalValue = stat.textContent.replace(/[^\d]/g, '');
+                            if (finalValue) {
+                                animateNumber(stat, 0, parseInt(finalValue), 2000);
+                            }
+                        });
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            const statsSection = document.querySelector('.stats-section');
+            if (statsSection) {
+                observer.observe(statsSection);
+            }
+
+            function animateNumber(element, start, end, duration) {
+                const startTime = performance.now();
+                const originalText = element.textContent;
+                const suffix = originalText.replace(/[\d,]/g, '');
+
+                function updateNumber(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+
+                    // Easing function for smooth animation
+                    const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                    const currentValue = Math.floor(start + (end - start) * easeOutQuart);
+
+                    element.textContent = currentValue.toLocaleString() + suffix;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(updateNumber);
+                    }
+                }
+
+                requestAnimationFrame(updateNumber);
+            }
+
+            // Add smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Add hover effects to cards
+            const cards = document.querySelectorAll('.feature-card, .team-card, .stat-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function () {
+                    this.style.transform = 'translateY(-5px)';
+                });
+
+                card.addEventListener('mouseleave', function () {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,460 @@
+{
+  "metadata": {
+    "categorization_date": "2025-01-14T10:45:00Z",
+    "total_routes": 85,
+    "total_categories": 12,
+    "analysis_method": "functional_grouping_by_business_domain"
+  },
+  "functional_categories": {
+    "public_content": {
+      "description": "Public-facing content pages and general site information",
+      "routes": [
+        "home.get_home",
+        "home.about",
+        "home.contact",
+        "home.terms",
+        "home.privacy",
+        "home.documentation",
+        "home.sister_sites",
+        "home.faq",
+        "home.linkedin_learning"
+      ],
+      "characteristics": {
+        "auth_required": false,
+        "caching": "high_ttl",
+        "seo_important": true,
+        "user_roles": [
+          "anonymous",
+          "all"
+        ]
+      }
+    },
+    "authentication_management": {
+      "description": "User authentication, registration, and session management",
+      "routes": [
+        "auth.login",
+        "auth.logout",
+        "auth.subscribe",
+        "auth.password_reset"
+      ],
+      "characteristics": {
+        "auth_required": "mixed",
+        "security_critical": true,
+        "session_management": true,
+        "user_roles": [
+          "anonymous",
+          "all"
+        ]
+      }
+    },
+    "job_discovery": {
+      "description": "Public job search, browsing, and discovery functionality",
+      "routes": [
+        "jobs.list_jobs",
+        "jobs.search_jobs",
+        "jobs.job_categories",
+        "jobs.category_jobs",
+        "jobs.job_details",
+        "jobs.full_job_details",
+        "jobs.jobs_by_location",
+        "jobs.jobs_by_type",
+        "jobs.featured_jobs",
+        "jobs.recent_jobs",
+        "jobs.jobs_by_salary_range",
+        "jobs.get_job_match_analysis"
+      ],
+      "characteristics": {
+        "auth_required": false,
+        "search_functionality": true,
+        "pagination": true,
+        "filtering": true,
+        "user_roles": [
+          "anonymous",
+          "jobseeker",
+          "employer"
+        ]
+      }
+    },
+    "job_lifecycle_management": {
+      "description": "Job posting creation, editing, and lifecycle management for employers",
+      "routes": [
+        "jobs_workflow.show_create_form",
+        "jobs_workflow.create_job",
+        "jobs_workflow.save_job_draft",
+        "jobs_workflow.show_edit_form",
+        "jobs_workflow.edit_job",
+        "jobs_workflow.calculate_ats",
+        "jobs_workflow.archive_job",
+        "jobs_workflow.feature_job",
+        "jobs_workflow.update_status"
+      ],
+      "characteristics": {
+        "auth_required": true,
+        "role_restricted": [
+          "employer"
+        ],
+        "crud_operations": true,
+        "workflow_management": true,
+        "billing_dependent": true
+      }
+    },
+    "job_application_workflow": {
+      "description": "Job application submission and management processes",
+      "routes": [
+        "jobs_workflow.submit_application",
+        "jobs_workflow.job_insights",
+        "jobs_workflow.view_job_applications",
+        "jobs_workflow.get_application"
+      ],
+      "characteristics": {
+        "auth_required": true,
+        "role_specific": [
+          "jobseeker",
+          "employer"
+        ],
+        "workflow_management": true,
+        "data_sensitive": true
+      }
+    },
+    "job_actions": {
+      "description": "User interactions with job postings (save, share, report)",
+      "routes": [
+        "jobs_actions.save_job",
+        "jobs_actions.unsave_job",
+        "jobs_actions.share_job",
+        "jobs_actions.report_job"
+      ],
+      "characteristics": {
+        "auth_required": "mixed",
+        "user_engagement": true,
+        "ajax_endpoints": true,
+        "user_roles": [
+          "jobseeker",
+          "employer"
+        ]
+      }
+    },
+    "company_management": {
+      "description": "Company profile creation, management, and verification",
+      "routes": [
+        "company.create_company_profile",
+        "company.edit_company_profile",
+        "company.update_company_profile",
+        "company.view_company",
+        "company.initiate_company_verification",
+        "company.verify_company_profile"
+      ],
+      "characteristics": {
+        "auth_required": true,
+        "role_restricted": [
+          "employer"
+        ],
+        "profile_management": true,
+        "verification_workflow": true,
+        "document_upload": true
+      }
+    },
+    "employer_management": {
+      "description": "Employer profile management and verification within companies",
+      "routes": [
+        "company.update_employer_profile",
+        "company.view_employer_profile",
+        "company.initiate_employer_verification",
+        "company.verify_employer_profile"
+      ],
+      "characteristics": {
+        "auth_required": true,
+        "role_restricted": [
+          "employer"
+        ],
+        "profile_management": true,
+        "verification_workflow": true,
+        "email_verification": true
+      }
+    },
+    "candidate_management": {
+      "description": "Candidate sourcing, shortlisting, and management for employers",
+      "routes": [
+        "company.candidate_management",
+        "company.candidate_details",
+        "company.application_analytics"
+      ],
+      "characteristics": {
+        "auth_required": true,
+        "role_restricted": [
+          "employer"
+        ],
+        "ats_functionality": true,
+        "analytics": true,
+        "billing_dependent": true
+      }
+    },
+    "administrative_approval": {
+      "description": "Administrative functions for job and content moderation",
+      "routes": [
+        "jobs_workflow.approve_job",
+        "jobs_workflow.reject_job"
+      ],
+      "characteristics": {
+        "auth_required": true,
+        "role_restricted": [
+          "admin"
+        ],
+        "moderation": true,
+        "workflow_approval": true,
+        "email_notifications": true
+      }
+    },
+    "notification_management": {
+      "description": "Email notifications and subscription management",
+      "routes": [
+        "home.email_me",
+        "home.verify_email"
+      ],
+      "characteristics": {
+        "auth_required": false,
+        "email_functionality": true,
+        "subscription_management": true,
+        "verification_workflow": true
+      }
+    },
+    "media_serving": {
+      "description": "Static media and file serving functionality",
+      "routes": [
+        "home.serve_logo"
+      ],
+      "characteristics": {
+        "auth_required": false,
+        "static_content": true,
+        "caching": "high_ttl",
+        "cdn_candidate": true
+      }
+    }
+  },
+  "blueprint_to_category_mapping": {
+    "home": [
+      "public_content",
+      "notification_management",
+      "media_serving"
+    ],
+    "auth": [
+      "authentication_management"
+    ],
+    "jobs": [
+      "job_discovery"
+    ],
+    "jobs_workflow": [
+      "job_lifecycle_management",
+      "job_application_workflow",
+      "administrative_approval"
+    ],
+    "jobs_actions": [
+      "job_actions"
+    ],
+    "company": [
+      "company_management",
+      "employer_management",
+      "candidate_management"
+    ]
+  },
+  "route_characteristics": {
+    "by_authentication": {
+      "public": {
+        "count": 28,
+        "categories": [
+          "public_content",
+          "job_discovery",
+          "notification_management",
+          "media_serving",
+          "authentication_management"
+        ]
+      },
+      "authenticated": {
+        "count": 57,
+        "categories": [
+          "job_lifecycle_management",
+          "job_application_workflow",
+          "company_management",
+          "employer_management",
+          "candidate_management",
+          "administrative_approval"
+        ]
+      }
+    },
+    "by_user_role": {
+      "anonymous": {
+        "count": 28,
+        "primary_categories": [
+          "public_content",
+          "job_discovery",
+          "authentication_management"
+        ]
+      },
+      "jobseeker": {
+        "count": 15,
+        "primary_categories": [
+          "job_discovery",
+          "job_application_workflow",
+          "job_actions"
+        ]
+      },
+      "employer": {
+        "count": 35,
+        "primary_categories": [
+          "job_lifecycle_management",
+          "company_management",
+          "employer_management",
+          "candidate_management"
+        ]
+      },
+      "admin": {
+        "count": 7,
+        "primary_categories": [
+          "administrative_approval",
+          "system_management"
+        ]
+      }
+    },
+    "by_functionality": {
+      "crud_operations": {
+        "count": 25,
+        "categories": [
+          "job_lifecycle_management",
+          "company_management",
+          "employer_management"
+        ]
+      },
+      "search_and_discovery": {
+        "count": 12,
+        "categories": [
+          "job_discovery"
+        ]
+      },
+      "workflow_management": {
+        "count": 18,
+        "categories": [
+          "job_lifecycle_management",
+          "job_application_workflow",
+          "administrative_approval"
+        ]
+      },
+      "analytics_and_reporting": {
+        "count": 8,
+        "categories": [
+          "candidate_management",
+          "job_application_workflow"
+        ]
+      }
+    }
+  },
+  "security_categorization": {
+    "public_access": {
+      "routes": 28,
+      "security_level": "low",
+      "categories": [
+        "public_content",
+        "job_discovery",
+        "media_serving"
+      ]
+    },
+    "authenticated_access": {
+      "routes": 35,
+      "security_level": "medium",
+      "categories": [
+        "job_actions",
+        "job_application_workflow"
+      ]
+    },
+    "role_restricted_access": {
+      "routes": 20,
+      "security_level": "high",
+      "categories": [
+        "job_lifecycle_management",
+        "company_management",
+        "employer_management"
+      ]
+    },
+    "admin_only_access": {
+      "routes": 2,
+      "security_level": "critical",
+      "categories": [
+        "administrative_approval"
+      ]
+    }
+  },
+  "url_pattern_categories": {
+    "static_urls": {
+      "description": "Fixed URL patterns without parameters",
+      "count": 60,
+      "examples": [
+        "/",
+        "/about",
+        "/jobs/search",
+        "/dashboard/company/profile"
+      ]
+    },
+    "single_parameter_urls": {
+      "description": "URLs with one dynamic parameter",
+      "count": 20,
+      "examples": [
+        "/jobs/<job_id>",
+        "/jobs/category/<category>",
+        "/jobs/location/<location>"
+      ]
+    },
+    "multi_parameter_urls": {
+      "description": "URLs with multiple dynamic parameters",
+      "count": 5,
+      "examples": [
+        "/dashboard/jobs/<job_id>/application/<application_id>/get-application"
+      ]
+    }
+  },
+  "business_process_mapping": {
+    "job_seeker_journey": {
+      "discovery": [
+        "jobs.search_jobs",
+        "jobs.list_jobs",
+        "jobs.category_jobs"
+      ],
+      "evaluation": [
+        "jobs.job_details",
+        "jobs.get_job_match_analysis"
+      ],
+      "application": [
+        "jobs_workflow.submit_application"
+      ],
+      "tracking": [
+        "jobseeker.view_applications"
+      ]
+    },
+    "employer_journey": {
+      "onboarding": [
+        "company.create_company_profile",
+        "company.update_employer_profile"
+      ],
+      "job_posting": [
+        "jobs_workflow.show_create_form",
+        "jobs_workflow.create_job"
+      ],
+      "candidate_management": [
+        "company.candidate_management",
+        "jobs_workflow.view_job_applications"
+      ],
+      "analytics": [
+        "company.application_analytics",
+        "jobs_workflow.job_insights"
+      ]
+    },
+    "admin_workflow": {
+      "moderation": [
+        "jobs_workflow.approve_job",
+        "jobs_workflow.reject_job"
+      ],
+      "system_management": [
+        "admin.dashboard",
+        "admin.system_monitoring"
+      ]
+    }
+  }
+}

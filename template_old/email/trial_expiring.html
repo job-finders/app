@@ -1,0 +1,11 @@
+{% extends "email/layout/base.html" %}
+{% set title = "Subscription Ending Soon" %}
+{% set header = "Your Subscription is Ending Soon" %}
+
+{% block content %}
+<p class="mb-3">Hi there,</p>
+
+<p>This is a reminder that your current subscription will end in <span class="highlight">{{ days_left }}</span> day{{ 's' if days_left != 1 else '' }}.</p>
+
+<p>To avoid service interruption, we recommend renewing your subscription promptly.</p>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "email/layout/base.html" %}
+{% set title = "Trial Started" %}
+{% set header = "Welcome to Your Free Trial" %}
+
+{% block content %}
+<p>Hi,</p>
+
+<p>Your free trial has started and will last for <span class="highlight">{{ duration_days }}</span> day{{ 's' if duration_days != 1 else '' }}.</p>
+
+<p>Enjoy exploring the features. We’ll notify you before your trial ends.</p>
+{% endblock %}

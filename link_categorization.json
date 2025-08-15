@@ -1,0 +1,243 @@
+{
+  "metadata": {
+    "analysis_date": "2025-01-14T12:00:00Z",
+    "categorization_method": "functional_analysis",
+    "total_links_categorized": 67
+  },
+  "link_categories": {
+    "navigation_links": {
+      "description": "Primary site navigation and menu links",
+      "count": 18,
+      "status_breakdown": {
+        "correct_url_for": 8,
+        "hardcoded_urls": 10,
+        "incorrect_endpoints": 0
+      },
+      "examples": [
+        {
+          "type": "main_navigation",
+          "template": "template/layouts/header.html",
+          "status": "correct",
+          "code": "<a href=\"{{ url_for('home.get_home') }}\">Home</a>"
+        },
+        {
+          "type": "dropdown_navigation",
+          "template": "template/index.html",
+          "status": "hardcoded",
+          "code": "<a href=\"/jobs\">Browse Jobs</a>",
+          "fix_needed": "{{ url_for('jobs.list_jobs') }}"
+        }
+      ],
+      "priority": "HIGH",
+      "impact": "Affects all site navigation"
+    },
+    "authentication_links": {
+      "description": "Login, logout, registration, and password reset links",
+      "count": 12,
+      "status_breakdown": {
+        "correct_url_for": 8,
+        "hardcoded_urls": 3,
+        "incorrect_endpoints": 1
+      },
+      "examples": [
+        {
+          "type": "login_form",
+          "template": "template/login.html",
+          "status": "correct",
+          "code": "<form action=\"{{ url_for('auth.login') }}\" method=\"POST\">"
+        },
+        {
+          "type": "navigation_auth",
+          "template": "template/index.html",
+          "status": "hardcoded",
+          "code": "<a href=\"/login\">Login</a>",
+          "fix_needed": "{{ url_for('auth.login') }}"
+        }
+      ],
+      "priority": "HIGH",
+      "impact": "Critical for user authentication flow"
+    },
+    "job_related_links": {
+      "description": "Job browsing, details, search, and application links",
+      "count": 15,
+      "status_breakdown": {
+        "correct_url_for": 12,
+        "hardcoded_urls": 2,
+        "incorrect_endpoints": 1
+      },
+      "examples": [
+        {
+          "type": "job_details",
+          "template": "template/jobs/_jobs_list.html",
+          "status": "correct",
+          "code": "<a href=\"{{ url_for('jobs.job_details', job_id=job.job_id) }}\">{{ job.title }}</a>"
+        },
+        {
+          "type": "job_search",
+          "template": "template/jobs/search.html",
+          "status": "incorrect_endpoint",
+          "code": "{{ url_for('jobs_search_route.search_jobs', search_term=filters.search_keyword, page=page-1) }}",
+          "fix_needed": "{{ url_for('jobs.search_jobs', keyword=filters.search_keyword, page=page-1) }}"
+        }
+      ],
+      "priority": "HIGH",
+      "impact": "Core job search functionality"
+    },
+    "company_employer_links": {
+      "description": "Company dashboard, job management, and employer features",
+      "count": 8,
+      "status_breakdown": {
+        "correct_url_for": 7,
+        "hardcoded_urls": 0,
+        "incorrect_endpoints": 1
+      },
+      "examples": [
+        {
+          "type": "company_dashboard",
+          "template": "template/company/view_company_profile.html",
+          "status": "correct",
+          "code": "<a href=\"{{ url_for('company.manage_jobs') }}\">Manage Jobs</a>"
+        },
+        {
+          "type": "dashboard_redirect",
+          "template": "template/layouts/header.html",
+          "status": "incorrect_endpoint",
+          "code": "{{ url_for('company.get_dashboard') }}",
+          "fix_needed": "{{ url_for('company.view_company') }}"
+        }
+      ],
+      "priority": "MEDIUM",
+      "impact": "Employer user experience"
+    },
+    "static_assets": {
+      "description": "CSS, JavaScript, images, and other static files",
+      "count": 6,
+      "status_breakdown": {
+        "correct_url_for": 5,
+        "hardcoded_urls": 1,
+        "incorrect_endpoints": 0
+      },
+      "examples": [
+        {
+          "type": "css_link",
+          "template": "template/jobs/list.html",
+          "status": "correct",
+          "code": "<link rel=\"stylesheet\" href=\"{{ url_for('static', filename='css/jobs/job-listings.css') }}\">"
+        },
+        {
+          "type": "image_src",
+          "template": "template/index.html",
+          "status": "hardcoded",
+          "code": "<img src=\"/static/images/hero-illustration.svg\">",
+          "fix_needed": "{{ url_for('static', filename='images/hero-illustration.svg') }}"
+        }
+      ],
+      "priority": "LOW",
+      "impact": "Asset loading and caching"
+    },
+    "external_links": {
+      "description": "Links to external websites and services",
+      "count": 8,
+      "status_breakdown": {
+        "correct_handling": 8,
+        "issues": 0
+      },
+      "examples": [
+        {
+          "type": "blog_link",
+          "template": "template/layouts/header.html",
+          "status": "correct",
+          "code": "<a href=\"https://blog.jobfinders.site\" target=\"_blank\">Blog</a>"
+        },
+        {
+          "type": "government_resource",
+          "template": "template/layouts/footer.html",
+          "status": "correct",
+          "code": "<a href=\"https://www.labour.gov.za/\" target=\"_blank\">Department of Labour SA</a>"
+        }
+      ],
+      "priority": "NONE",
+      "impact": "External resource access"
+    }
+  },
+  "issue_analysis": {
+    "hardcoded_url_patterns": {
+      "common_patterns": [
+        "/jobs",
+        "/employer/*",
+        "/login",
+        "/logout",
+        "/register",
+        "/applications",
+        "/resumes"
+      ],
+      "root_cause": "Main navigation dropdowns in index.html use hardcoded paths",
+      "fix_strategy": "Convert to url_for with proper endpoint mapping"
+    },
+    "incorrect_endpoint_patterns": {
+      "common_issues": [
+        "Blueprint name inconsistencies (jobs_search_route vs jobs)",
+        "Non-existent endpoints (company.get_dashboard)",
+        "Plural vs singular naming (jobseekers vs jobseeker)"
+      ],
+      "root_cause": "Endpoint names not validated against actual route definitions",
+      "fix_strategy": "Cross-reference with route discovery mapping"
+    },
+    "pagination_issues": {
+      "pattern": "Using query parameters instead of url_for",
+      "examples": [
+        "?page={{ page-1 }}",
+        "?page={{ p }}&keyword={{ search_keyword }}"
+      ],
+      "fix_strategy": "Use {{ url_for(request.endpoint, page=page-1, **request.args) }}"
+    }
+  },
+  "template_specific_analysis": {
+    "high_priority_templates": [
+      {
+        "template": "template/index.html",
+        "issues": 10,
+        "types": [
+          "hardcoded_navigation"
+        ],
+        "impact": "Main site navigation broken"
+      },
+      {
+        "template": "template/layouts/header.html",
+        "issues": 2,
+        "types": [
+          "incorrect_endpoints"
+        ],
+        "impact": "Header navigation on all pages"
+      }
+    ],
+    "medium_priority_templates": [
+      {
+        "template": "template/jobs/search.html",
+        "issues": 1,
+        "types": [
+          "incorrect_endpoint"
+        ],
+        "impact": "Job search pagination"
+      },
+      {
+        "template": "template/jobs/_jobs_list.html",
+        "issues": 1,
+        "types": [
+          "pagination"
+        ],
+        "impact": "Job listing pagination"
+      }
+    ],
+    "low_priority_templates": [
+      {
+        "template": "template/layouts/footer.html",
+        "issues": 1,
+        "types": [
+          "hardcoded_url"
+        ],
+        "impact": "Footer link functionality"
+      }
+    ]
+  }
+}

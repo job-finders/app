@@ -1,0 +1,15 @@
+{% extends "email/layout/base.html" %}
+{% set title = "Invoice Closed" %}
+{% set header = "Invoice {{ invoice_id }} Closed" %}
+
+{% block content %}
+<p class="mb-3">Hello,</p>
+
+<p>Invoice <span class="highlight">#{{ invoice_id }}</span> has been marked as closed on <strong>{{ date }}</strong>.</p>
+
+{% if amount %}
+<p>The total amount was <strong>{{ amount }}</strong>.</p>
+{% endif %}
+
+<p>Please contact us if you have any questions regarding this invoice.</p>
+{% endblock %}

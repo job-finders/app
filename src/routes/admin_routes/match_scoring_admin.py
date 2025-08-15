@@ -6,7 +6,7 @@ and health of the job match scoring system.
 """
 
 from flask import Blueprint, render_template, jsonify, request
-from src.authentication import admin_required
+from src.authentication import system_admin_login
 from src.routes import flask_error_handler
 from src.monitoring.match_scoring_metrics import monitor, get_system_health
 from src.services.optimized_match_scoring import optimizer
@@ -18,16 +18,16 @@ match_scoring_admin = Blueprint('match_scoring_admin', __name__, url_prefix='/ad
 
 @match_scoring_admin.route('/dashboard')
 @flask_error_handler
-@admin_required
-def monitoring_dashboard():
+@system_admin_login
+async def monitoring_dashboard():
     """Display match scoring monitoring dashboard"""
     return render_template('admin/match_scoring_dashboard.html')
 
 
 @match_scoring_admin.route('/api/health')
 @flask_error_handler
-@admin_required
-def health_check():
+@system_admin_login
+async def health_check():
     """Get system health status for match scoring"""
     health_data = get_system_health()
     return jsonify(health_data)
@@ -35,8 +35,8 @@ def health_check():
 
 @match_scoring_admin.route('/api/performance')
 @flask_error_handler
-@admin_required
-def performance_metrics():
+@system_admin_login
+async def performance_metrics():
     """Get performance metrics for match scoring"""
     hours = request.args.get('hours', 24, type=int)
     
@@ -59,8 +59,8 @@ def performance_metrics():
 
 @match_scoring_admin.route('/api/cache-stats')
 @flask_error_handler
-@admin_required
-def cache_statistics():
+@system_admin_login
+async def cache_statistics():
     """Get cache performance statistics"""
     try:
         from src.cache.cache_redis import cache
@@ -89,8 +89,8 @@ def cache_statistics():
 
 @match_scoring_admin.route('/api/clear-cache', methods=['POST'])
 @flask_error_handler
-@admin_required
-def clear_cache():
+@system_admin_login
+async def clear_cache():
     """Clear match scoring cache"""
     try:
         from src.cache.cache_redis import cache
@@ -126,8 +126,8 @@ def clear_cache():
 
 @match_scoring_admin.route('/api/circuit-breaker')
 @flask_error_handler
-@admin_required
-def circuit_breaker_status():
+@system_admin_login
+async def circuit_breaker_status():
     """Get circuit breaker status and controls"""
     service = optimizer.service
     
@@ -144,7 +144,7 @@ def circuit_breaker_status():
 
 @match_scoring_admin.route('/api/circuit-breaker/reset', methods=['POST'])
 @flask_error_handler
-@admin_required
+@system_admin_login
 def reset_circuit_breaker():
     """Reset circuit breaker to closed state"""
     try:
@@ -164,8 +164,8 @@ def reset_circuit_breaker():
 
 @match_scoring_admin.route('/api/performance-tuning', methods=['POST'])
 @flask_error_handler
-@admin_required
-def update_performance_settings():
+@system_admin_login
+async def update_performance_settings():
     """Update performance settings for match scoring"""
     try:
         settings = request.json
@@ -210,8 +210,8 @@ def update_performance_settings():
 
 @match_scoring_admin.route('/api/analytics')
 @flask_error_handler
-@admin_required
-def analytics_summary():
+@system_admin_login
+async def analytics_summary():
     """Get analytics summary for match scoring usage"""
     try:
         # This would read from analytics logs and provide summary
@@ -249,8 +249,8 @@ def analytics_summary():
 
 @match_scoring_admin.route('/api/test-scoring', methods=['POST'])
 @flask_error_handler
-@admin_required
-def test_scoring_performance():
+@system_admin_login
+async def test_scoring_performance():
     """Test match scoring performance with sample data"""
     try:
         # Create test data

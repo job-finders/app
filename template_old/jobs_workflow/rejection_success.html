@@ -1,0 +1,14 @@
+{% extends "employers/layout/page.html" %}
+{% block title %}Job Rejected{% endblock %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+  <div class="alert alert-warning shadow-sm">
+    <h3><i class="ti-close mr-2"></i>Job Rejected</h3>
+    <p>You have rejected the job posting <strong>{{ job.title }}</strong>.</p>
+    <a href="{{ url_for('jobs.list_jobs') }}" class="btn btn-secondary mt-3">
+      Back to Listings
+    </a>
+  </div>
+</div>
+{% endblock %}

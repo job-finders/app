@@ -1,0 +1,916 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Frequently Asked Questions - JobFinders{% endblock %}
+
+{% block meta_description %}Find answers to common questions about JobFinders, including job searching, account
+    management, employer services, and platform features.{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .search-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 2px solid #e9ecef;
+            border-radius: 50px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.25);
+            outline: none;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+
+        .categories-section {
+            margin-bottom: 3rem;
+        }
+
+        .categories-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .category-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .category-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .category-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .category-count {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .faq-section {
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid var(--primary-color);
+            display: inline-block;
+        }
+
+        .section-description {
+            color: #6c757d;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .faq-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .faq-item {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            padding: 1.5rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .faq-question:hover {
+            background: #f8f9fa;
+            color: var(--primary-color);
+        }
+
+        .faq-answer {
+            padding: 0 1.5rem 1.5rem;
+            color: #6c757d;
+            line-height: 1.6;
+            display: none;
+            border-top: 1px solid #f8f9fa;
+        }
+
+        .faq-answer.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 200px;
+            }
+        }
+
+        .faq-icon {
+            transition: transform 0.3s ease;
+            color: var(--primary-color);
+        }
+
+        .faq-icon.rotate {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer ul {
+            padding-left: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .faq-answer li {
+            margin-bottom: 0.5rem;
+        }
+
+        .faq-answer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .faq-answer a:hover {
+            text-decoration: underline;
+        }
+
+        .contact-cta {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+            border-radius: 12px;
+            margin-top: 3rem;
+        }
+
+        .cta-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .cta-description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .btn-white {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid white;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-white:hover {
+            background: transparent;
+            color: white;
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6c757d;
+            display: none;
+        }
+
+        .no-results i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #dee2e6;
+        }
+
+        .popular-questions {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .popular-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .popular-title i {
+            margin-right: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .popular-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .popular-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .popular-item:last-child {
+            border-bottom: none;
+        }
+
+        .popular-link {
+            color: #495057;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .popular-link:hover {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-section {
+                padding: 1.5rem;
+            }
+
+            .faq-question {
+                padding: 1rem;
+                font-size: 0.9rem;
+            }
+
+            .faq-answer {
+                padding: 0 1rem 1rem;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Frequently Asked Questions</h1>
+                <p class="hero-subtitle">
+                    Find answers to common questions about JobFinders, our services,
+                    and how to make the most of our platform.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search Section -->
+    <section class="container">
+        <div class="search-section">
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" id="faqSearch"
+                       placeholder="Search for answers...">
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section class="container categories-section">
+        <h2 class="categories-title">Browse by Category</h2>
+        <div class="category-grid">
+            <a href="#job-seekers" class="category-card" data-category="job-seekers">
+                <div class="category-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h3 class="category-title">Job Seekers</h3>
+                <p class="category-count">12 questions</p>
+            </a>
+
+            <a href="#employers" class="category-card" data-category="employers">
+                <div class="category-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <h3 class="category-title">Employers</h3>
+                <p class="category-count">8 questions</p>
+            </a>
+
+            <a href="#account" class="category-card" data-category="account">
+                <div class="category-icon">
+                    <i class="fas fa-user-cog"></i>
+                </div>
+                <h3 class="category-title">Account Management</h3>
+                <p class="category-count">6 questions</p>
+            </a>
+
+            <a href="#technical" class="category-card" data-category="technical">
+                <div class="category-icon">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <h3 class="category-title">Technical Support</h3>
+                <p class="category-count">5 questions</p>
+            </a>
+        </div>
+    </section>
+
+    <!-- FAQ Content -->
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Job Seekers FAQ -->
+                <section class="faq-section" id="job-seekers" data-category="job-seekers">
+                    <h2 class="section-title">Job Seekers</h2>
+                    <p class="section-description">
+                        Everything you need to know about finding and applying for jobs on JobFinders.
+                    </p>
+
+                    <ul class="faq-list">
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                How do I create a job seeker account?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Creating an account is simple:</p>
+                                <ul>
+                                    <li>Click "Register" in the top navigation</li>
+                                    <li>Select "Job Seeker" as your account type</li>
+                                    <li>Fill in your basic information (name, email, password)</li>
+                                    <li>Verify your email address</li>
+                                    <li>Complete your profile to improve job matching</li>
+                                </ul>
+                                <p>Once registered, you can start browsing jobs immediately and apply with one
+                                    click.</p>
+                            </div>
+                        </li>
+
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                How does the job matching system work?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Our AI-powered matching system analyzes several factors:</p>
+                                <ul>
+                                    <li><strong>Skills:</strong> Your listed skills and experience</li>
+                                    <li><strong>Location:</strong> Your preferred work locations</li>
+                                    <li><strong>Salary:</strong> Your salary expectations</li>
+                                    <li><strong>Job Type:</strong> Full-time, part-time, contract preferences</li>
+                                    <li><strong>Industry:</strong> Your industry experience and interests</li>
+                                </ul>
+                                <p>The system learns from your application behavior and improves recommendations over
+                                    time.</p>
+                            </div>
+                        </li>
+
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                Can I apply for jobs without uploading a CV?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>While you can browse jobs without a CV, most employers require one for applications.
+                                    We recommend:</p>
+                                <ul>
+                                    <li>Upload your CV during profile creation</li>
+                                    <li>Use our built-in resume builder if you don't have one</li>
+                                    <li>Keep your CV updated with recent experience</li>
+                                    <li>Tailor your CV for specific applications when possible</li>
+                                </ul>
+                                <p>Having a complete profile with CV increases your chances of being noticed by
+                                    employers.</p>
+                            </div>
+                        </li>
+
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                How do I set up job alerts?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Job alerts help you stay updated on relevant opportunities:</p>
+                                <ul>
+                                    <li>Go to your dashboard and click "Job Alerts"</li>
+                                    <li>Click "Create New Alert"</li>
+                                    <li>Set your criteria (keywords, location, salary, etc.)</li>
+                                    <li>Choose notification frequency (immediate, daily, weekly)</li>
+                                    <li>Save your alert</li>
+                                </ul>
+                                <p>You can create multiple alerts for different types of positions and modify them
+                                    anytime.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+
+                <!-- Employers FAQ -->
+                <section class="faq-section" id="employers" data-category="employers">
+                    <h2 class="section-title">Employers</h2>
+                    <p class="section-description">
+                        Information for companies looking to post jobs and find qualified candidates.
+                    </p>
+
+                    <ul class="faq-list">
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                How do I post a job on JobFinders?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Posting a job is straightforward:</p>
+                                <ul>
+                                    <li>Register as an employer or company</li>
+                                    <li>Complete your company profile</li>
+                                    <li>Click "Post a Job" from your dashboard</li>
+                                    <li>Fill in job details (title, description, requirements)</li>
+                                    <li>Set application preferences</li>
+                                    <li>Review and publish your job</li>
+                                </ul>
+                                <p>Free accounts can post up to 5 jobs per month. Premium plans offer unlimited
+                                    posting.</p>
+                            </div>
+                        </li>
+
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                What are the pricing plans for employers?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>We offer flexible pricing plans:</p>
+                                <ul>
+                                    <li><strong>Free:</strong> 5 job posts per month, basic features</li>
+                                    <li><strong>Basic:</strong> R299/month - 20 job posts, enhanced visibility</li>
+                                    <li><strong>Professional:</strong> R599/month - Unlimited posts, ATS integration
+                                    </li>
+                                    <li><strong>Enterprise:</strong> Custom pricing - Full features, dedicated support
+                                    </li>
+                                </ul>
+                                <p>All plans include candidate management tools and application tracking.</p>
+                            </div>
+                        </li>
+
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                How do I manage job applications?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Our applicant management system helps you stay organized:</p>
+                                <ul>
+                                    <li>View all applications from your dashboard</li>
+                                    <li>Filter candidates by skills, experience, location</li>
+                                    <li>Rate and add notes to applications</li>
+                                    <li>Move candidates through hiring stages</li>
+                                    <li>Send messages directly through the platform</li>
+                                </ul>
+                                <p>You can also export candidate data and integrate with external ATS systems.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+
+                <!-- Account Management FAQ -->
+                <section class="faq-section" id="account" data-category="account">
+                    <h2 class="section-title">Account Management</h2>
+                    <p class="section-description">
+                        Managing your JobFinders account, privacy settings, and profile information.
+                    </p>
+
+                    <ul class="faq-list">
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                How do I reset my password?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>If you've forgotten your password:</p>
+                                <ul>
+                                    <li>Go to the login page</li>
+                                    <li>Click "Forgot Password?"</li>
+                                    <li>Enter your email address</li>
+                                    <li>Check your email for reset instructions</li>
+                                    <li>Follow the link to create a new password</li>
+                                </ul>
+                                <p>If you don't receive the email, check your spam folder or contact support.</p>
+                            </div>
+                        </li>
+
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                Can I change my account type from job seeker to employer?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Yes, you can switch account types:</p>
+                                <ul>
+                                    <li>Go to Account Settings</li>
+                                    <li>Click "Account Type"</li>
+                                    <li>Select your new account type</li>
+                                    <li>Complete any additional required information</li>
+                                    <li>Verify the change via email</li>
+                                </ul>
+                                <p>Note that switching may affect your current data and require profile completion.</p>
+                            </div>
+                        </li>
+
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                How do I delete my account?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>To permanently delete your account:</p>
+                                <ul>
+                                    <li>Go to Account Settings</li>
+                                    <li>Scroll to "Delete Account" section</li>
+                                    <li>Read the information about data deletion</li>
+                                    <li>Confirm your decision</li>
+                                    <li>Enter your password to verify</li>
+                                </ul>
+                                <p><strong>Warning:</strong> This action is permanent and cannot be undone. All your
+                                    data will be deleted.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+
+                <!-- Technical Support FAQ -->
+                <section class="faq-section" id="technical" data-category="technical">
+                    <h2 class="section-title">Technical Support</h2>
+                    <p class="section-description">
+                        Troubleshooting common technical issues and platform functionality.
+                    </p>
+
+                    <ul class="faq-list">
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                Why can't I upload my CV?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>CV upload issues are usually due to:</p>
+                                <ul>
+                                    <li><strong>File size:</strong> Maximum 5MB allowed</li>
+                                    <li><strong>File format:</strong> Only PDF, DOC, DOCX accepted</li>
+                                    <li><strong>Browser issues:</strong> Try clearing cache or different browser</li>
+                                    <li><strong>Internet connection:</strong> Ensure stable connection</li>
+                                </ul>
+                                <p>If problems persist, try our online resume builder or contact support.</p>
+                            </div>
+                        </li>
+
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                The website is loading slowly. What can I do?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>To improve loading speed:</p>
+                                <ul>
+                                    <li>Clear your browser cache and cookies</li>
+                                    <li>Disable browser extensions temporarily</li>
+                                    <li>Check your internet connection speed</li>
+                                    <li>Try using a different browser</li>
+                                    <li>Close other tabs and applications</li>
+                                </ul>
+                                <p>If issues continue, it may be temporary server maintenance. Check our status
+                                    page.</p>
+                            </div>
+                        </li>
+
+                        <li class="faq-item">
+                            <button class="faq-question" onclick="toggleFaq(this)">
+                                I'm not receiving email notifications. How do I fix this?
+                                <i class="fas fa-chevron-down faq-icon"></i>
+                            </button>
+                            <div class="faq-answer">
+                                <p>To ensure you receive our emails:</p>
+                                <ul>
+                                    <li>Check your spam/junk folder</li>
+                                    <li>Add noreply@jobfinders.co.za to your contacts</li>
+                                    <li>Verify your email address in account settings</li>
+                                    <li>Check notification preferences in your profile</li>
+                                    <li>Ensure your email provider isn't blocking our emails</li>
+                                </ul>
+                                <p>Contact support if you're still not receiving important notifications.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+
+                <!-- No Results Message -->
+                <div class="no-results" id="noResults">
+                    <i class="fas fa-search"></i>
+                    <h3>No results found</h3>
+                    <p>Try adjusting your search terms or browse by category above.</p>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="popular-questions">
+                    <h3 class="popular-title">
+                        <i class="fas fa-fire"></i>
+                        Popular Questions
+                    </h3>
+                    <ul class="popular-list">
+                        <li class="popular-item">
+                            <a href="#job-seekers" class="popular-link">How do I create a job seeker account?</a>
+                        </li>
+                        <li class="popular-item">
+                            <a href="#job-seekers" class="popular-link">How does the job matching system work?</a>
+                        </li>
+                        <li class="popular-item">
+                            <a href="#employers" class="popular-link">How do I post a job on JobFinders?</a>
+                        </li>
+                        <li class="popular-item">
+                            <a href="#account" class="popular-link">How do I reset my password?</a>
+                        </li>
+                        <li class="popular-item">
+                            <a href="#technical" class="popular-link">Why can't I upload my CV?</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact CTA -->
+    <section class="container">
+        <div class="contact-cta">
+            <h2 class="cta-title">Still Need Help?</h2>
+            <p class="cta-description">
+                Can't find the answer you're looking for? Our support team is here to help.
+            </p>
+            <a href="/contact" class="btn-white">
+                <i class="fas fa-envelope me-2"></i>Contact Support
+            </a>
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.getElementById('faqSearch');
+            const faqItems = document.querySelectorAll('.faq-item');
+            const faqSections = document.querySelectorAll('.faq-section');
+            const noResults = document.getElementById('noResults');
+            const categoryCards = document.querySelectorAll('.category-card');
+
+            // Search functionality
+            searchInput.addEventListener('input', function () {
+                const searchTerm = this.value.toLowerCase().trim();
+                let hasResults = false;
+
+                if (searchTerm === '') {
+                    // Show all items and sections
+                    faqItems.forEach(item => item.style.display = 'block');
+                    faqSections.forEach(section => section.style.display = 'block');
+                    noResults.style.display = 'none';
+                    return;
+                }
+
+                faqItems.forEach(item => {
+                    const question = item.querySelector('.faq-question').textContent.toLowerCase();
+                    const answer = item.querySelector('.faq-answer').textContent.toLowerCase();
+
+                    if (question.includes(searchTerm) || answer.includes(searchTerm)) {
+                        item.style.display = 'block';
+                        hasResults = true;
+
+                        // Highlight search terms
+                        highlightSearchTerm(item, searchTerm);
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                // Show/hide sections based on visible items
+                faqSections.forEach(section => {
+                    const visibleItems = section.querySelectorAll('.faq-item[style*="block"]');
+                    section.style.display = visibleItems.length > 0 ? 'block' : 'none';
+                });
+
+                // Show no results message
+                noResults.style.display = hasResults ? 'none' : 'block';
+            });
+
+            // Category filtering
+            categoryCards.forEach(card => {
+                card.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const category = this.dataset.category;
+                    const targetSection = document.getElementById(category);
+
+                    if (targetSection) {
+                        // Clear search
+                        searchInput.value = '';
+
+                        // Show all items
+                        faqItems.forEach(item => item.style.display = 'block');
+                        faqSections.forEach(section => section.style.display = 'block');
+                        noResults.style.display = 'none';
+
+                        // Scroll to section
+                        targetSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+
+                        // Highlight section briefly
+                        targetSection.style.backgroundColor = 'rgba(var(--primary-color-rgb), 0.1)';
+                        setTimeout(() => {
+                            targetSection.style.backgroundColor = '';
+                        }, 2000);
+                    }
+                });
+            });
+
+            // Smooth scrolling for popular questions
+            document.querySelectorAll('.popular-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetSection = document.getElementById(targetId);
+
+                    if (targetSection) {
+                        targetSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            function highlightSearchTerm(item, searchTerm) {
+                // Remove previous highlights
+                const highlighted = item.querySelectorAll('.highlight');
+                highlighted.forEach(el => {
+                    el.outerHTML = el.innerHTML;
+                });
+
+                // Add new highlights
+                const question = item.querySelector('.faq-question');
+                const answer = item.querySelector('.faq-answer');
+
+                [question, answer].forEach(element => {
+                    if (element) {
+                        const regex = new RegExp(`(${searchTerm})`, 'gi');
+                        element.innerHTML = element.innerHTML.replace(regex, '<span class="highlight" style="background: yellow; padding: 0 2px;">$1</span>');
+                    }
+                });
+            }
+        });
+
+        function toggleFaq(button) {
+            const answer = button.nextElementSibling;
+            const icon = button.querySelector('.faq-icon');
+            const isOpen = answer.classList.contains('show');
+
+            // Close all other FAQ items in the same section
+            const section = button.closest('.faq-section');
+            section.querySelectorAll('.faq-answer').forEach(item => {
+                if (item !== answer) {
+                    item.classList.remove('show');
+                }
+            });
+
+            section.querySelectorAll('.faq-icon').forEach(item => {
+                if (item !== icon) {
+                    item.classList.remove('rotate');
+                }
+            });
+
+            // Toggle current item
+            if (isOpen) {
+                answer.classList.remove('show');
+                icon.classList.remove('rotate');
+            } else {
+                answer.classList.add('show');
+                icon.classList.add('rotate');
+            }
+        }
+    </script>
+{% endblock %}

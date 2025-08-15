@@ -1,0 +1,875 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Access Denied - JobFinders{% endblock %}
+
+{% block meta_description %}You don't have permission to access this resource. Please check your account permissions or
+    contact support for assistance.{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .error-container {
+            min-height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 0;
+        }
+
+        .error-content {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .error-code {
+            font-size: 8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .error-message {
+            font-size: 1.1rem;
+            color: #6c757d;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 3rem;
+        }
+
+        .btn-primary-gradient {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-outline-warning {
+            background: transparent;
+            color: #ffc107;
+            border: 2px solid #ffc107;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-outline-warning:hover {
+            background: #ffc107;
+            color: #212529;
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        .access-info-section {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.2);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid #ffc107;
+        }
+
+        .access-info-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .access-info-icon {
+            width: 24px;
+            height: 24px;
+            background: #ffc107;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #212529;
+            font-size: 0.8rem;
+        }
+
+        .access-info-message {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .access-reasons {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .access-reasons-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .access-reasons-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .access-reason-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .access-reason-item:last-child {
+            border-bottom: none;
+        }
+
+        .access-reason-icon {
+            width: 20px;
+            height: 20px;
+            background: #ffc107;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #212529;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .access-reason-text {
+            color: #495057;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .solutions-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .solutions-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .solutions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .solution-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .solution-card:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .solution-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        .solution-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .solution-description {
+            color: #6c757d;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .solution-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .solution-link:hover {
+            text-decoration: underline;
+        }
+
+        .error-illustration {
+            margin-bottom: 2rem;
+            opacity: 0.8;
+            position: relative;
+        }
+
+        .lock-icon {
+            font-size: 4rem;
+            color: #ffc107;
+            margin-bottom: 1rem;
+            animation: shake 2s infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-5px);
+            }
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .floating-element {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-element:nth-child(1) {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-element:nth-child(2) {
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        .floating-element:nth-child(3) {
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .breadcrumb-section {
+            background: #f8f9fa;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .breadcrumb {
+            background: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: ">";
+            color: #6c757d;
+        }
+
+        .breadcrumb-item a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item a:hover {
+            text-decoration: underline;
+        }
+
+        .breadcrumb-item.active {
+            color: #6c757d;
+        }
+
+        .user-info-section {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+
+        .user-info-title {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .user-info-details {
+            color: #424242;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .permission-required {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .permission-title {
+            font-weight: 600;
+            color: #dc3545;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .permission-text {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 5rem;
+            }
+
+            .error-title {
+                font-size: 2rem;
+            }
+
+            .error-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-primary-gradient,
+            .btn-outline-warning {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+
+            .solutions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .access-info-section,
+            .solutions-section {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Breadcrumb -->
+    <section class="breadcrumb-section">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Access Denied</li>
+                </ol>
+            </nav>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="error-container">
+            <div class="floating-elements">
+                <div class="floating-element">
+                    <i class="fas fa-lock" style="font-size: 3rem; color: #ffc107;"></i>
+                </div>
+                <div class="floating-element">
+                    <i class="fas fa-shield-alt" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                </div>
+                <div class="floating-element">
+                    <i class="fas fa-user-lock" style="font-size: 2rem; color: #ffc107;"></i>
+                </div>
+            </div>
+
+            <div class="error-content">
+                <!-- Error Illustration -->
+                <div class="error-illustration">
+                    <div class="lock-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <div class="error-code">403</div>
+                </div>
+
+                <h1 class="error-title">Access Denied</h1>
+                <p class="error-message">
+                    You don't have permission to access this resource. This could be due to
+                    insufficient privileges or account restrictions.
+                </p>
+
+                <!-- User Info (if logged in) -->
+                {% if current_user %}
+                    <div class="user-info-section">
+                        <div class="user-info-title">Current User Information</div>
+                        <div class="user-info-details">
+                            <strong>Email:</strong> {{ current_user.email }}<br>
+                            <strong>Account Type:</strong> {{ current_user.user_type|title }}<br>
+                            <strong>Status:</strong> {{ "Verified" if current_user.is_verified else "Unverified" }}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Permission Required -->
+                <div class="permission-required">
+                    <div class="permission-title">
+                        <i class="fas fa-key"></i>
+                        Permission Required
+                    </div>
+                    <div class="permission-text">
+                        {{ permission_message or "This resource requires special permissions to access." }}
+                    </div>
+                </div>
+
+                <!-- Primary Actions -->
+                <div class="error-actions">
+                    {% if not current_user %}
+                        <a href="/login?next={{ request.url|urlencode }}" class="btn-primary-gradient">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Sign In
+                        </a>
+                    {% else %}
+                        <a href="/dashboard" class="btn-primary-gradient">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Go to Dashboard
+                        </a>
+                    {% endif %}
+                    <a href="/contact" class="btn-outline-warning">
+                        <i class="fas fa-envelope"></i>
+                        Request Access
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Access Information Section -->
+        <div class="access-info-section">
+            <h2 class="access-info-title">
+                <div class="access-info-icon">
+                    <i class="fas fa-info"></i>
+                </div>
+                Why Am I Seeing This?
+            </h2>
+            <p class="access-info-message">
+                Access restrictions help protect sensitive information and ensure platform security.
+                Here are common reasons why you might encounter this error:
+            </p>
+            <div class="access-reasons">
+                <div class="access-reasons-title">Common Reasons:</div>
+                <ul class="access-reasons-list">
+                    <li class="access-reason-item">
+                        <div class="access-reason-icon">
+                            <i class="fas fa-user-slash"></i>
+                        </div>
+                        <div class="access-reason-text">
+                            <strong>Not Logged In:</strong> You need to sign in to access this resource.
+                        </div>
+                    </li>
+                    <li class="access-reason-item">
+                        <div class="access-reason-icon">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                        <div class="access-reason-text">
+                            <strong>Insufficient Permissions:</strong> Your account doesn't have the required
+                            permissions.
+                        </div>
+                    </li>
+                    <li class="access-reason-item">
+                        <div class="access-reason-icon">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div class="access-reason-text">
+                            <strong>Account Pending:</strong> Your account may be awaiting verification or approval.
+                        </div>
+                    </li>
+                    <li class="access-reason-item">
+                        <div class="access-reason-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="access-reason-text">
+                            <strong>Company Access:</strong> This resource is restricted to specific company members.
+                        </div>
+                    </li>
+                    <li class="access-reason-item">
+                        <div class="access-reason-icon">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="access-reason-text">
+                            <strong>Premium Feature:</strong> This feature requires a premium subscription.
+                        </div>
+                    </li>
+                    <li class="access-reason-item">
+                        <div class="access-reason-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div class="access-reason-text">
+                            <strong>Admin Only:</strong> This area is restricted to administrators.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Solutions Section -->
+        <div class="solutions-section">
+            <h2 class="solutions-title">How to Resolve This</h2>
+            <div class="solutions-grid">
+                {% if not current_user %}
+                    <div class="solution-card">
+                        <div class="solution-icon">
+                            <i class="fas fa-sign-in-alt"></i>
+                        </div>
+                        <h3 class="solution-title">Sign In</h3>
+                        <p class="solution-description">
+                            Log in to your JobFinders account to access member-only features.
+                        </p>
+                        <a href="/login?next={{ request.url|urlencode }}" class="solution-link">
+                            Sign In Now <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="solution-card">
+                        <div class="solution-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <h3 class="solution-title">Create Account</h3>
+                        <p class="solution-description">
+                            Don't have an account? Register to access all JobFinders features.
+                        </p>
+                        <a href="/register" class="solution-link">
+                            Register Now <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="solution-card">
+                        <div class="solution-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <h3 class="solution-title">Verify Account</h3>
+                        <p class="solution-description">
+                            Complete your account verification to unlock additional features.
+                        </p>
+                        <a href="/verify" class="solution-link">
+                            Verify Account <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="solution-card">
+                        <div class="solution-icon">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <h3 class="solution-title">Upgrade Account</h3>
+                        <p class="solution-description">
+                            Upgrade to premium for access to exclusive features and content.
+                        </p>
+                        <a href="/pricing" class="solution-link">
+                            View Plans <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                {% endif %}
+
+                <div class="solution-card">
+                    <div class="solution-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h3 class="solution-title">Request Access</h3>
+                    <p class="solution-description">
+                        Contact our support team to request access to this resource.
+                    </p>
+                    <a href="/contact?subject=Access Request&message=I need access to: {{ request.url }}"
+                       class="solution-link">
+                        Contact Support <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="solution-card">
+                    <div class="solution-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h3 class="solution-title">Get Help</h3>
+                    <p class="solution-description">
+                        Check our FAQ or documentation for more information about permissions.
+                    </p>
+                    <a href="/faq" class="solution-link">
+                        View FAQ <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="solution-card">
+                    <div class="solution-icon">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <h3 class="solution-title">Go Home</h3>
+                    <p class="solution-description">
+                        Return to the homepage and browse publicly available content.
+                    </p>
+                    <a href="/" class="solution-link">
+                        Homepage <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Track 403 errors for analytics
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'page_view', {
+                    page_title: '403 Access Denied',
+                    page_location: window.location.href,
+                    custom_map: {
+                        'error_type': '403',
+                        'user_logged_in': {{ 'true' if current_user else 'false' }}
+                    }
+                });
+            }
+
+            // Add hover effects to solution cards
+            const solutionCards = document.querySelectorAll('.solution-card');
+            solutionCards.forEach(card => {
+                card.addEventListener('mouseenter', function () {
+                    this.style.transform = 'translateY(-4px)';
+                });
+
+                card.addEventListener('mouseleave', function () {
+                    this.style.transform = 'translateY(-2px)';
+                });
+            });
+
+            // Auto-redirect for certain scenarios
+            const urlParams = new URLSearchParams(window.location.search);
+            const autoRedirect = urlParams.get('auto_redirect');
+
+            if (autoRedirect === 'login' && !{{ 'true' if current_user else 'false' }}) {
+                // Show countdown and redirect to login
+                showRedirectCountdown('/login?next=' + encodeURIComponent(window.location.pathname), 10);
+            }
+
+            function showRedirectCountdown(redirectUrl, seconds) {
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            min-width: 300px;
+        `;
+
+                let countdown = seconds;
+
+                function updateNotification() {
+                    notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <i class="fas fa-info-circle"></i>
+                    <div style="font-weight: 600;">Auto-redirecting to login</div>
+                </div>
+                <div style="font-size: 0.9rem; opacity: 0.9;">
+                    Redirecting in ${countdown} seconds...
+                </div>
+                <button onclick="cancelRedirect()" style="
+                    background: rgba(255,255,255,0.2);
+                    border: none;
+                    color: white;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 4px;
+                    font-size: 0.8rem;
+                    margin-top: 0.5rem;
+                    cursor: pointer;
+                ">Cancel</button>
+            `;
+                }
+
+                updateNotification();
+                document.body.appendChild(notification);
+
+                const interval = setInterval(() => {
+                    countdown--;
+                    if (countdown <= 0) {
+                        clearInterval(interval);
+                        window.location.href = redirectUrl;
+                    } else {
+                        updateNotification();
+                    }
+                }, 1000);
+
+                window.cancelRedirect = function () {
+                    clearInterval(interval);
+                    notification.remove();
+                };
+            }
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function (e) {
+                // Press 'L' to go to login (if not logged in)
+                if ((e.key === 'l' || e.key === 'L') && !{{ 'true' if current_user else 'false' }}) {
+                    if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                        const activeElement = document.activeElement;
+                        if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+                            window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                        }
+                    }
+                }
+
+                // Press 'H' to go home
+                if (e.key === 'h' || e.key === 'H') {
+                    if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                        const activeElement = document.activeElement;
+                        if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+                            window.location.href = '/';
+                        }
+                    }
+                }
+
+                // Press 'C' to contact support
+                if (e.key === 'c' || e.key === 'C') {
+                    if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                        const activeElement = document.activeElement;
+                        if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+                            window.location.href = '/contact?subject=Access Request&message=I need access to: ' + encodeURIComponent(window.location.href);
+                        }
+                    }
+                }
+            });
+
+            // Show keyboard shortcuts hint
+            function showKeyboardHints() {
+                const hints = document.createElement('div');
+                hints.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+
+                let hintsContent = `
+            <div style="margin-bottom: 0.5rem; font-weight: 600;">Keyboard Shortcuts:</div>
+            <div>Press <kbd style="background: #333; padding: 2px 6px; border-radius: 3px;">H</kbd> for Home</div>
+            <div>Press <kbd style="background: #333; padding: 2px 6px; border-radius: 3px;">C</kbd> to Contact Support</div>
+        `;
+
+                if (!{{ 'true' if current_user else 'false' }}) {
+                    hintsContent += `<div>Press <kbd style="background: #333; padding: 2px 6px; border-radius: 3px;">L</kbd> to Login</div>`;
+                }
+
+                hints.innerHTML = hintsContent;
+                document.body.appendChild(hints);
+
+                setTimeout(() => {
+                    hints.style.opacity = '1';
+                }, 100);
+
+                setTimeout(() => {
+                    hints.style.opacity = '0';
+                    setTimeout(() => {
+                        if (hints.parentNode) {
+                            hints.remove();
+                        }
+                    }, 300);
+                }, 5000);
+            }
+
+            // Show hints after 3 seconds
+            setTimeout(showKeyboardHints, 3000);
+        });
+    </script>
+{% endblock %}
