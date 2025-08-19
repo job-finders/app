@@ -5,6 +5,7 @@ import time
 from flask import Blueprint, render_template, request, jsonify
 import random
 
+from src.controllers.jobseekers import JobSeekerProfilesController
 from src.controllers.jobs import JobsSearchController
 # Authentication
 from src.authentication import user_details
@@ -222,7 +223,8 @@ async def get_job_match_analysis(user: User, job_id: str):
             })
         logger.info(f"Trying to Obtain User Profile for User : {user.uid}")
         # Get user profile
-        user_profile = await get_user_profile_for_matching(user_id=user.uid)
+        user_profile_controller: JobSeekerProfilesController = get_controller('job_seeker_profile')
+        user_profile = await user_profile_controller.get_complete_profile_by_uid(user_uid=user.uid)
         if not user_profile:
             return jsonify({
                 'success': False,
@@ -415,7 +417,7 @@ async def list_jobs(user: User):
         'filters': {}
     }
 
-    return render_template('jobs/list.html', **context)
+    return render_template('jobs/job_list.html', **context)
 
 
 @jobs_search_route.get('/search')
@@ -470,7 +472,7 @@ async def search_jobs(user: User):
             'search_keyword': keyword
         }}
 
-    return render_template('jobs/search.html', **context)
+    return render_template('jobs/job_search.html', **context)
 
 
 @jobs_search_route.get('/categories')
@@ -502,7 +504,7 @@ async def job_categories(user: User):
         'featured_jobs': featured_jobs,
         'max_salary': max_salary
     }
-    return render_template('jobs/job_categories_list.html', **context)
+    return render_template('jobs/job_categories.html', **context)
 
 @jobs_search_route.get('/category/<string:category>')
 @flask_error_handler
@@ -651,7 +653,7 @@ async def job_details(user: User, job_id: str):
         'meta_description': job.seo_description,
     }
 
-    return render_template('jobs/job_detail/job_detail.html', **context)
+    return render_template('jobs/job_detail.html', **context)
 
 @jobs_search_route.get('/location/<string:location>')
 @flask_error_handler
@@ -958,128 +960,6 @@ async def job_by_reference(user: User, reference: str):
     job = await job_search_controller.get_job_by_reference(reference=reference)
 
     if not job:
-        return render_template('jobs/error_404.html'), 404
+        return render_template('error/404.html'), 404
     context = {'current_user': user,'job': job}
     return render_template('jobs/reference.html', **context)
-
-
-##############################################################################################################
-# @jobs_route.get('/jobs-in/<string:location>')
-# @flask_error_handler
-# @user_details
-# async def jobs_by_location(user: User,location: str):
-#     """
-#     Handles jobs by province or town.
-#     If the location is a known town, replace it with its parent province for consistent filtering.
-#     """
-#
-#     page = int(request.args.get('page', 1))
-#     location_lower = location.lower()
-#
-#     # If user typed a town, convert to province
-#     if location_lower in TOWN_TO_PROVINCE:
-#         province = TOWN_TO_PROVINCE[location_lower]
-#     else:
-#         province = location  # Assume it's already a province or partial match
-#
-#     jobs_filtered = [
-#         job for job in scrapper.jobs.values()
-#         if job.location and province.lower() in job.location.lower()
-#     ]
-#
-#
-#
-#     if not jobs_filtered:
-#         return await not_found(location)
-#
-#     # Slug for SEO
-#     search_term = f"jobs-in-{location_lower.replace(' ', '-')}"
-#
-#     context = await create_common_context(
-#         search_term=search_term,
-#         job_list=jobs_filtered,
-#         page=page,
-#         per_page=10
-#     )
-#     context.update(current_user=user)
-#
-#     return render_template('location.html', **context)
-
-
-# @jobs_route.get('/jobs/category/<string:category>')
-# @flask_error_handler
-# @user_details
-# async def category_jobs(user: User,category: str):
-#     """Render job search results by search term."""
-#     page = int(request.args.get('page', 1))
-#     response = await create_search_context(user=user, search_term=category, page=page)
-#     if response is None:
-#         return await not_found(category)
-#     return response
-#
-#
-# @jobs_route.get('/jobs/<string:search_term>')
-# @flask_error_handler
-# @user_details
-# async def job_search(user: User,search_term: str):
-#     """Render job search results by search term."""
-#     page = int(request.args.get('page', 1))
-#     response = await create_search_context(user=user, search_term=search_term, page=page)
-#     if response is None:
-#         return await not_found(search_term)
-#     return response
-#
-#
-# @jobs_route.get('/search')
-# @flask_error_handler
-# @user_details
-# async def search_bar(user: User):
-#     """Render search results from a query submitted via search bar."""
-#     search_term = request.args.get('search_term')
-#     if not search_term:
-#         return redirect(url_for('home.get_home'), code=302)
-#     page = int(request.args.get('page', 1))
-#     response = await create_search_context(user=user, search_term=search_term, page=page)
-#     if response is None:
-#         return await not_found(search_term)
-#     return response
-#
-#
-# @jobs_route.get('/job/<string:reference>')
-# @flask_error_handler
-# @user_details
-# async def job_detail(user: User, reference: str):
-#     """Display job details identified by job reference."""
-#     if user and user.role == Role.SEEKER:
-#         # Obtain Job Seeker Resume
-#         pass
-#
-#     job: Job = await scrapper.job_search(job_reference=reference)
-#
-#     if isinstance(job, Job) and job.title.strip():
-#         return await sub_job_detail(user=user, job=job)
-#     return await gone(user=user, search_term=reference)
-#
-# @jobs_route.get('/search/job/<string:slug>')
-# @flask_error_handler
-# @user_details
-# async def job_slug(user: User,slug: str):
-#     """Display job details identified by its slug."""
-#     job: Job = await scrapper.search_by_slug(slug=slug)
-#     if isinstance(job, Job) and job.title.strip():
-#         return await sub_job_detail(user=user, job=job)
-#     return await gone(search_term=slug)
-#
-#
-# @jobs_route.get('/jobs/categories')
-# @flask_error_handler
-# @user_details
-# async def categories(user: User):
-#     pass
-#
-#
-# @jobs_route.get('/jobs/ai-based-search')
-# @flask_error_handler
-# @user_details
-# async def assisted_search(user: User):
-#     pass

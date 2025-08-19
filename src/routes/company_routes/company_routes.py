@@ -74,7 +74,7 @@ async def create_company_profile(user: User):
 
         context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options)
         logger.info("Will display a form to create a company")
-        return render_template("company/create_company.html", **context)
+        return render_template("company/details/create.html", **context)
 
     # POST
     form_data = request.form.to_dict()
@@ -91,13 +91,13 @@ async def create_company_profile(user: User):
             msg = error['msg']
             flash(f"{field.title()} error: {msg}", "danger")
         context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options, form_data=form_data, errors=errors)
-        return render_template("company/create_company.html", **context), 400
+        return render_template("company/details/create.html", **context), 400
     try:
         created_company: Company = await company_controller.create_company(company_data=company_data)
         if not created_company:
             flash(message="Unable to create Company - Maybe a Duplicate Company", category="danger")
             context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options, form_data=form_data)
-            return render_template("company/create_company.html", **context), 400
+            return render_template("company/details/create.html", **context), 400
         logger.info(f"Company Created : {created_company}")
         initial_employer_profile = Employer(
             user_uid=user.uid,
@@ -108,19 +108,19 @@ async def create_company_profile(user: User):
         if not create_employer_profile:
             flash(message="Unable to create Employer Profile - Maybe a Duplicate Company", category="danger")
             context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options, form_data=form_data)
-            return render_template("company/create_company.html", **context), 400
+            return render_template("company/details/create.html", **context), 400
         logger.info(f"Successfully created Company & Employer Profiles")
     except ValueError as e:
         logger.error(f"Company creation conflict: {str(e)}")
         flash(str(e), "danger")
         context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options, form_data=form_data, error=str(e))
-        return render_template("company/create_company.html", **context), 400
+        return render_template("company/details/create.html", **context), 400
 
     if not (created_company and create_employer_profile):
         logger.error(f'Error creating company using company data : {company_data}')
         flash(message="There was a problem creating your company. Please try again.", category="danger")
         context = dict(current_user=user, countries=countries, industries=industries, tech_options=tech_options, form_data=form_data)
-        return render_template("company/create_company.html", **context), 400
+        return render_template("company/details/create.html", **context), 400
 
     # Update user role if needed (assuming employers need company association)
     if user.role != "employer":
@@ -152,7 +152,7 @@ async def edit_company_profile(user: User):
         company=company,
         current_year=datetime.now().year
     )
-    return render_template('company/company_editor.html', **context)
+    return render_template('company/details/editor.html', **context)
 
 
 @company_bp.route('/profile/update', methods=['POST'])
@@ -213,7 +213,7 @@ async def update_company_profile(user: User):
             form_data=request.form,
             current_year=datetime.now().year
         )
-        return render_template('company/company_editor.html',**context), 400
+        return render_template('company/details/editor.html', **context), 400
 
     except Exception as e:
         logger.error(f"Error updating company profile: {str(e)}")
@@ -257,6 +257,7 @@ async def update_employer_profile(user: User):
         hire_date = form.get("hire_date")
         if hire_date:
             try:
+                # noinspection PyTypeChecker
                 employer_profile.hire_date = datetime.strptime(hire_date, "%Y-%m-%d")
             except ValueError:
                 flash("Invalid hire date format.", "warning")
@@ -277,14 +278,14 @@ async def update_employer_profile(user: User):
                 "company_data": company_data,
                 "form_data": form
             }
-            return render_template("company/employer_profile.html", **context), 400
+            return render_template("company/details/company_profile.html", **context), 400
 
     context = {
         "current_user": user,
         "employer_profile": employer_profile,
         "company_data": company_data
     }
-    return render_template("company/employer_profile.html", **context)
+    return render_template("company/details/company_profile.html", **context)
 
 
 @company_bp.route("/profile", methods=["GET"])
@@ -317,7 +318,7 @@ async def view_company(user: User):
         "company": company_data
     }
 
-    return render_template("company/view_company_profile.html", **context)
+    return render_template("company/details/company_profile.html", **context)
 
 @company_bp.route("/employer/profile", methods=["GET"])
 @flask_error_handler
@@ -351,7 +352,7 @@ async def view_employer_profile(user: User):
         "company_data": company_data,
         "current_year": datetime.now().year
     }
-    return render_template("company/view_employer_profile.html", **context)
+    return render_template("company/employers/verify_profile.html", **context)
 
 
 @company_bp.route("/jobs", methods=["GET", "POST"])
@@ -387,7 +388,7 @@ async def manage_jobs(user: User):
         today = datetime.now(timezone.utc).date().isoformat()
         context = dict(current_user=user, employer_profile=_employer_profile, company=company_data, jobs=jobs, today=today)
 
-        return render_template("company/jobs.html", **context)
+        return render_template("company/manage_jobs.html", **context)
 
     return redirect(url_for("jobs_workflow.show_create_form"))
 
@@ -407,7 +408,7 @@ async def candidate_management(user: User):
     if request.method == "GET":
         candidates: list[JobSeekerCV] = await company_controller.get_saved_candidates(user_uid=user.uid)
         context = dict(current_user=user, candidates=candidates)
-        return render_template("company/candidates.html", **context)
+        return render_template("company/candidates/candidate_management.html", **context)
     
     # POST - Save candidate - when user clicks save show a dialog and gather notes
     cv_id = request.form.get('cv_id')
@@ -433,7 +434,7 @@ async def candidate_management(user: User):
 async def candidate_details(user: User, cv_id: str):
     company_controller = get_controller('company')
     candidate = await company_controller.get_candidate_details(cv_id)
-    return render_template("company/candidates/candidate_details.html", candidate=candidate)
+    return render_template("company/candidates/details.html", candidate=candidate)
 
 @company_bp.route("/analytics/applications", methods=["GET"])
 @flask_error_handler
@@ -453,7 +454,7 @@ async def application_analytics(user: User):
 
     analytics: JobApplicationDashboard = await company_controller.get_application_analytics(company_id=_employer_profile.company_id)
     context = dict(current_user=user, analytics=analytics)
-    return render_template("company/analytics.html", **context)
+    return render_template("company/analytics/application_analytics.html", **context)
 
 @company_bp.route("/verify-employer-profile", methods=["POST"])
 @flask_error_handler
@@ -495,19 +496,18 @@ async def verify_employer_profile(token: str, employer_id: str):
 
     if not employer:
         flash("Invalid employer ID or the profile does not exist.", "danger")
-        return render_template("employers/employer_verification_failed.html", **context)
+        return render_template("company/employers/verify_profile.html", **context)
 
     if not employer.is_token_valid(token):
         flash("The verification link is invalid or has expired.", "danger")
-        return render_template("employers/employer_verification_failed.html", **context)
+        return render_template("company/employers/verification_status.html", **context)
 
     # Mark as verified and remove token
     _ = await company_controller.mark_employer_as_verified(employer_id=employer_id)
 
     flash("Your profile has been successfully verified!", "success")
 
-
-    return render_template("employers/employer_verification_success.html", **context)
+    return render_template("company/employers/verification_status.html", **context)
 
 
 @company_bp.route('/submit-company-verification', methods=['GET', 'POST'])
@@ -534,12 +534,12 @@ async def initiate_company_verification(user: User):
     if company.verification_status == CompanyVerificationStatus.VERIFIED.value:
         flash("Company is already verified", "info")
         status_info = await company_controller.get_company_verification_status(company.company_id)
-        return render_template('company/verification_status.html', company=company, status_info=status_info)
+        return render_template('company/verification/status.html', company=company, status_info=status_info)
 
     if company.verification_status == CompanyVerificationStatus.PENDING.value:
         flash("Verification is already in progress", "warning")
         status_info = await company_controller.get_company_verification_status(company.company_id)
-        return render_template('company/verification_status.html', company=company, status_info=status_info)
+        return render_template('company/verification/status.html', company=company, status_info=status_info)
 
     # Handle form submission
     if request.method == 'POST':
@@ -562,7 +562,7 @@ async def initiate_company_verification(user: User):
             id_number=reg_form_data.get("reg_form_data"),
             cipc_id=cipc_data.cipc_id)
 
-        cipic_data.director_details.append(director_details)
+        cipc_data.director_details.append(director_details)
 
         # Validate required CIPC fields
         required_fields = ["name", "registration_number"]
@@ -595,6 +595,7 @@ async def initiate_company_verification(user: User):
                 await file.save(file_path)
 
                 # Create document record
+                # noinspection PyTypeChecker
                 document_data = CompanyVerificationDocument(
                     company_id=company.company_id,
                     document_type=doc_type,
@@ -867,7 +868,7 @@ async def registered_company_cipc_details(user: User):
         # noinspection PyTypeChecker
         context.update(registered_company=registered_company)
 
-    return render_template("company/registered_company_cipc.html", **context)
+    return render_template("company/details/register_cipc.html", **context)
 
 
 @company_bp.route('/verification-status', methods=['GET'])

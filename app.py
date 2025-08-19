@@ -20,4 +20,4 @@ def show_routes():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8084, debug=True, extra_files=['src', 'templates', 'static'])
+    app.run(host='0.0.0.0', port=8084, debug=True)
