@@ -10,6 +10,8 @@ from flask import Blueprint, request, render_template, redirect, url_for, flash
 from pydantic import ValidationError, HttpUrl
 from werkzeug.utils import secure_filename
 
+from src.controllers.billing.billing_controller import BillingController
+from src.controllers.company import CompanyController
 # Authentication
 from src.authentication import login_required, employer_login, require_billing_role
 
@@ -982,6 +984,7 @@ async def employers_list(user: User):
 
     return render_template("company/employers/list.html", **context)
 
+
 @company_bp.route("/me")
 @login_required
 async def get_dashboard(user: User):
@@ -989,32 +992,237 @@ async def get_dashboard(user: User):
     employer = await company_controller.get_employer_by_uid(user.uid)
 
     if not employer:
-        flash(message="You need to create your Employer Profile before you can access your Dashboard.", category="warning")
+        flash(message="You need to create your Employer Profile before you can access your Dashboard.",
+              category="warning")
         return redirect(url_for('company.view_employer_profile'))
-    # 2. Get company data
+
+    # Get company data
     company: Company = await company_controller.get_company_by_id(employer.company_id)
     if not company:
         flash(message="Please create your Company Profile before you can access your Dashboard.", category="warning")
         return redirect(url_for('company.create_company_profile'))
 
-    # 5. Determine verification progress (for checklist/progress bar)
+    # Get dashboard statistics
+    dashboard_stats = await _get_dashboard_stats(company_controller, company.company_id)
+    performance_stats = await _get_performance_stats(company_controller, company.company_id)
+    recent_activities = await _get_recent_activities(company_controller, company.company_id)
+    billing_info = await _get_billing_info(company_controller, employer)
+    notifications = await _get_notifications(company_controller, employer.employer_id)
+
+    # Calculate unread notifications count
+    unread_notifications_count = len([n for n in notifications if not n.get('read', True)])
+
+    # Determine verification progress (for checklist/progress bar)
     verification_steps = [
         {'name': 'Employer Verified', 'complete': employer.is_verified},
         {'name': 'Documents Submitted', 'complete': bool(getattr(company, 'documents_submitted', False))},
-        {'name': 'Company Verified', 'complete': company.verification_status == CompanyVerificationStatus.VERIFIED.value}
+        {'name': 'Company Verified',
+         'complete': company.verification_status == CompanyVerificationStatus.VERIFIED.value}
     ]
-    
+
     context = dict(
         current_user=user,
         company=company,
         employer=employer,
-        verification_steps=verification_steps
+        verification_steps=verification_steps,
+        dashboard_stats=dashboard_stats,
+        performance_stats=performance_stats,
+        recent_activities=recent_activities,
+        billing_info=billing_info,
+        notifications=notifications,
+        unread_notifications_count=unread_notifications_count
     )
     return render_template(
         "company/company_dashboard.html",
         **context
     )
 
+
+async def _get_dashboard_stats(company_controller, company_id: str) -> dict:
+    """Calculate basic dashboard statistics"""
+    try:
+        # Get active jobs count
+        active_jobs = await company_controller.get_company_jobs(company_id)
+        active_jobs_count = len([job for job in active_jobs if job.status.lower() == 'active'])
+
+        # Get jobs with applications to count total applications
+        jobs_with_applications = await company_controller.get_company_jobs_with_job_applications(company_id)
+        total_applications = sum(
+            len(job.applications) for job in jobs_with_applications if hasattr(job, 'applications'))
+
+        # Calculate new applications this week (you'll need to add date filtering logic)
+        from datetime import datetime, timedelta
+        week_ago = datetime.now() - timedelta(days=7)
+        new_applications = 0
+        for job in jobs_with_applications:
+            if hasattr(job, 'applications'):
+                new_applications += len([
+                    app for app in job.applications
+                    if hasattr(app, 'applied_at') and app.applied_at >= week_ago
+                ])
+
+        # Profile views - this would need to be tracked separately
+        profile_views = 0  # Placeholder
+
+        return {
+            'active_jobs': active_jobs_count,
+            'total_applications': total_applications,
+            'new_applications': new_applications,
+            'profile_views': profile_views
+        }
+    except Exception as e:
+        logger.error(f"Error calculating dashboard stats: {e}")
+        return {
+            'active_jobs': 0,
+            'total_applications': 0,
+            'new_applications': 0,
+            'profile_views': 0
+        }
+
+
+async def _get_performance_stats(company_controller, company_id: str) -> dict:
+    """Calculate performance statistics"""
+    try:
+        # Get analytics dashboard if available
+        analytics = await company_controller.get_application_analytics(company_id)
+
+        if analytics:
+            return {
+                'job_views': getattr(analytics, 'total_job_views', 0),
+                'applications_received': getattr(analytics, 'total_applications', 0),
+                'profile_visits': getattr(analytics, 'profile_views', 0),
+                'conversion_rate': getattr(analytics, 'conversion_rate', 0)
+            }
+        else:
+            # Fallback calculations
+            jobs_with_applications = await company_controller.get_company_jobs_with_job_applications(company_id)
+            applications_received = sum(
+                len(job.applications) for job in jobs_with_applications if hasattr(job, 'applications'))
+
+            return {
+                'job_views': 0,  # Would need tracking
+                'applications_received': applications_received,
+                'profile_visits': 0,  # Would need tracking
+                'conversion_rate': 0  # Would need calculation
+            }
+    except Exception as e:
+        logger.error(f"Error calculating performance stats: {e}")
+        return {
+            'job_views': 0,
+            'applications_received': 0,
+            'profile_visits': 0,
+            'conversion_rate': 0
+        }
+
+
+async def _get_recent_activities(company_controller, company_id: str) -> list:
+    """Get recent company activities"""
+    try:
+        activities = []
+
+        # Get recent jobs
+        recent_jobs = await company_controller.get_company_jobs(company_id)
+        # Sort by created_at if available, otherwise use a default order
+        recent_jobs = sorted(recent_jobs, key=lambda x: getattr(x, 'created_at', datetime.min), reverse=True)[:3]
+
+        for job in recent_jobs:
+            activities.append({
+                'type': 'job-posted',
+                'icon': 'fas fa-briefcase',
+                'title': 'New job posted',
+                'description': f'{job.title} position is now live',
+                'created_at': getattr(job, 'created_at', datetime.now())
+            })
+
+        # Get recent applications
+        jobs_with_applications = await company_controller.get_company_jobs_with_job_applications(company_id)
+        all_applications = []
+        for job in jobs_with_applications:
+            if hasattr(job, 'applications'):
+                for app in job.applications:
+                    app_data = {
+                        'type': 'new-application',
+                        'icon': 'fas fa-user-plus',
+                        'title': 'New application received',
+                        'description': f'Application for {job.title}',
+                        'created_at': getattr(app, 'applied_at', datetime.now())
+                    }
+                    all_applications.append(app_data)
+
+        # Sort all applications and take the most recent ones
+        all_applications = sorted(all_applications, key=lambda x: x['created_at'], reverse=True)[:2]
+        activities.extend(all_applications)
+
+        # Sort all activities by date
+        activities = sorted(activities, key=lambda x: x['created_at'], reverse=True)[:5]
+
+        return activities
+    except Exception as e:
+        logger.error(f"Error getting recent activities: {e}")
+        return []
+
+
+async def _get_billing_info(company_controller, employer: Employer) -> dict:
+    """Get billing and subscription information"""
+    try:
+        # This would typically come from a billing service/controller
+        # For now, return default values
+        return {
+            'plan_name': 'Free Plan',
+            'status': 'active',
+            'jobs_posted': 0,  # Would need to calculate
+            'jobs_remaining': 5,  # Based on plan limits
+            'days_remaining': '∞'  # For free plan
+        }
+    except Exception as e:
+        logger.error(f"Error getting billing info: {e}")
+        return {
+            'plan_name': 'Free Plan',
+            'status': 'active',
+            'jobs_posted': 0,
+            'jobs_remaining': 5,
+            'days_remaining': '∞'
+        }
+
+
+async def _get_notifications(company_controller, employer_id: str) -> list:
+    """Get recent notifications for the employer"""
+    try:
+        # This would typically come from a notifications service/controller
+        # For now, return some sample notifications
+        notifications = [
+            {
+                'id': 1,
+                'type': 'info',
+                'icon': 'fas fa-info',
+                'title': 'Welcome to Job Finders!',
+                'message': 'Complete your company profile to attract more candidates',
+                'read': True,
+                'created_at': datetime.now() - timedelta(days=2)
+            }
+        ]
+
+        return notifications
+    except Exception as e:
+        logger.error(f"Error getting notifications: {e}")
+        return []
+
+
+@company_bp.route("/job-applications/<string:company_id>", methods=["GET"])
+@flask_error_handler
+@login_required
+async def get_activity_logs(user: User, company_id: str):
+    """
+
+    :param user:
+    :param company_id:
+    :return:
+    """
+    company_controller = get_controller("company")
+    recent_activities = await _get_recent_activities(company_controller=company_controller, company_id=company_id)
+    context = dict(current_user=user, activities=recent_activities)
+    # TODO - please complete activity logs
+    return render_template('company/analytics/activity_logs.html', **context)
 
 @company_bp.route("/job-applications/<string:company_id>", methods=["GET"])
 @flask_error_handler

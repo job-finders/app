@@ -1,213 +1,318 @@
-{% extends "layout/base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}JobFinders.site | Dashboard{% endblock %}</title>
+    {% block meta %}
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% endblock %}
 
-{% block meta %}
-    {{ super() }}
-    <title>{% block title %}JobFinders.site | Dashboard {% endblock %}</title>
-{% endblock %}
-
-{% block style %}
-    {{ super() }}
-    <link href="{{ url_for("static", filename="styles/dashboard.css") }}" rel="stylesheet"/>
-{% endblock %}
-
-{% block nav %}
-    <!-- Dashboard Navigation -->
-    <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="dashboardDropdown" role="button"
-           data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+    {% block style %}
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+        <link href="{{ url_for("static", filename="styles/base.css") }}" rel="stylesheet"/>
+        <link href="{{ url_for("static", filename="styles/dashboard.css") }}" rel="stylesheet"/>
+    {% endblock %}
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark hero-gradient shadow-sm py-3">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-white" href="/">
+            <i class="fas fa-briefcase me-2"></i>JobFinders.site
         </a>
-        <ul class="dropdown-menu border-0 shadow-lg rounded-3">
-            <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-home me-2 text-primary"></i>Overview</a>
-            </li>
-            <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2 text-info"></i>My Profile</a></li>
-            <li><a class="dropdown-item" href="/settings"><i class="fas fa-cog me-2 text-warning"></i>Settings</a></li>
-        </ul>
-    </li>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-    {% if user_type == 'jobseeker' %}
-        <!-- Job Seeker Navigation -->
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="jobSeekerDropdown" role="button"
-               data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-user-tie me-1"></i> Job Search
-            </a>
-            <ul class="dropdown-menu border-0 shadow-lg rounded-3">
-                <li><a class="dropdown-item" href="/jobs"><i class="fas fa-search me-2 text-primary"></i>Browse Jobs</a>
-                </li>
-                <li><a class="dropdown-item" href="/job-alerts"><i class="fas fa-bell me-2 text-success"></i>Job Alerts</a>
-                </li>
-                <li><a class="dropdown-item" href="/applications"><i class="fas fa-clipboard-list me-2 text-info"></i>My
-                    Applications</a></li>
-                <li><a class="dropdown-item" href="/resumes"><i class="fas fa-file-alt me-2 text-warning"></i>My Resume</a>
-                </li>
-            </ul>
-        </li>
-    {% elif user_type == 'employer' %}
-        <!-- Employer Navigation -->
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="employerDropdown" role="button"
-               data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-building me-1"></i> Hiring
-            </a>
-            <ul class="dropdown-menu border-0 shadow-lg rounded-3">
-                <li><a class="dropdown-item" href="/employer/post-job"><i class="fas fa-bullhorn me-2 text-warning"></i>Post
-                    a Job</a></li>
-                <li><a class="dropdown-item" href="/employer/manage-jobs"><i class="fas fa-tasks me-2 text-primary"></i>Manage
-                    Jobs</a></li>
-                <li><a class="dropdown-item" href="/employer/applicants"><i class="fas fa-users me-2 text-info"></i>Applicants</a>
-                </li>
-                <li><a class="dropdown-item" href="/employer/analytics"><i
-                        class="fas fa-chart-line me-2 text-success"></i>Analytics</a></li>
-            </ul>
-        </li>
-    {% endif %}
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <!-- Dashboard Navigation -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="dashboardDropdown"
+                       role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                    </a>
 
-    <!-- Help & Support -->
-    <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="helpDropdown" role="button"
-           data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-question-circle me-1"></i> Help
-        </a>
-        <ul class="dropdown-menu border-0 shadow-lg rounded-3">
-            <li><a class="dropdown-item" href="/help"><i class="fas fa-book me-2 text-primary"></i>Help Center</a></li>
-            <li><a class="dropdown-item" href="/contact"><i class="fas fa-envelope me-2 text-info"></i>Contact
-                Support</a></li>
-            <li><a class="dropdown-item" href="/faq"><i class="fas fa-comments me-2 text-success"></i>FAQ</a></li>
-        </ul>
-    </li>
-{% endblock %}
-
-
-{% block content %}
-<div class="dashboard-container py-4">
-    <div class="container-fluid">
-        <!-- Breadcrumb -->
-        {% block breadcrumb %}
-        <div class="breadcrumb-container">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-                    {% block breadcrumb_items %}{% endblock %}
-                </ol>
-            </nav>
-        </div>
-        {% endblock %}
-
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-lg-3 col-md-4">
-                <div class="dashboard-sidebar">
-                    {% block sidebar %}
-                    <div class="d-flex align-items-center mb-4">
-                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                            <i class="fas fa-user fa-lg"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0 fw-bold">{{ current_user.first_name }} {{ current_user.last_name }}</h6>
-                            <small class="text-muted">{{ current_user.user_type|title }}</small>
-                        </div>
-                    </div>
-
-                    <ul class="sidebar-nav">
-                        {% block sidebar_nav %}
-                        <li class="sidebar-nav-item">
-                            <a href="/dashboard" class="sidebar-nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
-                                <i class="fas fa-home"></i>
-                                Dashboard
-                            </a>
-                        </li>
-                        <li class="sidebar-nav-item">
-                            <a href="/profile" class="sidebar-nav-link {% if request.endpoint == 'users.profile' %}active{% endif %}">
-                                <i class="fas fa-user"></i>
-                                My Profile
-                            </a>
-                        </li>
-                            {% if current_user.user_type == 'jobseeker' %}
-                        <li class="sidebar-nav-item">
-                            <a href="/applications" class="sidebar-nav-link {% if request.endpoint == 'jobseekers.applications' %}active{% endif %}">
-                                <i class="fas fa-clipboard-list"></i>
-                                Applications
-                                {% if applications_count > 0 %}
-                                <span class="sidebar-nav-badge">{{ applications_count }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                        <li class="sidebar-nav-item">
-                            <a href="/resumes" class="sidebar-nav-link {% if request.endpoint == 'resumes.index' %}active{% endif %}">
-                                <i class="fas fa-file-alt"></i>
-                                My Resume
-                            </a>
-                        </li>
-                        <li class="sidebar-nav-item">
-                            <a href="/job-alerts" class="sidebar-nav-link {% if request.endpoint == 'jobs.alerts' %}active{% endif %}">
-                                <i class="fas fa-bell"></i>
-                                Job Alerts
-                            </a>
-                        </li>
-                            {% elif current_user.user_type == 'employer' %}
-                        <li class="sidebar-nav-item">
-                            <a href="/employer/manage-jobs" class="sidebar-nav-link {% if request.endpoint == 'employer.manage_jobs' %}active{% endif %}">
-                                <i class="fas fa-tasks"></i>
-                                Manage Jobs
-                            </a>
-                        </li>
-                        <li class="sidebar-nav-item">
-                            <a href="/employer/applicants" class="sidebar-nav-link {% if request.endpoint == 'employer.applicants' %}active{% endif %}">
-                                <i class="fas fa-users"></i>
-                                Applicants
-                                {% if pending_applications > 0 %}
-                                <span class="sidebar-nav-badge">{{ pending_applications }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                        <li class="sidebar-nav-item">
-                            <a href="/employer/analytics" class="sidebar-nav-link {% if request.endpoint == 'employer.analytics' %}active{% endif %}">
-                                <i class="fas fa-chart-line"></i>
-                                Analytics
-                            </a>
-                        </li>
-                        <li class="sidebar-nav-item">
-                            <a href="/billing" class="sidebar-nav-link {% if request.endpoint == 'billing.index' %}active{% endif %}">
-                                <i class="fas fa-credit-card"></i>
-                                Billing
-                            </a>
-                        </li>
+                    <ul class="dropdown-menu border-0 shadow-lg rounded-3">
+                        {% if current_user and current_user.role == "jobseeker" %}
+                            <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-home me-2 text-primary"></i>Overview</a>
+                            </li>
+                            <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2 text-info"></i>My
+                                Profile</a></li>
+                            <li><a class="dropdown-item" href="/settings"><i class="fas fa-cog me-2 text-warning"></i>Settings</a>
+                            </li>
+                        {% else %}
+                            <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-home me-2 text-primary"></i>Overview</a>
+                            </li>
+                            <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2 text-info"></i>My
+                                Profile</a></li>
+                            <li><a class="dropdown-item" href="/settings"><i class="fas fa-cog me-2 text-warning"></i>Settings</a>
+                            </li>
                         {% endif %}
-                        <li class="sidebar-nav-item">
-                            <a href="/settings" class="sidebar-nav-link {% if request.endpoint == 'users.settings' %}active{% endif %}">
-                                <i class="fas fa-cog"></i>
-                                Settings
-                            </a>
-                        </li>
-                        {% endblock %}
                     </ul>
-                    {% endblock %}
-                </div>
-            </div>
+                </li>
 
-            <!-- Main Content -->
-            <div class="col-lg-9 col-md-8">
-                <div class="dashboard-main">
-                    {% block dashboard_content %}
-                    <!-- Dashboard content goes here -->
-                    {% endblock %}
+                {% if current_user and current_user.role == 'jobseeker' %}
+                    <!-- Job Seeker Navigation -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="jobSeekerDropdown"
+                           role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-tie me-1"></i> Job Search
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow-lg rounded-3">
+                            <li><a class="dropdown-item" href="/jobs"><i class="fas fa-search me-2 text-primary"></i>Browse
+                                Jobs</a></li>
+                            <li><a class="dropdown-item" href="/job-alerts"><i
+                                    class="fas fa-bell me-2 text-success"></i>Job Alerts</a></li>
+                            <li><a class="dropdown-item" href="/applications"><i
+                                    class="fas fa-clipboard-list me-2 text-info"></i>My Applications</a></li>
+                            <li><a class="dropdown-item" href="/resumes"><i
+                                    class="fas fa-file-alt me-2 text-warning"></i>My Resume</a></li>
+                        </ul>
+                    </li>
+                {% elif current_user and current_user.role  == 'employer' %}
+                    <!-- Employer Navigation -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="employerDropdown"
+                           role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-building me-1"></i> Hiring
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow-lg rounded-3">
+                            <li><a class="dropdown-item" href="/employer/post-job"><i
+                                    class="fas fa-bullhorn me-2 text-warning"></i>Post a Job</a></li>
+                            <li><a class="dropdown-item" href="/employer/manage-jobs"><i
+                                    class="fas fa-tasks me-2 text-primary"></i>Manage Jobs</a></li>
+                            <li><a class="dropdown-item" href="/employer/applicants"><i
+                                    class="fas fa-users me-2 text-info"></i>Applicants</a></li>
+                            <li><a class="dropdown-item" href="/employer/analytics"><i
+                                    class="fas fa-chart-line me-2 text-success"></i>Analytics</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
+
+                <!-- Help & Support -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="helpDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-question-circle me-1"></i> Help
+                    </a>
+                    <ul class="dropdown-menu border-0 shadow-lg rounded-3">
+                        <li><a class="dropdown-item" href="/help"><i class="fas fa-book me-2 text-primary"></i>Help
+                            Center</a></li>
+                        <li><a class="dropdown-item" href="/contact"><i class="fas fa-envelope me-2 text-info"></i>Contact
+                            Support</a></li>
+                        <li><a class="dropdown-item" href="/faq"><i
+                                class="fas fa-comments me-2 text-success"></i>FAQ</a></li>
+                    </ul>
+                </li>
+
+                {% block nav %}{% endblock %}
+            </ul>
+            <ul class="navbar-nav mb-2 mb-lg-0">
+                {% block nav_right %}{% endblock %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+{% block content %}
+    <div class="dashboard-container py-4">
+        <div class="container-fluid">
+            <!-- Breadcrumb -->
+            {% block breadcrumb %}
+                <div class="breadcrumb-container">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+                            {% block breadcrumb_items %}{% endblock %}
+                        </ol>
+                    </nav>
+                </div>
+            {% endblock %}
+
+            <div class="row">
+                <!-- Sidebar -->
+                <div class="col-lg-3 col-md-4">
+                    <div class="dashboard-sidebar">
+                        {% block sidebar %}
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
+                                     style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold"></h6>
+                                    <small class="text-muted">{{ current_user.role|title }}</small>
+                                </div>
+                            </div>
+
+                            <ul class="sidebar-nav">
+                                {% block sidebar_nav %}
+                                    <li class="sidebar-nav-item">
+                                        <a href="/dashboard"
+                                           class="sidebar-nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                                            <i class="fas fa-home"></i>
+                                            Dashboard
+                                        </a>
+                                    </li>
+                                    <li class="sidebar-nav-item">
+                                        <a href="/profile"
+                                           class="sidebar-nav-link {% if request.endpoint == 'users.profile' %}active{% endif %}">
+                                            <i class="fas fa-user"></i>
+                                            My Profile
+                                        </a>
+                                    </li>
+                            {% if current_user.user_type == 'jobseeker' %}
+                                <li class="sidebar-nav-item">
+                                    <a href="/applications"
+                                       class="sidebar-nav-link {% if request.endpoint == 'jobseekers.applications' %}active{% endif %}">
+                                        <i class="fas fa-clipboard-list"></i>
+                                        Applications
+                                        {% if applications_count > 0 %}
+                                            <span class="sidebar-nav-badge">{{ applications_count }}</span>
+                                        {% endif %}
+                                    </a>
+                                </li>
+                                <li class="sidebar-nav-item">
+                                    <a href="/resumes"
+                                       class="sidebar-nav-link {% if request.endpoint == 'resumes.index' %}active{% endif %}">
+                                        <i class="fas fa-file-alt"></i>
+                                        My Resume
+                                    </a>
+                                </li>
+                                <li class="sidebar-nav-item">
+                                    <a href="/job-alerts"
+                                       class="sidebar-nav-link {% if request.endpoint == 'jobs.alerts' %}active{% endif %}">
+                                        <i class="fas fa-bell"></i>
+                                        Job Alerts
+                                    </a>
+                                </li>
+                            {% elif current_user.user_type == 'employer' %}
+                                <li class="sidebar-nav-item">
+                                    <a href="/employer/manage-jobs"
+                                       class="sidebar-nav-link {% if request.endpoint == 'employer.manage_jobs' %}active{% endif %}">
+                                        <i class="fas fa-tasks"></i>
+                                        Manage Jobs
+                                    </a>
+                                </li>
+                                <li class="sidebar-nav-item">
+                                    <a href="/employer/applicants"
+                                       class="sidebar-nav-link {% if request.endpoint == 'employer.applicants' %}active{% endif %}">
+                                        <i class="fas fa-users"></i>
+                                        Applicants
+                                        {% if pending_applications > 0 %}
+                                            <span class="sidebar-nav-badge">{{ pending_applications }}</span>
+                                        {% endif %}
+                                    </a>
+                                </li>
+                                <li class="sidebar-nav-item">
+                                    <a href="/employer/analytics"
+                                       class="sidebar-nav-link {% if request.endpoint == 'employer.analytics' %}active{% endif %}">
+                                        <i class="fas fa-chart-line"></i>
+                                        Analytics
+                                    </a>
+                                </li>
+                                <li class="sidebar-nav-item">
+                                    <a href="/billing"
+                                       class="sidebar-nav-link {% if request.endpoint == 'billing.index' %}active{% endif %}">
+                                        <i class="fas fa-credit-card"></i>
+                                        Billing
+                                    </a>
+                                </li>
+                            {% endif %}
+                                    <li class="sidebar-nav-item">
+                                        <a href="/settings"
+                                           class="sidebar-nav-link {% if request.endpoint == 'users.settings' %}active{% endif %}">
+                                            <i class="fas fa-cog"></i>
+                                            Settings
+                                        </a>
+                                    </li>
+                                {% endblock %}
+                            </ul>
+                        {% endblock %}
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div class="col-lg-9 col-md-8">
+                    <div class="dashboard-main">
+                        {% block dashboard_content %}
+                            <!-- Dashboard content goes here -->
+                        {% endblock %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 {% endblock %}
 
+<!-- Footer -->
+{% block footer %}
+    {% include "layout/footer.html" %}
+{% endblock %}
+
+<!-- Scripts -->
 {% block scripts %}
-    {{ super() }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Dashboard specific JavaScript
+        // Enhanced Theme Toggle
         document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+            function initTheme() {
+                const savedTheme = localStorage.getItem('theme');
+                const systemTheme = prefersDark.matches ? 'dark' : 'light';
+                const theme = savedTheme || systemTheme;
+
+                if (themeToggle) {
+                    themeToggle.checked = theme === 'dark';
+                    applyTheme(theme);
+                }
+            }
+
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-bs-theme', theme);
+                document.body.classList.toggle('dark-theme', theme === 'dark');
+
+                let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+                if (!metaThemeColor) {
+                    metaThemeColor = document.createElement('meta');
+                    metaThemeColor.name = 'theme-color';
+                    document.head.appendChild(metaThemeColor);
+                }
+                metaThemeColor.content = theme === 'dark' ? '#1f2937' : '#2563eb';
+            }
+
+            if (themeToggle) {
+                themeToggle.addEventListener('change', function () {
+                    const theme = this.checked ? 'dark' : 'light';
+                    localStorage.setItem('theme', theme);
+                    applyTheme(theme);
+                });
+            }
+
+            prefersDark.addEventListener('change', function () {
+                if (!localStorage.getItem('theme')) {
+                    initTheme();
+                }
+            });
+
+            initTheme();
+
             // Animate stats counters
             const statsCounters = document.querySelectorAll('.stats-card-value');
             statsCounters.forEach(counter => {
                 const target = parseInt(counter.textContent);
+                if (isNaN(target)) return;
+                
                 const increment = target / 100;
                 let current = 0;
                 
@@ -225,7 +330,6 @@
             // Auto-refresh dashboard data every 5 minutes
             setInterval(() => {
                 if (document.visibilityState === 'visible') {
-                    // Refresh dashboard data via AJAX
                     fetch('/api/dashboard/refresh', {
                         method: 'GET',
                         headers: {
@@ -234,16 +338,93 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        // Update dashboard elements with new data
                         updateDashboardData(data);
                     })
                     .catch(error => console.log('Dashboard refresh failed:', error));
                 }
-            }, 300000); // 5 minutes
+            }, 300000);
+
+            // Enhanced Form Validation
+            const forms = document.querySelectorAll('form[data-validate="true"]');
+            forms.forEach(form => {
+                const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+
+                inputs.forEach(input => {
+                    input.addEventListener('blur', () => validateField(input));
+                    input.addEventListener('input', () => {
+                        if (input.classList.contains('is-invalid')) {
+                            validateField(input);
+                        }
+                    });
+                });
+
+                form.addEventListener('submit', function (e) {
+                    let isValid = true;
+                    inputs.forEach(input => {
+                        if (!validateField(input)) {
+                            isValid = false;
+                        }
+                    });
+
+                    if (!isValid) {
+                        e.preventDefault();
+                        const firstInvalid = form.querySelector('.is-invalid');
+                        if (firstInvalid) {
+                            firstInvalid.focus();
+                        }
+                    } else {
+                        const submitBtn = form.querySelector('button[type="submit"]');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+                        }
+                    }
+                });
+            });
+
+            // Auto-dismiss alerts
+            const alerts = document.querySelectorAll('.alert:not(.alert-dismissible)');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+
+            // Smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Lazy loading for images
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            img.src = img.dataset.src;
+                            img.classList.remove('lazy');
+                            observer.unobserve(img);
+                        }
+                    });
+                });
+
+                document.querySelectorAll('img[data-src]').forEach(img => {
+                    imageObserver.observe(img);
+                });
+            }
         });
-        
+
         function updateDashboardData(data) {
-            // Update stats cards
             if (data.stats) {
                 Object.keys(data.stats).forEach(key => {
                     const element = document.querySelector(`[data-stat="${key}"]`);
@@ -253,7 +434,6 @@
                 });
             }
             
-            // Update notification badges
             if (data.notifications) {
                 Object.keys(data.notifications).forEach(key => {
                     const badge = document.querySelector(`[data-notification="${key}"]`);
@@ -264,5 +444,95 @@
                 });
             }
         }
+
+        function validateField(field) {
+            const value = field.value.trim();
+            const type = field.type;
+            let isValid = true;
+            let message = '';
+
+            const existingFeedback = field.parentNode.querySelector('.invalid-feedback');
+            if (existingFeedback) existingFeedback.remove();
+
+            if (field.hasAttribute('required') && !value) {
+                isValid = false;
+                message = 'This field is required.';
+            } else if (type === 'email' && value) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    isValid = false;
+                    message = 'Please enter a valid email address.';
+                }
+            } else if (type === 'password' && value && field.name === 'password') {
+                if (value.length < 8) {
+                    isValid = false;
+                    message = 'Password must be at least 8 characters long.';
+                } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
+                    isValid = false;
+                    message = 'Password must contain uppercase, lowercase, and number.';
+                }
+            } else if (type === 'url' && value) {
+                try {
+                    new URL(value);
+                } catch {
+                    isValid = false;
+                    message = 'Please enter a valid URL.';
+                }
+            }
+
+            field.classList.remove('is-valid', 'is-invalid');
+
+            if (value) {
+                if (isValid) {
+                    field.classList.add('is-valid');
+                } else {
+                    field.classList.add('is-invalid');
+                    const feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    feedback.textContent = message;
+                    field.parentNode.appendChild(feedback);
+                }
+            }
+
+            return isValid;
+        }
+
+        // Utility functions
+        window.JobFinders = {
+            showToast: function (message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `alert alert-${type} position-fixed`;
+                toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                toast.innerHTML = `
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close ms-auto" onclick="this.parentElement.remove()"></button>
+                `;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }, 5000);
+            },
+
+            formatCurrency: function (amount, currency = 'ZAR') {
+                return new Intl.NumberFormat('en-ZA', {
+                    style: 'currency',
+                    currency: currency
+                }).format(amount);
+            },
+
+            formatDate: function (date, options = {}) {
+                return new Intl.DateTimeFormat('en-ZA', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    ...options
+                }).format(new Date(date));
+            }
+        };
     </script>
 {% endblock %}
+</body>
+</html>

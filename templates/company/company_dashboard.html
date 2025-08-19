@@ -4,7 +4,6 @@
 
 {% block dashboard_title %}Company Dashboard{% endblock %}
 
-{% block extra_css %}
 <style>
     .dashboard-header {
         background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
@@ -441,7 +440,8 @@
         }
     }
 </style>
-{% endblock %}
+
+
 
 {% block dashboard_content %}
 <!-- Dashboard Header -->
@@ -483,31 +483,31 @@
 
 <!-- Quick Actions -->
 <div class="quick-actions">
-    <a href="{{ url_for('company_route.post_job') }}" class="action-card">
+    <a href="#" class="action-card">
         <div class="action-icon">
             <i class="fas fa-plus"></i>
         </div>
         <div class="action-title">Post New Job</div>
         <div class="action-description">Create and publish a new job posting</div>
     </a>
-    
-    <a href="{{ url_for('company_route.manage_jobs') }}" class="action-card">
+
+    <a href="{{ url_for('company.manage_jobs') }}" class="action-card">
         <div class="action-icon">
             <i class="fas fa-briefcase"></i>
         </div>
         <div class="action-title">Manage Jobs</div>
         <div class="action-description">Edit, pause, or close your job postings</div>
     </a>
-    
-    <a href="{{ url_for('company_route.view_applicants') }}" class="action-card">
+
+    <a href="{{ url_for('company.view_company_job_applications', company_id=company.company_id) }}" class="action-card">
         <div class="action-icon">
             <i class="fas fa-users"></i>
         </div>
         <div class="action-title">View Applicants</div>
         <div class="action-description">Review and manage job applications</div>
     </a>
-    
-    <a href="{{ url_for('company_route.company_profile', company_id=company.company_id) }}" class="action-card">
+
+    <a href="{{ url_for('company.view_company') }}" class="action-card">
         <div class="action-icon">
             <i class="fas fa-eye"></i>
         </div>
@@ -573,7 +573,8 @@
                     <i class="fas fa-clock"></i>
                     Recent Activity
                 </h3>
-                <a href="{{ url_for('company_route.activity_log') }}" class="btn btn-outline-primary btn-sm">
+                <a href="{{ url_for('company.get_activity_logs', company_id=company.company_id) }}"
+                   class="btn btn-outline-primary btn-sm">
                     View All
                 </a>
             </div>
@@ -588,7 +589,7 @@
                         <div class="activity-content">
                             <div class="activity-title">{{ activity.title }}</div>
                             <div class="activity-description">{{ activity.description }}</div>
-                            <div class="activity-time">{{ moment(activity.created_at).fromNow() }}</div>
+                            <div class="activity-time">{{ activity.created_at }}</div>
                         </div>
                     </div>
                     {% endfor %}
@@ -627,7 +628,6 @@
             </div>
         </div>
     </div>
-
     <div class="col-lg-4">
         <!-- Billing Status -->
         <div class="dashboard-card">
@@ -637,7 +637,6 @@
                     Billing & Subscription
                 </h3>
             </div>
-            
             <div class="billing-status">
                 <div class="billing-header">
                     <div class="plan-name">{{ billing_info.plan_name|default('Free Plan') }}</div>
@@ -663,7 +662,7 @@
                 
                 {% if billing_info.plan_name != 'Premium' %}
                 <div class="text-center">
-                    <a href="{{ url_for('billing_route.upgrade_plan') }}" class="btn btn-primary btn-sm">
+                    <a href="{{ url_for('billing.change_plan') }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-arrow-up me-2"></i>Upgrade Plan
                     </a>
                 </div>
@@ -681,7 +680,7 @@
                     <span class="badge bg-danger ms-2">{{ unread_notifications_count }}</span>
                     {% endif %}
                 </h3>
-                <a href="{{ url_for('company_route.notifications') }}" class="btn btn-outline-primary btn-sm">
+                <a href="#" class="btn btn-outline-primary btn-sm">
                     View All
                 </a>
             </div>

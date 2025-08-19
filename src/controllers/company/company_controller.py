@@ -80,9 +80,7 @@ class CompanyController(Controllers):
         Note:
         - Some methods contain placeholders for future implementation (e.g., AI/ML document analysis, admin notifications).
         - Relationships between models (e.g., company-employer, company-jobs) are handled via ORM and Pydantic serialization.
-    
     """
-    
     def __init__(self,factory):
         super().__init__(factory)
         self.logger = init_logger("CompanyController")
