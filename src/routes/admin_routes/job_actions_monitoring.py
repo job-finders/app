@@ -11,8 +11,9 @@ import json
 
 from src.utils.job_actions_monitoring import job_actions_monitor
 from src.utils.job_actions_logger import job_actions_health, job_actions_logger
-from src.authentication.auth import require_admin_auth
+from src.authentication import system_admin_login
 from src.database.sql import engine
+from src.database.models import User
 from sqlalchemy import text
 
 # Create blueprint
@@ -24,15 +25,15 @@ job_actions_monitoring_bp = Blueprint(
 
 
 @job_actions_monitoring_bp.route('/dashboard')
-@require_admin_auth
-def monitoring_dashboard():
+@system_admin_login
+async def monitoring_dashboard(user: User):
     """Render monitoring dashboard page"""
     return render_template('admin/job_actions_monitoring_dashboard.html')
 
 
 @job_actions_monitoring_bp.route('/api/metrics')
-@require_admin_auth
-def get_metrics():
+@system_admin_login
+async def get_metrics(user: User):
     """Get current metrics data for dashboard"""
     try:
         time_window = request.args.get('time_window', 60, type=int)
@@ -56,8 +57,8 @@ def get_metrics():
 
 
 @job_actions_monitoring_bp.route('/api/health')
-@require_admin_auth
-def get_health_status():
+@system_admin_login
+async def get_health_status(user: User):
     """Get current health status"""
     try:
         # Get monitoring health status
@@ -88,8 +89,8 @@ def get_health_status():
 
 
 @job_actions_monitoring_bp.route('/api/alerts')
-@require_admin_auth
-def get_alerts():
+@system_admin_login
+def get_alerts(user: User):
     """Get current alerts and alert history"""
     try:
         dashboard_data = job_actions_monitor.get_dashboard_data(60)
@@ -115,8 +116,8 @@ def get_alerts():
 
 
 @job_actions_monitoring_bp.route('/api/database-stats')
-@require_admin_auth
-def get_database_stats():
+@system_admin_login
+async def get_database_stats(user: User):
     """Get database statistics for job actions tables"""
     try:
         with engine.connect() as conn:
@@ -251,8 +252,8 @@ def get_database_stats():
 
 
 @job_actions_monitoring_bp.route('/api/performance-analysis')
-@require_admin_auth
-def get_performance_analysis():
+@system_admin_login
+async def get_performance_analysis(user: User):
     """Get performance analysis data"""
     try:
         with engine.connect() as conn:
@@ -385,8 +386,8 @@ def _generate_performance_recommendations(index_stats, avg_response_time):
 
 
 @job_actions_monitoring_bp.route('/api/export-metrics')
-@require_admin_auth
-def export_metrics():
+@system_admin_login
+async def export_metrics(user: User):
     """Export metrics data for external analysis"""
     try:
         time_window = request.args.get('time_window', 1440, type=int)  # Default 24 hours
@@ -448,7 +449,7 @@ def export_metrics():
 
 # Error handlers
 @job_actions_monitoring_bp.errorhandler(403)
-def forbidden(error):
+async def forbidden(error):
     return jsonify({
         'success': False,
         'error': 'Access denied. Admin privileges required.'
@@ -456,7 +457,7 @@ def forbidden(error):
 
 
 @job_actions_monitoring_bp.errorhandler(500)
-def internal_error(error):
+async def internal_error(error):
     job_actions_logger.log_error(error, {
         'context': 'monitoring_blueprint_error',
         'endpoint': request.endpoint

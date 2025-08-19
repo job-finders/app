@@ -156,7 +156,13 @@ async def subscribe(user: User):
 
 @auth_route.route("/password-reset", methods=["GET", "POST"])
 @flask_error_handler
-async def password_reset():
+@user_details
+async def password_reset(user: User):
+    """
+        TODO : tere may be a use for the User Model here
+    :param user:
+    :return:
+    """
     csrf_token = generate_csrf()
     context = dict(csrf_token=csrf_token)
     if request.method == "GET":

@@ -7,6 +7,9 @@ import re
 from typing import Callable, Optional
 from flask import has_request_context, g
 
+from src.config import config_instance
+
+
 # ------------------------------
 # Cache Key Utilities
 # ------------------------------
@@ -146,7 +149,9 @@ def cached(ttl: Optional[int] = None):
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
             key = generate_cache_key(func, args, kwargs)
-            if (result := route_cache.get(key)) is not None:
+            if config_instance().IS_DEVELOPMENT_SERVER:
+                result = func(*args, **kwargs)
+            elif (result := route_cache.get(key)) is not None:
                 return result
             result = func(*args, **kwargs)
             route_cache.set(key, result, ttl)
@@ -155,7 +160,9 @@ def cached(ttl: Optional[int] = None):
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
             key = generate_cache_key(func, args, kwargs)
-            if (result := route_cache.get(key)) is not None:
+            if config_instance().IS_DEVELOPMENT_SERVER:
+                result = await func(*args, **kwargs)
+            elif (result := route_cache.get(key)) is not None:
                 return result
             result = await func(*args, **kwargs)
             route_cache.set(key, result, ttl)

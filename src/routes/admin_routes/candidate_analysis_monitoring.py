@@ -4,12 +4,13 @@ Admin routes for monitoring candidate analysis performance
 
 from flask import Blueprint, jsonify, render_template
 from src.routes import flask_error_handler
-from src.authentication import admin_required
+from src.authentication import system_admin_login
 from src.monitoring.candidate_analysis_metrics import (
     get_candidate_analysis_health,
     get_candidate_analysis_metrics,
     candidate_analysis_monitor
 )
+from src.database.models import User
 
 candidate_analysis_monitoring_bp = Blueprint(
     'candidate_analysis_monitoring',
@@ -20,8 +21,8 @@ candidate_analysis_monitoring_bp = Blueprint(
 
 @candidate_analysis_monitoring_bp.route('/health', methods=['GET'])
 @flask_error_handler
-@admin_required
-def health_check():
+@system_admin_login
+async def health_check(user: User):
     """Get health status of candidate analysis service"""
     health_data = get_candidate_analysis_health()
 
@@ -37,8 +38,8 @@ def health_check():
 
 @candidate_analysis_monitoring_bp.route('/metrics', methods=['GET'])
 @flask_error_handler
-@admin_required
-def metrics():
+@system_admin_login
+async def metrics(user: User):
     """Get detailed metrics for candidate analysis"""
     metrics_data = get_candidate_analysis_metrics()
     return jsonify(metrics_data), 200
@@ -46,8 +47,8 @@ def metrics():
 
 @candidate_analysis_monitoring_bp.route('/dashboard', methods=['GET'])
 @flask_error_handler
-@admin_required
-def dashboard():
+@system_admin_login
+def dashboard(user: User):
     """Render monitoring dashboard for candidate analysis"""
     metrics_data = get_candidate_analysis_metrics()
     health_data = get_candidate_analysis_health()
@@ -61,8 +62,8 @@ def dashboard():
 
 @candidate_analysis_monitoring_bp.route('/reset-metrics', methods=['POST'])
 @flask_error_handler
-@admin_required
-def reset_metrics():
+@system_admin_login
+async def reset_metrics(user: User):
     """Reset all metrics (for testing or maintenance)"""
     candidate_analysis_monitor.reset_metrics()
     return jsonify({"message": "Metrics reset successfully"}), 200
@@ -70,8 +71,8 @@ def reset_metrics():
 
 @candidate_analysis_monitoring_bp.route('/alerts', methods=['GET'])
 @flask_error_handler
-@admin_required
-def alerts():
+@system_admin_login
+async def alerts(user: User):
     """Get current alerts for candidate analysis"""
     health_data = get_candidate_analysis_health()
     metrics_data = get_candidate_analysis_metrics()
@@ -124,8 +125,8 @@ def alerts():
 
 @candidate_analysis_monitoring_bp.route('/performance-summary', methods=['GET'])
 @flask_error_handler
-@admin_required
-def performance_summary():
+@system_admin_login
+async def performance_summary(user: User):
     """Get performance summary for candidate analysis"""
     metrics_data = get_candidate_analysis_metrics()
 

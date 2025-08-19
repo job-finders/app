@@ -59,7 +59,7 @@ def static_folder() -> str:
 
 
 def template_folder() -> str:
-    return path.join(path.dirname(path.abspath(__file__)), '../../templates')
+    return path.join(path.dirname(path.abspath(__file__)), '../../template')
 
 
 def format_title(title: str):

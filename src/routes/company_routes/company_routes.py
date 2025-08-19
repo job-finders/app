@@ -55,8 +55,6 @@ def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
-
 @company_bp.route("/create-company", methods=["GET", "POST"])
 @login_required
 async def create_company_profile(user: User):
@@ -548,15 +546,26 @@ async def initiate_company_verification(user: User):
         # Extract CIPC details from form
         reg_form_data = request.form.to_dict()
 
+
         cipc_data = CompanyCIPC(company_name=reg_form_data.get("name"),
                                 registration_number= reg_form_data.get('registration_number'),
                                 registration_date=reg_form_data.get("registration_date"),
-                                director_name= reg_form_data.get("director_name"),
                                 bee_status=reg_form_data.get("bee_status"),
-                                tax_pin=reg_form_data.get("tax_pin"))
+                                tax_pin=reg_form_data.get("tax_pin"),
+                                company_id=company.company_id,
+                                registered_address=reg_form_data.get("registered_address"),
+                                company_type=reg_form_data.get("company_type")
+                                )
+
+        director_details = DirectorDetails(
+            full_names=reg_form_data.get("full_names"),
+            id_number=reg_form_data.get("reg_form_data"),
+            cipc_id=cipc_data.cipc_id)
+
+        cipic_data.director_details.append(director_details)
 
         # Validate required CIPC fields
-        required_fields = ["name", "registration_number", "director_name"]
+        required_fields = ["name", "registration_number"]
         if not all(cipc_data[field] for field in required_fields):
             flash("Missing required CIPC details", "danger")
             return render_template('company/initiate_verification.html', company=company)
@@ -580,7 +589,7 @@ async def initiate_company_verification(user: User):
         for field_name, doc_type in document_types.items():
             file = request.files.get(field_name)
             if file and file.filename != '' and allowed_file(file.filename):
-                # Save file
+                # Save file TODO - can do better if this is a separate utility
                 filename = secure_filename(f"{company.company_id}_{doc_type}_{file.filename}")
                 file_path = os.path.join(UPLOAD_FOLDER, filename)
                 await file.save(file_path)
@@ -594,22 +603,22 @@ async def initiate_company_verification(user: User):
 
                 doc_record = await company_controller.create_verification_document(document_data)
                 document_records.append(doc_record)
+
             else:
                 flash(f"Missing or invalid file for {doc_type.replace('_', ' ')}", "danger")
                 return render_template('company/initiate_verification.html', company=company)
 
         # Initiate verification process for each document
+
         verification_tasks = []
         for doc_record in document_records:
             task = company_controller.initiate_document_verification(
                 document_id=doc_record.document_id,
-                company_id=company.company_id
-            )
+                company_id=company.company_id)
+            
             verification_tasks.append(task)
-
         # Run all verifications concurrently
         await asyncio.gather(*verification_tasks)
-
         # Update company verification status
         await company_controller.update_company_verification_status(
             company.company_id,

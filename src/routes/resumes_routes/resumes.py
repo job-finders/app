@@ -45,9 +45,7 @@ from src.utils.route_helpers import get_controller, get_service
 resume_routes = Blueprint(
     "jobseeker_cv",
     __name__,
-    url_prefix="/jobseeker/cv",
-    template_folder="templates/jobseekers"
-)
+    url_prefix="/jobseeker/resumes")
 
 
 def _parse_date(date_str: str) -> date:

@@ -466,12 +466,14 @@ class CompanyCIPC(BaseModel):
     registration_date: Optional[date]
     registered_address: Optional[str]
     company_type: Optional[str]  # e.g., "Private Company", "Non-Profit"
-    director_details: list[Optional[DirectorDetails]] = Field(default_factory=list)
+
 
     tax_pin: Optional[str]
     bee_status: Optional[str]
     status: Optional[str] = Field(default="pending")  # pending, verified, failed
     verified_at: Optional[AwareDatetime] = Field(default=None)
+    # Relationship
+    director_details: list[Optional[DirectorDetails]] = Field(default_factory=list)
     model_config = ConfigDict(from_attributes=True)
 
 class InterestLevel(str, Enum):
