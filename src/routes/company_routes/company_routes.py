@@ -160,15 +160,15 @@ async def edit_company_profile(user: User):
 async def update_company_profile(user: User):
     """Process company profile updates"""
     company_controller = get_controller('company')
+    _employer_profile = await company_controller.get_employer_by_uid(user_id=user.uid)
+    company_id = _employer_profile.company_id
+    if not _employer_profile:
+        logger.info(f"Employer Profile not Found")
+        return redirect(url_for("company.create"))
+
     try:
         # Process form data
         form_data = request.form.to_dict()
-
-        _employer_profile = await company_controller.get_employer_by_uid(user_id=user.uid)
-        if not _employer_profile:
-            logger.info(f"Employer Profile not Found")
-            return redirect(url_for("company.create"))
-        company_id = _employer_profile.company_id
         # Handle file upload
         logo_file = request.files.get('logo')
         if logo_file and allowed_file(logo_file.filename):
@@ -592,7 +592,7 @@ async def initiate_company_verification(user: User):
                 # Save file TODO - can do better if this is a separate utility
                 filename = secure_filename(f"{company.company_id}_{doc_type}_{file.filename}")
                 file_path = os.path.join(UPLOAD_FOLDER, filename)
-                await file.save(file_path)
+                file.save(file_path)
 
                 # Create document record
                 # noinspection PyTypeChecker
@@ -894,19 +894,19 @@ async def verification_status(user: User):
     document_options = AllowableCompanyVerificationDocumentsEnum.sa_company_documents_list()
     # --- Define the set of statuses that require user action ---
     # This makes the logic clear and easy to modify in one place.
+    # noinspection PyPep8Naming
     ACTIONABLE_STATUSES = {
         CompanyVerificationStatus.NOT_VERIFIED,
         CompanyVerificationStatus.DOCUMENTS_REJECTED,
         CompanyVerificationStatus.CIPC_FAILED,
         CompanyVerificationStatus.PENDING
-
     }
     # We'll check against the string values of the enum members
-    ACTIONABLE_STATUS_VALUES = {status.value for status in ACTIONABLE_STATUSES}
+    actionable_values = {status.value for status in ACTIONABLE_STATUSES}
 
     # 5. Determine if the user needs to take action
     # This logic helps the template decide whether to show the uploader or a "pending" message.
-    needs_action = company.verification_status in ACTIONABLE_STATUS_VALUES
+    needs_action = company.verification_status in actionable_values
 
     context = dict(
         current_user=user,
@@ -917,9 +917,10 @@ async def verification_status(user: User):
         needs_action=needs_action
     )
 
-    return render_template("company/verification_hub.html", **context)
+    return render_template("company/verification/status.html", **context)
 
 
+# noinspection DuplicatedCode
 @company_bp.route("/settings")
 @flask_error_handler
 @employer_login
@@ -931,6 +932,8 @@ async def settings(user: User):
     context = dict(current_user=user, settings=settings)
     return render_template("company/settings.html", **context)  # Placeholder template
 
+
+# noinspection DuplicatedCode
 @company_bp.route("/settings")
 @flask_error_handler
 @employer_login
@@ -940,7 +943,7 @@ async def save_settings(user: User):
     :param user:
     :return:
     """
-    settings_data = request.form.dict()
+    settings_data = request.form.to_dict()
 
     company_controller = get_controller('company')
     employer_details = await company_controller.get_employer_by_uid(user_id=user.uid)
@@ -977,10 +980,9 @@ async def employers_list(user: User):
         "employers_list": employers_profile_list
     }
 
-    return render_template("company/employers.html",**context)
+    return render_template("company/employers/list.html", **context)
 
 @company_bp.route("/me")
-@flask_error_handler
 @login_required
 async def get_dashboard(user: User):
     company_controller = get_controller('company')
@@ -1009,7 +1011,7 @@ async def get_dashboard(user: User):
         verification_steps=verification_steps
     )
     return render_template(
-        "company/dashboard.html",
+        "company/company_dashboard.html",
         **context
     )
 
@@ -1035,4 +1037,4 @@ async def view_company_job_applications(user: User, company_id: str):
         company=company_details,
         jobs_list=jobs_list
     )
-    return render_template("company/job_applications.html", **context)
+    return render_template("company/jobs/applications/list.html", **context)
