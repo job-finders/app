@@ -100,6 +100,7 @@ spacy-legacy~=3.0.12
 spacy-loggers~=1.0.5
 SQLAlchemy~=2.0.40
 srsly~=2.5.1
+textstat
 thinc~=8.3.6
 threadpoolctl~=3.6.0
 timedelta
