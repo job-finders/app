@@ -13,7 +13,11 @@ services:
         value: production
       - key: SECRET_KEY
         generateValue: true
-      - key: DATABASE_URL
+      - key: PRODUCTION_SQL_DB
+        fromDatabase:
+          name: jobfinders-db
+          property: connectionString
+      - key: DEV_SQL_DB
         fromDatabase:
           name: jobfinders-db
           property: connectionString
