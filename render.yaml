@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
 
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && flask db upgrade
     startCommand: gunicorn app:app --workers 2 --bind 0.0.0.0:$PORT
 
     envVars:
@@ -17,9 +17,6 @@ services:
         fromDatabase:
           name: jobfinders-db
           property: connectionString
-
-    # Runs before every deploy — handles migrations automatically
-    preDeployCommand: flask db upgrade
 
 databases:
   - name: jobfinders-db
