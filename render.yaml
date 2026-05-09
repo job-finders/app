@@ -1,0 +1,76 @@
+services:
+  - type: web
+    name: jobfinders
+    runtime: python
+    region: oregon
+    plan: free
+
+    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
+    startCommand: gunicorn app:app --workers 2 --bind 0.0.0.0:$PORT
+
+    envVars:
+      # Required — app won't boot without these
+      - key: PRODUCTION_SQL_DB
+        fromDatabase:
+          name: jobfinders-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: IS_DEVELOPMENT_SERVER
+        value: false
+      - key: HOST_ADDRESSES
+        fromService:
+          type: web
+          name: jobfinders
+          property: host
+
+      # Email
+      - key: RESEND_API_KEY
+        value: ""
+      - key: RESEND_FROM_EMAIL
+        value: norespond@jobfinders.site
+
+      # Redis
+      - key: REDIS_URL
+        value: ""
+
+      # JWT
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGO
+        value: HS256
+
+      # PayFast
+      - key: PAYFAST_MERCHANT_ID
+        value: ""
+      - key: PAYFAST_MERCHANT_KEY
+        value: ""
+      - key: PAYFAST_SANDBOX
+        value: true
+      - key: PAYFAST_PASSPHRASE
+        value: ""
+
+      # Hashnode
+      - key: HASHNODE_TOKEN
+        value: ""
+      - key: HASHNODE_BLOG_URL
+        value: ""
+      - key: HASHNODE_BLOG_ID
+        value: ""
+      - key: HASHNODE_AUTHOR_ID
+        value: ""
+
+      # App
+      - key: CLIENT_SECRET
+        generateValue: true
+      - key: OPENROUTER_API_KEY
+        value: ""
+      - key: ADMIN_USERNAME
+        value: admin@jobfinders.site
+      - key: ADMIN_PASSWORD
+        generateValue: true
+
+databases:
+  - name: jobfinders-db
+    databaseName: jobfinders
+    plan: free

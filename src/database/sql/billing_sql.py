@@ -183,7 +183,8 @@ class PaymentMethodORM(Base):
     __tablename__ = "payment_methods"
 
     method_id = Column(String(ID_LEN), primary_key=True, default=lambda: str(uuid.uuid4()))
-    company_id = Column(String(ID_LEN), ForeignKey("company_billing.company_id"), nullable=False)
+    company_id = Column(String(ID_LEN), ForeignKey("companies.company_id"), nullable=False)  # changed
+    
 
     provider = Column(String(20), default="payfast")  # 'payfast' or 'manual'
     payfast_token = Column(String(255), nullable=True)

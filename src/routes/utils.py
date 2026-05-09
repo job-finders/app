@@ -19,7 +19,7 @@ MEDIA_DIR = CURRENT_FILE.parents[2] / "media" / "logos"
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 SOUTH_AFRICA_PROVINCES = {
     "Eastern Cape": sorted([
-        "Bhisho", "East London", "Grahamstown", "King William’s Town", "Mthatha", "Port Alfred", "Port Elizabeth", "Queenstown"
+        "Bhisho", "East London", "Grahamstown", "King William's Town", "Mthatha", "Port Alfred", "Port Elizabeth", "Queenstown"
     ]),
     "Free State": sorted([
         "Bethlehem", "Bloemfontein", "Harrismith", "Kroonstad", "Parys", "Welkom"
@@ -282,11 +282,11 @@ async def create_common_context(search_term: str, job_list: list[Job], page: int
         total_pages=math.ceil(len(job_list) / per_page),
         affiliate_template=affiliate_template,
         provinces=provinces,
-        categories=enriched_categories,  # ✅ Pass the enriched list
+        categories=enriched_categories,
         current_year=current_year
     )
 
-async def create_context(user:User, search_term: str, page: int = 1, per_page: int = 10):
+async def create_context(user: User, search_term: str, page: int = 1, per_page: int = 10):
     """
     Create context for jobs strictly matching the search term in the job record.
 
@@ -297,7 +297,7 @@ async def create_context(user:User, search_term: str, page: int = 1, per_page: i
     :return: Rendered template response.
     """
     # Validate search term before filtering
-    if search_term not in  get_service('scraper')().search_terms and search_term is not "home":
+    if search_term not in get_service('scraper')().search_terms and search_term != "home":
         return None
     category_search = await get_controller('jobs_search').search_jobs_by_category(category=search_term, page=page, page_size=per_page)
     jobs_list = category_search.get('jobs') if category_search else []
@@ -329,20 +329,19 @@ async def not_found(search_term: str):
         "title": "404 Not Found",
         "seo": {
             "title": f"No Jobs Found - {search_term}",
-            "description": f"We couldn’t find any job listings for {search_term}. Try searching again.",
+            "description": f"We couldn't find any job listings for {search_term}. Try searching again.",
             "keywords": "jobs, careers, not found, job search"
         }
     }
     return render_template("error.html", **context), 404
 
 
-async def gone(user:User, search_term: str):
+async def gone(user: User, search_term: str):
     """Render a 410 Gone page for permanently removed job listings."""
     message = f"The page for '{search_term}' has been permanently removed."
     utils_logger.info(message)
 
     context = {
-
         "current_user": user,
         "message": message,
         "title": "410 Gone",
@@ -360,7 +359,6 @@ async def sub_job_detail(user: User, job: Job):
     """Render detailed job view with SEO tags and similar jobs."""
     seo = await create_seo_tags_for_job(job=job)
     similar_jobs = await get_service('scraper')().similar_jobs(search_term=job.search_term, title=job.title)
-    # utils_logger.info(f"Similar Jobs: {similar_jobs}")
     affiliate_template = random.choice(load_affiliate_templates())
 
     context = dict(term=job.title, job=job, search_terms=get_service('scraper').search_terms, similar_jobs=similar_jobs,
