@@ -9,18 +9,19 @@ services:
     startCommand: gunicorn app:app --workers 2 --bind 0.0.0.0:$PORT
 
     envVars:
-      - key: FLASK_ENV
-        value: production
-      - key: SECRET_KEY
-        generateValue: true
       - key: PRODUCTION_SQL_DB
         fromDatabase:
           name: jobfinders-db
           property: connectionString
-      - key: DEV_SQL_DB
-        fromDatabase:
-          name: jobfinders-db
-          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: IS_DEVELOPMENT_SERVER
+        value: false
+      - key: HOST_ADDRESSES
+        fromService:
+          type: web
+          name: jobfinders
+          property: host
 
 databases:
   - name: jobfinders-db
