@@ -122,6 +122,7 @@ def create_app(config):
 
     app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
+    app.config['SQLALCHEMY_DATABASE_URI'] = config.MYSQL_SETTINGS.PRODUCTION_DB
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     app.config['ALLOWED_EXTENSIONS'] = {
