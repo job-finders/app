@@ -30,7 +30,6 @@ def _register_blueprints(app):
     from src.routes.agents_routes.employee_agents_routes import employee_agents_route
     from src.routes.employer_routes.employer_routes import employer_route
 
-
     blueprints = [
         auth_route, home_route, jobs_workflow_route, jobs_search_route, jobs_actions_bp, jobs_analytics_bp,
         seo_route, blog_route, users_route, jobseeker_route,
@@ -41,6 +40,7 @@ def _register_blueprints(app):
     ]
     for blueprint in blueprints:
         app.register_blueprint(blueprint)
+
 
 def _register_template_filters(app):
     """Register Jinja2 template filters"""
@@ -63,6 +63,7 @@ def _register_template_filters(app):
     def safe_html_filter(html):
         """Sanitize HTML output to prevent XSS"""
         return bleach.clean(html, tags=bleach.sanitizer.ALLOWED_TAGS + ['p', 'br', 'div'])
+
 
 def supported_content_types() -> dict[str, str]:
     return {
@@ -121,7 +122,6 @@ def create_app(config):
 
     app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
-    app.config['SQLALCHEMY_DATABASE_URI'] = config.MYSQL_SETTINGS.PRODUCTION_DB
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     app.config['ALLOWED_EXTENSIONS'] = {
@@ -132,19 +132,16 @@ def create_app(config):
 
     with app.app_context():
         # ========================
-        # 3. Database + Migrations
+        # 3. Database Init
         # ========================
-        from src.database.sql import db
-        from flask_migrate import Migrate
-        db.init_app(app)
-        Migrate(app, db)
+        from src.database.sql import engine, Base
+        Base.metadata.create_all(bind=engine)
 
         # ========================
         # 4. Security Monitoring
         # ========================
         security_logger = logging.getLogger('security')
         security_logger.setLevel(logging.WARNING)
-        # Use StreamHandler in production to avoid filesystem issues on Render
         is_production = not config.IS_DEVELOPMENT_SERVER
         if is_production:
             security_handler = logging.StreamHandler()
