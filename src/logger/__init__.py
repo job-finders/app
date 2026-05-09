@@ -3,11 +3,17 @@ import logging
 import socket
 import sys
 from src.config import config_instance
+import os
 
 
 class AppLogger:
     def __init__(self, name: str, is_file_logger: bool = False, log_level: int = logging.INFO):
         logging_file = 'logs/job.log'
+        if is_file_logger:
+            os.makedirs("logs", exist_ok=True)  # add this line
+            handler = logging.FileHandler(logging_file)
+        else:
+            handler = logging.StreamHandler(sys.stdout)
         logger_name = name if name else config_instance().APP_NAME
         self.logger = logging.getLogger(logger_name)
         self.logger.setLevel(level=log_level)
