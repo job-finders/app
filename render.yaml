@@ -66,7 +66,7 @@ services:
       - key: OPENROUTER_API_KEY
         value: ""
       - key: ADMIN_USERNAME
-        value: adminadmin@jobfinders.site
+        value: admin@jobfinders.site
       - key: ADMIN_PASSWORD
         generateValue: true
 
