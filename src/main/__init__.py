@@ -53,22 +53,18 @@ def _register_template_filters(app):
     app.jinja_env.filters['current_year'] = current_year
     app.jinja_env.filters['format_currency'] = format_currency
     app.jinja_env.globals['icon'] = icon
+
     @app.template_filter('round')
     def round_filter(value, precision=0):
         return round(value, precision)
 
-    # Add safe HTML filter
     import bleach
     @app.template_filter('safe_html')
     def safe_html_filter(html):
         """Sanitize HTML output to prevent XSS"""
         return bleach.clean(html, tags=bleach.sanitizer.ALLOWED_TAGS + ['p', 'br', 'div'])
 
-def supported_content_types () -> dict[str, str]:
-    """
-
-    :return:
-    """
+def supported_content_types() -> dict[str, str]:
     return {
         # Documents
         'pdf': 'application/pdf',
@@ -92,7 +88,6 @@ def supported_content_types () -> dict[str, str]:
     }
 
 
-# Create App Method
 def create_app(config):
     """Flask application factory with enhanced security"""
     from src.utils import template_folder, static_folder
@@ -103,11 +98,10 @@ def create_app(config):
     # ========================
     app.url_map.strict_slashes = False
     app.config['SECRET_KEY'] = os.environ.get('APP_SECRET_KEY', config.SECRET_KEY)
-    app.config['SESSION_COOKIE_SECURE'] = True  # Only send cookies over HTTPS
-    app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent client-side JS access
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta.Timedelta(minutes=30)  # Shorter sessions
-
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta.Timedelta(minutes=30)
 
     # Proxy configuration
     app.wsgi_app = ProxyFix(
@@ -125,13 +119,11 @@ def create_app(config):
     app.static_folder = static_folder()
     app.config['BASE_URL'] = "https://jobfinders.site"
 
-    # Configure upload settings
     app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
-    app.config['SQLALCHEMY_DATABASE_URI'] = config.MYSQL_SETTINGS.DEVELOPMENT_DB
+    app.config['SQLALCHEMY_DATABASE_URI'] = config.MYSQL_SETTINGS.PRODUCTION_DB
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    # Safe file upload validation
     app.config['ALLOWED_EXTENSIONS'] = {
         'pdf', 'doc', 'docx', 'txt', 'md', 'rtf', 'odt',
         'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif'
@@ -140,12 +132,25 @@ def create_app(config):
 
     with app.app_context():
         # ========================
-        # 3. Security Monitoring
+        # 3. Database + Migrations
         # ========================
-        # Initialize security logging
+        from src.database.sql import db
+        from flask_migrate import Migrate
+        db.init_app(app)
+        Migrate(app, db)
+
+        # ========================
+        # 4. Security Monitoring
+        # ========================
         security_logger = logging.getLogger('security')
         security_logger.setLevel(logging.WARNING)
-        security_handler = logging.FileHandler('security.log')
+        # Use StreamHandler in production to avoid filesystem issues on Render
+        is_production = not config.IS_DEVELOPMENT_SERVER
+        if is_production:
+            security_handler = logging.StreamHandler()
+        else:
+            os.makedirs('logs', exist_ok=True)
+            security_handler = logging.FileHandler('logs/security.log')
         security_handler.setFormatter(logging.Formatter(
             '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
         ))
@@ -157,93 +162,79 @@ def create_app(config):
         service_factory = ServiceFactory(app)
         controller_factory = ControllerFactory(app, service_factory)
 
-        # Store factories in app for access in routes
         app.service_factory = service_factory
         app.controller_factory = controller_factory
 
         # ========================
         # 5. Boot Sequence
         # ========================
-        # Run boot sequence
-        # Run boot sequence
         from src.main.boot import boot
         boot()
 
-        # Initialize scraper if needed
         scraper = service_factory.get_junction_scraper()
         scraper.init_app(app)
+
         # ========================
         # 6. Security Middleware
         # ========================
-        # Adding Security headers
         from src.firewall.headers import configure_security_headers
         configure_security_headers(app)
 
         from src.firewall.monitor import detect_attacks
-        # Security Middleware
         app.before_request(detect_attacks)
-        # Database security
+
         from src.firewall.database_sec import safe_query
         app.extensions['safe_query'] = safe_query
-
-        # CSRF Protection
-        # from src.firewall.csrf import init_csrf_protection
-        # init_csrf_protection(app)
 
         # ========================
         # 7. Error Handling
         # ========================
         from src.main.error_handling import register_error_handlers
         register_error_handlers(app)
+
         # ========================
-        # BLUE PRINTS REGISTRATIONS
+        # 8. Blueprints + Filters
         # ========================
-        # Register blueprints
         _register_blueprints(app)
-        # Register template filters
         _register_template_filters(app)
 
         # ========================
-        # ADD AND INITIALIZE RATE LIMITER
+        # 9. Rate Limiter
+        # ========================
         from src.firewall.rate_limiting import limiter, update_cloudflare_ips
         limiter.init_app(app)
         update_cloudflare_ips()
-        
+
         # ========================
-        # 9. Secure Teardown
+        # 10. Secure Teardown
         # ========================
-        # Clean Controllers Upon Exit
         @app.teardown_appcontext
         def shutdown_controllers(exception=None):
             if _controller_factory := app.extensions.get('controller_factory'):
                 _controller_factory.close_all()
-
-            # Clear sensitive data from g Object
             for key in list(vars(g).keys()):
                 controller = getattr(g, key, None)
                 if hasattr(controller, 'close_sessions'):
                     controller.close_sessions()
+
         # ========================
-        # 10. Security Auditing
+        # 11. Security Auditing
         # ========================
         @app.after_request
         def security_audit(response):
-            """Log security-relevant request/response data"""
             from src.firewall.auditing import log_security_event
             log_security_event(request, response)
             return response
 
-        ############################################
-        ## AP SCHEDULER INTERGRATION
-        ############################################
+        # ========================
+        # 12. AP Scheduler
+        # ========================
         from src.tasks.task_scheduler.ap_scheduler import create_scheduler
         from src.tasks.task_scheduler.admin_ap_scheduler import schedule_app_tasks
 
         scheduler = create_scheduler(app=app)
-
-        # This Schedules Admin Jobs that are suppose to run in AP Scheduler
         schedule_app_tasks(scheduler=scheduler, app=app)
         scheduler.start()
-        atexit.register(scheduler.shutdown)        
+        atexit.register(scheduler.shutdown)
 
     return app
